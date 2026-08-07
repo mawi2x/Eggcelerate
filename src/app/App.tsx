@@ -1,0 +1,285 @@
+import { useState } from "react";
+import { Toaster } from "./components/ui/sonner";
+import { AppSidebar, ScreenId } from "./components/AppSidebar";
+import { PageHeader } from "./components/PageHeader";
+import { OverviewScreen } from "./components/screens/OverviewScreen";
+import { IncubatorsScreen } from "./components/screens/IncubatorsScreen";
+import { DetailScreen } from "./components/screens/DetailScreen";
+import { TrendsScreen } from "./components/screens/TrendsScreen";
+import { AlertsScreen } from "./components/screens/AlertsScreen";
+import { SettingsScreen } from "./components/screens/SettingsScreen";
+import {
+  initialIncubators,
+  initialModes,
+  initialAlerts,
+  AlertEntry,
+  Incubator,
+  Mode,
+} from "./data/mockData";
+import { Account, initialAccount } from "./data/account";
+
+export default function App() {
+  const [screen, setScreen] = useState<ScreenId>("overview");
+  const [selectedUnit, setSelectedUnit] = useState<
+    string | null
+  >(null);
+  const [navCollapsed, setNavCollapsed] = useState(false);
+
+  const [modes, setModes] = useState<Mode[]>(initialModes);
+  const [incubators, setIncubators] = useState<Incubator[]>(
+    initialIncubators,
+  );
+  const [account, setAccount] =
+    useState<Account>(initialAccount);
+
+  const [alerts, setAlerts] =
+    useState<AlertEntry[]>(initialAlerts);
+
+  const updateAccount = (patch: Partial<Account>) => {
+    setAccount((prev) => ({ ...prev, ...patch }));
+  };
+
+  const acknowledgeAlert = (id: string) => {
+    setAlerts((prev) =>
+      prev.map((a) =>
+        a.id === id ? { ...a, acknowledged: true } : a,
+      ),
+    );
+  };
+
+  const dismissAlert = (id: string) => {
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const markAllAlertsRead = () => {
+    setAlerts((prev) =>
+      prev.map((a) => ({ ...a, acknowledged: true })),
+    );
+  };
+
+  // "Clear All" only removes what's already been read, so nothing unseen is lost.
+  const clearReadAlerts = () => {
+    setAlerts((prev) => prev.filter((a) => !a.acknowledged));
+  };
+
+  const unreadAlerts = alerts.filter(
+    (a) => !a.acknowledged,
+  ).length;
+
+  const openUnit = (id: string) => {
+    setSelectedUnit(id);
+    setScreen("detail");
+  };
+
+  const navigate = (id: ScreenId) => {
+    setSelectedUnit(null);
+    setScreen(id);
+  };
+
+  const updateIncubator = (
+    id: string,
+    patch: Partial<Incubator>,
+  ) => {
+    setIncubators((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, ...patch } : u)),
+    );
+  };
+
+  const addIncubator = (unit: Incubator) => {
+    setIncubators((prev) => [...prev, unit]);
+  };
+
+  const updateMode = (id: string, patch: Partial<Mode>) => {
+    setModes((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+    );
+  };
+
+  const addMode = (mode: Mode) => {
+    setModes((prev) => [...prev, mode]);
+  };
+
+  const deleteMode = (id: string) => {
+    setModes((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const activeUnit =
+    incubators.find((u) => u.id === selectedUnit) ??
+    incubators[0];
+
+  // Inline metadata pills for the Incubator Detail title row.
+  const activeMode =
+    modes.find((m) => m.id === activeUnit.modeId) ?? modes[0];
+  const statusTone =
+    activeUnit.status === "optimal"
+      ? { fg: "#15803D", bg: "#DCFCE7", label: "Optimal" }
+      : activeUnit.status === "warning"
+        ? { fg: "#B45309", bg: "#FEF3C7", label: "Needs Attention" }
+        : { fg: "#B91C1C", bg: "#FEE2E2", label: "Alert" };
+
+  const detailBadges = (
+    <>
+      <span
+        className="shrink-0 rounded-full px-3 py-1"
+        style={{
+          backgroundColor: "#C85A32",
+          color: "#FFFFFF",
+          fontSize: 13,
+          fontWeight: 700,
+        }}
+      >
+        Day {activeUnit.dayOfIncubation} of{" "}
+        {activeMode.incubationDays}
+      </span>
+      <span
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1"
+        style={{
+          backgroundColor: statusTone.bg,
+          color: statusTone.fg,
+          fontSize: 13,
+          fontWeight: 700,
+        }}
+      >
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ backgroundColor: statusTone.fg }}
+        />
+        {statusTone.label}
+      </span>
+    </>
+  );
+
+  // One header copy deck, so every screen reads the same way.
+  const headerCopy: Record<
+    ScreenId,
+    { title: string; subtitle: string }
+  > = {
+    overview: {
+      title: "Good day, farmer!",
+      subtitle:
+        "Here's what needs your attention across your incubation cycles.",
+    },
+    incubators: {
+      title: "Incubators",
+      subtitle:
+        "Manage each chamber, assign a Mode, and open its full configuration.",
+    },
+    detail: {
+      title: activeUnit.name,
+      subtitle: `Device ${activeUnit.deviceId} · ${activeMode.name} Mode`,
+    },
+    trends: {
+      title: "Historical Trends",
+      subtitle:
+        "Track environmental history and past hatch performance.",
+    },
+    alerts: {
+      title: "Alerts & Notifications",
+      subtitle: "Everything that needed a look, newest first.",
+    },
+    settings: {
+      title: "Settings",
+      subtitle:
+        "App-level configuration — Modes, notifications and account.",
+    },
+  };
+
+  return (
+    <div
+      className="min-h-screen w-full"
+      style={{ backgroundColor: "#FBFAF7" }}
+    >
+      <AppSidebar
+        active={screen}
+        onNavigate={navigate}
+        alertCount={unreadAlerts}
+        account={account}
+        collapsed={navCollapsed}
+        onToggleCollapsed={() => setNavCollapsed((v) => !v)}
+      />
+
+      <main
+        className={`transition-all duration-200 ${navCollapsed ? "lg:pl-16" : "lg:pl-64"}`}
+      >
+        <div
+          className="mx-auto max-w-6xl px-4 pb-28 sm:px-6 lg:px-8 lg:pb-20"
+          style={{ paddingTop: 24 }}
+        >
+          {/* Rows 1 and 2 — utility bar and page title bar. */}
+          <div style={{ marginBottom: 24 }}>
+            <PageHeader
+              title={headerCopy[screen].title}
+              subtitle={headerCopy[screen].subtitle}
+              alertCount={unreadAlerts}
+              onViewAlerts={() => navigate("alerts")}
+              alerts={alerts}
+              onMarkAllRead={markAllAlertsRead}
+              onDismissAlert={dismissAlert}
+              large={screen === "detail"}
+              onBack={
+                screen === "detail"
+                  ? () => navigate("incubators")
+                  : undefined
+              }
+              backLabel="Back to Incubators"
+              badges={
+                screen === "detail" ? detailBadges : undefined
+              }
+            />
+          </div>
+
+          {screen === "overview" && (
+            <OverviewScreen
+              units={incubators}
+              modes={modes}
+              onOpenUnit={openUnit}
+              onManageAll={() => navigate("incubators")}
+            />
+          )}
+          {screen === "incubators" && (
+            <IncubatorsScreen
+              units={incubators}
+              modes={modes}
+              onOpenUnit={openUnit}
+              onAddIncubator={addIncubator}
+            />
+          )}
+          {screen === "detail" && (
+            <DetailScreen
+              unit={activeUnit}
+              modes={modes}
+              onUpdate={(patch) =>
+                updateIncubator(activeUnit.id, patch)
+              }
+            />
+          )}
+          {screen === "trends" && (
+            <TrendsScreen units={incubators} modes={modes} />
+          )}
+          {screen === "alerts" && (
+            <AlertsScreen
+              alerts={alerts}
+              onAcknowledge={acknowledgeAlert}
+              onDismiss={dismissAlert}
+              onMarkAllRead={markAllAlertsRead}
+              onClearRead={clearReadAlerts}
+            />
+          )}
+          {screen === "settings" && (
+            <SettingsScreen
+              modes={modes}
+              onUpdateMode={updateMode}
+              onAddMode={addMode}
+              onDeleteMode={deleteMode}
+              account={account}
+              onUpdateAccount={updateAccount}
+              units={incubators}
+            />
+          )}
+        </div>
+      </main>
+
+      <Toaster position="top-right" richColors />
+    </div>
+  );
+}

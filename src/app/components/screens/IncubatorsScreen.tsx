@@ -1,0 +1,417 @@
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Plus, Cpu, Search, ChevronLeft, ChevronRight, ArrowUpNarrowWide, ArrowDownWideNarrow } from "lucide-react";
+import { IncubatorCard } from "../IncubatorCard";
+import { StatusBadge } from "../StatusBadge";
+import { ViewToggle, ViewMode } from "../ViewToggle";
+import { FieldCounterLabel } from "../FieldCounterLabel";
+import { CHAMBER_NAME_MAX } from "../../data/account";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "../ui/table";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "../ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "../ui/select";
+import {
+  Incubator, Mode, UnitStatus, rangeState, waterState, readingStateColors, daysUntilHatch,
+} from "../../data/mockData";
+
+interface Props {
+  units: Incubator[];
+  modes: Mode[];
+  onOpenUnit: (id: string) => void;
+  onAddIncubator: (unit: Incubator) => void;
+}
+
+// Design tokens.
+const RUST = "#AD3A1D";
+const CARD = "#F9F6F0";
+const BORDER = "#E8E2D5";
+const MUTED = "#5A4838";
+const TEXT = "#2D241E";
+const INPUT_BORDER = "#D8D0C0";
+
+type Filter = "all" | UnitStatus;
+
+const inputStyle = { borderColor: INPUT_BORDER, backgroundColor: "#F2EEE5" };
+
+// Framed white control matching the toolbar spec.
+const sortTriggerStyle = {
+  height: 38,
+  backgroundColor: "#FFFFFF",
+  borderColor: "#EAE7E1",
+  color: "#1C1917",
+  fontSize: 13,
+  fontWeight: 500,
+};
+
+type SortKey = "progress" | "name";
+
+const sortOptions: { key: SortKey; label: string }[] = [
+  { key: "progress", label: "Progress" },
+  { key: "name", label: "Name" },
+];
+
+export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: Props) {
+  // Chamber search is local to this page's controls row.
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<ViewMode>("grid");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [sort, setSort] = useState<SortKey>("progress");
+  const [sortAsc, setSortAsc] = useState(true);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const [deviceId, setDeviceId] = useState("");
+  const [name, setName] = useState("");
+  const [modeId, setModeId] = useState(modes[0]?.id ?? "");
+
+  const modeOf = (id: string) => modes.find((m) => m.id === id) ?? modes[0];
+
+  const counts = useMemo(() => ({
+    all: units.length,
+    optimal: units.filter((u) => u.status === "optimal").length,
+    warning: units.filter((u) => u.status === "warning").length,
+    alert: units.filter((u) => u.status === "alert").length,
+  }), [units]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return units.filter((u) => {
+      if (filter !== "all" && u.status !== filter) return false;
+      if (!q) return true;
+      return u.name.toLowerCase().includes(q) || modeOf(u.modeId).name.toLowerCase().includes(q);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [units, search, filter, modes]);
+
+  const sorted = useMemo(() => {
+    const remaining = (u: Incubator) => {
+      const m = modeOf(u.modeId);
+      return daysUntilHatch(u.dayOfIncubation, m.incubationDays);
+    };
+    const pct = (u: Incubator) => u.dayOfIncubation / modeOf(u.modeId).incubationDays;
+    const byName = (a: Incubator, b: Incubator) => a.name.localeCompare(b.name);
+
+    // Copy first — `filtered` is derived state and must not be mutated in place.
+    return [...filtered].sort((a, b) => {
+      const dir = sortAsc ? 1 : -1;
+      switch (sort) {
+        case "progress":
+          // Ascending = nearest to hatching first; ties break on the further-along cycle.
+          return dir * (remaining(a) - remaining(b) || pct(b) - pct(a)) || byName(a, b);
+        case "name":
+          return dir * byName(a, b);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, sort, sortAsc, modes]);
+
+  const filterPills: { key: Filter; label: string; count: number }[] = [
+    { key: "all", label: "All", count: counts.all },
+    { key: "optimal", label: "Optimal", count: counts.optimal },
+    { key: "warning", label: "Needs Attention", count: counts.warning },
+    { key: "alert", label: "Alert", count: counts.alert },
+  ];
+
+  // Pagination for the list view.
+  const totalPages = Math.max(1, Math.ceil(sorted.length / rowsPerPage));
+  const clampedPage = Math.min(page, totalPages);
+  const start = (clampedPage - 1) * rowsPerPage;
+  const paged = sorted.slice(start, start + rowsPerPage);
+
+  const resetForm = () => { setDeviceId(""); setName(""); setModeId(modes[0]?.id ?? ""); };
+
+  const handleAdd = () => {
+    const trimmedDeviceId = deviceId.trim();
+    const trimmedName = name.trim();
+    if (!trimmedDeviceId || !trimmedName) {
+      toast.error("Please enter a Device ID and Chamber Name.");
+      return;
+    }
+    if (!/^[A-Za-z0-9-]{3,20}$/.test(trimmedDeviceId)) {
+      toast.error("Device ID must be 3–20 characters using letters, numbers or dashes (e.g. EGG-1015).");
+      return;
+    }
+    if (units.some((u) => u.deviceId.toLowerCase() === trimmedDeviceId.toLowerCase())) {
+      toast.error(`Device ${trimmedDeviceId} is already paired to another chamber.`);
+      return;
+    }
+    const mode = modeOf(modeId);
+    const nowIso = new Date().toISOString();
+    onAddIncubator({
+      id: `chamber-${Date.now()}`,
+      name: trimmedName,
+      deviceId: trimmedDeviceId,
+      modeId: mode.id,
+      dayOfIncubation: 1,
+      temp: (mode.targetTemp.min + mode.targetTemp.max) / 2,
+      humidity: Math.round((mode.targetHumidity.min + mode.targetHumidity.max) / 2),
+      waterLevel: 100,
+      lastRefilled: nowIso,
+      tempTrend: 0,
+      humidityTrend: 0,
+      powerSource: "grid",
+      batteryPct: 100,
+      status: "optimal",
+      lastTurned: nowIso,
+      nextTurn: new Date(Date.now() + mode.defaultTurnInterval * 3_600_000).toISOString(),
+      turnInterval: mode.defaultTurnInterval,
+      autoTurn: true,
+      paired: true,
+      candled: {},
+      candlingLog: [],
+    });
+    toast.success(`${trimmedName} added and paired`);
+    resetForm();
+    setOpen(false);
+  };
+
+  return (
+    <div className="space-y-6" style={{ color: TEXT }}>
+      {/* Controls row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[220px] flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
+          <Input
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            maxLength={50}
+            placeholder="Search incubators..."
+            aria-label="Search incubators"
+            className="rounded-xl pl-9"
+            style={inputStyle}
+          />
+        </div>
+        <ViewToggle view={view} onChange={setView} />
+        <Button
+          onClick={() => setOpen(true)}
+          className="rounded-xl px-5"
+          style={{ backgroundColor: RUST, color: "#fff", minHeight: 40 }}
+        >
+          <Plus size={18} /> Add Incubator
+        </Button>
+      </div>
+
+      {/* Filter pills on the left, hatch timeline sort on the right */}
+      <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginTop: 20 }}>
+      <div className="flex flex-wrap gap-2">
+        {filterPills.map((p) => {
+          const active = filter === p.key;
+          return (
+            <button
+              key={p.key}
+              onClick={() => { setFilter(p.key); setPage(1); }}
+              className="rounded-full px-3.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style={{
+                backgroundColor: active ? RUST : CARD,
+                color: active ? "#fff" : MUTED,
+                border: `1px solid ${active ? RUST : BORDER}`,
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              {p.label} ({p.count})
+            </button>
+          );
+        })}
+      </div>
+
+        <div className="flex items-center gap-2">
+          <Select value={sort} onValueChange={(v) => { setSort(v as SortKey); setPage(1); }}>
+            <SelectTrigger
+              className="w-auto min-w-[140px] rounded-xl"
+              style={sortTriggerStyle}
+              aria-label="Sort chambers"
+            >
+              <span className="whitespace-nowrap">Sort: {sortOptions.find((o) => o.key === sort)?.label}</span>
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((o) => (
+                <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {/* Flips the current sort between ascending and descending. */}
+          <button
+            onClick={() => { setSortAsc((v) => !v); setPage(1); }}
+            className="flex shrink-0 items-center justify-center transition-colors hover:bg-[#FAF7F2] focus-visible:outline-none focus-visible:ring-2"
+            style={{ width: 32, height: 32, backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 8, color: "#1C1917" }}
+            title={sortAsc ? "Ascending" : "Descending"}
+            aria-label={`Sort direction: ${sortAsc ? "ascending" : "descending"}`}
+          >
+            {sortAsc ? <ArrowUpNarrowWide size={16} /> : <ArrowDownWideNarrow size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {sorted.length === 0 ? (
+        <div className="rounded-2xl px-5 py-12 text-center" style={{ backgroundColor: CARD, border: `1px dashed ${BORDER}` }}>
+          <p style={{ fontWeight: 700, color: TEXT }}>No chambers match your filters</p>
+          <p style={{ color: MUTED, fontSize: 13, marginTop: 4 }}>Try a different search term or filter.</p>
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="mt-3 rounded-xl px-3 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style={{ color: RUST, fontWeight: 600, fontSize: 13 }}
+            >
+              Clear search
+            </button>
+          )}
+        </div>
+      ) : view === "grid" ? (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {sorted.map((unit) => (
+            <IncubatorCard key={unit.id} unit={unit} mode={modeOf(unit.modeId)} onOpen={onOpenUnit} cta="Configure" />
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl" style={{ border: `1px solid ${BORDER}`, backgroundColor: CARD }}>
+          <div className="h-[560px] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  {["Chamber", "Mode", "Day"].map((h) => (
+                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}` }}>{h}</TableHead>
+                  ))}
+                  {["Temp", "Humidity", "Water"].map((h) => (
+                    <TableHead key={h} className="sticky top-0 z-10 text-right" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}` }}>{h}</TableHead>
+                  ))}
+                  {["Status", "Action"].map((h) => (
+                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}` }}>{h}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paged.map((unit) => {
+                  const mode = modeOf(unit.modeId);
+                  const tempSt = rangeState(unit.temp, mode.targetTemp);
+                  const humSt = rangeState(unit.humidity, mode.targetHumidity);
+                  const waterSt = waterState(unit.waterLevel);
+                  return (
+                    <TableRow
+                      key={unit.id}
+                      onClick={() => onOpenUnit(unit.id)}
+                      className="cursor-pointer transition-colors hover:bg-amber-50/60"
+                    >
+                      <TableCell style={{ fontWeight: 700, color: TEXT }}>{unit.name}</TableCell>
+                      <TableCell>
+                        <span className="rounded-full px-2 py-0.5" style={{ backgroundColor: "rgba(173,58,29,0.12)", color: RUST, fontWeight: 700, fontSize: 12 }}>
+                          {mode.name}
+                        </span>
+                      </TableCell>
+                      <TableCell style={{ color: MUTED }}>{unit.dayOfIncubation} of {mode.incubationDays}</TableCell>
+                      <TableCell className="text-right" style={{ color: readingStateColors[tempSt], fontWeight: 700 }}>{unit.temp}°C</TableCell>
+                      <TableCell className="text-right" style={{ color: readingStateColors[humSt], fontWeight: 700 }}>{unit.humidity}%</TableCell>
+                      <TableCell className="text-right" style={{ color: readingStateColors[waterSt], fontWeight: 700 }}>{unit.waterLevel}%</TableCell>
+                      <TableCell><StatusBadge status={unit.status} /></TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm" variant="outline" className="rounded-xl"
+                          style={{ borderColor: BORDER, color: RUST }}
+                          onClick={(e) => { e.stopPropagation(); onOpenUnit(unit.id); }}
+                        >
+                          Configure
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3" style={{ borderTop: `1px solid ${BORDER}` }}>
+            <span style={{ color: MUTED, fontSize: 13 }}>
+              Showing {sorted.length === 0 ? 0 : start + 1}–{Math.min(start + rowsPerPage, sorted.length)} of {sorted.length} chambers
+            </span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span style={{ color: MUTED, fontSize: 13 }}>Rows per page:</span>
+                <Select value={String(rowsPerPage)} onValueChange={(v) => { setRowsPerPage(Number(v)); setPage(1); }}>
+                  <SelectTrigger className="h-8 w-[72px] rounded-lg" style={inputStyle}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[10, 20, 50].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" className="rounded-lg" style={{ borderColor: BORDER }}
+                  disabled={clampedPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous page">
+                  <ChevronLeft size={16} />
+                </Button>
+                <span style={{ color: MUTED, fontSize: 13 }}>Page {clampedPage} / {totalPages}</span>
+                <Button size="sm" variant="outline" className="rounded-lg" style={{ borderColor: BORDER }}
+                  disabled={clampedPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} aria-label="Next page">
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add incubator dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="rounded-2xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "Baloo 2, sans-serif" }}>Add Incubator</DialogTitle>
+            <DialogDescription>Pair a new chamber device and choose the incubation Mode it should run.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="deviceId">Device ID (pairing)</Label>
+              <div className="relative mt-1.5">
+                <Cpu size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
+                <Input id="deviceId" value={deviceId}
+                  onChange={(e) => setDeviceId(e.target.value.replace(/[^A-Za-z0-9-]/g, "").slice(0, 20))}
+                  maxLength={20}
+                  placeholder="EGG-1015" className="rounded-xl pl-9" style={inputStyle} />
+              </div>
+            </div>
+            <div>
+              <FieldCounterLabel htmlFor="name" label="Chamber Name" value={name} max={CHAMBER_NAME_MAX} />
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={CHAMBER_NAME_MAX}
+                placeholder="Chamber Thirteen"
+                className="mt-1.5 rounded-xl"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <Label htmlFor="mode">Mode</Label>
+              <Select value={modeId} onValueChange={setModeId}>
+                <SelectTrigger id="mode" className="mt-1.5 w-full rounded-xl" style={inputStyle}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name} · {m.incubationDays} days</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" className="rounded-xl" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button className="rounded-xl" onClick={handleAdd} style={{ backgroundColor: RUST, color: "#fff" }}>Add &amp; Pair</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
