@@ -24,7 +24,7 @@ type CategoryId = "modes" | "notifications" | "account" | "hardware";
 
 const categories: { id: CategoryId; label: string; Icon: typeof Package }[] = [
   { id: "modes", label: "MODE LIBRARY", Icon: Package },
-  { id: "notifications", label: "NOTIFICATIONS & ALERTS", Icon: Bell },
+  { id: "notifications", label: "NOTIFICATIONS", Icon: Bell },
   { id: "account", label: "FARM & ACCOUNT", Icon: Tractor },
   { id: "hardware", label: "HARDWARE & DEVICES", Icon: Zap },
 ];
@@ -60,7 +60,7 @@ export function SettingsScreen({
                     height: 40,
                     backgroundColor: isActive ? RUST : "transparent",
                     color: isActive ? "#FFFFFF" : "#78716C",
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
@@ -68,7 +68,7 @@ export function SettingsScreen({
                   aria-current={isActive ? "page" : undefined}
                 >
                   <Icon size={17} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
-                  <span className="min-w-0 truncate" title={label}>
+                  <span className="min-w-0 whitespace-nowrap" title={label}>
                     {label}
                   </span>
                 </button>

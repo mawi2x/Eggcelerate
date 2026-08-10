@@ -15,11 +15,11 @@ interface Props {
   backLabel?: string;
   /** Pills rendered inline to the right of the title. */
   badges?: React.ReactNode;
-  /** Sub-views use a larger display title. */
-  large?: boolean;
+  /** Replaces the default title/subtitle block entirely (e.g. detail headers). */
+  titleNode?: React.ReactNode;
 }
 
-const TEXT = "#1C1917";
+const TEXT = "#1A1A1A";
 const MUTED = "#78716C";
 const RUST = "#C85A32";
 
@@ -40,7 +40,7 @@ export function PageHeader({
   onBack,
   backLabel = "Back",
   badges,
-  large = false,
+  titleNode,
 }: Props) {
   return (
     <div>
@@ -70,19 +70,23 @@ export function PageHeader({
 
       {/* ── Row 2: title block + inline metadata badges ─────────────────── */}
       <header className="w-full min-w-0" style={{ marginTop: 16 }}>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1
-            className="min-w-0 truncate"
-            style={{ fontSize: large ? 28 : 24, fontWeight: 700, color: TEXT, lineHeight: 1.25 }}
-            title={title}
-          >
-            {title}
-          </h1>
-          {badges}
-        </div>
-        <p className="min-w-0" style={{ fontSize: 14, fontWeight: 400, color: MUTED, lineHeight: 1.4, marginTop: 4 }}>
-          {subtitle}
-        </p>
+        {titleNode ?? (
+          <>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <h1
+                className="min-w-0 truncate"
+                style={{ fontSize: 24, fontWeight: 700, color: TEXT, lineHeight: 1.25 }}
+                title={title}
+              >
+                {title}
+              </h1>
+              {badges}
+            </div>
+            <p className="min-w-0" style={{ fontSize: 14, fontWeight: 400, color: MUTED, lineHeight: 1.4, marginTop: 4 }}>
+              {subtitle}
+            </p>
+          </>
+        )}
       </header>
     </div>
   );

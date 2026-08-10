@@ -1,4 +1,4 @@
-import { Thermometer, Droplets, Waves, ChevronRight } from "lucide-react";
+import { Thermometer, Droplets, Waves, ChevronRight, Egg, Lock, Check, TriangleAlert } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { SegmentedBattery } from "./SegmentedBattery";
@@ -21,6 +21,17 @@ const CTA = "#C85A32";
 
 const tileBg: Record<string, string> = { ok: TILE, warning: "#FFFBEB", critical: "#FEF2F2" };
 const tileBorder: Record<string, string> = { ok: BORDER, warning: "#FCD34D", critical: "#FCA5A5" };
+
+// Farmer-friendly operational status pill, derived from pairing + unit status.
+function operationalStatus(unit: Incubator, incubationDays: number): {
+  label: string; bg: string; fg: string; Icon?: React.ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string }>; dot?: boolean;
+} {
+  if (!unit.paired || unit.status === "alert") return { label: "Offline", bg: "#FCE8E6", fg: "#C5221F", Icon: TriangleAlert };
+  if (unit.dayOfIncubation >= incubationDays) return { label: "Completed", bg: "#D1FAE5", fg: "#065F46", Icon: Check };
+  if (unit.status === "warning") return { label: "Lockdown", bg: "#FEF7E0", fg: "#B06000", Icon: Lock };
+  if (unit.dayOfIncubation === 0) return { label: "Ready", bg: "#F1F3F4", fg: "#5F6368", dot: true };
+  return { label: "Incubating", bg: "#E6F4EA", fg: "#137333", Icon: Egg };
+}
 
 function Trend({ delta }: { delta: number }) {
   if (Math.abs(delta) < 0.05) return <span style={{ color: MUTED, fontSize: 13 }}>→ Stable</span>;
@@ -78,6 +89,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure" }: Props) 
   const waterSt = waterState(unit.waterLevel);
   const waterInfo = getWaterStatusInfo(unit.waterLevel);
   const progress = Math.round((unit.dayOfIncubation / mode.incubationDays) * 100);
+  const status = operationalStatus(unit, mode.incubationDays);
 
   return (
     <Card
@@ -98,8 +110,8 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure" }: Props) 
               <SegmentedBattery battery={unit.batteryPct} charging={unit.powerSource !== "battery"} showLabel />
             </div>
           </div>
-          <p className="min-w-0 truncate" style={{ color: MUTED, fontSize: 12, fontWeight: 500, marginTop: 3 }}>
-            {mode.name} Mode
+          <p className="min-w-0 truncate" style={{ color: "#6E6259", fontSize: 13, fontWeight: 500, lineHeight: 1.3, marginTop: 2 }}>
+            {mode.name}
           </p>
         </div>
 
@@ -143,10 +155,24 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure" }: Props) 
           </div>
         </div>
 
-        {/* Footer — the action stands alone. */}
-        <div className="mt-4 flex justify-end">
-          {/* One uniform outlined CTA on every card — status is carried by the
-              metric tiles, never by the button fill. */}
+        {/* Footer — status badge left, action button right. */}
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <span
+            className="inline-flex shrink-0 items-center rounded-full"
+            style={{ backgroundColor: status.bg, color: status.fg, fontSize: 12, fontWeight: 700, padding: "6px 12px", gap: 6 }}
+          >
+            {status.Icon ? (
+              <span
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+                style={{ backgroundColor: status.fg }}
+              >
+                <status.Icon size={10} color="#FFFFFF" strokeWidth={3} />
+              </span>
+            ) : (
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: status.fg }} />
+            )}
+            {status.label}
+          </span>
           <Button
             onClick={(e) => { e.stopPropagation(); onOpen(unit.id); }}
             className="rounded-xl transition-colors hover:bg-[#FFF5F2]"

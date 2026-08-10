@@ -2,9 +2,9 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import {
   RotateCw, Clock, Check, CheckCircle2, Circle, AlertCircle, Calendar, X,
-  Zap, BatteryLow, Waves, Droplet, Wifi, WifiOff,
+  Waves, Droplet, Wifi, WifiOff,
   Flame, Fan, Camera, Egg, Plus,
-  Activity, ScanSearch, Settings2, Plug, Sun,
+  Activity, ScanSearch, Settings2, Zap, ShieldAlert,
   ChevronLeft, ChevronRight, Download, Trash2, Pencil,
   Maximize2, Minimize2, ZoomIn, ZoomOut, Maximize,
 } from "lucide-react";
@@ -14,17 +14,19 @@ import { Progress } from "../ui/progress";
 import { Switch } from "../ui/switch";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Checkbox } from "../ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../ui/select";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { GaugeDial } from "../GaugeDial";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "../ui/dialog";
 import { cn } from "../ui/utils";
-import { FertilityIcon, TrayFertilityBar, fertilityTones } from "../candling/EggIcons";
+import { TrayFertilityBar, fertilityTones } from "../candling/EggIcons";
 import {
-  Incubator, Mode, CandlingLogEntry, DevelopmentCheck, developmentCheckLabels,
+  Incubator, Mode, CandlingLogEntry, CandlingCheckpoint, DevelopmentCheck, developmentCheckLabels,
   computeCandling, waterState, getWaterStatusInfo,
 } from "../../data/mockData";
 
@@ -122,6 +124,22 @@ function relTime(iso: string) {
 function fmtDate(d: string) {
   return new Date(d + "T00:00:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
 }
+// Stable pseudo-time derived from the date string so journal timestamps render
+// a realistic 12-hour time without storing one. Inspections fall in 8 AM – 6 PM.
+function pseudoTime(d: string) {
+  let h = 0;
+  for (const c of d) h = (h * 31 + c.charCodeAt(0)) % 1000;
+  const hour = 8 + (h % 10);
+  const minute = h % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+function fmtTimestamp(d: string) {
+  const date = fmtDate(d);
+  const time = new Date(`${d}T${pseudoTime(d)}:00`).toLocaleTimeString([], {
+    hour: "numeric", minute: "2-digit", hour12: true,
+  });
+  return `${date} • ${time}`;
+}
 
 // ─── Semantic status pill ─────────────────────────────────────────────────────
 function StatusPill({ tone, children, dot = true, pulse = false }: {
@@ -144,13 +162,16 @@ function StatusPill({ tone, children, dot = true, pulse = false }: {
 }
 
 // ─── Shared card shell ────────────────────────────────────────────────────────
-function SectionCard({ title, subtitle, action, children }: {
-  title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode;
+function SectionCard({ title, subtitle, action, children, centered = false }: {
+  title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode; centered?: boolean;
 }) {
   return (
     <Card style={{ backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
       <CardContent className="p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 min-h-[32px]">
+        <div
+          className="mb-4 flex flex-wrap items-center gap-3 min-h-[32px]"
+          style={centered ? { justifyContent: "center", textAlign: "center" } : { justifyContent: "space-between" }}
+        >
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1C1917" }}>{title}</h3>
             {subtitle && <p style={{ fontSize: 12, color: MUTED }}>{subtitle}</p>}
@@ -175,6 +196,149 @@ function InnerTile({ children, tone }: { children: React.ReactNode; tone?: strin
     >
       {children}
     </div>
+  );
+}
+
+// ─── Mini incubation calendar ─────────────────────────────────────────────────
+// Design anchor: cycle Day 1 = Aug 5, 2026, so Day 6 = Aug 10, Day 13 = Aug 17,
+// Day 18 = Aug 22, Day 21 = Aug 25 — all within the August 2026 default view.
+const CYCLE_START = new Date(2026, 7, 5);
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const WEEKDAY_HEADS = ["S", "M", "T", "W", "T", "F", "S"];
+
+function MiniIncubationCalendar({ currentDay, totalDays, candling }: {
+  currentDay: number; totalDays: number; candling: CandlingCheckpoint[];
+}) {
+  const [view, setView] = useState(() => {
+    const today = new Date(CYCLE_START);
+    today.setDate(today.getDate() + Math.max(0, currentDay - 1));
+    return { y: today.getFullYear(), m: today.getMonth() };
+  });
+
+  const dayOffset = (day: number) => {
+    const d = new Date(CYCLE_START);
+    d.setDate(d.getDate() + day - 1);
+    return d;
+  };
+
+  const candleDay = candling[1]?.day ?? 13;
+  const lockdownDay = candling[2]?.day ?? 18;
+  const todayDate = dayOffset(currentDay);
+
+  const first = new Date(view.y, view.m, 1);
+  const lead = first.getDay();
+  const daysInMonth = new Date(view.y, view.m + 1, 0).getDate();
+  // Always render 6 rows (42 slots) so the card height never shifts between
+  // months; short months spill into trailing muted days of the next month.
+  const trailingCount = 42 - lead - daysInMonth;
+
+  const milestoneFor = (d: Date) => {
+    if (d.toDateString() === todayDate.toDateString()) return { kind: "today", label: `Day ${currentDay} · Today` };
+    if (d.toDateString() === dayOffset(candleDay).toDateString()) return { kind: "candling", label: `Day ${candleDay} · 2nd Candling` };
+    if (d.toDateString() === dayOffset(lockdownDay).toDateString()) return { kind: "lockdown", label: `Day ${lockdownDay} · Lockdown` };
+    if (d.toDateString() === dayOffset(totalDays).toDateString()) return { kind: "hatch", label: `Day ${totalDays} · Expected Hatch` };
+    return null;
+  };
+
+  const cells: ({ day: number; date: Date; trailing: boolean } | null)[] = [
+    ...Array.from({ length: lead }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => ({
+      day: i + 1, date: new Date(view.y, view.m, i + 1), trailing: false,
+    })),
+    ...Array.from({ length: trailingCount }, (_, i) => ({
+      day: i + 1, date: new Date(view.y, view.m + 1, i + 1), trailing: true,
+    })),
+  ];
+
+  const shiftMonth = (delta: number) =>
+    setView(({ y, m }) => {
+      const next = new Date(y, m + delta, 1);
+      return { y: next.getFullYear(), m: next.getMonth() };
+    });
+
+  return (
+    <SectionCard title="Incubation Calendar" centered>
+      {/* Month navigation */}
+      <div className="mb-3 flex items-center justify-center gap-2">
+        <button
+          onClick={() => shiftMonth(-1)}
+          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[#C85A32]"
+          aria-label="Previous month"
+        >
+          <ChevronLeft size={15} />
+        </button>
+        <span className="text-center" style={{ minWidth: 118, fontSize: 14, fontWeight: 600, color: TEXT }}>
+          {MONTH_NAMES[view.m]} {view.y}
+        </span>
+        <button
+          onClick={() => shiftMonth(1)}
+          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[#C85A32]"
+          aria-label="Next month"
+        >
+          <ChevronRight size={15} />
+        </button>
+      </div>
+
+      {/* Weekday header */}
+      <div className="grid grid-cols-7 gap-1">
+        {WEEKDAY_HEADS.map((w, i) => (
+          <div key={i} className="text-center" style={{ fontSize: 10, fontWeight: 700, color: "#A8A29E" }}>{w}</div>
+        ))}
+      </div>
+
+      {/* Day grid — fixed 6 rows, trailing days muted */}
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((c, i) => {
+          if (c === null) return <div key={i} />;
+          const m = c.trailing ? null : milestoneFor(c.date);
+          return (
+            <div key={i} className="flex flex-col items-center justify-center" style={{ height: 38 }} title={m?.label}>
+              <span
+                className="flex items-center justify-center rounded-full"
+                style={{
+                  width: 28,
+                  height: 28,
+                  fontSize: 12,
+                  boxSizing: "border-box",
+                  fontWeight: m?.kind === "today" ? 700 : 500,
+                  backgroundColor: m?.kind === "today" ? "#8B3A1C" : "transparent",
+                  color: m?.kind === "today" ? "#FFFFFF" : m ? TEXT : "#78716C",
+                  border: m?.kind === "candling" ? "2px solid #F2C94C" : undefined,
+                  ...(c.trailing ? { color: "#D1C7BD", opacity: 0.4 } : {}),
+                }}
+              >
+                {c.day}
+              </span>
+              {m?.kind === "today" ? (
+                <span className="mt-0.5" style={{ fontSize: 8, fontWeight: 700, color: "#8B3A1C" }}>
+                  Day {currentDay}
+                </span>
+              ) : m?.kind === "candling" ? (
+                <span className="mt-1 rounded-full" style={{ width: 5, height: 5, backgroundColor: "#F2C94C" }} />
+              ) : m?.kind === "lockdown" ? (
+                <span className="mt-1 rounded-full" style={{ width: 5, height: 5, backgroundColor: "#D97706" }} />
+              ) : m?.kind === "hatch" ? (
+                <Egg size={9} color="#16A34A" className="mt-0.5" />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* One-line legend */}
+      <div className="mt-3 flex items-center justify-center gap-x-2 whitespace-nowrap border-t pt-2.5" style={{ borderColor: "#EFE9DC" }}>
+        {[
+          { swatch: <span className="rounded-sm" style={{ width: 9, height: 9, backgroundColor: "#8B3A1C" }} />, label: "Today" },
+          { swatch: <span className="rounded-full" style={{ width: 9, height: 9, border: "2px solid #F2C94C", boxSizing: "border-box" }} />, label: "2nd Candling" },
+          { swatch: <span className="rounded-full" style={{ width: 9, height: 9, backgroundColor: "#D97706" }} />, label: "Lockdown" },
+          { swatch: <Egg size={10} color="#16A34A" />, label: "Hatch" },
+        ].map((l) => (
+          <span key={l.label} className="flex select-none items-center gap-1" style={{ fontSize: 12, fontWeight: 600, color: "#78716C" }}>
+            {l.swatch} {l.label}
+          </span>
+        ))}
+      </div>
+    </SectionCard>
   );
 }
 
@@ -1192,12 +1356,10 @@ function LogModalBody({
     <>
       <DialogHeader className="px-5 pt-5 text-left">
         <DialogTitle style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>
-          {isEditing ? `Edit Inspection Log — Day ${form.targetDay}` : "Record Candling Session"}
+          {isEditing ? `Edit Inspection Log — Day ${form.targetDay}` : "Candling Journal"}
         </DialogTitle>
-        <DialogDescription style={{ fontSize: 13, color: MUTED }}>
-          {isEditing
-            ? "Update the tallies, observations, and photos for this inspection."
-            : "Log the tallies and observations from this inspection."}
+        <DialogDescription className="text-xs font-medium text-[#2D241E]">
+          {modeName}
         </DialogDescription>
       </DialogHeader>
 
@@ -1275,13 +1437,9 @@ function LogModalBody({
                   }}
                 />
               </div>
-              {customDayError ? (
+              {customDayError && (
                 <p className="mt-1.5 flex items-center gap-1" style={{ fontSize: 12, color: "#DC2626", fontWeight: 600 }}>
                   <AlertCircle size={13} /> Day must be between 1 and {totalDays}
-                </p>
-              ) : (
-                <p className="mt-1" style={{ fontSize: 12, color: MUTED }}>
-                  Log an ad-hoc candling inspection on Day {customDayNum || 1}.
                 </p>
               )}
             </div>
@@ -1320,10 +1478,10 @@ function LogModalBody({
                 />
                 <label
                   htmlFor={`tally-${f.key}`}
-                  className="mt-1 flex items-center justify-center gap-1"
-                  style={{ fontSize: 12, color: MUTED, fontWeight: 600 }}
+                  className="mt-1 flex justify-center text-xs font-medium"
+                  style={{ color: fertilityTones[f.key].text }}
                 >
-                  <FertilityIcon kind={f.key} size={12} /> {f.label}
+                  {f.label}
                 </label>
               </div>
             ))}
@@ -1334,8 +1492,8 @@ function LogModalBody({
               <AlertCircle size={13} /> Total inspected eggs cannot exceed eggs set ({totalEggsSet})
             </p>
           ) : (
-            <p className="mt-1.5" style={{ fontSize: 12, color: MUTED }}>
-              {inspected} egg{inspected === 1 ? "" : "s"} recorded · {modeName} (Max {totalEggsSet})
+            <p className="mt-1.5 text-center text-xs font-semibold text-[#2D241E]">
+              Recorded eggs: {inspected}/{totalEggsSet}
             </p>
           )}
         </div>
@@ -1474,6 +1632,11 @@ export function DetailScreen({ unit, modes, onUpdate }: {
   const candling = computeCandling(mode.incubationDays);
 
   const [tab, setTab] = useState<DetailTab>("monitor");
+  const [settingTab, setSettingTab] = useState<"mode" | "turning" | "device">("mode");
+  const [pendingModeId, setPendingModeId] = useState<string | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [earlyTurnOpen, setEarlyTurnOpen] = useState(false);
+  const [syncChoice, setSyncChoice] = useState<"reset" | "maintain">("reset");
   const [showLogForm, setShowLogForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CandlingLogEntry | null>(null);
   const [entryToDelete, setEntryToDelete] = useState<CandlingLogEntry | null>(null);
@@ -1491,10 +1654,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
   const fanOn = heaterOn || overheating;
   const mistOn = unit.humidity < mode.targetHumidity.max && unit.waterLevel > 0;
 
-  const waterSt = waterState(unit.waterLevel);
   const waterInfo = getWaterStatusInfo(unit.waterLevel);
-  const waterLow = waterSt !== "ok";
-  const waterTone = waterSt === "critical" ? CRIT : waterSt === "warning" ? WARN : OK;
 
   const nextTurnLabel = () => {
     const diffMin = Math.round((new Date(unit.nextTurn).getTime() - Date.now()) / 60000);
@@ -1552,12 +1712,45 @@ export function DetailScreen({ unit, modes, onUpdate }: {
     toast(`Mode changed to ${m.name}`, { description: "Turning interval reset to mode default." });
   };
 
+  const confirmForceSwitch = () => {
+    if (!pendingModeId) return;
+    changeMode(pendingModeId);
+    setPendingModeId(null);
+    setAcknowledged(false);
+  };
+
   const handleTurn = () => {
     onUpdate({
       lastTurned: new Date().toISOString(),
       nextTurn: new Date(Date.now() + unit.turnInterval * 3_600_000).toISOString(),
     });
     toast.success(`${unit.name}: eggs turned`, { description: `Next turn in ${unit.turnInterval} hours.` });
+  };
+
+  // Warn before manual turns that are too soon after the last one.
+  const lastTurnMin = Math.round((Date.now() - new Date(unit.lastTurned).getTime()) / 60000);
+  const handleTurnClick = () => {
+    if (lastTurnMin < 30) {
+      setSyncChoice("reset");
+      setEarlyTurnOpen(true);
+    } else {
+      handleTurn();
+    }
+  };
+
+  const confirmEarlyTurn = () => {
+    onUpdate({
+      lastTurned: new Date().toISOString(),
+      nextTurn: syncChoice === "reset"
+        ? new Date(Date.now() + unit.turnInterval * 3_600_000).toISOString()
+        : unit.nextTurn,
+    });
+    setEarlyTurnOpen(false);
+    toast.success(`${unit.name}: eggs turned`, {
+      description: syncChoice === "reset"
+        ? `Next turn in ${unit.turnInterval} hours.`
+        : "Original turning schedule maintained.",
+    });
   };
 
   const handleRefill = () => {
@@ -1593,10 +1786,6 @@ export function DetailScreen({ unit, modes, onUpdate }: {
   const viabilityRate = candTotal > 0 ? Math.round((candSummary.fertile / candTotal) * 100) : 0;
   const nextCheckpoint = candling.find((c) => !unit.candled[c.day] && c.day >= currentDay)
     ?? candling.find((c) => !unit.candled[c.day]);
-
-
-  const PowerIcon = unit.powerSource === "grid" ? Plug : unit.powerSource === "solar" ? Sun : unit.batteryPct <= 25 ? BatteryLow : Zap;
-  const powerLabel = unit.powerSource === "grid" ? "Grid Power" : unit.powerSource === "solar" ? "Solar" : "Battery";
 
   const rustBtn = { backgroundColor: RUST, color: "#fff" };
   const outlineBtn = { borderColor: BORDER, color: RUST, backgroundColor: SURFACE };
@@ -1697,9 +1886,6 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                   <span style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>{relTime(unit.lastTurned)}</span>
                 </div>
               </InnerTile>
-              <Button onClick={handleTurn} className="mt-3 w-full rounded-full" style={rustBtn}>
-                <RotateCw size={15} /> Turn Now
-              </Button>
             </SectionCard>
           </div>
         </div>
@@ -1825,8 +2011,8 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                               <CheckCircle2 size={18} fill="#16A34A" color="#FFFFFF" strokeWidth={2.5} />
                             </p>
                             <div className="flex items-center gap-1.5">
-                              <span className="whitespace-nowrap mr-1" style={{ fontSize: 13, color: "#78716C" }}>
-                                {fmtDate(n.entry.date)}
+                              <span className="whitespace-nowrap mr-3" style={{ fontSize: 13, color: "#6E6259" }}>
+                                {fmtTimestamp(n.entry.date)}
                               </span>
                               <button
                                 onClick={() => {
@@ -1944,8 +2130,13 @@ export function DetailScreen({ unit, modes, onUpdate }: {
               </div>
             </div>
 
-            {/* RIGHT — summary */}
-            <div className="space-y-5 lg:col-span-2">
+            {/* RIGHT — calendar + summary */}
+            <div className="space-y-4 lg:col-span-2">
+              <MiniIncubationCalendar
+                currentDay={currentDay}
+                totalDays={totalDays}
+                candling={candling}
+              />
               <SectionCard title="Current Cycle Summary">
                 <div className="space-y-2.5">
                   {[
@@ -1996,129 +2187,302 @@ export function DetailScreen({ unit, modes, onUpdate }: {
 
       {/* ════════════════ DEVICE SETTINGS ════════════════ */}
       {tab === "settings" && (
-        <div className="space-y-5">
+        <>
+          {/* Unified outer frame — one white card split by a vertical divider */}
+          <div
+            className="flex flex-col overflow-hidden lg:flex-row"
+            style={{ backgroundColor: "#FFFFFF", border: "1px solid #E5DACB", borderRadius: 16 }}
+          >
+          {/* ── Left pane — sub-settings pill menu ──────────────────────── */}
+          <nav
+            className="shrink-0 p-4"
+            style={{ width: "100%", maxWidth: 220 }}
+            aria-label="Device settings"
+          >
+            <ul className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+              {[
+                { id: "mode" as const, label: "Incubation Mode", Icon: Egg },
+                { id: "turning" as const, label: "Turning Schedule", Icon: RotateCw },
+                { id: "device" as const, label: "Device & Connection", Icon: Zap },
+              ].map(({ id, label, Icon }) => {
+                const isActive = settingTab === id;
+                return (
+                  <li key={id} className="min-w-0 shrink-0 lg:shrink lg:w-full">
+                    <button
+                      onClick={() => setSettingTab(id)}
+                      className="flex w-full items-center gap-2.5 rounded-full px-3 transition-colors hover:bg-[#FAF6EE]"
+                      style={{
+                        height: 40,
+                        backgroundColor: isActive ? "#8B3A1C" : "transparent",
+                        color: isActive ? "#FFFFFF" : "#1A1A1A",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                      }}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      <Icon size={16} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
+                      <span className="min-w-0 truncate">{label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
 
-          <SectionCard title="Incubation mode">
-            <InnerTile>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{mode.name}</p>
-                  <p style={{ color: MUTED, fontSize: 12 }}>
-                    {mode.incubationDays} days · {mode.targetTemp.min}–{mode.targetTemp.max}°C · {mode.targetHumidity.min}–{mode.targetHumidity.max}% RH
-                  </p>
-                </div>
-                <Select value={unit.modeId} onValueChange={changeMode}>
-                  <SelectTrigger className="w-[180px] rounded-full" style={{ backgroundColor: SURFACE }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </InnerTile>
-          </SectionCard>
+          {/* Vertical divider */}
+          <div className="hidden lg:block" style={{ width: 1, backgroundColor: "#E5DACB" }} />
 
-          <SectionCard title="Turning configuration">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p style={{ fontWeight: 600, fontSize: 14, color: TEXT }}>Automatic turning</p>
-                  <p style={{ color: MUTED, fontSize: 12 }}>Turn eggs on schedule automatically.</p>
-                </div>
-                <Switch checked={unit.autoTurn} onCheckedChange={(v) => onUpdate({ autoTurn: v })} />
-              </div>
-              <div>
-                <Label htmlFor="interval" style={{ fontSize: 13, color: TEXT }}>Turn every (hours)</Label>
-                <div className="mt-1.5 flex items-center gap-3">
-                  <Input id="interval" type="number" min={1} max={12} value={unit.turnInterval}
-                    onChange={(e) => onUpdate({ turnInterval: Math.min(12, Math.max(1, Number(e.target.value) || 1)) })}
-                    className="w-28 rounded-xl" style={{ borderColor: "rgba(120,53,15,0.20)", backgroundColor: SURFACE }} />
-                  <span style={{ color: MUTED, fontSize: 13 }}>Mode default: {mode.defaultTurnInterval}h</span>
-                </div>
-              </div>
-              <InnerTile>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2" style={{ color: MUTED, fontSize: 13 }}>
-                    <Clock size={14} /> Next turn
-                  </span>
-                  <span style={{ fontWeight: 700, fontSize: 13, color: next.overdue ? CRIT.fg : TEXT }}>{next.text}</span>
-                </div>
-                <div className="mt-1.5 flex items-center justify-between">
-                  <span style={{ color: MUTED, fontSize: 13 }}>Last turned</span>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>{relTime(unit.lastTurned)}</span>
-                </div>
-              </InnerTile>
-              <Button onClick={handleTurn} className="w-full rounded-full" style={rustBtn}>
-                <RotateCw size={15} /> Turn Now
-              </Button>
-            </div>
-          </SectionCard>
+          {/* ── Right pane — active sub-setting content ─────────────────── */}
+          <section className="min-w-0 flex-1 p-6">
+              {settingTab === "mode" && (
+                <>
+                  <h2 style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 20, fontWeight: 700, color: TEXT }}>
+                    Incubation Mode
+                  </h2>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <p className="truncate" style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{mode.name}</p>
+                        <span className="shrink-0 rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 700, backgroundColor: "#F5EFE6", color: "#8B3A1C" }}>
+                          {mode.builtIn ? "Built-in" : "Custom"}
+                        </span>
+                      </div>
+                      <Select
+                        value={unit.modeId}
+                        onValueChange={(val) => {
+                          if (val !== unit.modeId) {
+                            setAcknowledged(false);
+                            setPendingModeId(val);
+                          }
+                        }}
+                      >
+                        <SelectTrigger
+                          className="h-auto w-fit rounded-lg [&_svg]:!text-[#1A1A1A]"
+                          style={{ backgroundColor: "#F4ECE1", border: "1px solid #E5DACB", color: "#1A1A1A", fontSize: 13, fontWeight: 600, padding: "8px 14px" }}
+                        >
+                          Switch Mode
+                        </SelectTrigger>
+                        <SelectContent>
+                          {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <KeyValue label="Target Temperature" value={`${mode.targetTemp.min}–${mode.targetTemp.max}°C`} />
+                      <KeyValue label="Target Humidity" value={`${mode.targetHumidity.min}–${mode.targetHumidity.max}% RH`} />
+                      <KeyValue label="Turning Cadence" value={`Every ${mode.defaultTurnInterval} hours`} />
+                      <KeyValue label="Scheduled Candling Days" value={candling.map((c) => `Day ${c.day}`).join(", ")} />
+                    </div>
+                    <button
+                      onClick={() => toast("Mode Library", { description: "Edit this preset under Settings → Mode Library." })}
+                      className="inline-flex items-center gap-1.5 text-[#C85A32] transition-colors hover:text-[#8B3A1C]"
+                      style={{ fontSize: 13, fontWeight: 600 }}
+                    >
+                      Edit Preset in Mode Library <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </>
+              )}
 
-          <SectionCard title="Water reservoir">
-            <InnerTile tone={waterLow ? waterTone.fg : undefined}>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2" style={{ color: waterLow ? waterTone.fg : MUTED, fontSize: 13 }}>
-                  <Waves size={14} /> Water level
-                </span>
-                <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 700, color: waterLow ? waterTone.fg : TEXT }}>
-                  {unit.waterLevel}%
-                </span>
-              </div>
-              <Progress value={unit.waterLevel} className="mt-2.5 h-2" />
-              <div className="mt-2 flex items-center justify-between">
-                <span style={{ color: waterInfo.color, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
-                  {waterInfo.label}
-                </span>
-                <span style={{ color: MUTED, fontSize: 12 }}>
-                  Last refilled: {relTime(unit.lastRefilled)}
-                </span>
-              </div>
-            </InnerTile>
-            <Button onClick={handleRefill} variant="outline" className="mt-3 w-full rounded-full" style={outlineBtn}>
-              <Droplet size={15} /> Mark as Refilled
-            </Button>
-          </SectionCard>
+              {settingTab === "turning" && (
+                <>
+                  <h2 style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 20, fontWeight: 700, color: TEXT }}>
+                    Turning Schedule
+                  </h2>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>Automatic turning</p>
+                        <p style={{ color: MUTED, fontSize: 12 }}>Turn eggs on schedule automatically.</p>
+                      </div>
+                      <Switch checked={unit.autoTurn} onCheckedChange={(v) => onUpdate({ autoTurn: v })} />
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Turn every</span>
+                      <Select value={String(unit.turnInterval)} onValueChange={(v) => onUpdate({ turnInterval: Number(v) })}>
+                        <SelectTrigger className="h-9 w-[110px] rounded-xl" style={{ borderColor: "rgba(120,53,15,0.20)", backgroundColor: SURFACE, fontSize: 13 }}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[2, 4, 6, 8, 12].map((h) => <SelectItem key={h} value={String(h)}>{h} Hours</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate" style={{ fontSize: 12, color: next.overdue ? CRIT.fg : MUTED }}>
+                        Next: {next.text} • Last: {relTime(unit.lastTurned)}
+                      </span>
+                      <Button onClick={handleTurnClick} variant="outline" size="sm" className="shrink-0 rounded-full" style={outlineBtn}>
+                        <RotateCw size={14} /> Turn Now
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
 
-          <SectionCard title="Device & connection">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <KeyValue
-                label="Power Source"
-                value={
-                  <span className="flex items-center gap-1.5">
-                    <PowerIcon size={15} color={unit.batteryPct <= 25 && unit.powerSource === "battery" ? CRIT.fg : RUST} />
-                    {powerLabel} {unit.batteryPct}%
-                  </span>
-                }
-              />
-              <KeyValue label="Device ID" value={unit.deviceId} />
-              <KeyValue
-                label="Connection Status"
-                accent={unit.paired ? OK.fg : CRIT.fg}
-                value={
-                  <span className="flex items-center gap-1.5">
-                    {unit.paired ? <Wifi size={15} /> : <WifiOff size={15} />}
-                    {unit.paired ? "Connected & Paired" : "Connection Lost"}
-                  </span>
-                }
-              />
-              <div className="rounded-xl p-3.5" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
-                <p style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>Battery</p>
-                <div className="flex items-center gap-2">
-                  <Progress value={unit.batteryPct} className="h-2 flex-1" />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: unit.batteryPct <= 25 ? CRIT.fg : TEXT }}>{unit.batteryPct}%</span>
-                </div>
-              </div>
-            </div>
-            {!unit.paired && (
-              <Button variant="outline" className="mt-3 rounded-full" style={outlineBtn}
-                onClick={() => { onUpdate({ paired: true }); toast.success(`${unit.name} reconnected`); }}>
-                <WifiOff size={14} /> Reconnect device
-              </Button>
-            )}
-          </SectionCard>
+              {settingTab === "device" && (
+                <>
+                  <h2 style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 20, fontWeight: 700, color: TEXT }}>
+                    Device & Connection
+                  </h2>
+                  <div className="mt-4 space-y-3">
+                    <KeyValue label="Device ID" value={unit.deviceId} />
+                    <KeyValue
+                      label="Connection Status"
+                      accent={unit.paired ? OK.fg : CRIT.fg}
+                      value={
+                        <span className="flex items-center gap-1.5">
+                          {unit.paired ? <Wifi size={15} /> : <WifiOff size={15} />}
+                          {unit.paired ? "Connected & Paired" : "Connection Lost"}
+                          {!unit.paired && (
+                            <Button
+                              onClick={() => { onUpdate({ paired: true }); toast.success(`${unit.name} reconnected`); }}
+                              variant="outline" size="sm"
+                              className="ml-1 rounded-full"
+                              style={outlineBtn}
+                            >
+                              <WifiOff size={13} /> Reconnect
+                            </Button>
+                          )}
+                        </span>
+                      }
+                    />
+                    <div className="rounded-xl p-3.5" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
+                      <div className="flex items-center justify-between">
+                        <p style={{ fontSize: 12, color: MUTED }}>Battery</p>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: unit.batteryPct <= 25 ? CRIT.fg : TEXT }}>{unit.batteryPct}%</span>
+                      </div>
+                      <Progress value={unit.batteryPct} className="mt-1.5 h-2" />
+                    </div>
+                  </div>
+                </>
+              )}
+          </section>
         </div>
+
+        {/* Safety gate — mid-cycle mode switch requires explicit acknowledgement */}
+        <Dialog open={pendingModeId !== null} onOpenChange={(open) => !open && setPendingModeId(null)}>
+          <DialogContent
+            className="w-[90vw] max-w-[480px] bg-white p-6 shadow-xl border border-[#EAE7E1] [&>[data-slot=dialog-close]]:hidden"
+            style={{ borderRadius: 16 }}
+          >
+            <div className="flex items-start gap-3">
+              <ShieldAlert size={32} color="#F2994A" fill="#F2994A" className="mt-0.5 shrink-0" strokeWidth={2} />
+              <div>
+                <DialogTitle style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A" }}>
+                  Active Incubation in Progress
+                </DialogTitle>
+                <DialogDescription className="mt-1.5" style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}>
+                  {unit.name} is currently at Day {currentDay} of {totalDays} ({mode.name}). Switching modes mid-cycle will alter temperature, humidity, and turning schedules immediately.
+                </DialogDescription>
+              </div>
+            </div>
+
+            <label
+              className="flex cursor-pointer items-start gap-2.5 rounded-xl px-3.5 py-3"
+              style={{ backgroundColor: "#FFF8E7", border: "1px solid #F2C94C" }}
+            >
+              <Checkbox
+                checked={acknowledged}
+                onCheckedChange={(v) => setAcknowledged(v === true)}
+                className="mt-0.5 data-[state=checked]:bg-[#8B3A1C] data-[state=checked]:border-[#8B3A1C]"
+                style={{ borderColor: "#D97706", backgroundColor: "#FFFFFF", borderRadius: 5 }}
+              />
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#5A4838", lineHeight: 1.45 }}>
+                I understand that changing parameters mid-cycle may impact embryo hatch rate.
+              </span>
+            </label>
+
+            <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
+              <Button
+                onClick={confirmForceSwitch}
+                disabled={!acknowledged}
+                variant="outline"
+                className="rounded-xl"
+                style={{
+                  borderColor: "#D9534F",
+                  color: "#D9534F",
+                  backgroundColor: "#FFFFFF",
+                  opacity: acknowledged ? 1 : 0.5,
+                }}
+              >
+                Force Switch Mode
+              </Button>
+              <Button
+                onClick={() => setPendingModeId(null)}
+                autoFocus
+                className="rounded-xl text-white"
+                style={{ backgroundColor: "#8B3A1C" }}
+              >
+                Keep Current Mode
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        </>
       )}
+
+      {/* Early manual turn warning — fires when Turn Now is used too soon */}
+      <Dialog open={earlyTurnOpen} onOpenChange={(open) => !open && setEarlyTurnOpen(false)}>
+        <DialogContent
+          className="w-[90vw] max-w-[460px] bg-white p-6 shadow-xl border border-[#EAE7E1] [&>[data-slot=dialog-close]]:hidden"
+          style={{ borderRadius: 16 }}
+        >
+          <div className="flex items-start gap-3">
+            <RotateCw size={28} color="#F2994A" className="mt-0.5 shrink-0" />
+            <div>
+              <DialogTitle style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A" }}>
+                Early Manual Egg Turn
+              </DialogTitle>
+              <DialogDescription className="mt-1.5" style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}>
+                Eggs in {unit.name} were last turned {Math.max(1, lastTurnMin)} minutes ago. The next automatic turn is scheduled in {next.text}. Turning too frequently can disrupt embryo orientation.
+              </DialogDescription>
+            </div>
+          </div>
+
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>Schedule Sync Preference:</p>
+            <RadioGroup value={syncChoice} onValueChange={(v) => setSyncChoice(v as "reset" | "maintain")} className="mt-2 gap-2">
+              <label
+                className="flex cursor-pointer items-start gap-2.5 rounded-xl px-3 py-2.5"
+                style={
+                  syncChoice === "reset"
+                    ? { backgroundColor: "#FFF8E7", border: "1px solid #F2C94C" }
+                    : { border: "1px solid #E5DACB" }
+                }
+              >
+                <RadioGroupItem value="reset" id="sync-reset" className="mt-0.5" />
+                <span style={{ fontSize: 13, color: "#5A4838", lineHeight: 1.45 }}>
+                  Reset {unit.turnInterval}-hour timer from now (Next turn in {unit.turnInterval}h 0m)
+                </span>
+              </label>
+              <label
+                className="flex cursor-pointer items-start gap-2.5 rounded-xl px-3 py-2.5"
+                style={
+                  syncChoice === "maintain"
+                    ? { backgroundColor: "#FFF8E7", border: "1px solid #F2C94C" }
+                    : { border: "1px solid #E5DACB" }
+                }
+              >
+                <RadioGroupItem value="maintain" id="sync-maintain" className="mt-0.5" />
+                <span style={{ fontSize: 13, color: "#5A4838", lineHeight: 1.45 }}>
+                  Maintain original schedule (Next turn in {next.text.replace(/^in\s+/, "")})
+                </span>
+              </label>
+            </RadioGroup>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5">
+            <Button onClick={() => setEarlyTurnOpen(false)} autoFocus className="rounded-xl text-white" style={{ backgroundColor: "#8B3A1C" }}>
+              Cancel
+            </Button>
+            <Button onClick={confirmEarlyTurn} variant="outline" className="rounded-xl" style={{ borderColor: "#F2994A", color: "#F2994A", backgroundColor: "#FFFFFF" }}>
+              Confirm Early Turn
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

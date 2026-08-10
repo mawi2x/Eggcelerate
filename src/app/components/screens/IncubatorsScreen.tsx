@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Cpu, Search, ChevronLeft, ChevronRight, ArrowUpNarrowWide, ArrowDownWideNarrow } from "lucide-react";
+import { Plus, Cpu, Search, ChevronLeft, ChevronRight, ArrowUpNarrowWide, ArrowDownWideNarrow, Loader2, TriangleAlert } from "lucide-react";
 import { IncubatorCard } from "../IncubatorCard";
 import { StatusBadge } from "../StatusBadge";
 import { ViewToggle, ViewMode } from "../ViewToggle";
@@ -39,6 +39,9 @@ const INPUT_BORDER = "#D8D0C0";
 
 type Filter = "all" | UnitStatus;
 
+// Device IDs that exist but are simulated as offline/unreachable.
+const OFFLINE_DEVICE_IDS = ["EGG-0000", "EGG-9999"];
+
 const inputStyle = { borderColor: INPUT_BORDER, backgroundColor: "#F2EEE5" };
 
 // Framed white control matching the toolbar spec.
@@ -71,7 +74,11 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
 
   const [deviceId, setDeviceId] = useState("");
   const [name, setName] = useState("");
-  const [modeId, setModeId] = useState(modes[0]?.id ?? "");
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<null | "invalid" | "offline">(null);
+  const connectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (connectTimer.current) clearTimeout(connectTimer.current); }, []);
 
   const modeOf = (id: string) => modes.find((m) => m.id === id) ?? modes[0];
 
@@ -127,7 +134,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
   const start = (clampedPage - 1) * rowsPerPage;
   const paged = sorted.slice(start, start + rowsPerPage);
 
-  const resetForm = () => { setDeviceId(""); setName(""); setModeId(modes[0]?.id ?? ""); };
+  const resetForm = () => { setDeviceId(""); setName(""); };
 
   const handleAdd = () => {
     const trimmedDeviceId = deviceId.trim();
@@ -144,34 +151,51 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
       toast.error(`Device ${trimmedDeviceId} is already paired to another chamber.`);
       return;
     }
-    const mode = modeOf(modeId);
-    const nowIso = new Date().toISOString();
-    onAddIncubator({
-      id: `chamber-${Date.now()}`,
-      name: trimmedName,
-      deviceId: trimmedDeviceId,
-      modeId: mode.id,
-      dayOfIncubation: 1,
-      temp: (mode.targetTemp.min + mode.targetTemp.max) / 2,
-      humidity: Math.round((mode.targetHumidity.min + mode.targetHumidity.max) / 2),
-      waterLevel: 100,
-      lastRefilled: nowIso,
-      tempTrend: 0,
-      humidityTrend: 0,
-      powerSource: "grid",
-      batteryPct: 100,
-      status: "optimal",
-      lastTurned: nowIso,
-      nextTurn: new Date(Date.now() + mode.defaultTurnInterval * 3_600_000).toISOString(),
-      turnInterval: mode.defaultTurnInterval,
-      autoTurn: true,
-      paired: true,
-      candled: {},
-      candlingLog: [],
-    });
-    toast.success(`${trimmedName} added and paired`);
-    resetForm();
-    setOpen(false);
+    // Simulated hardware handshake — 2.5s, then verify the ID is reachable.
+    setConnectError(null);
+    setConnecting(true);
+    connectTimer.current = setTimeout(() => {
+      const id = trimmedDeviceId.trim().toUpperCase();
+      if (OFFLINE_DEVICE_IDS.includes(id)) {
+        setConnectError("offline");
+        setConnecting(false);
+        return;
+      }
+      if (!/^EGG-\d{4}$/.test(id)) {
+        setConnectError("invalid");
+        setConnecting(false);
+        return;
+      }
+      const mode = modes[0] ?? modeOf("broiler");
+      const nowIso = new Date().toISOString();
+      onAddIncubator({
+        id: `chamber-${Date.now()}`,
+        name: trimmedName,
+        deviceId: id,
+        modeId: mode.id,
+        dayOfIncubation: 1,
+        temp: (mode.targetTemp.min + mode.targetTemp.max) / 2,
+        humidity: Math.round((mode.targetHumidity.min + mode.targetHumidity.max) / 2),
+        waterLevel: 100,
+        lastRefilled: nowIso,
+        tempTrend: 0,
+        humidityTrend: 0,
+        powerSource: "grid",
+        batteryPct: 100,
+        status: "optimal",
+        lastTurned: nowIso,
+        nextTurn: new Date(Date.now() + mode.defaultTurnInterval * 3_600_000).toISOString(),
+        turnInterval: mode.defaultTurnInterval,
+        autoTurn: true,
+        paired: true,
+        candled: {},
+        candlingLog: [],
+      });
+      toast.success(`Connected to Chamber ${trimmedName} successfully.`);
+      resetForm();
+      setConnecting(false);
+      setOpen(false);
+    }, 2500);
   };
 
   return (
@@ -192,7 +216,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
         </div>
         <ViewToggle view={view} onChange={setView} />
         <Button
-          onClick={() => setOpen(true)}
+          onClick={() => { setConnectError(null); setOpen(true); }}
           className="rounded-xl px-5"
           style={{ backgroundColor: RUST, color: "#fff", minHeight: 40 }}
         >
@@ -365,23 +389,50 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
       )}
 
       {/* Add incubator dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(o) => { if (!connecting) { setOpen(o); if (!o) setConnectError(null); } }}>
         <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "Baloo 2, sans-serif" }}>Add Incubator</DialogTitle>
-            <DialogDescription>Pair a new chamber device and choose the incubation Mode it should run.</DialogDescription>
+            <DialogDescription>Enter the Device ID generated on your physical incubator screen and name this chamber.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            {connectError && (
+              <div
+                className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
+                style={{ backgroundColor: "#FEE2E2", border: "1px solid #FECACA" }}
+                role="alert"
+              >
+                <TriangleAlert size={16} color="#DC2626" className="mt-0.5 shrink-0" />
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#B91C1C" }}>Connection Failed</p>
+                  <p style={{ fontSize: 12, color: "#B91C1C", lineHeight: 1.45, marginTop: 2 }}>
+                    {connectError === "invalid"
+                      ? `Could not find an incubator with Device ID '${deviceId.trim()}'. Please check the display screen on your incubator and try again.`
+                      : `Device '${deviceId.trim()}' is offline. Please make sure your incubator is powered on and connected to WiFi.`}
+                  </p>
+                </div>
+              </div>
+            )}
             <div>
-              <Label htmlFor="deviceId">Device ID (pairing)</Label>
+              <Label htmlFor="deviceId">Device ID</Label>
               <div className="relative mt-1.5">
                 <Cpu size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
                 <Input id="deviceId" value={deviceId}
-                  onChange={(e) => setDeviceId(e.target.value.replace(/[^A-Za-z0-9-]/g, "").slice(0, 20))}
+                  onChange={(e) => { setDeviceId(e.target.value.replace(/[^A-Za-z0-9-]/g, "").slice(0, 20)); if (connectError) setConnectError(null); }}
                   maxLength={20}
-                  placeholder="EGG-1015" className="rounded-xl pl-9" style={inputStyle} />
+                  disabled={connecting}
+                  placeholder="EGG-1015"
+                  className="rounded-xl pl-9"
+                  style={{ ...inputStyle, borderColor: connectError ? "#DC2626" : inputStyle.borderColor }}
+                  aria-invalid={!!connectError}
+                />
               </div>
+              {connecting && (
+                <p className="mt-2 flex items-center gap-1.5" style={{ fontSize: 12, color: "#8B3A1C", fontWeight: 600 }}>
+                  <Loader2 size={13} className="animate-spin" /> Verifying hardware ID and establishing connection...
+                </p>
+              )}
             </div>
             <div>
               <FieldCounterLabel htmlFor="name" label="Chamber Name" value={name} max={CHAMBER_NAME_MAX} />
@@ -390,27 +441,32 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={CHAMBER_NAME_MAX}
+                disabled={connecting}
                 placeholder="Chamber Thirteen"
                 className="mt-1.5 rounded-xl"
                 style={inputStyle}
               />
             </div>
-            <div>
-              <Label htmlFor="mode">Mode</Label>
-              <Select value={modeId} onValueChange={setModeId}>
-                <SelectTrigger id="mode" className="mt-1.5 w-full rounded-xl" style={inputStyle}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name} · {m.incubationDays} days</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" className="rounded-xl" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button className="rounded-xl" onClick={handleAdd} style={{ backgroundColor: RUST, color: "#fff" }}>Add &amp; Pair</Button>
+            <Button variant="outline" className="rounded-xl" disabled={connecting} onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+              className="rounded-xl"
+              disabled={connecting}
+              onClick={handleAdd}
+              style={{ backgroundColor: RUST, color: "#fff" }}
+            >
+              {connecting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Connecting to Incubator...
+                </>
+              ) : connectError ? (
+                "Retry Connection"
+              ) : (
+                "Connect Incubator"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

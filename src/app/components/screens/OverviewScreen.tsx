@@ -26,7 +26,6 @@ const RUST = "#AD3A1D";
 const CARD = "#F9F6F0";
 const BORDER = "#E8E2D5";
 const TEXT = "#2D241E";
-const MUTED = "#5A4838";
 const OK = "#16A34A";
 const HEADING = "#1C1917";
 
@@ -103,7 +102,7 @@ const ringColors: Record<UnitStatus, string> = {
 function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen: (id: string) => void }) {
   const pct = Math.min(100, Math.round((unit.dayOfIncubation / mode.incubationDays) * 100));
   const stroke = ringColors[unit.status];
-  const size = 120;
+  const size = 88;
   const width = 10;
   const r = (size - width) / 2;
   const circumference = 2 * Math.PI * r;
@@ -112,21 +111,24 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
     <button
       onClick={() => onOpen(unit.id)}
       className="flex w-full flex-col items-center rounded-2xl border transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-      style={{ backgroundColor: "#FFFFFF", borderColor: BORDER, borderRadius: 16, height: 200, padding: 14 }}
+      style={{ backgroundColor: "#FFFFFF", borderColor: BORDER, borderRadius: 16, padding: 16 }}
       title={`${unit.name} · Day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
     >
-      {/* Top-left header stack — name over day progress. */}
+      {/* Top-left header stack — name over mode over progress. */}
       <div className="w-full min-w-0 text-left">
-        <span className="block min-w-0 truncate" style={{ fontSize: 16, fontWeight: 700, color: TEXT, whiteSpace: "nowrap" }}>
+        <span className="block min-w-0 truncate" style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A", whiteSpace: "nowrap" }}>
           {unit.name}
         </span>
-        <span className="block min-w-0 truncate" style={{ fontSize: 13, color: MUTED, whiteSpace: "nowrap", marginTop: 2 }}>
-          Day {unit.dayOfIncubation} of {mode.incubationDays}
+        <span className="block min-w-0 truncate" style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", whiteSpace: "nowrap", marginTop: 4 }}>
+          {mode.name}
+        </span>
+        <span className="block min-w-0 truncate" style={{ fontSize: 12, fontWeight: 400, color: "#6E6259", whiteSpace: "nowrap", marginTop: 4 }}>
+          Progress: Day {unit.dayOfIncubation} of {mode.incubationDays}
         </span>
       </div>
 
       {/* Center body — the ring */}
-      <div className="relative mt-2 flex min-h-0 flex-1 items-center justify-center">
+      <div className="relative mt-3 flex min-h-0 items-center justify-center">
         <svg
           width={size}
           height={size}
@@ -150,7 +152,7 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
         <div className="absolute inset-0 flex items-center justify-center">
           <span
             className="tracking-tight"
-            style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 30, fontWeight: 800, color: stroke, lineHeight: 1 }}
+            style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 17, fontWeight: 700, color: stroke, lineHeight: 1 }}
           >
             {pct}%
           </span>
@@ -232,7 +234,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
       <section
         style={{ backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 16, padding: 24 }}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginBottom: 12 }}>
+        <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: 18, fontWeight: 600, color: HEADING }}>Active Incubators</h2>
           <button
             onClick={onManageAll}

@@ -149,6 +149,24 @@ export default function App() {
     </>
   );
 
+  const detailHeader = (
+    <div className="flex flex-col">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h1
+          className="min-w-0 truncate"
+          style={{ fontSize: 24, fontWeight: 700, color: "#1A1A1A", lineHeight: 1.25 }}
+          title={activeUnit.name}
+        >
+          {activeUnit.name}
+        </h1>
+        {detailBadges}
+      </div>
+      <p style={{ fontSize: 16, fontWeight: 600, color: "#1A1A1A", lineHeight: 1.4, marginTop: 4 }}>
+        {activeMode.name}
+      </p>
+    </div>
+  );
+
   // One header copy deck, so every screen reads the same way.
   const headerCopy: Record<
     ScreenId,
@@ -166,7 +184,7 @@ export default function App() {
     },
     detail: {
       title: activeUnit.name,
-      subtitle: `Device ${activeUnit.deviceId} · ${activeMode.name} Mode`,
+      subtitle: `Device ${activeUnit.deviceId} · ${activeMode.name}`,
     },
     trends: {
       title: "Historical Trends",
@@ -206,7 +224,7 @@ export default function App() {
           style={{ paddingTop: 24 }}
         >
           {/* Rows 1 and 2 — utility bar and page title bar. */}
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 20 }}>
             <PageHeader
               title={headerCopy[screen].title}
               subtitle={headerCopy[screen].subtitle}
@@ -215,7 +233,6 @@ export default function App() {
               alerts={alerts}
               onMarkAllRead={markAllAlertsRead}
               onDismissAlert={dismissAlert}
-              large={screen === "detail"}
               onBack={
                 screen === "detail"
                   ? () => navigate("incubators")
@@ -225,6 +242,7 @@ export default function App() {
               badges={
                 screen === "detail" ? detailBadges : undefined
               }
+              titleNode={screen === "detail" ? detailHeader : undefined}
             />
           </div>
 
