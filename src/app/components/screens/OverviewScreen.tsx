@@ -73,7 +73,7 @@ function KpiCard({
       />
       <CardContent className="relative flex h-full flex-col justify-center p-4">
         <div
-          style={{ color: MUTED, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}
+          style={{ color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}
         >
           {label}
         </div>
@@ -222,10 +222,10 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
       {/* Section 2: executive KPI summary — strict 1-row compact cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* Layers reads as stacked multi-tier incubator cabinets. */}
-        <KpiCard Icon={Layers} accent={RUST} label="Incubators" value={`${units.length} Active`} />
-        <KpiCard Icon={Egg} accent={RUST} label="Total Capacity" value={`${stats.totalEggs} Eggs`} />
-        <KpiCard Icon={Clock} accent={OK} label="Upcoming Hatch" value={hatchValue} />
-        <KpiCard Icon={Percent} accent={OK} label="Avg Hatch Rate" value={`${avgHatchRate.toFixed(1)}%`} />
+        <KpiCard Icon={Layers} accent={RUST} label="INCUBATORS" value={`${units.length} Active`} />
+        <KpiCard Icon={Egg} accent={RUST} label="TOTAL CAPACITY" value={`${stats.totalEggs} Eggs`} />
+        <KpiCard Icon={Clock} accent={OK} label="UPCOMING HATCH" value={hatchValue} />
+        <KpiCard Icon={Percent} accent={OK} label="AVG HATCH RATE" value={`${avgHatchRate.toFixed(1)}%`} />
       </div>
 
       {/* Section 3: chamber status grid, wrapped in one white container */}

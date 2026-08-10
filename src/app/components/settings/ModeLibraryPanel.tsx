@@ -25,6 +25,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "../ui/table";
 import { ViewToggle, ViewMode } from "../ViewToggle";
 import { Mode, computeCandling } from "../../data/mockData";
 import { PanelHeader, RUST, BORDER, DIVIDER, MUTED, TEXT, CRIT, CRIT_BG, inputClass, inputStyle } from "./tokens";
@@ -490,31 +493,39 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
           })}
         </div>
       ) : (
-        <div>
-          {filteredModes.map((m) => (
-            <div
-              key={m.id}
-              className="flex items-center gap-4 py-3.5"
-              style={{ borderBottom: `1px solid ${DIVIDER}` }}
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="min-w-0 truncate" style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>
-                    {m.name}
-                  </span>
-                  {badge(m)}
-                </div>
-                <p className="mt-0.5 truncate" style={{ fontSize: 12, color: MUTED }}>
-                  {m.targetTemp.min}–{m.targetTemp.max}°C · {m.targetHumidity.min}–{m.targetHumidity.max}% ·{" "}
-                  {m.incubationDays} days · turn every {m.defaultTurnInterval}h
-                </p>
-              </div>
-              <ModeActions m={m} />
-            </div>
-          ))}
-          <p className="pt-3" style={{ color: MUTED, fontSize: 12 }}>
-            {filteredModes.length} mode{filteredModes.length === 1 ? "" : "s"}
-          </p>
+        <div className="overflow-hidden rounded-2xl border" style={{ borderColor: BORDER }}>
+          <Table>
+            <TableHeader style={{ backgroundColor: "#F2EEE5" }}>
+              <TableRow>
+                {["MODE NAME", "TEMP RANGE", "HUMIDITY RANGE", "DURATION", "TURN EVERY", "CANDLING DAYS", "ACTIONS"].map((h) => (
+                  <TableHead key={h} style={{ color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                    {h}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredModes.map((m) => {
+                const candling = computeCandling(m.incubationDays);
+                return (
+                  <TableRow key={m.id}>
+                    <TableCell style={{ fontWeight: 700, color: TEXT }}>
+                      <div className="flex items-center gap-2">
+                        <span>{m.name}</span>
+                        {badge(m)}
+                      </div>
+                    </TableCell>
+                    <TableCell style={{ color: TEXT }}>{m.targetTemp.min}–{m.targetTemp.max}°C</TableCell>
+                    <TableCell style={{ color: TEXT }}>{m.targetHumidity.min}–{m.targetHumidity.max}%</TableCell>
+                    <TableCell style={{ color: TEXT }}>{m.incubationDays} days</TableCell>
+                    <TableCell style={{ color: TEXT }}>Every {m.defaultTurnInterval}h</TableCell>
+                    <TableCell style={{ color: MUTED }}>{candling.map((c) => `d${c.day}`).join(" / ")}</TableCell>
+                    <TableCell><ModeActions m={m} /></TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
 

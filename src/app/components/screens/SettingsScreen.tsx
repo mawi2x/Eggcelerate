@@ -23,10 +23,10 @@ interface Props {
 type CategoryId = "modes" | "notifications" | "account" | "hardware";
 
 const categories: { id: CategoryId; label: string; Icon: typeof Package }[] = [
-  { id: "modes", label: "Mode Library", Icon: Package },
-  { id: "notifications", label: "Notifications & Alerts", Icon: Bell },
-  { id: "account", label: "Farm & Account", Icon: Tractor },
-  { id: "hardware", label: "Hardware & Devices", Icon: Zap },
+  { id: "modes", label: "MODE LIBRARY", Icon: Package },
+  { id: "notifications", label: "NOTIFICATIONS & ALERTS", Icon: Bell },
+  { id: "account", label: "FARM & ACCOUNT", Icon: Tractor },
+  { id: "hardware", label: "HARDWARE & DEVICES", Icon: Zap },
 ];
 
 export function SettingsScreen({
@@ -59,12 +59,16 @@ export function SettingsScreen({
                   style={{
                     height: 40,
                     backgroundColor: isActive ? RUST : "transparent",
-                    color: isActive ? "#FFFFFF" : "#57534E",
+                    color: isActive ? "#FFFFFF" : "#78716C",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.05em",
+                    textTransform: "uppercase",
                   }}
                   aria-current={isActive ? "page" : undefined}
                 >
                   <Icon size={17} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
-                  <span className="min-w-0 truncate" style={{ fontSize: 14, fontWeight: 600 }} title={label}>
+                  <span className="min-w-0 truncate" title={label}>
                     {label}
                   </span>
                 </button>

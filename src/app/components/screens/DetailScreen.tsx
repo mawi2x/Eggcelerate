@@ -1,10 +1,12 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import {
   RotateCw, Clock, Check, CheckCircle2, Circle, AlertCircle, Calendar, X,
   Zap, BatteryLow, Waves, Droplet, Wifi, WifiOff,
   Flame, Fan, Camera, Egg, Plus,
   Activity, ScanSearch, Settings2, Plug, Sun,
+  ChevronLeft, ChevronRight, Download, Trash2, Pencil,
+  Maximize2, Minimize2, ZoomIn, ZoomOut, Maximize,
 } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
@@ -19,6 +21,7 @@ import { GaugeDial } from "../GaugeDial";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "../ui/dialog";
+import { cn } from "../ui/utils";
 import { FertilityIcon, TrayFertilityBar, fertilityTones } from "../candling/EggIcons";
 import {
   Incubator, Mode, CandlingLogEntry, DevelopmentCheck, developmentCheckLabels,
@@ -62,7 +65,7 @@ const CRIT = { fg: "#DC2626", bg: "#FEE2E2", ring: "#DC2626" };
 const NEUTRAL = { fg: MUTED, bg: "#EFE9DC", ring: "#C9BEA8" };
 
 // Short checkpoint captions shared by the horizontal and vertical timelines.
-const CANDLE_SHORT_LABELS = ["1ST CANDLING", "2ND CANDLING", "LOCKDOWN"];
+const CANDLE_SHORT_LABELS = ["1st Candling", "2nd Candling", "Lockdown"];
 
 // Upload guards for candling photos.
 const MAX_PHOTOS = 9;
@@ -145,7 +148,7 @@ function SectionCard({ title, subtitle, action, children }: {
   title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode;
 }) {
   return (
-    <Card style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: RADIUS, boxShadow: SHADOW }}>
+    <Card style={{ backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
       <CardContent className="p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 min-h-[32px]">
           <div>
@@ -373,16 +376,404 @@ function Timeline({ currentDay, totalDays, candling, candled }: {
   );
 }
 
-// ─── Journal entry card (hangs off the vertical timeline axis) ───────────────
-function JournalEntryCard({ entry, modeName, onAddPhotos, onUpdateNote }: {
-  entry: CandlingLogEntry; modeName: string;
+// ─── Photo Lightbox Modal ───────────────────────────────────────────────────
+const ZOOM_MIN = 25;
+const ZOOM_MAX = 400;
+const ZOOM_STEP = 25;
+
+// One source of truth for the two viewer layouts — no stacked overrides.
+// Width comes from DialogContent's `size` prop ("large" / "fullscreen").
+const VIEWER_SHELL_CLASS =
+  "border-none p-0 overflow-hidden shadow-2xl bg-[#141210]/95 backdrop-blur-xl text-white transition-all duration-300";
+const VIEWER_SHELL_FULLSCREEN = "h-[88vh] grid-rows-[auto_1fr] gap-0 rounded-2xl";
+const VIEWER_SHELL_NORMAL = "w-[92vw] rounded-3xl";
+const VIEWER_VIEWPORT_CLASS =
+  "relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden transition-all select-none";
+const VIEWER_VIEWPORT_FULLSCREEN = "h-full w-full";
+const VIEWER_VIEWPORT_NORMAL = "h-auto w-full min-h-[400px] max-h-[82vh] p-4 sm:p-6 bg-black/40";
+const VIEWER_IMAGE_FULLSCREEN = "absolute left-1/2 top-1/2 block";
+const VIEWER_IMAGE_NORMAL = "mx-auto block h-auto w-auto max-h-[65vh] max-w-full rounded-2xl shadow-2xl";
+
+function PhotoLightboxModal({
+  open,
+  photos = [],
+  initialIndex,
+  day,
+  onClose,
+  onDelete,
+}: {
+  open: boolean;
+  photos: string[];
+  initialIndex: number;
+  day: number;
+  onClose: () => void;
+  onDelete: (idx: number) => void;
+}) {
+  const safePhotos = (photos || []).filter((p) => typeof p === "string" && p.trim().length > 0);
+  const total = safePhotos.length;
+  const safeInitial = total > 0 ? Math.min(Math.max(0, initialIndex), total - 1) : 0;
+  const [currentIndex, setCurrentIndex] = useState(safeInitial);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  // Zoom state — 0 means "fit to screen", otherwise a percentage in [25, 400].
+  const [zoom, setZoom] = useState(0);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
+  const displayRef = useRef<HTMLDivElement>(null);
+  const [viewSize, setViewSize] = useState({ w: 0, h: 0 });
+  const [natural, setNatural] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const s = total > 0 ? Math.min(Math.max(0, initialIndex), total - 1) : 0;
+    setCurrentIndex(s);
+    setFullscreen(false);
+    setImgError(false);
+    setZoom(0);
+    setPan({ x: 0, y: 0 });
+    setNatural({ w: 0, h: 0 });
+  }, [initialIndex, open, total]);
+
+  const safeIndex = total > 0 ? Math.min(Math.max(0, currentIndex), total - 1) : 0;
+  const currentPhoto = safePhotos[safeIndex];
+
+  // Keep the usable viewer size measured so the fit scale stays accurate.
+  useEffect(() => {
+    const el = displayRef.current;
+    if (!el || !open) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setViewSize({ w: r.width, h: r.height });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, fullscreen]);
+
+  useEffect(() => {
+    setImgError(false);
+    setZoom(0);
+    setPan({ x: 0, y: 0 });
+    setNatural({ w: 0, h: 0 });
+  }, [currentPhoto, safeIndex]);
+
+  // Scale that fits the whole photo inside the viewer, preserving aspect ratio.
+  const fitScale = useMemo(() => {
+    if (viewSize.w <= 0 || viewSize.h <= 0 || natural.w <= 0 || natural.h <= 0) return 1;
+    return Math.min(viewSize.w / natural.w, viewSize.h / natural.h);
+  }, [viewSize, natural]);
+
+  const scale = zoom === 0 ? fitScale : zoom / 100;
+  const canPan = scale * natural.w > viewSize.w + 1 || scale * natural.h > viewSize.h + 1;
+
+  const clampPan = useCallback((x: number, y: number) => {
+    const ox = Math.max(0, (scale * natural.w - viewSize.w) / 2);
+    const oy = Math.max(0, (scale * natural.h - viewSize.h) / 2);
+    return { x: Math.min(ox, Math.max(-ox, x)), y: Math.min(oy, Math.max(-oy, y)) };
+  }, [scale, natural, viewSize]);
+
+  // Keep the pan inside bounds whenever the zoom level changes.
+  useEffect(() => {
+    setPan((p) => clampPan(p.x, p.y));
+  }, [clampPan]);
+
+  const fromFit = (z: number) => (z === 0 ? Math.round((fitScale * 100) / ZOOM_STEP) * ZOOM_STEP : z);
+
+  const zoomIn = useCallback(() => {
+    setZoom((z) => Math.min(ZOOM_MAX, fromFit(z) + ZOOM_STEP));
+  }, [fitScale]);
+
+  const zoomOut = useCallback(() => {
+    setZoom((z) => Math.max(ZOOM_MIN, fromFit(z) - ZOOM_STEP));
+  }, [fitScale]);
+
+  const resetView = useCallback(() => {
+    setZoom(0);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  // Mouse wheel zooms over the image area while fullscreen.
+  useEffect(() => {
+    const el = displayRef.current;
+    if (!el || !open || !fullscreen) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (e.deltaY < 0) zoomIn();
+      else zoomOut();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [open, fullscreen, zoomIn, zoomOut]);
+
+  const toggleFullscreen = () => {
+    setFullscreen((f) => !f);
+    setZoom(0);
+    setPan({ x: 0, y: 0 });
+  };
+
+  const handlePrev = useCallback(() => {
+    if (total <= 1) return;
+    setImgError(false);
+    setCurrentIndex((i) => (i - 1 + total) % total);
+  }, [total]);
+
+  const handleNext = useCallback(() => {
+    if (total <= 1) return;
+    setImgError(false);
+    setCurrentIndex((i) => (i + 1) % total);
+  }, [total]);
+
+  const handleDownload = () => {
+    if (!currentPhoto) return;
+    const a = document.createElement("a");
+    a.href = currentPhoto;
+    a.download = `candling-day-${day}-photo-${safeIndex + 1}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast.success("Photo downloaded");
+  };
+
+  const handleDeleteCurrent = () => {
+    onDelete(safeIndex);
+    if (total <= 1) {
+      onClose();
+    } else {
+      setCurrentIndex((i) => (i >= total - 1 ? total - 2 : i));
+    }
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLImageElement>) => {
+    if (!canPan) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
+    if (!dragging) return;
+    setPan(
+      clampPan(
+        dragStart.current.px + (e.clientX - dragStart.current.x),
+        dragStart.current.py + (e.clientY - dragStart.current.y),
+      ),
+    );
+  };
+
+  const onPointerEnd = () => setDragging(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") handlePrev();
+      if (e.key === "ArrowRight") handleNext();
+      if (e.key === "+" || e.key === "=") zoomIn();
+      if (e.key === "-" || e.key === "_") zoomOut();
+      if (e.key === "0") resetView();
+      if (e.key === "Escape") {
+        if (fullscreen) {
+          setFullscreen(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, fullscreen, handlePrev, handleNext, zoomIn, zoomOut, resetView, onClose]);
+
+  if (!open || total === 0 || !currentPhoto) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        hideClose
+        size={fullscreen ? "fullscreen" : "large"}
+        className={cn(VIEWER_SHELL_CLASS, fullscreen ? VIEWER_SHELL_FULLSCREEN : VIEWER_SHELL_NORMAL)}
+        style={{ border: "1px solid rgba(255,255,255,0.12)" }}
+      >
+        <DialogTitle className="sr-only">Candling Photo Viewer</DialogTitle>
+        <DialogDescription className="sr-only">High resolution photo preview with download and navigation</DialogDescription>
+
+        {/* Top Header Bar with Single Unified Close Button */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 select-none">
+          <span className="text-sm font-semibold text-stone-200">
+            Photo {safeIndex + 1} of {total}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-stone-200 hover:text-white hover:bg-white/10 rounded-full h-8 px-3 text-xs gap-1.5"
+              onClick={toggleFullscreen}
+              title={fullscreen ? "Exit Fullscreen (Esc)" : "Enlarge / Fullscreen"}
+            >
+              {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              {fullscreen ? "Exit Fullscreen" : "Enlarge"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-stone-200 hover:text-white hover:bg-white/10 rounded-full h-8 px-3 text-xs gap-1.5"
+              onClick={handleDownload}
+              title="Download photo"
+            >
+              <Download size={14} /> Download
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full h-8 px-3 text-xs gap-1.5"
+              onClick={handleDeleteCurrent}
+              title="Delete photo"
+            >
+              <Trash2 size={14} /> Delete
+            </Button>
+            <button
+              onClick={onClose}
+              className="ml-2 rounded-full p-1.5 text-stone-300 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2"
+              aria-label="Close photo viewer"
+              title="Close (Esc)"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Main High-Resolution Photo Display Area */}
+        <div
+          ref={displayRef}
+          className={cn(
+            VIEWER_VIEWPORT_CLASS,
+            fullscreen ? VIEWER_VIEWPORT_FULLSCREEN : VIEWER_VIEWPORT_NORMAL
+          )}
+        >
+          {total > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handlePrev();
+              }}
+              className="absolute left-4 sm:left-6 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2"
+              aria-label="Previous photo"
+              title="Previous photo (←)"
+            >
+              <ChevronLeft size={24} />
+            </button>
+          )}
+
+          {!imgError && currentPhoto ? (
+            <img
+              src={currentPhoto}
+              alt={`Candling inspection photo ${safeIndex + 1}`}
+              draggable={false}
+              onLoad={(e) => setNatural({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+              onError={() => setImgError(true)}
+              onPointerDown={fullscreen ? onPointerDown : undefined}
+              onPointerMove={fullscreen ? onPointerMove : undefined}
+              onPointerUp={onPointerEnd}
+              onPointerCancel={onPointerEnd}
+              className={cn(fullscreen ? VIEWER_IMAGE_FULLSCREEN : VIEWER_IMAGE_NORMAL)}
+              style={
+                fullscreen
+                  ? {
+                      transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+                      cursor: dragging ? "grabbing" : canPan ? "grab" : "default",
+                      transition: dragging ? "none" : "transform 0.15s ease-out",
+                      touchAction: "none",
+                    }
+                  : undefined
+              }
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-white/5 border border-white/10 text-stone-300">
+              <Camera size={48} className="mb-3 text-stone-400 opacity-70" />
+              <p className="text-base font-semibold text-stone-200">Image could not be loaded</p>
+              <p className="text-xs text-stone-400 mt-1">The photo format or source is unavailable</p>
+            </div>
+          )}
+
+          {total > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleNext();
+              }}
+              className="absolute right-4 sm:right-6 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2"
+              aria-label="Next photo"
+              title="Next photo (→)"
+            >
+              <ChevronRight size={24} />
+            </button>
+          )}
+
+          {/* Zoom controls — bottom-right, fullscreen only */}
+          {fullscreen && (
+            <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1 rounded-full bg-black/60 py-1.5 pl-2 pr-1.5 backdrop-blur select-none">
+              <button
+                type="button"
+                onClick={zoomOut}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2"
+                aria-label="Zoom out"
+                title="Zoom out (-)"
+              >
+                <ZoomOut size={16} />
+              </button>
+              <span className="min-w-[54px] text-center text-xs font-semibold text-stone-200 tabular-nums">
+                {zoom === 0 ? "Fit" : `${zoom}%`}
+              </span>
+              <button
+                type="button"
+                onClick={zoomIn}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2"
+                aria-label="Zoom in"
+                title="Zoom in (+)"
+              >
+                <ZoomIn size={16} />
+              </button>
+              <span className="mx-1 h-4 w-px bg-white/20" aria-hidden />
+              <button
+                type="button"
+                onClick={resetView}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2"
+                aria-label="Fit to screen"
+                title="Fit to screen (0)"
+              >
+                <Maximize size={15} />
+              </button>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Candling feed journal card ──────────────────────────────────────────────
+function JournalEntryCard({
+  entry,
+  modeName,
+  onAddPhotos,
+  onUpdateNote,
+  onDeletePhoto,
+}: {
+  entry: CandlingLogEntry;
+  modeName: string;
   onAddPhotos: (day: number, urls: string[]) => void;
   onUpdateNote: (day: number, note: string) => void;
+  onDeletePhoto: (day: number, photoIndex: number) => void;
 }) {
   const photoRef = useRef<HTMLInputElement>(null);
   const [noteDraft, setNoteDraft] = useState(entry.note);
   const [noteEdited, setNoteEdited] = useState(false);
   const [noteEditing, setNoteEditing] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const readFiles = (files: FileList | null) => {
     if (!files) return;
@@ -399,139 +790,250 @@ function JournalEntryCard({ entry, modeName, onAddPhotos, onUpdateNote }: {
       accepted.push(file);
     });
     if (accepted.length === 0) return;
-    const room = Math.max(0, MAX_PHOTOS - entry.photos.length);
-    const allowed = accepted.slice(0, room);
-    if (accepted.length > room) {
-      toast.error(`Max ${MAX_PHOTOS} photos per entry — extra files skipped`);
-    }
     const urls: string[] = [];
     let loaded = 0;
-    allowed.forEach((file) => {
+    accepted.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) urls.push(e.target.result as string);
         loaded++;
-        if (loaded === allowed.length) onAddPhotos(entry.day, urls);
+        if (loaded === accepted.length) onAddPhotos(entry.day, urls);
       };
       reader.readAsDataURL(file);
     });
   };
 
   const total = entry.fertile + entry.clear + entry.uncertain;
-  // One decimal reads as a real hatchery figure without implying false precision.
   const fertilePct = total > 0 ? `${((entry.fertile / total) * 100).toFixed(1)}%` : undefined;
 
-  const summary = [
-    { kind: "fertile" as const, label: "Fertile", value: entry.fertile },
-    { kind: "clear" as const, label: "Clear", value: entry.clear },
-    { kind: "uncertain" as const, label: "Uncertain", value: entry.uncertain },
-  ];
+  // Thumbnail grid calculation
+  const photos = (entry.photos || []).filter((p) => typeof p === "string" && p.trim().length > 0);
+  const hasOverflow = photos.length > 4;
+  const visiblePhotos = hasOverflow ? photos.slice(0, 3) : photos.slice(0, 4);
+  const overflowCount = photos.length - 3;
 
   return (
-    <Card style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: RADIUS, boxShadow: SHADOW }}>
-      <CardContent style={{ padding: 18 }}>
-        {/* Subtitle — session identity line inside the card body. */}
-        <p className="mb-3" style={{ color: "#8A6B52", fontSize: 13, fontWeight: 600 }}>
-          Day {entry.day} · {modeName}
-          {fertilePct ? ` · ${fertilePct} Viable` : ""}
-        </p>
+    <>
+      <Card style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: RADIUS, boxShadow: SHADOW }}>
+        <CardContent style={{ padding: 18 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "#1C1917", marginBottom: 8 }}>
+            Candling Status
+          </p>
 
-        {/* Summary badges — fertile / clear / uncertain tallies */}
-        <div className="mb-3 flex flex-wrap gap-2">
-          {summary.map((s) => (
+          {/* Flat Stat Chips */}
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <span
-              key={s.kind}
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1"
-              style={{ backgroundColor: fertilityTones[s.kind].bg, color: fertilityTones[s.kind].text, fontSize: 12, fontWeight: 700 }}
-            >
-              <FertilityIcon kind={s.kind} size={13} /> {s.value} {s.label}
-            </span>
-          ))}
-        </div>
-
-        {/* Development checklist tags */}
-        {entry.checks.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {entry.checks.map((c) => (
-              <span
-                key={c}
-                className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1"
-                style={{ backgroundColor: "#FFFFFF", border: `1px solid ${BORDER}`, color: "#3D3228", fontSize: 11, fontWeight: 600 }}
-              >
-                <Check size={12} color={OK.fg} strokeWidth={3} /> {developmentCheckLabels[c]}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Notes snippet beside the 60×60 photo thumbnails */}
-        <div className="flex flex-wrap items-start gap-3">
-          <div className="min-w-[180px] flex-1">
-          {noteEditing ? (
-            <>
-              <textarea
-                value={noteDraft}
-                autoFocus
-                onChange={(e) => { setNoteDraft(e.target.value.slice(0, NOTES_MAX)); setNoteEdited(e.target.value !== entry.note); }}
-                maxLength={NOTES_MAX}
-                placeholder="Add observations — veining, air cell development, movement…"
-                rows={3}
-                className="w-full resize-none rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
-                style={{ border: `1px solid ${INPUT_BORDER}`, backgroundColor: "#F2EEE5", fontSize: 14, color: TEXT }}
-              />
-              <div className="mt-2 flex justify-end gap-2">
-                <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setNoteDraft(entry.note); setNoteEdited(false); setNoteEditing(false); }}>
-                  Cancel
-                </Button>
-                <Button size="sm" className="rounded-full" style={{ backgroundColor: RUST, color: "#fff" }}
-                  onClick={() => { onUpdateNote(entry.day, noteDraft); setNoteEdited(false); setNoteEditing(false); toast.success("Note saved"); }}>
-                  Save note
-                </Button>
-              </div>
-            </>
-          ) : (
-            <button
-              onClick={() => setNoteEditing(true)}
-              className="w-full rounded-xl px-3.5 py-3 text-left transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+              className="inline-block whitespace-nowrap"
               style={{
-                backgroundColor: "#F2EEE5",
-                border: `1px solid ${INPUT_BORDER}`,
-                borderLeft: `3px solid ${RUST}66`,
-                cursor: "pointer",
+                backgroundColor: "#DCFCE7",
+                color: "#15803D",
+                padding: "4px 10px",
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
               }}
-              aria-label="Edit inspector notes"
             >
-              <span style={{ fontSize: 14, color: entry.note ? TEXT : MUTED, fontStyle: entry.note ? "italic" : "normal" }}>
-                {entry.note ? `“${entry.note}”` : "Add observations — veining, air cell development, movement…"}
-              </span>
-            </button>
-          )}
-        </div>
+              {entry.fertile} Fertile
+            </span>
+            <span
+              className="inline-block whitespace-nowrap"
+              style={{
+                backgroundColor: "#F1F5F9",
+                color: "#475569",
+                padding: "4px 10px",
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              {entry.clear} Clear
+            </span>
+            <span
+              className="inline-block whitespace-nowrap"
+              style={{
+                backgroundColor: "#FEF3C7",
+                color: "#B45309",
+                padding: "4px 10px",
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              {entry.uncertain} Uncertain
+            </span>
+          </div>
 
-        {/* 60×60 photo thumbnails + add tile */}
-        <div className="flex shrink-0 flex-wrap gap-2">
-          {entry.photos.map((url, i) => (
-            <img key={i} src={url} alt={`Candling photo ${i + 1}`} className="rounded-lg object-cover" style={{ width: 60, height: 60, border: `1px solid ${BORDER}` }} />
-          ))}
-          <button
-            onClick={() => photoRef.current?.click()}
-            className="flex flex-col items-center justify-center gap-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
-            style={{ width: 60, height: 60, border: `1.5px dashed #C9B182`, backgroundColor: SURFACE, cursor: "pointer" }}
-            aria-label="Add photo"
-          >
-            <Plus size={15} color={MUTED} />
-            <span style={{ fontSize: 9, color: MUTED, fontWeight: 600 }}>Photo</span>
-          </button>
-          <input ref={photoRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => readFiles(e.target.files)} />
-        </div>
-        </div>
-      </CardContent>
-    </Card>
+          {/* Development checklist tags */}
+          {entry.checks.length > 0 && (
+            <div className="mb-3.5 flex flex-wrap gap-1.5">
+              {entry.checks.map((c) => (
+                <span
+                  key={c}
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1"
+                  style={{ backgroundColor: "#FFFFFF", border: `1px solid ${BORDER}`, color: "#3D3228", fontSize: 11, fontWeight: 600 }}
+                >
+                  <Check size={12} color={OK.fg} strokeWidth={3} /> {developmentCheckLabels[c]}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Position 2 (Note Section Label) */}
+          <span className="block" style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "#1C1917", marginBottom: 6 }}>
+            Note:
+          </span>
+
+          {/* 2-Row Stack Inside Note Section */}
+          <div className="space-y-3">
+            {/* Row 1: Note Text Box spanning full width (width: 100%) */}
+            <div className="w-full">
+              {noteEditing ? (
+                <>
+                  <textarea
+                    value={noteDraft}
+                    autoFocus
+                    onChange={(e) => { setNoteDraft(e.target.value.slice(0, NOTES_MAX)); setNoteEdited(e.target.value !== entry.note); }}
+                    maxLength={NOTES_MAX}
+                    placeholder="Add observations — veining, air cell development, movement…"
+                    rows={3}
+                    className="w-full resize-none rounded-xl px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                    style={{ border: `1px solid ${INPUT_BORDER}`, backgroundColor: "#F2EEE5", fontSize: 13, color: TEXT }}
+                  />
+                  <div className="mt-2 flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setNoteDraft(entry.note); setNoteEdited(false); setNoteEditing(false); }}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" className="rounded-full" style={{ backgroundColor: RUST, color: "#fff" }}
+                      onClick={() => { onUpdateNote(entry.day, noteDraft); setNoteEdited(false); setNoteEditing(false); toast.success("Note saved"); }}>
+                      Save note
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setNoteEditing(true)}
+                  className="w-full rounded-xl px-3.5 py-3 text-left transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                  style={{
+                    backgroundColor: "#FAF9F6",
+                    border: `1px solid ${BORDER}`,
+                    borderLeft: `3px solid #C85A32`,
+                    borderRadius: 12,
+                    cursor: "pointer",
+                  }}
+                  aria-label="Edit inspector notes"
+                >
+                  {entry.note ? (
+                    <span className="block" style={{ fontSize: 13, fontStyle: "italic", color: "#44403C", lineHeight: 1.45 }}>
+                      {entry.note}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 13, color: MUTED }}>
+                      + Add note observations…
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Row 2 (Positioned directly BELOW Row 1): Photo Thumbnails Grid + "+ Photo" uploader button */}
+            <div className="flex flex-wrap items-center gap-2">
+              {visiblePhotos.map((url, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setLightboxIndex(i);
+                  }}
+                  className="relative overflow-hidden rounded-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2"
+                  style={{ width: 56, height: 56, border: `1px solid ${BORDER}`, cursor: "pointer" }}
+                  aria-label={`View photo ${i + 1}`}
+                >
+                  <img
+                    src={url}
+                    alt={`Candling photo ${i + 1}`}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                    }}
+                  />
+                </button>
+              ))}
+
+              {hasOverflow && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setLightboxIndex(3);
+                  }}
+                  className="relative overflow-hidden rounded-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2"
+                  style={{ width: 56, height: 56, border: `1px solid ${BORDER}`, cursor: "pointer" }}
+                  aria-label={`View all ${photos.length} photos`}
+                >
+                  <img
+                    src={photos[3]}
+                    alt="Additional candling photos"
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 flex items-center justify-center font-bold text-white backdrop-blur-[1px]"
+                    style={{ backgroundColor: "rgba(0, 0, 0, 0.60)", fontSize: 13 }}
+                  >
+                    +{overflowCount}
+                  </div>
+                </button>
+              )}
+
+              {/* "+ Photo" uploader tile */}
+              <button
+                type="button"
+                onClick={() => photoRef.current?.click()}
+                className="flex flex-col items-center justify-center gap-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors hover:bg-stone-50"
+                style={{ width: 56, height: 56, border: `1.5px dashed #C9B182`, backgroundColor: SURFACE, cursor: "pointer" }}
+                aria-label="Add candling photo"
+              >
+                <Plus size={15} color={MUTED} />
+                <span style={{ fontSize: 9, color: MUTED, fontWeight: 600 }}>Photo</span>
+              </button>
+              <input ref={photoRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => readFiles(e.target.files)} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Full Photo Lightbox Modal */}
+      <PhotoLightboxModal
+        open={lightboxIndex !== null}
+        photos={photos}
+        initialIndex={lightboxIndex ?? 0}
+        day={entry.day}
+        onClose={() => setLightboxIndex(null)}
+        onDelete={(idx) => onDeletePhoto(entry.day, idx)}
+      />
+    </>
   );
 }
 
-// ─── "Record Candling Session" modal ─────────────────────────────────────────
-function LogModal({ open, onOpenChange, candling, candled, currentDay, totalDays, totalEggsSet, modeName, onSubmit }: {
+// ─── "Record / Edit Candling Session" modal ──────────────────────────────────
+function LogModal({
+  open,
+  onOpenChange,
+  candling,
+  candled,
+  currentDay,
+  totalDays,
+  totalEggsSet,
+  modeName,
+  initialEntry,
+  onSubmit,
+}: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   candling: { day: number; label: string; dayRange: string }[];
@@ -540,6 +1042,7 @@ function LogModal({ open, onOpenChange, candling, candled, currentDay, totalDays
   totalDays: number;
   totalEggsSet: number;
   modeName: string;
+  initialEntry?: CandlingLogEntry | null;
   onSubmit: (form: CandleForm) => void;
 }) {
   return (
@@ -556,6 +1059,7 @@ function LogModal({ open, onOpenChange, candling, candled, currentDay, totalDays
           totalDays={totalDays}
           totalEggsSet={totalEggsSet}
           modeName={modeName}
+          initialEntry={initialEntry}
           onSubmit={onSubmit}
           onCancel={() => onOpenChange(false)}
         />
@@ -564,25 +1068,63 @@ function LogModal({ open, onOpenChange, candling, candled, currentDay, totalDays
   );
 }
 
-function LogModalBody({ candling, candled, currentDay, totalDays, totalEggsSet, modeName, onSubmit, onCancel }: {
+function LogModalBody({
+  candling,
+  candled,
+  currentDay,
+  totalDays,
+  totalEggsSet,
+  modeName,
+  initialEntry,
+  onSubmit,
+  onCancel,
+}: {
   candling: { day: number; label: string; dayRange: string }[];
   candled: Record<number, boolean>;
   currentDay: number;
   totalDays: number;
   totalEggsSet: number;
   modeName: string;
+  initialEntry?: CandlingLogEntry | null;
   onSubmit: (form: CandleForm) => void;
   onCancel: () => void;
 }) {
-  const available = candling.filter((c) => !candled[c.day]);
+  const isEditing = !!initialEntry;
+  const available = candling.filter((c) => !candled[c.day] || (initialEntry && c.day === initialEntry.day));
   const photoRef = useRef<HTMLInputElement>(null);
 
-  const initialOpt = available[0] ? String(available[0].day) : String(candling[0]?.day ?? 5);
-  const [selectedOption, setSelectedOption] = useState<string>(initialOpt);
-  const [customDayRaw, setCustomDayRaw] = useState<string>("8");
+  const defaultCustomDay = String(Math.min(totalDays, currentDay > 0 ? currentDay : 8));
 
-  const initialTargetDay = available[0]?.day ?? candling[0]?.day ?? 5;
-  const [form, setForm] = useState<CandleForm>(emptyForm(initialTargetDay));
+  const initialOpt = initialEntry
+    ? String(initialEntry.day)
+    : available[0]
+    ? String(available[0].day)
+    : "custom";
+
+  const [selectedOption, setSelectedOption] = useState<string>(
+    initialEntry && !candling.some((c) => c.day === initialEntry.day) ? "custom" : initialOpt
+  );
+  const [customDayRaw, setCustomDayRaw] = useState<string>(
+    initialEntry ? String(initialEntry.day) : defaultCustomDay
+  );
+
+  const defaultTargetDay = initialEntry
+    ? initialEntry.day
+    : available[0]?.day ?? Number(defaultCustomDay) ?? 8;
+
+  const initialForm: CandleForm = initialEntry
+    ? {
+        targetDay: initialEntry.day,
+        fertile: initialEntry.fertile,
+        clear: initialEntry.clear,
+        uncertain: initialEntry.uncertain,
+        note: initialEntry.note,
+        photos: initialEntry.photos,
+        checks: initialEntry.checks,
+      }
+    : emptyForm(defaultTargetDay);
+
+  const [form, setForm] = useState<CandleForm>(initialForm);
   const [dragging, setDragging] = useState(false);
 
   const customDayNum = Number(customDayRaw);
@@ -615,19 +1157,14 @@ function LogModalBody({ candling, candled, currentDay, totalDays, totalEggsSet, 
       accepted.push(file);
     });
     if (accepted.length === 0) return;
-    const room = Math.max(0, MAX_PHOTOS - form.photos.length);
-    const allowed = accepted.slice(0, room);
-    if (accepted.length > room) {
-      toast.error(`Max ${MAX_PHOTOS} photos per inspection — extra files skipped`);
-    }
     const urls: string[] = [];
     let loaded = 0;
-    allowed.forEach((file) => {
+    accepted.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) urls.push(e.target.result as string);
         loaded++;
-        if (loaded === allowed.length) setForm((f) => ({ ...f, photos: [...f.photos, ...urls] }));
+        if (loaded === accepted.length) setForm((f) => ({ ...f, photos: [...f.photos, ...urls] }));
       };
       reader.readAsDataURL(file);
     });
@@ -655,43 +1192,59 @@ function LogModalBody({ candling, candled, currentDay, totalDays, totalEggsSet, 
     <>
       <DialogHeader className="px-5 pt-5 text-left">
         <DialogTitle style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>
-          Record Candling Session
+          {isEditing ? `Edit Inspection Log — Day ${form.targetDay}` : "Record Candling Session"}
         </DialogTitle>
         <DialogDescription style={{ fontSize: 13, color: MUTED }}>
-          Log the tallies and observations from this inspection.
+          {isEditing
+            ? "Update the tallies, observations, and photos for this inspection."
+            : "Log the tallies and observations from this inspection."}
         </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4 px-5 pb-1">
-        {/* Checkpoint Selection */}
+        {/* Checkpoint Selection (disabled or fixed during editing to protect timeline consistency) */}
         <div>
           <Label style={{ fontSize: 13, color: TEXT }}>Checkpoint</Label>
-          <Select
-            value={selectedOption}
-            onValueChange={(val) => {
-              setSelectedOption(val);
-              if (val === "custom") {
-                const day = Number(customDayRaw) || 1;
-                setForm((f) => ({ ...f, targetDay: day }));
-              } else {
-                const day = Number(val);
-                setForm((f) => ({ ...f, targetDay: day }));
-              }
-            }}
-          >
-            <SelectTrigger className="mt-1.5 rounded-xl" style={{ borderColor: INPUT_BORDER, backgroundColor: SURFACE }}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={String(candling[0]?.day ?? 5)}>1st Candling</SelectItem>
-              <SelectItem value={String(candling[1]?.day ?? 11)}>2nd Candling</SelectItem>
-              <SelectItem value={String(candling[2]?.day ?? 15)}>3rd Candling (Lockdown)</SelectItem>
-              <SelectItem value="custom">Custom Day...</SelectItem>
-            </SelectContent>
-          </Select>
+          {isEditing ? (
+            <div
+              className="mt-1.5 flex items-center justify-between rounded-xl px-3 py-2.5"
+              style={{ border: `1px solid ${BORDER}`, backgroundColor: SURFACE }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>
+                {target?.label ?? `Day ${form.targetDay} Candling`} (Day {form.targetDay})
+              </span>
+              <span className="rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 700, backgroundColor: "#EAE7E1", color: "#78716C" }}>
+                LOCKED
+              </span>
+            </div>
+          ) : (
+            <Select
+              value={selectedOption}
+              onValueChange={(val) => {
+                setSelectedOption(val);
+                if (val === "custom") {
+                  const day = Number(customDayRaw) || 1;
+                  setForm((f) => ({ ...f, targetDay: day }));
+                } else {
+                  const day = Number(val);
+                  setForm((f) => ({ ...f, targetDay: day }));
+                }
+              }}
+            >
+              <SelectTrigger className="mt-1.5 rounded-xl" style={{ borderColor: INPUT_BORDER, backgroundColor: SURFACE }}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {candling.map((c) => (
+                  <SelectItem key={c.day} value={String(c.day)}>{c.label} (Day {c.day})</SelectItem>
+                ))}
+                <SelectItem value="custom">Custom Day...</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Dynamic Custom Day Number Input when "Custom Day..." is selected */}
-          {selectedOption === "custom" && (
+          {!isEditing && selectedOption === "custom" && (
             <div className="mt-3">
               <Label htmlFor="custom-day-input" style={{ fontSize: 13, color: TEXT }}>
                 Day Number
@@ -734,7 +1287,7 @@ function LogModalBody({ candling, candled, currentDay, totalDays, totalEggsSet, 
             </div>
           )}
 
-          {selectedOption !== "custom" && target && target.day > currentDay && (
+          {!isEditing && selectedOption !== "custom" && target && target.day > currentDay && (
             <p className="mt-1.5 rounded-lg px-2.5 py-1.5" style={{ fontSize: 12, color: WARN.fg, backgroundColor: WARN.bg }}>
               Not yet due (Day {target.day}) — you can still log it if candling was performed early.
             </p>
@@ -854,7 +1407,20 @@ function LogModalBody({ candling, candled, currentDay, totalDays, totalEggsSet, 
           {form.photos.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {form.photos.map((url, i) => (
-                <img key={i} src={url} alt="" className="rounded-lg object-cover" style={{ width: 60, height: 60, border: `1px solid ${BORDER}` }} />
+                <div key={i} className="relative group">
+                  <img src={url} alt="" className="rounded-lg object-cover" style={{ width: 60, height: 60, border: `1px solid ${BORDER}` }} />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setForm((f) => ({ ...f, photos: f.photos.filter((_, idx) => idx !== i) }));
+                    }}
+                    className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 transition-transform active:scale-95"
+                    aria-label="Remove photo"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -882,7 +1448,7 @@ function LogModalBody({ candling, candled, currentDay, totalDays, totalEggsSet, 
           }
           onClick={() => onSubmit(form)}
         >
-          <CheckCircle2 size={15} /> Save Inspection
+          <CheckCircle2 size={15} /> {isEditing ? "Update Inspection" : "Save Inspection"}
         </Button>
       </div>
     </>
@@ -909,6 +1475,16 @@ export function DetailScreen({ unit, modes, onUpdate }: {
 
   const [tab, setTab] = useState<DetailTab>("monitor");
   const [showLogForm, setShowLogForm] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<CandlingLogEntry | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<CandlingLogEntry | null>(null);
+
+  const deleteJournalEntry = (day: number) => {
+    onUpdate({
+      candled: { ...unit.candled, [day]: false },
+      candlingLog: unit.candlingLog.filter((e) => e.day !== day),
+    });
+    toast.success(`Day ${day} journal entry deleted`);
+  };
 
   const heaterOn = unit.temp < mode.targetTemp.max;
   const overheating = unit.temp > mode.targetTemp.max;
@@ -941,7 +1517,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
       ? "Lockdown Check"
       : `Day ${form.targetDay} Candling`;
     const entry: CandlingLogEntry = {
-      day: form.targetDay, label, date: todayStr(),
+      day: form.targetDay, label, date: editingEntry?.date ?? todayStr(),
       fertile: form.fertile, clear: form.clear, uncertain: form.uncertain,
       note: form.note.trim(), photos: form.photos, checks: form.checks,
     };
@@ -949,14 +1525,23 @@ export function DetailScreen({ unit, modes, onUpdate }: {
       candled: { ...unit.candled, [form.targetDay]: true },
       candlingLog: [entry, ...unit.candlingLog.filter((e) => e.day !== form.targetDay)],
     });
+    const wasEditing = !!editingEntry;
     setShowLogForm(false);
-    toast.success(`${label} saved`, {
+    setEditingEntry(null);
+    toast.success(wasEditing ? `Day ${entry.day} inspection updated` : `${label} saved`, {
       description: `${entry.fertile} fertile · ${entry.clear} clear · ${entry.uncertain} uncertain.`,
     });
   };
 
   const addPhotosToEntry = (day: number, urls: string[]) =>
     onUpdate({ candlingLog: unit.candlingLog.map((e) => e.day === day ? { ...e, photos: [...e.photos, ...urls] } : e) });
+
+  const deletePhotoFromEntry = (day: number, photoIndex: number) =>
+    onUpdate({
+      candlingLog: unit.candlingLog.map((e) =>
+        e.day === day ? { ...e, photos: e.photos.filter((_, idx) => idx !== photoIndex) } : e
+      ),
+    });
 
   const updateEntryNote = (day: number, note: string) =>
     onUpdate({ candlingLog: unit.candlingLog.map((e) => e.day === day ? { ...e, note } : e) });
@@ -1027,7 +1612,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
         <div className="space-y-5">
 
           {/* Hero: Incubation Timeline */}
-          <SectionCard title="Incubation Timeline" titleExtra={<TimelineLegend />}>
+          <SectionCard title="Incubation Timeline">
             <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={unit.candled} />
             <div className="my-4" style={{ height: 1, backgroundColor: BORDER }} />
             {/* Three equal dials — temperature, water, humidity. */}
@@ -1124,28 +1709,41 @@ export function DetailScreen({ unit, modes, onUpdate }: {
       {tab === "candling" && (
         <div className="space-y-5">
 
-          {/* Timeline header */}
+          {/* Timeline header with dynamic completion disabling */}
           <SectionCard
             title="Incubation Timeline"
-            titleExtra={<TimelineLegend />}
-            action={unloggedCount > 0 && (
-              <Button onClick={() => setShowLogForm(true)} className="rounded-full" style={{ ...rustBtn, fontSize: 13 }}>
-                <Plus size={14} /> Log Inspection
-              </Button>
-            )}
+            action={
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => {
+                      setEditingEntry(null);
+                      setShowLogForm(true);
+                  }}
+                  className="rounded-full transition-all"
+                  style={{ ...rustBtn, fontSize: 13 }}
+                  title="Log Candling Inspection"
+                >
+                  <Plus size={14} /> Log Inspection
+                </Button>
+              </div>
+            }
           >
             <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={unit.candled} interactive />
           </SectionCard>
 
           <LogModal
             open={showLogForm}
-            onOpenChange={setShowLogForm}
+            onOpenChange={(open) => {
+              setShowLogForm(open);
+              if (!open) setEditingEntry(null);
+            }}
             candling={candling}
             candled={unit.candled}
             currentDay={currentDay}
             totalDays={totalDays}
             totalEggsSet={EGGS_PER_MODE[unit.modeId] ?? 42}
             modeName={mode.name}
+            initialEntry={editingEntry}
             onSubmit={submitInspection}
           />
 
@@ -1167,32 +1765,29 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                 >
                   {/* Top Header: "DAY" label (11px, font-weight 700, uppercase, color #78716C) - sits 8px directly above Node Circle 5, centered over axis line */}
                   <span
-                    className="z-10 whitespace-nowrap"
+                    className="absolute font-bold"
                     style={{
+                      top: 0,
+                      left: "50%",
+                      transform: "translateX(-50%)",
                       fontSize: 11,
                       fontWeight: 700,
-                      letterSpacing: "0.06em",
                       textTransform: "uppercase",
+                      letterSpacing: "0.05em",
                       color: "#78716C",
-                      height: 16,
-                      lineHeight: "16px",
-                      textAlign: "center",
+                      lineHeight: "1",
+                      zIndex: 20,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     DAY
                   </span>
-
-                  {/* Axis Track Line: 2px vertical stroke (#EAE7E1) starting directly below the "DAY" label */}
-                  <span
-                    aria-hidden
-                    className="absolute z-0"
+                  {/* Continuous Vertical Axis Line with 24px top margin to start beneath DAY label */}
+                  <div
+                    className="w-0.5 flex-1"
                     style={{
-                      top: 16,
-                      bottom: 10,
-                      width: 2,
+                      marginTop: 24,
                       backgroundColor: "#EAE7E1",
-                      left: "50%",
-                      transform: "translateX(-50%)",
                     }}
                   />
                 </div>
@@ -1223,15 +1818,36 @@ export function DetailScreen({ unit, modes, onUpdate }: {
 
                         {/* Right Content Column */}
                         <div className="flex-1 min-w-0 pl-3">
-                          {/* Header bar: "1st Candling Done ✓" + Date */}
+                          {/* Header bar: "1st Candling" + Date + Edit & Delete actions */}
                           <div className="flex flex-wrap items-center justify-between gap-2" style={{ minHeight: 32 }}>
                             <p className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 16, fontWeight: 700, color: "#1C1917" }}>
-                              {n.idx >= 0 ? (CANDLE_SHORT_LABELS[n.idx] ?? n.entry.label) : n.entry.label} Done
-                              <Check size={15} color={OK.fg} strokeWidth={3.5} />
+                              {n.idx >= 0 ? (CANDLE_SHORT_LABELS[n.idx] ?? n.entry.label) : n.entry.label}
+                              <CheckCircle2 size={18} fill="#16A34A" color="#FFFFFF" strokeWidth={2.5} />
                             </p>
-                            <span className="whitespace-nowrap" style={{ fontSize: 13, color: "#8A6B52" }}>
-                              {fmtDate(n.entry.date)}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="whitespace-nowrap mr-1" style={{ fontSize: 13, color: "#78716C" }}>
+                                {fmtDate(n.entry.date)}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setEditingEntry(n.entry);
+                                  setShowLogForm(true);
+                                }}
+                                className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FFF5F2] hover:text-[#C85A32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                                aria-label={`Edit entry for Day ${n.entry.day}`}
+                                title="Edit Inspection"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                onClick={() => setEntryToDelete(n.entry)}
+                                className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FEE2E2] hover:text-[#DC2626] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                                aria-label={`Delete entry for Day ${n.entry.day}`}
+                                title="Delete Journal Entry"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
                           {/* Journal Card */}
                           <div style={{ marginTop: 12 }}>
@@ -1240,42 +1856,91 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                               modeName={mode.name}
                               onAddPhotos={addPhotosToEntry}
                               onUpdateNote={updateEntryNote}
+                              onDeletePhoto={deletePhotoFromEntry}
                             />
                           </div>
                         </div>
                       </li>
-                    ) : (
-                      <li key={`cp-${n.day}`} className="relative flex items-center min-h-[32px]">
-                        {/* 40px Left Axis Column Container for Node Circle */}
-                        <div className="shrink-0 flex justify-center relative z-10" style={{ width: 40 }}>
-                          {/* Node Circle (32x32px outlined circle #EAE7E1 with day number) */}
-                          <span
-                            className="flex items-center justify-center rounded-full"
-                            style={{
-                              width: 32,
-                              height: 32,
-                              backgroundColor: "#FFFFFF",
-                              border: "2px solid #EAE7E1",
-                              color: "#3D3228",
-                              fontSize: 13,
-                              fontWeight: 700,
-                              boxShadow: `0 0 0 3px ${BG}`,
-                            }}
-                          >
-                            {formatNodeDay(n.day)}
-                          </span>
-                        </div>
+                    ) : (() => {
+                      const isDue = n.cp.day <= currentDay;
+                      return (
+                        <li key={`cp-${n.day}`} className="relative flex items-center min-h-[32px]">
+                          {/* 40px Left Axis Column Container for Node Circle */}
+                          <div className="shrink-0 flex justify-center relative z-10" style={{ width: 40 }}>
+                            {/* Node Circle (32x32px outlined circle with day number) */}
+                            <span
+                              className="flex items-center justify-center rounded-full"
+                              style={{
+                                width: 32,
+                                height: 32,
+                                backgroundColor: "#FFFFFF",
+                                border: isDue ? "2px solid #D97706" : "2px solid #EAE7E1",
+                                color: isDue ? "#D97706" : "#78716C",
+                                fontSize: 13,
+                                fontWeight: 700,
+                                boxShadow: `0 0 0 3px ${BG}`,
+                              }}
+                            >
+                              {formatNodeDay(n.day)}
+                            </span>
+                          </div>
 
-                        {/* Right Content Column */}
-                        <div className="flex-1 min-w-0 pl-3">
-                          <p style={{ fontSize: 13, fontWeight: 600, color: "#8A6B52" }}>
-                            {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label} · {n.cp.day <= currentDay ? "Due" : "Upcoming"}
-                          </p>
-                        </div>
-                      </li>
-                    ),
+                          {/* Right Content Column */}
+                          <div className="flex-1 min-w-0 pl-3">
+                            {isDue ? (
+                              <p className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 16, fontWeight: 700, color: "#1C1917" }}>
+                                {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
+                                <AlertCircle size={18} fill="#D97706" color="#FFFFFF" strokeWidth={2.5} />
+                              </p>
+                            ) : (
+                              <p style={{ fontSize: 13, fontWeight: 600, color: "#78716C" }}>
+                                {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
+                              </p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })(),
                   )}
                 </ul>
+
+                {/* Delete Confirmation Modal Dialog */}
+                <Dialog open={entryToDelete !== null} onOpenChange={(open) => !open && setEntryToDelete(null)}>
+                  <DialogContent
+                    className="max-w-[400px] w-[90vw] p-6 rounded-2xl bg-white shadow-xl border border-[#EAE7E1] [&>[data-slot=dialog-close]]:hidden"
+                    style={{ borderRadius: 16 }}
+                  >
+                    <DialogHeader className="gap-2 text-left">
+                      <DialogTitle style={{ fontSize: 18, fontWeight: 700, color: "#1C1917" }}>
+                        Delete Journal Entry?
+                      </DialogTitle>
+                      <DialogDescription style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}>
+                        Are you sure you want to delete this inspection log for Day {entryToDelete?.day}? This will recalculate the cycle's viability rate and cannot be undone.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 flex items-center justify-end gap-2.5">
+                      <Button
+                        variant="outline"
+                        onClick={() => setEntryToDelete(null)}
+                        className="rounded-xl border-[#EAE7E1] text-[#44403C] hover:bg-stone-50"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (entryToDelete) {
+                            deleteJournalEntry(entryToDelete.day);
+                            setEntryToDelete(null);
+                          }
+                        }}
+                        className="rounded-xl text-white font-medium transition-colors"
+                        style={{ backgroundColor: "#DC2626" }}
+                      >
+                        Delete Entry
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
 
@@ -1284,18 +1949,19 @@ export function DetailScreen({ unit, modes, onUpdate }: {
               <SectionCard title="Current Cycle Summary">
                 <div className="space-y-2.5">
                   {[
-                    { label: "TOTAL FERTILE", value: candSummary.fertile, bg: "#DCFCE7", text: "#16A34A" },
-                    { label: "TOTAL CLEAR", value: candSummary.clear, bg: "#F3F4F6", text: "#525252" },
-                    { label: "TOTAL UNCERTAIN", value: candSummary.uncertain, bg: "#FEF3C7", text: "#D97706" },
+                    { label: "Total Fertile", value: candSummary.fertile, border: "#DCFCE7", text: "#16A34A" },
+                    { label: "Total Clear", value: candSummary.clear, border: "#F1F5F9", text: "#475569" },
+                    { label: "Total Uncertain", value: candSummary.uncertain, border: "#FEF3C7", text: "#D97706" },
                   ].map((row) => (
                     <div key={row.label} className="flex items-center justify-between gap-2">
-                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#78716C" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#78716C" }}>
                         {row.label}
                       </span>
                       <span
-                        className="rounded-full px-2.5 py-0.5"
+                        className="rounded-full px-3 py-0.5"
                         style={{
-                          backgroundColor: row.bg,
+                          backgroundColor: "#FFFFFF",
+                          border: `1px solid ${row.border}`,
                           color: row.text,
                           fontSize: 13,
                           fontWeight: 700,
@@ -1314,10 +1980,10 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                   </div>
                   <div className="my-1" style={{ borderTop: `1px solid ${BORDER}` }} />
                   <div className="flex items-center justify-between">
-                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#78716C" }}>
-                      VIABILITY RATE
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#78716C" }}>
+                      Viability Rate
                     </span>
-                    <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 700, color: viabilityRate >= 70 ? OK.fg : WARN.fg }}>
+                    <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 700, color: "#C85A32" }}>
                       {viabilityRate}%
                     </span>
                   </div>

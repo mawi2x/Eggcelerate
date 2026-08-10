@@ -115,10 +115,10 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
   }, [filtered, sort, sortAsc, modes]);
 
   const filterPills: { key: Filter; label: string; count: number }[] = [
-    { key: "all", label: "All", count: counts.all },
-    { key: "optimal", label: "Optimal", count: counts.optimal },
-    { key: "warning", label: "Needs Attention", count: counts.warning },
-    { key: "alert", label: "Alert", count: counts.alert },
+    { key: "all", label: "ALL", count: counts.all },
+    { key: "optimal", label: "OPTIMAL", count: counts.optimal },
+    { key: "warning", label: "NEEDS ATTENTION", count: counts.warning },
+    { key: "alert", label: "ALERT", count: counts.alert },
   ];
 
   // Pagination for the list view.
@@ -212,10 +212,12 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
               className="rounded-full px-3.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               style={{
                 backgroundColor: active ? RUST : CARD,
-                color: active ? "#fff" : MUTED,
+                color: active ? "#fff" : "#78716C",
                 border: `1px solid ${active ? RUST : BORDER}`,
                 fontWeight: 700,
-                fontSize: 13,
+                fontSize: 11,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
                 cursor: "pointer",
               }}
             >
@@ -279,14 +281,14 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  {["Chamber", "Mode", "Day"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}` }}>{h}</TableHead>
+                  {["CHAMBER", "MODE", "DAY"].map((h) => (
+                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
                   ))}
-                  {["Temp", "Humidity", "Water"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10 text-right" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}` }}>{h}</TableHead>
+                  {["TEMP", "HUMIDITY", "WATER"].map((h) => (
+                    <TableHead key={h} className="sticky top-0 z-10 text-right" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
                   ))}
-                  {["Status", "Action"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}` }}>{h}</TableHead>
+                  {["STATUS", "ACTIONS"].map((h) => (
+                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>

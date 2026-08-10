@@ -78,9 +78,9 @@ const CONTROL_FONT: React.CSSProperties = {
 
 type RangeKey = "24h" | "7d" | "full";
 const ranges: { key: RangeKey; label: string; hours: number | null }[] = [
-  { key: "24h", label: "Last 24h", hours: 24 },
-  { key: "7d", label: "Last 7 Days", hours: 24 * 7 },
-  { key: "full", label: "Full Incubation", hours: null },
+  { key: "24h", label: "LAST 24H", hours: 24 },
+  { key: "7d", label: "LAST 7 DAYS", hours: 24 * 7 },
+  { key: "full", label: "FULL INCUBATION", hours: null },
 ];
 
 type TrendView = "environmental" | "hatch";
@@ -497,10 +497,12 @@ export function TrendsScreen({ units, modes }: Props) {
                     onClick={() => setRange(r.key)}
                     className="rounded-xl px-4 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                     style={{
-                      ...CONTROL_FONT,
                       backgroundColor: active ? RUST : SURFACE,
-                      // White on rust is the only pairing here that clears AA contrast.
-                      color: active ? "#FFFFFF" : MUTED,
+                      color: active ? "#FFFFFF" : "#78716C",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: "0.05em",
+                      textTransform: "uppercase",
                       border: active ? "none" : `1px solid ${BORDER}`,
                     }}
                   >
@@ -676,12 +678,12 @@ export function TrendsScreen({ units, modes }: Props) {
                 <Table>
                   <TableHeader className="sticky top-0 z-10" style={{ backgroundColor: "#F2EEE5" }}>
                     <TableRow>
-                      <TableHead>Chamber</TableHead>
-                      <TableHead>Mode / Egg Type</TableHead>
-                      <TableHead>Cycle Dates</TableHead>
-                      <TableHead className="text-right">Total Eggs</TableHead>
-                      <TableHead className="text-right">Hatched</TableHead>
-                      <TableHead className="text-right">Hatchability %</TableHead>
+                      {["CHAMBER", "MODE", "DATES"].map((h) => (
+                        <TableHead key={h} style={{ color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                      ))}
+                      {["EGGS SET", "HATCHED", "HATCHABILITY"].map((h) => (
+                        <TableHead key={h} className="text-right" style={{ color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                      ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>

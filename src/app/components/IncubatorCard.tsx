@@ -40,19 +40,22 @@ function Reading({ icon, label, value, unit, delta, state, subtext }: {
   return (
     <div
       className="min-w-0 overflow-hidden rounded-2xl"
-      style={{ backgroundColor: tileBg[state], border: `1px solid ${tileBorder[state]}`, padding: 10 }}
+      style={{ backgroundColor: tileBg[state], border: `1px solid ${tileBorder[state]}`, padding: 8 }}
     >
-      <div className="flex items-center gap-1" style={{ color: alert ? valueColor : MUTED, fontSize: 12, fontWeight: 600 }}>
-        {icon} <span className="truncate">{label}</span>
+      <div style={{ color: alert ? valueColor : "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+        {label}
       </div>
-      <div className="mt-1 flex min-w-0 items-baseline gap-1">
+      <div className="mt-1 flex min-w-0 items-center gap-1">
+        <span className="shrink-0 flex items-center" style={{ color: alert ? valueColor : MUTED }}>
+          {icon}
+        </span>
         <span
           className="shrink-0 tracking-tight"
-          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 800, color: valueColor, whiteSpace: "nowrap" }}
+          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 20, fontWeight: 800, color: valueColor, whiteSpace: "nowrap" }}
         >
           {value}
         </span>
-        <span className="whitespace-nowrap" style={{ color: alert ? valueColor : MUTED, fontSize: 13 }}>
+        <span className="whitespace-nowrap" style={{ color: alert ? valueColor : MUTED, fontSize: 12 }}>
           {unit}
         </span>
       </div>
@@ -101,11 +104,11 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure" }: Props) 
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          <Reading icon={<Thermometer size={15} />} label="Temp" value={unit.temp} unit="°C" delta={unit.tempTrend} state={tempSt} />
-          <Reading icon={<Droplets size={15} />} label="Humidity" value={unit.humidity} unit="%" delta={unit.humidityTrend} state={humSt} />
+          <Reading icon={<Thermometer size={15} />} label="TEMP" value={unit.temp} unit="°C" delta={unit.tempTrend} state={tempSt} />
+          <Reading icon={<Droplets size={15} />} label="HUMIDITY" value={unit.humidity} unit="%" delta={unit.humidityTrend} state={humSt} />
           <Reading
             icon={<Waves size={15} />}
-            label="Water"
+            label="WATER"
             value={unit.waterLevel}
             unit="%"
             state={waterSt}
