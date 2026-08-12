@@ -26,3 +26,10 @@ yarn-debug.log*
 # vite cache
 .vite/
 node_modules
+
+# documentation folders (markdown)
+review/
+plans/
+guidelines/
+src/imports/pasted_text/
+flow/

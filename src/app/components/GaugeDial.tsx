@@ -22,11 +22,11 @@ interface GaugeDialProps {
   centerColor?: string;
 }
 
-// Refined design tokens.
+// Shared semantic status colors used throughout the dashboard.
 const TRACK = "#ECE6D9";
 const SAFE = "#16A34A";
-const AMBER = "#D97706";
-const CRIMSON = "#DC2626";
+const WARN = "#D97706";
+const CRITICAL = "#DC2626";
 const TEXT = "#1A1A1A";
 const MUTED = "#5A4838";
 
@@ -76,7 +76,10 @@ export function GaugeDial({
   };
 
   const inSafe = value >= safe.min && value <= safe.max;
-  const arcColor = accent === "ok" ? SAFE : accent === "crit" ? CRIMSON : inSafe ? SAFE : value > safe.max ? CRIMSON : AMBER;
+  const arcColor =
+    accent === "ok" ? SAFE :
+    accent === "crit" ? CRITICAL :
+    inSafe ? SAFE : value > safe.max ? CRITICAL : WARN;
   // Low binary state keeps a short visible red stub instead of an empty arc.
   const arcValue = accent === "crit" ? min + (max - min) * 0.22 : value;
   const valAngle = valueToAngle(arcValue);
@@ -89,19 +92,21 @@ export function GaugeDial({
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         role="img"
-        aria-label={`${label} ${value}${unit}`}
+        aria-label={centerLabel ? `${label}: ${centerLabel}` : `${label} ${value}${unit}`}
       >
         {/* Track */}
         <path d={arc(START, START + SWEEP)} stroke={TRACK} strokeWidth={stroke} fill="none" strokeLinecap="round" />
-        {/* Safe band */}
-        <path
-          d={arc(valueToAngle(safe.min), valueToAngle(safe.max))}
-          stroke={SAFE}
-          strokeOpacity={0.28}
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-        />
+        {/* Safe band (binary sensors have no safe range) */}
+        {!accent && (
+          <path
+            d={arc(valueToAngle(safe.min), valueToAngle(safe.max))}
+            stroke={SAFE}
+            strokeOpacity={0.28}
+            strokeWidth={stroke}
+            fill="none"
+            strokeLinecap="round"
+          />
+        )}
         {/* Value arc */}
         <path d={arc(START, valAngle)} stroke={arcColor} strokeWidth={stroke} fill="none" strokeLinecap="round" />
         {/* Knob */}

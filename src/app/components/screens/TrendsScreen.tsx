@@ -99,6 +99,7 @@ const HATCH_ROWS = 10;
 interface Props {
   units: Incubator[];
   modes: Mode[];
+  initialUnitId?: string;
 }
 
 // Per-chamber context the tooltip needs to judge each reading.
@@ -144,9 +145,9 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function TrendsScreen({ units, modes }: Props) {
+export function TrendsScreen({ units, modes, initialUnitId }: Props) {
   const [trendView, setTrendView] = useState<TrendView>("environmental");
-  const [unitId, setUnitId] = useState(units[0]?.id ?? "");
+  const [unitId, setUnitId] = useState(initialUnitId ?? units[0]?.id ?? "");
   const [range, setRange] = useState<RangeKey>("24h");
   const [readingsOpen, setReadingsOpen] = useState(false);
 

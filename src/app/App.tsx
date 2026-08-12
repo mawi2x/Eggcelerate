@@ -71,6 +71,11 @@ export default function App() {
     setScreen("detail");
   };
 
+  const openTrendsForUnit = (id: string) => {
+    setSelectedUnit(id);
+    setScreen("trends");
+  };
+
   const navigate = (id: ScreenId) => {
     setSelectedUnit(null);
     setScreen(id);
@@ -267,13 +272,14 @@ export default function App() {
             <DetailScreen
               unit={activeUnit}
               modes={modes}
+              onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
               onUpdate={(patch) =>
                 updateIncubator(activeUnit.id, patch)
               }
             />
           )}
           {screen === "trends" && (
-            <TrendsScreen units={incubators} modes={modes} />
+            <TrendsScreen units={incubators} modes={modes} initialUnitId={selectedUnit ?? undefined} />
           )}
           {screen === "alerts" && (
             <AlertsScreen

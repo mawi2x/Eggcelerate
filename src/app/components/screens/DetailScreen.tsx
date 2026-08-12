@@ -7,6 +7,7 @@ import {
   Activity, ScanSearch, Settings2, Zap, ShieldAlert,
   ChevronLeft, ChevronRight, Download, Trash2, Pencil,
   Maximize2, Minimize2, ZoomIn, ZoomOut, Maximize,
+  ArrowUpRight, Droplets, Thermometer, TrendingDown, TrendingUp,
 } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
@@ -20,15 +21,20 @@ import {
 } from "../ui/select";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { GaugeDial } from "../GaugeDial";
+import { WaterDroplet } from "../WaterDroplet";
 import { HarvestModal } from "../HarvestModal";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { cn } from "../ui/utils";
 import { TrayFertilityBar, fertilityTones } from "../candling/EggIcons";
 import {
   Incubator, Mode, CandlingLogEntry, CandlingCheckpoint, DevelopmentCheck, developmentCheckLabels,
-  computeCandling,
+  Reading, buildHistory, computeCandling,
   recordHarvest, resetChamberToReady,
 } from "../../data/mockData";
 
@@ -164,15 +170,18 @@ function StatusPill({ tone, children, dot = true, pulse = false }: {
 }
 
 // ─── Shared card shell ────────────────────────────────────────────────────────
-function SectionCard({ title, subtitle, action, children, centered = false, titleSize = 16 }: {
-  title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode; centered?: boolean; titleSize?: number;
+function SectionCard({ title, subtitle, action, children, centered = false, titleSize = 16, divider = false }: {
+  title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode; centered?: boolean; titleSize?: number; divider?: boolean;
 }) {
   return (
     <Card style={{ backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
       <CardContent className="p-5">
         <div
-          className="mb-4 flex flex-wrap items-center gap-3 min-h-[32px]"
-          style={centered ? { justifyContent: "center", textAlign: "center" } : { justifyContent: "space-between" }}
+          className={`flex flex-wrap items-center gap-3 min-h-[32px] ${divider ? "mb-3 border-b pb-3" : "mb-4"}`}
+          style={{
+            ...(centered ? { justifyContent: "center", textAlign: "center" } : { justifyContent: "space-between" }),
+            ...(divider ? { borderColor: "#EFE9DC" } : {}),
+          }}
         >
           <div>
             <h3 style={{ fontSize: titleSize, fontWeight: 600, color: "#1A1A1A" }}>{title}</h3>
@@ -223,9 +232,15 @@ function MiniIncubationCalendar({ currentDay, totalDays, candling }: {
     return d;
   };
 
-  const candleDay = candling[1]?.day ?? 13;
+  const candlingDays = candling.slice(0, 2);
   const lockdownDay = candling[2]?.day ?? 18;
   const todayDate = dayOffset(currentDay);
+  const cycleStartDate = dayOffset(1);
+  const cycleEndDate = dayOffset(totalDays);
+  const lockdownDate = dayOffset(lockdownDay);
+
+  const isInIncubationPeriod = (d: Date) => d >= cycleStartDate && d <= cycleEndDate;
+  const isInLockdownPhase = (d: Date) => d >= lockdownDate && d <= cycleEndDate;
 
   const first = new Date(view.y, view.m, 1);
   const lead = first.getDay();
@@ -236,9 +251,14 @@ function MiniIncubationCalendar({ currentDay, totalDays, candling }: {
 
   const milestoneFor = (d: Date) => {
     if (d.toDateString() === todayDate.toDateString()) return { kind: "today", label: `Day ${currentDay} · Today` };
-    if (d.toDateString() === dayOffset(candleDay).toDateString()) return { kind: "candling", label: `Day ${candleDay} · 2nd Candling` };
+    const candlingCheckpoint = candlingDays.find((checkpoint) =>
+      d.toDateString() === dayOffset(checkpoint.day).toDateString()
+    );
+    if (candlingCheckpoint) {
+      return { kind: "candling", label: `Day ${candlingCheckpoint.day} · ${candlingCheckpoint.label}` };
+    }
     if (d.toDateString() === dayOffset(lockdownDay).toDateString()) return { kind: "lockdown", label: `Day ${lockdownDay} · Lockdown` };
-    if (d.toDateString() === dayOffset(totalDays).toDateString()) return { kind: "hatch", label: `Day ${totalDays} · Expected Hatch` };
+    if (d.toDateString() === dayOffset(totalDays).toDateString()) return { kind: "hatch", label: `Day ${totalDays} · Hatch` };
     return null;
   };
 
@@ -259,7 +279,7 @@ function MiniIncubationCalendar({ currentDay, totalDays, candling }: {
     });
 
   return (
-    <SectionCard title="Incubation Calendar" centered>
+    <SectionCard title="Incubation Calendar" centered divider>
       {/* Month navigation */}
       <div className="mb-3 flex items-center justify-center gap-2">
         <button
@@ -289,39 +309,105 @@ function MiniIncubationCalendar({ currentDay, totalDays, candling }: {
       </div>
 
       {/* Day grid — fixed 6 rows, trailing days muted */}
-      <div className="mt-1 grid grid-cols-7 gap-1">
+      <div className="mt-1 grid grid-cols-7 gap-y-1">
         {cells.map((c, i) => {
           if (c === null) return <div key={i} />;
           const m = c.trailing ? null : milestoneFor(c.date);
+          const inCycle = isInIncubationPeriod(c.date);
+          const inLockdownPhase = isInLockdownPhase(c.date);
+          const previous = cells[i - 1];
+          const nextCell = cells[i + 1];
+          const phaseKey = inLockdownPhase ? "lockdown" : inCycle ? "incubation" : "outside";
+          const previousPhaseKey = previous && previous !== null
+            ? (isInLockdownPhase(previous.date) ? "lockdown" : isInIncubationPeriod(previous.date) ? "incubation" : "outside")
+            : "outside";
+          const nextPhaseKey = nextCell && nextCell !== null
+            ? (isInLockdownPhase(nextCell.date) ? "lockdown" : isInIncubationPeriod(nextCell.date) ? "incubation" : "outside")
+            : "outside";
+          const startsPhaseBand = inCycle && (
+            i % 7 === 0 ||
+            phaseKey !== previousPhaseKey
+          );
+          const endsPhaseBand = inCycle && (
+            i % 7 === 6 ||
+            phaseKey !== nextPhaseKey
+          );
+          const phaseTransitionBefore = startsPhaseBand && previousPhaseKey !== "outside";
+          const cycleDay = inCycle
+            ? Math.round((c.date.getTime() - cycleStartDate.getTime()) / 86_400_000) + 1
+            : null;
           return (
-            <div key={i} className="flex flex-col items-center justify-center" style={{ height: 38 }} title={m?.label}>
-              <span
-                className="flex items-center justify-center rounded-full"
-                style={{
-                  width: 28,
-                  height: 28,
-                  fontSize: 12,
-                  boxSizing: "border-box",
-                  fontWeight: m?.kind === "today" ? 700 : 500,
-                  backgroundColor: m?.kind === "today" ? "#8B3A1C" : "transparent",
-                  color: m?.kind === "today" ? "#FFFFFF" : m ? TEXT : "#78716C",
-                  border: m?.kind === "candling" ? "2px solid #F2C94C" : undefined,
-                  ...(c.trailing ? { color: "#D1C7BD", opacity: 0.4 } : {}),
-                }}
-              >
-                {c.day}
-              </span>
+            <div
+              key={i}
+              className="flex flex-col items-center justify-center"
+              style={{
+                position: "relative",
+                height: 38,
+                boxSizing: "border-box",
+                marginLeft: phaseTransitionBefore ? 9 : undefined,
+                backgroundColor: inCycle ? (inLockdownPhase ? "#FCE4D6" : "#FFF0D6") : "transparent",
+                borderTop: inCycle ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}` : undefined,
+                borderBottom: inCycle ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}` : undefined,
+                borderLeft: startsPhaseBand ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}` : undefined,
+                borderRight: endsPhaseBand ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}` : undefined,
+                borderRadius: `${startsPhaseBand ? 10 : 0}px ${endsPhaseBand ? 10 : 0}px ${endsPhaseBand ? 10 : 0}px ${startsPhaseBand ? 10 : 0}px`,
+                zIndex: m?.kind === "today" ? 2 : undefined,
+              }}
+              title={m?.label ?? (cycleDay ? `Incubation Day ${cycleDay} of ${totalDays}` : undefined)}
+            >
               {m?.kind === "today" ? (
-                <span className="mt-0.5" style={{ fontSize: 8, fontWeight: 700, color: "#8B3A1C" }}>
-                  Day {currentDay}
+                <span
+                  className="pointer-events-none absolute flex flex-col items-center justify-center rounded-[10px]"
+                  style={{
+                    width: 44,
+                    height: 38,
+                    boxSizing: "border-box",
+                    backgroundColor: "#8B3A1C",
+                    color: "#FFFFFF",
+                    boxShadow: "0 1px 2px rgba(139,58,28,0.18)",
+                    zIndex: 3,
+                  }}
+                >
+                  <span style={{ fontSize: 8, lineHeight: "9px", letterSpacing: "0.04em", fontWeight: 800 }}>
+                    DAY {currentDay}
+                  </span>
+                  <span style={{ fontSize: 14, lineHeight: "16px", fontWeight: 700 }}>
+                    {c.day}
+                  </span>
                 </span>
-              ) : m?.kind === "candling" ? (
-                <span className="mt-1 rounded-full" style={{ width: 5, height: 5, backgroundColor: "#F2C94C" }} />
-              ) : m?.kind === "lockdown" ? (
-                <span className="mt-1 rounded-full" style={{ width: 5, height: 5, backgroundColor: "#D97706" }} />
-              ) : m?.kind === "hatch" ? (
-                <Egg size={9} color="#16A34A" className="mt-0.5" />
-              ) : null}
+              ) : (
+                <span
+                  className="flex items-center justify-center"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    fontSize: 12,
+                    boxSizing: "border-box",
+                    fontWeight: m ? 700 : 500,
+                    borderRadius: m ? 7 : 999,
+                    backgroundColor: m?.kind === "candling"
+                      ? "#F2C94C"
+                      : m?.kind === "lockdown"
+                        ? "#D97706"
+                        : m?.kind === "hatch"
+                          ? "#16A34A"
+                          : "transparent",
+                    color: m?.kind === "lockdown"
+                      ? "#FFFFFF"
+                      : m?.kind === "hatch"
+                        ? "#FFFFFF"
+                        : m?.kind === "candling"
+                          ? "#713F12"
+                        : m
+                          ? TEXT
+                          : "#78716C",
+                    border: undefined,
+                    ...(c.trailing ? { color: "#D1C7BD", opacity: 0.4 } : {}),
+                  }}
+                  >
+                    {c.day}
+                </span>
+              )}
             </div>
           );
         })}
@@ -330,10 +416,10 @@ function MiniIncubationCalendar({ currentDay, totalDays, candling }: {
       {/* One-line legend */}
       <div className="mt-3 flex items-center justify-center gap-x-2 whitespace-nowrap border-t pt-2.5" style={{ borderColor: "#EFE9DC" }}>
         {[
-          { swatch: <span className="rounded-sm" style={{ width: 9, height: 9, backgroundColor: "#8B3A1C" }} />, label: "Today" },
-          { swatch: <span className="rounded-full" style={{ width: 9, height: 9, border: "2px solid #F2C94C", boxSizing: "border-box" }} />, label: "2nd Candling" },
-          { swatch: <span className="rounded-full" style={{ width: 9, height: 9, backgroundColor: "#D97706" }} />, label: "Lockdown" },
-          { swatch: <Egg size={10} color="#16A34A" />, label: "Hatch" },
+          { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#8B3A1C" }} />, label: "Today" },
+          { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#F2C94C" }} />, label: "Candling" },
+          { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#D97706" }} />, label: "Lockdown" },
+          { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#16A34A" }} />, label: "Hatch" },
         ].map((l) => (
           <span key={l.label} className="flex select-none items-center gap-1" style={{ fontSize: 12, fontWeight: 600, color: "#78716C" }}>
             {l.swatch} {l.label}
@@ -371,6 +457,152 @@ function ActuatorRow({ icon, name, sub, on, tone, label, offLabel, pulse = false
         ? <StatusPill tone={tone} pulse={pulse}>{label}</StatusPill>
         : <StatusPill tone={NEUTRAL}>{offLabel}</StatusPill>}
     </div>
+  );
+}
+
+function readingStamp(ts: number) {
+  const date = new Date(ts);
+  return {
+    date: date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }),
+    time: date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+  };
+}
+
+function ExtremumTile({
+  label,
+  value,
+  unit,
+  reading,
+  icon,
+  accent,
+}: {
+  label: string;
+  value: string;
+  unit: string;
+  reading: Reading;
+  icon: React.ReactNode;
+  accent: string;
+}) {
+  const stamp = readingStamp(reading.ts);
+  return (
+    <div
+      className="rounded-2xl p-3"
+      style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+          {label}
+        </span>
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+          style={{ backgroundColor: `${accent}14`, color: accent }}
+        >
+          {icon}
+        </span>
+      </div>
+      <p className="mt-2" style={{ color: TEXT, fontFamily: "Baloo 2, sans-serif", fontSize: 21, fontWeight: 700, lineHeight: 1 }}>
+        {value}<span style={{ color: MUTED, fontFamily: "Nunito, sans-serif", fontSize: 12, fontWeight: 600 }}> {unit}</span>
+      </p>
+      <p className="mt-1.5 truncate" style={{ color: MUTED, fontSize: 11 }} title={`${stamp.date} · ${stamp.time}`}>
+        {stamp.date} · {stamp.time}
+      </p>
+    </div>
+  );
+}
+
+function EnvironmentalSummary({ readings, onViewTrends }: { readings: Reading[]; onViewTrends: () => void }) {
+  if (readings.length === 0) return null;
+
+  const highestTemp = readings.reduce((best, reading) => reading.temp > best.temp ? reading : best, readings[0]);
+  const lowestTemp = readings.reduce((best, reading) => reading.temp < best.temp ? reading : best, readings[0]);
+  const highestHumidity = readings.reduce((best, reading) => reading.humidity > best.humidity ? reading : best, readings[0]);
+  const lowestHumidity = readings.reduce((best, reading) => reading.humidity < best.humidity ? reading : best, readings[0]);
+  const latest = [...readings].sort((a, b) => b.ts - a.ts).slice(0, 3);
+
+  return (
+    <SectionCard
+      title="Environmental readings"
+      subtitle="Recorded during this incubation cycle"
+      action={
+        <button
+          type="button"
+          onClick={onViewTrends}
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EFE6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+          style={{ color: RUST, fontSize: 12, fontWeight: 700 }}
+        >
+          Full trends <ArrowUpRight size={14} />
+        </button>
+      }
+    >
+      <div className="grid grid-cols-2 gap-2.5">
+        <ExtremumTile
+          label="Highest temperature"
+          value={highestTemp.temp.toFixed(1)}
+          unit="°C"
+          reading={highestTemp}
+          icon={<TrendingUp size={15} />}
+          accent={RUST}
+        />
+        <ExtremumTile
+          label="Lowest temperature"
+          value={lowestTemp.temp.toFixed(1)}
+          unit="°C"
+          reading={lowestTemp}
+          icon={<TrendingDown size={15} />}
+          accent={RUST}
+        />
+        <ExtremumTile
+          label="Highest humidity"
+          value={highestHumidity.humidity.toFixed(1)}
+          unit="% RH"
+          reading={highestHumidity}
+          icon={<TrendingUp size={15} />}
+          accent={RUST}
+        />
+        <ExtremumTile
+          label="Lowest humidity"
+          value={lowestHumidity.humidity.toFixed(1)}
+          unit="% RH"
+          reading={lowestHumidity}
+          icon={<TrendingDown size={15} />}
+          accent={RUST}
+        />
+      </div>
+
+      <div className="mt-4 border-t pt-3.5" style={{ borderColor: BORDER }}>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>Latest readings</p>
+            <p style={{ color: MUTED, fontSize: 11 }}>Most recent three check-ins</p>
+          </div>
+          <span className="rounded-full px-2 py-1" style={{ backgroundColor: "#F4ECE1", color: MUTED, fontSize: 10, fontWeight: 700 }}>
+            TOP 3
+          </span>
+        </div>
+        <div className="mt-2 divide-y" style={{ borderColor: BORDER }}>
+          {latest.map((reading, index) => {
+            const stamp = readingStamp(reading.ts);
+            return (
+              <div key={reading.ts} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: "#F4ECE1", color: RUST, fontSize: 11, fontWeight: 800 }}>
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>{stamp.time}</p>
+                    <p style={{ color: MUTED, fontSize: 11 }}>{stamp.date}</p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-3" style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
+                  <span className="inline-flex items-center gap-1"><Thermometer size={13} color={RUST} />{reading.temp.toFixed(1)}°C</span>
+                  <span className="inline-flex items-center gap-1"><Droplets size={13} color={RUST} />{reading.humidity.toFixed(1)}%</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </SectionCard>
   );
 }
 
@@ -1298,6 +1530,7 @@ function LogModalBody({
 
   const [form, setForm] = useState<CandleForm>(initialForm);
   const [dragging, setDragging] = useState(false);
+  const [emptyEvidenceWarningOpen, setEmptyEvidenceWarningOpen] = useState(false);
 
   const customDayNum = Number(customDayRaw);
   const isCustomDayValid =
@@ -1311,8 +1544,17 @@ function LogModalBody({
   const inspected = form.fertile + form.clear + form.uncertain;
   const isTallyOverCapacity = inspected > totalEggsSet;
   const isZeroTally = inspected === 0;
+  const hasEvidence = form.note.trim().length > 0 || form.photos.length > 0;
 
   const isSaveDisabled = isZeroTally || isTallyOverCapacity || customDayError;
+
+  const handleSave = () => {
+    if (!hasEvidence) {
+      setEmptyEvidenceWarningOpen(true);
+      return;
+    }
+    onSubmit(form);
+  };
 
   const readFiles = (files: FileList | null) => {
     if (!files) return;
@@ -1499,6 +1741,13 @@ function LogModalBody({
             <p className="mt-1.5 flex items-center gap-1" style={{ fontSize: 12, color: "#DC2626", fontWeight: 600 }}>
               <AlertCircle size={13} /> Total inspected eggs cannot exceed eggs set ({totalEggsSet})
             </p>
+          ) : isZeroTally ? (
+            <p
+              className="mt-1.5 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5"
+              style={{ fontSize: 12, color: WARN.fg, backgroundColor: WARN.bg, fontWeight: 600 }}
+            >
+              <AlertCircle size={13} /> Enter at least one egg count to enable Save Inspection.
+            </p>
           ) : (
             <p className="mt-1.5 text-center text-xs font-semibold text-[#1A1A1A]">
               Recorded eggs: {inspected}/{totalEggsSet}
@@ -1595,28 +1844,66 @@ function LogModalBody({
 
       {/* Footer actions */}
       <div
-        className="sticky bottom-0 flex justify-end gap-2 px-5 py-4"
+        className="sticky bottom-0 px-5 py-4"
         style={{ backgroundColor: CARD, borderTop: `1px solid ${BORDER}` }}
       >
-        <Button variant="ghost" className="rounded-full" onClick={onCancel}>Cancel</Button>
-        <Button
-          className="rounded-full"
-          style={{ backgroundColor: RUST, color: "#fff", opacity: isSaveDisabled ? 0.5 : 1 }}
-          disabled={isSaveDisabled}
-          title={
-            isTallyOverCapacity
-              ? `Total inspected eggs cannot exceed eggs set (${totalEggsSet})`
-              : customDayError
-              ? `Day must be between 1 and ${totalDays}`
-              : isZeroTally
-              ? "Enter at least one egg count"
-              : undefined
-          }
-          onClick={() => onSubmit(form)}
-        >
-          <CheckCircle2 size={15} /> {isEditing ? "Update Inspection" : "Save Inspection"}
-        </Button>
+        {!hasEvidence && !isSaveDisabled && (
+          <p
+            className="mb-3 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-center"
+            style={{ fontSize: 12, color: WARN.fg, backgroundColor: WARN.bg, fontWeight: 600 }}
+          >
+            <AlertCircle size={13} /> No notes or photos attached. You can still save the egg tally.
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" className="rounded-full" onClick={onCancel}>Cancel</Button>
+          <Button
+            className="rounded-full"
+            style={{ backgroundColor: RUST, color: "#fff", opacity: isSaveDisabled ? 0.5 : 1 }}
+            disabled={isSaveDisabled}
+            title={
+              isTallyOverCapacity
+                ? `Total inspected eggs cannot exceed eggs set (${totalEggsSet})`
+                : customDayError
+                ? `Day must be between 1 and ${totalDays}`
+                : isZeroTally
+                ? "Enter at least one egg count"
+                : undefined
+            }
+            onClick={handleSave}
+          >
+            <CheckCircle2 size={15} /> {isEditing ? "Update Inspection" : "Save Inspection"}
+          </Button>
+        </div>
       </div>
+
+      <AlertDialog open={emptyEvidenceWarningOpen} onOpenChange={setEmptyEvidenceWarningOpen}>
+        <AlertDialogContent
+          className="rounded-2xl border-[#E8E2D5]"
+          style={{ backgroundColor: CARD, color: TEXT }}
+        >
+          <AlertDialogHeader className="text-left">
+            <AlertDialogTitle style={{ color: TEXT, fontSize: 18, fontWeight: 700 }}>
+              Save without notes or photos?
+            </AlertDialogTitle>
+            <AlertDialogDescription style={{ color: MUTED, fontSize: 13, lineHeight: 1.5 }}>
+              No comments or images are attached. This will record the egg tally only. Are you sure you want to save this candling journal?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full" style={{ borderColor: BORDER, color: MUTED }}>
+              Go back
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full"
+              style={{ backgroundColor: RUST, color: "#FFFFFF" }}
+              onClick={() => onSubmit(form)}
+            >
+              Save inspection
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -1632,12 +1919,24 @@ function KeyValue({ label, value, accent }: { label: string; value: React.ReactN
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
-export function DetailScreen({ unit, modes, onUpdate }: {
+export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
   unit: Incubator; modes: Mode[];
   onUpdate: (patch: Partial<Incubator>) => void;
+  onOpenTrends: () => void;
 }) {
   const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
   const candling = computeCandling(mode.incubationDays);
+  const environmentalReadings = useMemo(() => {
+    const generated = buildHistory(unit, mode);
+    if (generated.length === 0) return generated;
+    // Keep the latest summary row tied to the live values shown above while
+    // retaining the same historical source used by the Trends screen.
+    return generated.map((reading, index) =>
+      index === generated.length - 1
+        ? { ...reading, temp: unit.temp, humidity: unit.humidity }
+        : reading,
+    );
+  }, [unit.id, unit.dayOfIncubation, unit.status, unit.temp, unit.humidity, mode.id, mode.targetTemp.min, mode.targetTemp.max, mode.targetHumidity.min, mode.targetHumidity.max]);
 
   const [tab, setTab] = useState<DetailTab>("monitor");
   const [settingTab, setSettingTab] = useState<"mode" | "turning" | "device">("mode");
@@ -1935,8 +2234,8 @@ export function DetailScreen({ unit, modes, onUpdate }: {
             >
               <GaugeDial
                 value={unit.temp}
-                min={35}
-                max={40}
+                min={30}
+                max={42}
                 safe={mode.targetTemp}
                 unit="°C"
                 label="Temperature"
@@ -1944,60 +2243,51 @@ export function DetailScreen({ unit, modes, onUpdate }: {
               />
               <GaugeDial
                 value={unit.humidity}
-                min={40}
-                max={80}
+                min={30}
+                max={90}
                 safe={mode.targetHumidity}
                 unit="%"
                 label="Humidity"
                 size={120}
               />
-              <GaugeDial
-                value={unit.waterOk ? 100 : 0}
-                min={0}
-                max={100}
-                safe={{ min: 1, max: 100 }}
-                unit=""
-                label="Water Level"
-                size={120}
-                decimals={0}
-                accent={unit.waterOk ? "ok" : "crit"}
-                centerLabel={unit.waterOk ? "Normal" : "Low"}
-                centerColor={unit.waterOk ? "#16A34A" : "#DC2626"}
-                safeLabel={unit.waterOk ? "Float switch closed" : "Float switch open — refill"}
-              />
+              <WaterDroplet ok={unit.waterOk} />
             </div>
           </SectionCard>
 
-          {/* Lower grid */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <SectionCard title="Active systems">
-              <div className="space-y-3">
-                <ActuatorRow icon={<Flame size={19} />} name="Heater" sub="PTC element"
-                  on={heaterOn} tone={WARN} label="Heating" offLabel="Standby" pulse />
-                <ActuatorRow icon={<Fan size={19} className={fanOn ? "animate-spin" : ""} style={fanOn ? { animationDuration: "2.4s" } : undefined} />}
-                  name="Fan" sub="Air circulation" on={fanOn} tone={OK} label="Running" offLabel="Off" />
-                <ActuatorRow icon={<Waves size={19} />} name="Mist maker" sub="Humidity control"
-                  on={mistOn} tone={OK} label="Active" offLabel="Standby" pulse />
-              </div>
-            </SectionCard>
+          {/* Lower monitor area — controls and schedule balance the history
+              summary, so neither column stretches around an empty card. */}
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+            <div className="space-y-5">
+              <SectionCard title="Active systems">
+                <div className="space-y-3">
+                  <ActuatorRow icon={<Flame size={19} />} name="Heater" sub="PTC element"
+                    on={heaterOn} tone={WARN} label="Heating" offLabel="Standby" pulse />
+                  <ActuatorRow icon={<Fan size={19} className={fanOn ? "animate-spin" : ""} style={fanOn ? { animationDuration: "2.4s" } : undefined} />}
+                    name="Fan" sub="Air circulation" on={fanOn} tone={OK} label="Running" offLabel="Off" />
+                  <ActuatorRow icon={<Waves size={19} />} name="Mist maker" sub="Humidity control"
+                    on={mistOn} tone={OK} label="Active" offLabel="Standby" pulse />
+                </div>
+              </SectionCard>
 
-            {/* Water now lives in the snapshot dials, so turning fills this column. */}
-            <SectionCard title="Turning schedule" subtitle={`Every ${unit.turnInterval}h · ${unit.autoTurn ? "auto-turn on" : "manual"}`}>
-              <InnerTile>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2" style={{ color: MUTED, fontSize: 13 }}>
-                    <Clock size={14} /> Next turn
-                  </span>
-                  {next.overdue
-                    ? <StatusPill tone={CRIT}>{next.text}</StatusPill>
-                    : <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{next.text}</span>}
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <span style={{ color: MUTED, fontSize: 13 }}>Last turned</span>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>{relTime(unit.lastTurned)}</span>
-                </div>
-              </InnerTile>
-            </SectionCard>
+              <SectionCard title="Turning schedule" subtitle={`Every ${unit.turnInterval}h · ${unit.autoTurn ? "auto-turn on" : "manual"}`}>
+                <InnerTile>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2" style={{ color: MUTED, fontSize: 13 }}>
+                      <Clock size={14} /> Next turn
+                    </span>
+                    {next.overdue
+                      ? <StatusPill tone={CRIT}>{next.text}</StatusPill>
+                      : <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{next.text}</span>}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span style={{ color: MUTED, fontSize: 13 }}>Last turned</span>
+                    <span style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>{relTime(unit.lastTurned)}</span>
+                  </div>
+                </InnerTile>
+              </SectionCard>
+            </div>
+
+            <EnvironmentalSummary readings={environmentalReadings} onViewTrends={onOpenTrends} />
           </div>
         </div>
       )}
@@ -2007,24 +2297,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
         <div className="space-y-5">
 
           {/* Timeline header with dynamic completion disabling */}
-          <SectionCard
-            title="Incubation Timeline"
-            action={
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => {
-                      setEditingEntry(null);
-                      setShowLogForm(true);
-                  }}
-                  className="rounded-full transition-all"
-                  style={{ ...rustBtn, fontSize: 13 }}
-                  title="Log Candling Inspection"
-                >
-                  <Plus size={14} /> Log Inspection
-                </Button>
-              </div>
-            }
-          >
+          <SectionCard title="Incubation Timeline">
             <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={unit.candled} interactive />
           </SectionCard>
 
@@ -2048,10 +2321,21 @@ export function DetailScreen({ unit, modes, onUpdate }: {
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
             {/* LEFT — inspection history feed */}
             <div className="space-y-4 lg:col-span-3">
-              <div>
+              <div className="flex items-center justify-between gap-3">
                 <p style={{ fontSize: 18, fontWeight: 600, color: "#1A1A1A", marginBottom: 20 }}>
                   Candling Journal
                 </p>
+                <Button
+                  onClick={() => {
+                    setEditingEntry(null);
+                    setShowLogForm(true);
+                  }}
+                  className="mb-5 rounded-full transition-all"
+                  style={{ ...rustBtn, fontSize: 13 }}
+                  title="Log Candling Inspection"
+                >
+                  <Plus size={14} /> Log Inspection
+                </Button>
               </div>
               {/* Timeline Section Container with 24px top padding */}
               <div className="relative pt-[24px]">
@@ -2200,6 +2484,23 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                     })(),
                   )}
                 </ul>
+
+                {loggedEntries.length === 0 && (
+                  <div
+                    className="ml-[52px] mt-8 flex max-w-xl items-start gap-3 rounded-2xl px-4 py-3.5"
+                    style={{ backgroundColor: WARN.bg, border: `1px solid ${WARN.fg}44` }}
+                  >
+                    <AlertCircle className="mt-0.5 shrink-0" size={18} color={WARN.fg} />
+                    <div>
+                      <p style={{ color: WARN.fg, fontSize: 13, fontWeight: 700 }}>
+                        No inspection recorded yet
+                      </p>
+                      <p className="mt-0.5" style={{ color: "#79551A", fontSize: 12, lineHeight: 1.5 }}>
+                        Check the eggs, then click “Log Inspection” above to record your count. Notes and photos are optional.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Delete Confirmation Modal Dialog */}
                 <Dialog open={entryToDelete !== null} onOpenChange={(open) => !open && setEntryToDelete(null)}>
