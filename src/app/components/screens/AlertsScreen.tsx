@@ -6,8 +6,8 @@ import { Mascot } from "../Mascot";
 import { AlertEntry, AlertSeverity } from "../../data/mockData";
 import { severityStyle, timeAgo } from "../alerts/alertStyle";
 
-const RUST = "#AD3A1D";
-const TEXT = "#1C1917";
+const RUST = "#A84323";
+const TEXT = "#1A1A1A";
 const MUTED = "#78716C";
 const BORDER = "#E8E2D5";
 const CARD_BORDER = "#EAE7E1";

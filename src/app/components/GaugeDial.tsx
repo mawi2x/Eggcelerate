@@ -14,6 +14,12 @@ interface GaugeDialProps {
   safeLabel?: string;
   /** Extra content under the caption — sub-label, action button, etc. */
   footer?: React.ReactNode;
+  /** Binary sensors: force the arc to a fixed color ("ok"=green, "crit"=red). */
+  accent?: "ok" | "crit";
+  /** Binary sensors: replaces the centre number with text (e.g. "Normal"). */
+  centerLabel?: string;
+  /** Text color for centerLabel (green/red for binary sensors). */
+  centerColor?: string;
 }
 
 // Refined design tokens.
@@ -21,7 +27,7 @@ const TRACK = "#ECE6D9";
 const SAFE = "#16A34A";
 const AMBER = "#D97706";
 const CRIMSON = "#DC2626";
-const TEXT = "#2D241E";
+const TEXT = "#1A1A1A";
 const MUTED = "#5A4838";
 
 // Open-bottom circular gauge (270° sweep) with a shaded safe band.
@@ -36,6 +42,9 @@ export function GaugeDial({
   decimals = 1,
   safeLabel,
   footer,
+  accent,
+  centerLabel,
+  centerColor,
 }: GaugeDialProps) {
   const cx = size / 2;
   const cy = size / 2;
@@ -67,8 +76,10 @@ export function GaugeDial({
   };
 
   const inSafe = value >= safe.min && value <= safe.max;
-  const arcColor = inSafe ? SAFE : value > safe.max ? CRIMSON : AMBER;
-  const valAngle = valueToAngle(value);
+  const arcColor = accent === "ok" ? SAFE : accent === "crit" ? CRIMSON : inSafe ? SAFE : value > safe.max ? CRIMSON : AMBER;
+  // Low binary state keeps a short visible red stub instead of an empty arc.
+  const arcValue = accent === "crit" ? min + (max - min) * 0.22 : value;
+  const valAngle = valueToAngle(arcValue);
   const knob = polar(valAngle);
 
   return (
@@ -101,14 +112,16 @@ export function GaugeDial({
           y={cy + 2}
           textAnchor="middle"
           fontFamily="Baloo 2, sans-serif"
-          fontSize={valueFont}
+          fontSize={centerLabel ? Math.round(valueFont * 0.72) : valueFont}
           fontWeight={700}
-          fill={TEXT}
+          fill={centerColor ?? TEXT}
         >
-          {value.toFixed(decimals)}
-          <tspan fontSize={unitFont} dx={1}>
-            {unit}
-          </tspan>
+          {centerLabel ?? value.toFixed(decimals)}
+          {!centerLabel && (
+            <tspan fontSize={unitFont} dx={1}>
+              {unit}
+            </tspan>
+          )}
         </text>
         <text
           x={cx}

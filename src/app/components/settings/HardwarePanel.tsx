@@ -74,7 +74,7 @@ export function HardwarePanel({ units }: Props) {
           {units.length === 0 && (
             <div
               className="rounded-2xl px-5 py-10 text-center"
-              style={{ backgroundColor: "#FBFAF7", border: `1px dashed ${BORDER}` }}
+              style={{ backgroundColor: "#FAF6F0", border: `1px dashed ${BORDER}` }}
             >
               <p style={{ fontWeight: 700, color: TEXT }}>No devices paired yet</p>
             </div>

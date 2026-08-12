@@ -55,11 +55,11 @@ import {
 import { Incubator, Mode, buildHistory, hatchHistory } from "../../data/mockData";
 
 // ── Design tokens ───────────────────────────────────────────────────────────
-const RUST = "#AD3A1D";
+const RUST = "#A84323";
 const CARD = "#F9F6F0";
 const SURFACE = "#FFFFFF";
 const BORDER = "#E8E2D5";
-const TEXT = "#2D241E";
+const TEXT = "#1A1A1A";
 const MUTED = "#5A4838";
 const OK = "#16A34A";
 const OK_BG = "#DCFCE7";

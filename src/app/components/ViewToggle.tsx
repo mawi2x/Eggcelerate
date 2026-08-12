@@ -27,7 +27,7 @@ export function ViewToggle({ view, onChange }: Props) {
             className="flex h-9 w-9 items-center justify-center rounded-full transition-colors"
             style={{
               backgroundColor: active ? "#FFFFFF" : "transparent",
-              color: active ? "#AD3A1D" : "#8A6B52",
+              color: active ? "#A84323" : "#8A6B52",
               boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
             }}
           >

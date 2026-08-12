@@ -67,10 +67,12 @@ export interface Incubator {
   deviceId: string;
   modeId: string;
   dayOfIncubation: number;
+  /** Eggs loaded at cycle start — used for hatch-rate calculation. */
+  totalEggsLoaded?: number;
   temp: number; // °C
   humidity: number; // %
-  waterLevel: number; // % of mist-maker reservoir
-  lastRefilled: string; // ISO
+  /** Binary float switch: true = closed (water sufficient), false = open (low). */
+  waterOk: boolean;
   tempTrend: number;
   humidityTrend: number;
   powerSource: PowerSource;
@@ -87,18 +89,15 @@ export interface Incubator {
 
 export type ReadingState = "ok" | "warning" | "critical";
 
-// Water reservoir: under 10% = critical, under 20% = warning.
-export function waterState(level: number): ReadingState {
-  if (level < 10) return "critical";
-  if (level < 20) return "warning";
-  return "ok";
+// Binary float switch: closed = sufficient, open = low.
+export function waterState(ok: boolean): ReadingState {
+  return ok ? "ok" : "critical";
 }
 
-export function getWaterStatusInfo(level: number): { label: string; color: string } {
-  if (level >= 80) return { label: "Optimal", color: "#16A34A" };
-  if (level >= 30) return { label: "Normal", color: "#5A4838" };
-  if (level >= 15) return { label: "Low", color: "#D97706" };
-  return { label: "Critical Low", color: "#DC2626" };
+export function getWaterStatusInfo(ok: boolean): { label: string; color: string } {
+  return ok
+    ? { label: "Normal", color: "#16A34A" }
+    : { label: "Low", color: "#DC2626" };
 }
 
 export function rangeState(value: number, safe: Range): ReadingState {
@@ -106,7 +105,7 @@ export function rangeState(value: number, safe: Range): ReadingState {
 }
 
 export const readingStateColors: Record<ReadingState, string> = {
-  ok: "#2D241E",
+  ok: "#1A1A1A",
   warning: "#D97706",
   critical: "#DC2626",
 };
@@ -118,7 +117,7 @@ export function getUnitIssues(unit: Incubator, mode: Mode): string[] {
   else if (unit.temp < mode.targetTemp.min) issues.push("temperature low");
   if (unit.humidity > mode.targetHumidity.max) issues.push("humidity high");
   else if (unit.humidity < mode.targetHumidity.min) issues.push("humidity low");
-  if (waterState(unit.waterLevel) !== "ok") issues.push("water reservoir low");
+  if (waterState(unit.waterOk) !== "ok") issues.push("water reservoir low");
   if (unit.powerSource === "battery" && unit.batteryPct <= 25) issues.push("battery low");
   if (new Date(unit.nextTurn).getTime() < Date.now()) issues.push("turning overdue");
   if (!unit.paired) issues.push("device disconnected");
@@ -174,90 +173,110 @@ const chamberOneLog: CandlingLogEntry[] = [
   { day: 9, label: "Development check",    date: dayAgo(0), fertile: 21, clear: 2, uncertain: 1, note: "Movement observed in several eggs. One uncertain — will recheck at day 13.", photos: [], checks: ["veining", "airCell", "movement"] },
 ];
 
+// Chamber Twelve is past its 21-day hatch window with fertile eggs still in the
+// tray — the "Completed" badge, Extend (+24h), and Harvest & Reset all show.
+const chamberTwelveLog: CandlingLogEntry[] = [
+  { day: 6, label: "First candling",    date: dayAgo(15), fertile: 36, clear: 4, uncertain: 2, note: "Strong veining across 36 eggs. 4 clears culled, 2 uncertain kept for recheck.", photos: [], checks: ["veining", "airCell"] },
+  { day: 13, label: "Second candling",  date: dayAgo(8), fertile: 34, clear: 4, uncertain: 4, note: "Healthy dark spots on 34 eggs. 2 more clears removed; uncertains set aside.", photos: [], checks: ["veining", "airCell", "movement"] },
+  { day: 18, label: "Lockdown check",   date: dayAgo(3), fertile: 33, clear: 5, uncertain: 4, note: "Air cells tilted for hatch position. No internal pip yet at lockdown.", photos: [], checks: ["veining", "airCell", "movement"] },
+];
+
 export const initialIncubators: Incubator[] = [
   {
     id: "chamber-1", name: "Chamber One", deviceId: "EGG-1003", modeId: "broiler",
-    dayOfIncubation: 9, temp: 37.6, humidity: 57, waterLevel: 78, lastRefilled: iso(360),
+    dayOfIncubation: 9,
+    totalEggsLoaded: 42, temp: 37.6, humidity: 57, waterOk: true,
     tempTrend: 0.1, humidityTrend: 0.3, powerSource: "grid", batteryPct: 100, status: "optimal",
     lastTurned: iso(95), nextTurn: isoAhead(145), turnInterval: 4, autoTurn: true, paired: true,
     candled: { 6: true }, candlingLog: chamberOneLog,
   },
   {
     id: "chamber-2", name: "Chamber Two", deviceId: "EGG-1004", modeId: "duck",
-    dayOfIncubation: 14, temp: 37.5, humidity: 51, waterLevel: 34, lastRefilled: iso(900),
+    dayOfIncubation: 14,
+    totalEggsLoaded: 32, temp: 37.5, humidity: 51, waterOk: true,
     tempTrend: -0.1, humidityTrend: -1.4, powerSource: "solar", batteryPct: 82, status: "warning",
     lastTurned: iso(50), nextTurn: isoAhead(190), turnInterval: 6, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-3", name: "Chamber Three", deviceId: "EGG-1005", modeId: "quail",
-    dayOfIncubation: 15, temp: 39.2, humidity: 64, waterLevel: 12, lastRefilled: iso(1500),
+    dayOfIncubation: 15,
+    totalEggsLoaded: 60, temp: 39.2, humidity: 64, waterOk: false,
     tempTrend: 1.3, humidityTrend: 0.2, powerSource: "battery", batteryPct: 23, status: "alert",
     lastTurned: iso(220), nextTurn: isoAhead(-40), turnInterval: 4, autoTurn: false, paired: false,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-4", name: "Chamber Four", deviceId: "EGG-1006", modeId: "goose",
-    dayOfIncubation: 22, temp: 37.4, humidity: 62, waterLevel: 88, lastRefilled: iso(180),
+    dayOfIncubation: 22,
+    totalEggsLoaded: 24, temp: 37.4, humidity: 62, waterOk: true,
     tempTrend: -0.1, humidityTrend: 0.4, powerSource: "grid", batteryPct: 100, status: "optimal",
     lastTurned: iso(40), nextTurn: isoAhead(320), turnInterval: 6, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-5", name: "Chamber Five", deviceId: "EGG-1007", modeId: "turkey",
-    dayOfIncubation: 5, temp: 37.7, humidity: 58, waterLevel: 65, lastRefilled: iso(600),
+    dayOfIncubation: 5,
+    totalEggsLoaded: 30, temp: 37.7, humidity: 58, waterOk: true,
     tempTrend: 0.2, humidityTrend: -0.2, powerSource: "solar", batteryPct: 91, status: "optimal",
     lastTurned: iso(70), nextTurn: isoAhead(170), turnInterval: 4, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-6", name: "Chamber Six", deviceId: "EGG-1008", modeId: "pheasant",
-    dayOfIncubation: 11, temp: 38.1, humidity: 49, waterLevel: 18, lastRefilled: iso(1100),
+    dayOfIncubation: 11,
+    totalEggsLoaded: 40, temp: 38.1, humidity: 49, waterOk: false,
     tempTrend: 0.5, humidityTrend: -1.1, powerSource: "grid", batteryPct: 100, status: "warning",
     lastTurned: iso(120), nextTurn: isoAhead(240), turnInterval: 6, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-7", name: "Chamber Seven", deviceId: "EGG-1009", modeId: "broiler",
-    dayOfIncubation: 1, temp: 37.6, humidity: 56, waterLevel: 100, lastRefilled: iso(30),
+    dayOfIncubation: 1,
+    totalEggsLoaded: 42, temp: 37.6, humidity: 56, waterOk: true,
     tempTrend: 0, humidityTrend: 0, powerSource: "grid", batteryPct: 100, status: "optimal",
     lastTurned: iso(20), nextTurn: isoAhead(220), turnInterval: 4, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-8", name: "Chamber Eight", deviceId: "EGG-1010", modeId: "peafowl",
-    dayOfIncubation: 18, temp: 39.8, humidity: 42, waterLevel: 8, lastRefilled: iso(2000),
+    dayOfIncubation: 18,
+    totalEggsLoaded: 24, temp: 39.8, humidity: 42, waterOk: false,
     tempTrend: 1.8, humidityTrend: -2.2, powerSource: "battery", batteryPct: 15, status: "alert",
     lastTurned: iso(300), nextTurn: isoAhead(-90), turnInterval: 6, autoTurn: false, paired: false,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-9", name: "Chamber Nine", deviceId: "EGG-1011", modeId: "quail",
-    dayOfIncubation: 17, temp: 37.5, humidity: 68, waterLevel: 90, lastRefilled: iso(120),
+    dayOfIncubation: 17,
+    totalEggsLoaded: 60, temp: 37.5, humidity: 68, waterOk: true,
     tempTrend: 0, humidityTrend: 0.6, powerSource: "battery", batteryPct: 82, status: "optimal",
     lastTurned: iso(35), nextTurn: isoAhead(205), turnInterval: 4, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-10", name: "Chamber Ten", deviceId: "EGG-1012", modeId: "duck",
-    dayOfIncubation: 3, temp: 37.6, humidity: 55, waterLevel: 82, lastRefilled: iso(240),
+    dayOfIncubation: 3,
+    totalEggsLoaded: 32, temp: 37.6, humidity: 55, waterOk: true,
     tempTrend: 0.1, humidityTrend: -0.1, powerSource: "grid", batteryPct: 100, status: "optimal",
     lastTurned: iso(60), nextTurn: isoAhead(300), turnInterval: 6, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-11", name: "Chamber Eleven", deviceId: "EGG-1013", modeId: "swan",
-    dayOfIncubation: 29, temp: 36.9, humidity: 71, waterLevel: 25, lastRefilled: iso(1300),
+    dayOfIncubation: 29,
+    totalEggsLoaded: 16, temp: 36.9, humidity: 71, waterOk: false,
     tempTrend: -0.4, humidityTrend: 0.3, powerSource: "battery", batteryPct: 64, status: "warning",
     lastTurned: iso(90), nextTurn: isoAhead(390), turnInterval: 8, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
   {
     id: "chamber-12", name: "Chamber Twelve", deviceId: "EGG-1014", modeId: "broiler-hh",
-    dayOfIncubation: 20, temp: 37.5, humidity: 65, waterLevel: 92, lastRefilled: iso(90),
+    dayOfIncubation: 22,
+    totalEggsLoaded: 37, temp: 37.5, humidity: 65, waterOk: true,
     tempTrend: 0, humidityTrend: 0.2, powerSource: "grid", batteryPct: 100, status: "optimal",
     lastTurned: iso(25), nextTurn: isoAhead(215), turnInterval: 4, autoTurn: true, paired: true,
-    candled: {}, candlingLog: [],
+    candled: { 6: true, 13: true, 18: true }, candlingLog: chamberTwelveLog,
   },
 ];
 
@@ -447,6 +466,41 @@ export function isHatchingSoon(dayOfIncubation: number, incubationDays: number):
   return daysUntilHatch(dayOfIncubation, incubationDays) <= 2;
 }
 
+/** Save a completed cycle to farm history; returns the hatch rate percentage. */
+export function recordHarvest(params: {
+  chamber: string; modeName: string; cycleDays: number;
+  totalEggs: number; hatchedEggs: number;
+}): number {
+  const endDate = new Date().toISOString().slice(0, 10);
+  const startDate = new Date(Date.now() - params.cycleDays * 86_400_000).toISOString().slice(0, 10);
+  const rate = params.totalEggs > 0 ? Number(((params.hatchedEggs / params.totalEggs) * 100).toFixed(1)) : 0;
+  hatchHistory.push({
+    id: `h-${Date.now()}`,
+    chamber: params.chamber,
+    modeName: params.modeName,
+    startDate,
+    endDate,
+    totalEggs: params.totalEggs,
+    hatchedEggs: params.hatchedEggs,
+  });
+  return rate;
+}
+
+/** Patch that returns a chamber to the "Ready" state after harvest. */
+export function resetChamberToReady(unit: Incubator): Partial<Incubator> {
+  const nowIso = new Date().toISOString();
+  return {
+    dayOfIncubation: 0,
+    totalEggsLoaded: 0,
+    candled: {},
+    candlingLog: [],
+    autoTurn: false,
+    status: "optimal",
+    lastTurned: nowIso,
+    nextTurn: new Date(Date.now() + 24 * 3_600_000).toISOString(),
+  };
+}
+
 export const statusLabels: Record<UnitStatus, string> = {
   optimal: "Optimal",
   warning: "Needs Attention",
@@ -455,8 +509,8 @@ export const statusLabels: Record<UnitStatus, string> = {
 
 export const stateColors = {
   optimal: "#3D9970",
-  warning: "#CB6036",
-  alert: "#AD3A1D",
-  offline: "#D8BE65",
+  warning: "#C8623A",
+  alert: "#A84323",
+  offline: "#E0C068",
   terracotta: "#BE6239",
 } as const;

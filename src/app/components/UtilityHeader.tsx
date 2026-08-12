@@ -29,7 +29,7 @@ export function UtilityHeader({ alertCount, onViewAlerts }: Props) {
             color: "#FFFFFF",
             fontSize: 12,
             fontWeight: 700,
-            border: "2px solid #FBFAF7",
+            border: "2px solid #FAF6F0",
           }}
         >
           {alertCount}

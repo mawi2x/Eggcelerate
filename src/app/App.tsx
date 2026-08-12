@@ -122,7 +122,7 @@ export default function App() {
       <span
         className="shrink-0 rounded-full px-3 py-1"
         style={{
-          backgroundColor: "#C85A32",
+          backgroundColor: "#C8623A",
           color: "#FFFFFF",
           fontSize: 13,
           fontWeight: 700,
@@ -205,7 +205,7 @@ export default function App() {
   return (
     <div
       className="min-h-screen w-full"
-      style={{ backgroundColor: "#FBFAF7" }}
+      style={{ backgroundColor: "#FAF6F0" }}
     >
       <AppSidebar
         active={screen}
@@ -260,6 +260,7 @@ export default function App() {
               modes={modes}
               onOpenUnit={openUnit}
               onAddIncubator={addIncubator}
+              onUpdateUnit={updateIncubator}
             />
           )}
           {screen === "detail" && (

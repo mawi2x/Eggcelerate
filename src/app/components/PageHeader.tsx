@@ -21,7 +21,7 @@ interface Props {
 
 const TEXT = "#1A1A1A";
 const MUTED = "#78716C";
-const RUST = "#C85A32";
+const RUST = "#C8623A";
 
 /**
  * Rows 1 and 2 of the main content area, identical on every screen:

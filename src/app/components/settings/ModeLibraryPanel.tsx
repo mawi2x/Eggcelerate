@@ -437,7 +437,7 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       {filteredModes.length === 0 ? (
         <div
           className="rounded-2xl px-5 py-12 text-center"
-          style={{ backgroundColor: "#FBFAF7", border: `1px dashed ${BORDER}` }}
+          style={{ backgroundColor: "#FAF6F0", border: `1px dashed ${BORDER}` }}
         >
           <p style={{ fontWeight: 700, color: TEXT }}>No modes match "{modeSearch}"</p>
           <p className="mt-1" style={{ color: MUTED, fontSize: 13 }}>

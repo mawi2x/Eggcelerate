@@ -1,15 +1,15 @@
 // Shared visual language for the Settings master-detail panels.
-export const RUST = "#C85A32";
+export const RUST = "#C8623A";
 export const SURFACE = "#FFFFFF";
 export const BORDER = "#EAE7E1";
 export const DIVIDER = "#F0EDE6";
 export const MUTED = "#78716C";
-export const TEXT = "#1C1917";
+export const TEXT = "#1A1A1A";
 export const CRIT = "#DC2626";
 export const CRIT_BG = "#FEE2E2";
 
 export const inputClass =
-  "h-auto w-full rounded-xl px-3.5 py-2.5 transition-colors focus-visible:border-[#C85A32] focus-visible:ring-2 focus-visible:ring-[#C85A32]/25";
+  "h-auto w-full rounded-xl px-3.5 py-2.5 transition-colors focus-visible:border-[#C8623A] focus-visible:ring-2 focus-visible:ring-[#C8623A]/25";
 export const inputStyle = { borderColor: "#DDD8CE", backgroundColor: "#FFFFFF", color: TEXT };
 export const labelStyle = { color: "#57534E", fontSize: 13, fontWeight: 600 };
 

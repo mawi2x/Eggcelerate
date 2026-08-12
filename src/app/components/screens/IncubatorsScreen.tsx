@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Cpu, Search, ChevronLeft, ChevronRight, ArrowUpNarrowWide, ArrowDownWideNarrow, Loader2, TriangleAlert } from "lucide-react";
 import { IncubatorCard } from "../IncubatorCard";
+import { HarvestModal } from "../HarvestModal";
 import { StatusBadge } from "../StatusBadge";
 import { ViewToggle, ViewMode } from "../ViewToggle";
 import { FieldCounterLabel } from "../FieldCounterLabel";
@@ -20,6 +21,7 @@ import {
 } from "../ui/select";
 import {
   Incubator, Mode, UnitStatus, rangeState, waterState, readingStateColors, daysUntilHatch,
+  recordHarvest, resetChamberToReady,
 } from "../../data/mockData";
 
 interface Props {
@@ -27,14 +29,15 @@ interface Props {
   modes: Mode[];
   onOpenUnit: (id: string) => void;
   onAddIncubator: (unit: Incubator) => void;
+  onUpdateUnit: (id: string, patch: Partial<Incubator>) => void;
 }
 
 // Design tokens.
-const RUST = "#AD3A1D";
+const RUST = "#A84323";
 const CARD = "#F9F6F0";
 const BORDER = "#E8E2D5";
 const MUTED = "#5A4838";
-const TEXT = "#2D241E";
+const TEXT = "#1A1A1A";
 const INPUT_BORDER = "#D8D0C0";
 
 type Filter = "all" | UnitStatus;
@@ -49,7 +52,7 @@ const sortTriggerStyle = {
   height: 38,
   backgroundColor: "#FFFFFF",
   borderColor: "#EAE7E1",
-  color: "#1C1917",
+  color: "#1A1A1A",
   fontSize: 13,
   fontWeight: 500,
 };
@@ -61,7 +64,7 @@ const sortOptions: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
 ];
 
-export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: Props) {
+export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onUpdateUnit }: Props) {
   // Chamber search is local to this page's controls row.
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -71,6 +74,23 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
   const [sortAsc, setSortAsc] = useState(true);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [harvestUnit, setHarvestUnit] = useState<Incubator | null>(null);
+
+  const handleHarvestSave = (unit: Incubator, hatched: number, unhatched: number) => {
+    const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
+    const rate = recordHarvest({
+      chamber: unit.name,
+      modeName: mode.name,
+      cycleDays: Math.max(unit.dayOfIncubation, mode.incubationDays),
+      totalEggs: hatched + unhatched,
+      hatchedEggs: hatched,
+    });
+    onUpdateUnit(unit.id, resetChamberToReady(unit));
+    setHarvestUnit(null);
+    toast.success(`${unit.name}: harvest logged`, {
+      description: `${rate}% hatch rate saved to history — chamber reset to Ready.`,
+    });
+  };
 
   const [deviceId, setDeviceId] = useState("");
   const [name, setName] = useState("");
@@ -173,11 +193,10 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
         name: trimmedName,
         deviceId: id,
         modeId: mode.id,
-        dayOfIncubation: 1,
+        dayOfIncubation: 0,
         temp: (mode.targetTemp.min + mode.targetTemp.max) / 2,
         humidity: Math.round((mode.targetHumidity.min + mode.targetHumidity.max) / 2),
-        waterLevel: 100,
-        lastRefilled: nowIso,
+        waterOk: true,
         tempTrend: 0,
         humidityTrend: 0,
         powerSource: "grid",
@@ -270,7 +289,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
           <button
             onClick={() => { setSortAsc((v) => !v); setPage(1); }}
             className="flex shrink-0 items-center justify-center transition-colors hover:bg-[#FAF7F2] focus-visible:outline-none focus-visible:ring-2"
-            style={{ width: 32, height: 32, backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 8, color: "#1C1917" }}
+            style={{ width: 32, height: 32, backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 8, color: "#1A1A1A" }}
             title={sortAsc ? "Ascending" : "Descending"}
             aria-label={`Sort direction: ${sortAsc ? "ascending" : "descending"}`}
           >
@@ -296,7 +315,14 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
       ) : view === "grid" ? (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {sorted.map((unit) => (
-            <IncubatorCard key={unit.id} unit={unit} mode={modeOf(unit.modeId)} onOpen={onOpenUnit} cta="Configure" />
+            <IncubatorCard
+              key={unit.id}
+              unit={unit}
+              mode={modeOf(unit.modeId)}
+              onOpen={onOpenUnit}
+              cta="Configure"
+              onHarvest={(u) => setHarvestUnit(u)}
+            />
           ))}
         </div>
       ) : (
@@ -321,7 +347,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
                   const mode = modeOf(unit.modeId);
                   const tempSt = rangeState(unit.temp, mode.targetTemp);
                   const humSt = rangeState(unit.humidity, mode.targetHumidity);
-                  const waterSt = waterState(unit.waterLevel);
+                  const waterSt = waterState(unit.waterOk);
                   return (
                     <TableRow
                       key={unit.id}
@@ -337,7 +363,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
                       <TableCell style={{ color: MUTED }}>{unit.dayOfIncubation} of {mode.incubationDays}</TableCell>
                       <TableCell className="text-right" style={{ color: readingStateColors[tempSt], fontWeight: 700 }}>{unit.temp}°C</TableCell>
                       <TableCell className="text-right" style={{ color: readingStateColors[humSt], fontWeight: 700 }}>{unit.humidity}%</TableCell>
-                      <TableCell className="text-right" style={{ color: readingStateColors[waterSt], fontWeight: 700 }}>{unit.waterLevel}%</TableCell>
+                      <TableCell className="text-right" style={{ color: readingStateColors[waterSt], fontWeight: 700 }}>{unit.waterOk ? "Normal" : "Low"}</TableCell>
                       <TableCell><StatusBadge status={unit.status} /></TableCell>
                       <TableCell>
                         <Button
@@ -470,6 +496,17 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator }: P
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Final harvest & reset modal */}
+      <HarvestModal
+        open={harvestUnit !== null}
+        onOpenChange={(o) => { if (!o) setHarvestUnit(null); }}
+        chamberName={harvestUnit?.name ?? ""}
+        totalEggsLoaded={harvestUnit?.totalEggsLoaded ?? 0}
+        onSave={(hatched, unhatched) => {
+          if (harvestUnit) handleHarvestSave(harvestUnit, hatched, unhatched);
+        }}
+      />
     </div>
   );
 }

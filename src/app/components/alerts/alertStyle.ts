@@ -6,7 +6,7 @@ export const severityStyle: Record<
   AlertSeverity,
   { color: string; bg: string; Icon: typeof Info; label: string }
 > = {
-  critical: { color: "#AD3A1D", bg: "rgba(173,58,29,0.12)", Icon: AlertOctagon, label: "Critical" },
+  critical: { color: "#A84323", bg: "rgba(173,58,29,0.12)", Icon: AlertOctagon, label: "Critical" },
   warning: { color: "#B04E27", bg: "rgba(203,96,54,0.12)", Icon: AlertTriangle, label: "Warning" },
   info: { color: "#8A6B52", bg: "rgba(138,107,82,0.12)", Icon: Info, label: "Info" },
 };

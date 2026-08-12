@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import {
   RotateCw, Clock, Check, CheckCircle2, Circle, AlertCircle, Calendar, X,
-  Waves, Droplet, Wifi, WifiOff,
+  Waves, Wifi, WifiOff,
   Flame, Fan, Camera, Egg, Plus,
   Activity, ScanSearch, Settings2, Zap, ShieldAlert,
   ChevronLeft, ChevronRight, Download, Trash2, Pencil,
@@ -20,6 +20,7 @@ import {
 } from "../ui/select";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { GaugeDial } from "../GaugeDial";
+import { HarvestModal } from "../HarvestModal";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "../ui/dialog";
@@ -27,7 +28,8 @@ import { cn } from "../ui/utils";
 import { TrayFertilityBar, fertilityTones } from "../candling/EggIcons";
 import {
   Incubator, Mode, CandlingLogEntry, CandlingCheckpoint, DevelopmentCheck, developmentCheckLabels,
-  computeCandling, waterState, getWaterStatusInfo,
+  computeCandling,
+  recordHarvest, resetChamberToReady,
 } from "../../data/mockData";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -47,14 +49,14 @@ interface CandleForm {
 }
 
 // ─── Design tokens ──────────────────────────────────────────────────────────────
-const RUST = "#AD3A1D";
+const RUST = "#A84323";
 // Milestone nodes use the lighter burnt orange so they read on the rust bar.
-const RUST_NODE = "#C85A32";
-const BG = "#FBFAF7";
+const RUST_NODE = "#C8623A";
+const BG = "#FAF6F0";
 const CARD = "#F9F6F0";
 const SURFACE = "#FFFFFF";
 const BORDER = "#E8E2D5";
-const TEXT = "#2D241E";
+const TEXT = "#1A1A1A";
 const MUTED = "#5A4838";
 const INPUT_BORDER = "#D8D0C0";
 const RADIUS = 16;
@@ -162,8 +164,8 @@ function StatusPill({ tone, children, dot = true, pulse = false }: {
 }
 
 // ─── Shared card shell ────────────────────────────────────────────────────────
-function SectionCard({ title, subtitle, action, children, centered = false }: {
-  title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode; centered?: boolean;
+function SectionCard({ title, subtitle, action, children, centered = false, titleSize = 16 }: {
+  title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode; centered?: boolean; titleSize?: number;
 }) {
   return (
     <Card style={{ backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
@@ -173,7 +175,7 @@ function SectionCard({ title, subtitle, action, children, centered = false }: {
           style={centered ? { justifyContent: "center", textAlign: "center" } : { justifyContent: "space-between" }}
         >
           <div>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1C1917" }}>{title}</h3>
+            <h3 style={{ fontSize: titleSize, fontWeight: 600, color: "#1A1A1A" }}>{title}</h3>
             {subtitle && <p style={{ fontSize: 12, color: MUTED }}>{subtitle}</p>}
           </div>
           {action}
@@ -262,7 +264,7 @@ function MiniIncubationCalendar({ currentDay, totalDays, candling }: {
       <div className="mb-3 flex items-center justify-center gap-2">
         <button
           onClick={() => shiftMonth(-1)}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[#C85A32]"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[#C8623A]"
           aria-label="Previous month"
         >
           <ChevronLeft size={15} />
@@ -272,7 +274,7 @@ function MiniIncubationCalendar({ currentDay, totalDays, candling }: {
         </span>
         <button
           onClick={() => shiftMonth(1)}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[#C85A32]"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[#C8623A]"
           aria-label="Next month"
         >
           <ChevronRight size={15} />
@@ -435,11 +437,14 @@ function Timeline({ currentDay, totalDays, candling, candled }: {
   candling: { day: number; label: string }[];
   candled: Record<number, boolean>;
 }) {
-  const fillPct = dayFraction(currentDay, totalDays) * 100;
+  // Progress bar is capped at 100% (the target hatch day) — overtime only
+  // changes the day counter, never the bar.
+  const fillPct = Math.min(100, dayFraction(currentDay, totalDays) * 100);
+  const badgeLeft = `clamp(28px, ${fillPct}%, calc(100% - 28px))`;
   const NODE = 28;
   return (
     <div>
-      <div className="relative mx-1" style={{ paddingTop: 56, paddingBottom: 62 }}>
+      <div className="relative mx-1 overflow-visible" style={{ paddingTop: 56, paddingBottom: 62 }}>
         {/* Track frame — the axis line, centered vertically in the container.
             It is the positioning context for the "Today" badge (bottom: 100%)
             and the milestone labels (top: 100%). */}
@@ -457,17 +462,20 @@ function Timeline({ currentDay, totalDays, candling, candled }: {
           <div
             className="absolute flex flex-col items-center"
             style={{
-              left: `clamp(28px, ${fillPct}%, calc(100% - 28px))`,
+              left: badgeLeft,
               bottom: "100%",
               transform: "translateX(-50%)",
               zIndex: 30,
             }}
           >
             <span
-              className="whitespace-nowrap rounded-full px-2.5 py-0.5"
-              style={{ fontSize: 11, fontWeight: 800, backgroundColor: RUST, color: "#fff", boxShadow: "0 2px 6px rgba(173,58,29,0.28)" }}
+              className="flex flex-col items-center justify-center whitespace-nowrap"
+              style={{ fontSize: 11, fontWeight: 800, backgroundColor: RUST, color: "#fff", boxShadow: "0 2px 6px rgba(173,58,29,0.28)", padding: "4px 10px", borderRadius: 10, gap: 1 }}
             >
-              Today
+              <span style={{ lineHeight: 1.2 }}>Today</span>
+              <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.2, letterSpacing: "0.05em" }}>
+                DAY {currentDay}
+              </span>
             </span>
             {/* Stem + ▼ triangle; the tip touches the top of the track line. */}
             <svg width={10} height={14} viewBox="0 0 10 14" style={{ display: "block" }} aria-hidden>
@@ -980,7 +988,7 @@ function JournalEntryCard({
     <>
       <Card style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: RADIUS, boxShadow: SHADOW }}>
         <CardContent style={{ padding: 18 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "#1C1917", marginBottom: 8 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "#1A1A1A", marginBottom: 8 }}>
             Candling Status
           </p>
 
@@ -1043,7 +1051,7 @@ function JournalEntryCard({
           )}
 
           {/* Position 2 (Note Section Label) */}
-          <span className="block" style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "#1C1917", marginBottom: 6 }}>
+          <span className="block" style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "#1A1A1A", marginBottom: 6 }}>
             Note:
           </span>
 
@@ -1081,7 +1089,7 @@ function JournalEntryCard({
                   style={{
                     backgroundColor: "#FAF9F6",
                     border: `1px solid ${BORDER}`,
-                    borderLeft: `3px solid #C85A32`,
+                    borderLeft: `3px solid #C8623A`,
                     borderRadius: 12,
                     cursor: "pointer",
                   }}
@@ -1358,7 +1366,7 @@ function LogModalBody({
         <DialogTitle style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>
           {isEditing ? `Edit Inspection Log — Day ${form.targetDay}` : "Candling Journal"}
         </DialogTitle>
-        <DialogDescription className="text-xs font-medium text-[#2D241E]">
+        <DialogDescription className="text-xs font-medium text-[#1A1A1A]">
           {modeName}
         </DialogDescription>
       </DialogHeader>
@@ -1492,7 +1500,7 @@ function LogModalBody({
               <AlertCircle size={13} /> Total inspected eggs cannot exceed eggs set ({totalEggsSet})
             </p>
           ) : (
-            <p className="mt-1.5 text-center text-xs font-semibold text-[#2D241E]">
+            <p className="mt-1.5 text-center text-xs font-semibold text-[#1A1A1A]">
               Recorded eggs: {inspected}/{totalEggsSet}
             </p>
           )}
@@ -1633,10 +1641,13 @@ export function DetailScreen({ unit, modes, onUpdate }: {
 
   const [tab, setTab] = useState<DetailTab>("monitor");
   const [settingTab, setSettingTab] = useState<"mode" | "turning" | "device">("mode");
+  const [setupModeId, setSetupModeId] = useState("");
+  const [setupEggs, setSetupEggs] = useState("");
   const [pendingModeId, setPendingModeId] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [earlyTurnOpen, setEarlyTurnOpen] = useState(false);
   const [syncChoice, setSyncChoice] = useState<"reset" | "maintain">("reset");
+  const [harvestOpen, setHarvestOpen] = useState(false);
   const [showLogForm, setShowLogForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CandlingLogEntry | null>(null);
   const [entryToDelete, setEntryToDelete] = useState<CandlingLogEntry | null>(null);
@@ -1652,9 +1663,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
   const heaterOn = unit.temp < mode.targetTemp.max;
   const overheating = unit.temp > mode.targetTemp.max;
   const fanOn = heaterOn || overheating;
-  const mistOn = unit.humidity < mode.targetHumidity.max && unit.waterLevel > 0;
-
-  const waterInfo = getWaterStatusInfo(unit.waterLevel);
+  const mistOn = unit.humidity < mode.targetHumidity.max && unit.waterOk;
 
   const nextTurnLabel = () => {
     const diffMin = Math.round((new Date(unit.nextTurn).getTime() - Date.now()) / 60000);
@@ -1753,9 +1762,39 @@ export function DetailScreen({ unit, modes, onUpdate }: {
     });
   };
 
-  const handleRefill = () => {
-    onUpdate({ waterLevel: 100, lastRefilled: new Date().toISOString() });
-    toast.success(`${unit.name}: reservoir refilled to 100%`);
+  // "Ready" chamber — no active cycle yet; the setup panel starts Day 1.
+  const isReady = unit.dayOfIncubation === 0 && unit.paired;
+  const setupMode = modes.find((m) => m.id === setupModeId);
+  const startCycle = () => {
+    if (!setupMode) return;
+    onUpdate({
+      modeId: setupMode.id,
+      dayOfIncubation: 1,
+      totalEggsLoaded: Number(setupEggs.replace(/[^0-9]/g, "")) || 0,
+      turnInterval: setupMode.defaultTurnInterval,
+      status: "optimal",
+      lastTurned: new Date().toISOString(),
+      nextTurn: new Date(Date.now() + setupMode.defaultTurnInterval * 3_600_000).toISOString(),
+    });
+    toast.success(`${unit.name}: incubation cycle started`, {
+      description: `Day 1 · ${setupMode.name} — live monitoring active.`,
+    });
+  };
+
+  // End of cycle — overtime runs automatically; harvest & reset ends it.
+  const saveHarvest = (hatched: number, unhatched: number) => {
+    const rate = recordHarvest({
+      chamber: unit.name,
+      modeName: mode.name,
+      cycleDays: Math.max(unit.dayOfIncubation, totalDays),
+      totalEggs: hatched + unhatched,
+      hatchedEggs: hatched,
+    });
+    onUpdate(resetChamberToReady(unit));
+    setHarvestOpen(false);
+    toast.success(`${unit.name}: harvest logged`, {
+      description: `${rate}% hatch rate saved to history — chamber reset to Ready.`,
+    });
   };
 
   const totalDays = mode.incubationDays;
@@ -1787,11 +1826,96 @@ export function DetailScreen({ unit, modes, onUpdate }: {
   const nextCheckpoint = candling.find((c) => !unit.candled[c.day] && c.day >= currentDay)
     ?? candling.find((c) => !unit.candled[c.day]);
 
+  // Hatch day reached — overtime keeps heating, humidity, and sensors running
+  // automatically; the day counter ticks past the target until harvest.
+  const cycleEnded = !isReady && unit.dayOfIncubation >= totalDays;
+
+  // Simulated continuous running: +1 day every 20s while in overtime.
+  useEffect(() => {
+    if (!cycleEnded || !unit.paired) return;
+    const t = setInterval(() => {
+      onUpdate({ dayOfIncubation: unit.dayOfIncubation + 1 });
+    }, 20_000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cycleEnded, unit.dayOfIncubation, unit.paired]);
+
   const rustBtn = { backgroundColor: RUST, color: "#fff" };
   const outlineBtn = { borderColor: BORDER, color: RUST, backgroundColor: SURFACE };
 
   return (
     <div className="space-y-5" style={{ color: TEXT }}>
+      {/* Ready chamber — cycle setup panel sits at the top of the view. */}
+      {isReady && (        <SectionCard title="Incubation Cycle Setup" subtitle="Chamber ready — load eggs, pick a mode, and start Day 1.">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0 flex-1 space-y-3">
+              <div>
+                <Label style={{ fontSize: 13, color: TEXT }}>Species Mode</Label>
+                <Select value={setupModeId} onValueChange={setSetupModeId}>
+                  <SelectTrigger className="mt-1.5 w-full rounded-xl" style={{ borderColor: INPUT_BORDER, backgroundColor: SURFACE }}>
+                    <SelectValue placeholder="Select Incubation Mode..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name} · {m.incubationDays} days</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label style={{ fontSize: 13, color: TEXT }}>Total eggs loaded</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={setupEggs}
+                  onChange={(e) => setSetupEggs(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))}
+                  placeholder="37"
+                  className="mt-1.5 w-28 rounded-xl"
+                  style={{ borderColor: INPUT_BORDER, backgroundColor: SURFACE, color: TEXT }}
+                />
+              </div>
+              {setupMode && (
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "Temperature", value: `${setupMode.targetTemp.min}–${setupMode.targetTemp.max}°C` },
+                    { label: "Humidity", value: `${setupMode.targetHumidity.min}–${setupMode.targetHumidity.max}% RH` },
+                    { label: "Turning cadence", value: `Every ${setupMode.defaultTurnInterval} hours` },
+                  ].map((s) => (
+                    <span
+                      key={s.label}
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
+                      style={{ backgroundColor: "#F5EFE6", color: MUTED, fontSize: 12, fontWeight: 600 }}
+                    >
+                      {s.label}: {s.value}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <Button
+              onClick={startCycle}
+              disabled={!setupMode}
+              className="rounded-full"
+              style={{ backgroundColor: "#8B3A1C", color: "#fff", minHeight: 40 }}
+            >
+              Start Incubation Cycle
+            </Button>
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Overtime — hatch day reached; runs automatically until harvest. */}
+      {cycleEnded && (
+        <SectionCard title="Past Hatch Day" titleSize={19}>
+          <p style={{ fontSize: 14, color: "#6E6259" }}>
+            Some eggs may still be hatching. Finish the cycle when ready.
+          </p>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={() => setHarvestOpen(true)} className="rounded-full" style={{ backgroundColor: "#8B3A1C", color: "#fff", minHeight: 40 }}>
+              Finish Cycle
+            </Button>
+          </div>
+        </SectionCard>
+      )}
+
       {/* Row 3 — sub-navigation. Rows 1 and 2 (back link, title, badges) are
           owned by PageHeader, which already supplies the gap above this bar. */}
       <SubTabNav active={tab} onChange={setTab} />
@@ -1828,31 +1952,18 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                 size={120}
               />
               <GaugeDial
-                value={unit.waterLevel}
+                value={unit.waterOk ? 100 : 0}
                 min={0}
                 max={100}
-                safe={{ min: 20, max: 100 }}
-                unit="%"
+                safe={{ min: 1, max: 100 }}
+                unit=""
                 label="Water Level"
                 size={120}
                 decimals={0}
-                safeLabel={`Safe range: ${waterInfo.label}`}
-                footer={
-                  <>
-                    <p className="mt-0.5" style={{ color: MUTED, fontSize: 12 }}>
-                      Refilled {relTime(unit.lastRefilled)}
-                    </p>
-                    <Button
-                      onClick={handleRefill}
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 rounded-full"
-                      style={outlineBtn}
-                    >
-                      <Droplet size={14} /> Mark Refilled
-                    </Button>
-                  </>
-                }
+                accent={unit.waterOk ? "ok" : "crit"}
+                centerLabel={unit.waterOk ? "Normal" : "Low"}
+                centerColor={unit.waterOk ? "#16A34A" : "#DC2626"}
+                safeLabel={unit.waterOk ? "Float switch closed" : "Float switch open — refill"}
               />
             </div>
           </SectionCard>
@@ -1938,7 +2049,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
             {/* LEFT — inspection history feed */}
             <div className="space-y-4 lg:col-span-3">
               <div>
-                <p style={{ fontSize: 18, fontWeight: 600, color: "#1C1917", marginBottom: 20 }}>
+                <p style={{ fontSize: 18, fontWeight: 600, color: "#1A1A1A", marginBottom: 20 }}>
                   Candling Journal
                 </p>
               </div>
@@ -1985,7 +2096,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                       <li key={`log-${n.day}`} className="relative flex items-start">
                         {/* 40px Left Axis Column Container for Node Circle */}
                         <div className="shrink-0 flex justify-center relative z-10" style={{ width: 40 }}>
-                          {/* Node Circle (32x32px solid rust circle #C85A32 with white day number) */}
+                          {/* Node Circle (32x32px solid rust circle #C8623A with white day number) */}
                           <span
                             className="flex items-center justify-center rounded-full"
                             style={{
@@ -2006,7 +2117,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                         <div className="flex-1 min-w-0 pl-3">
                           {/* Header bar: "1st Candling" + Date + Edit & Delete actions */}
                           <div className="flex flex-wrap items-center justify-between gap-2" style={{ minHeight: 32 }}>
-                            <p className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 16, fontWeight: 700, color: "#1C1917" }}>
+                            <p className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}>
                               {n.idx >= 0 ? (CANDLE_SHORT_LABELS[n.idx] ?? n.entry.label) : n.entry.label}
                               <CheckCircle2 size={18} fill="#16A34A" color="#FFFFFF" strokeWidth={2.5} />
                             </p>
@@ -2019,7 +2130,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                                   setEditingEntry(n.entry);
                                   setShowLogForm(true);
                                 }}
-                                className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FFF5F2] hover:text-[#C85A32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                                className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FFF5F2] hover:text-[#C8623A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                                 aria-label={`Edit entry for Day ${n.entry.day}`}
                                 title="Edit Inspection"
                               >
@@ -2074,7 +2185,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                           {/* Right Content Column */}
                           <div className="flex-1 min-w-0 pl-3">
                             {isDue ? (
-                              <p className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 16, fontWeight: 700, color: "#1C1917" }}>
+                              <p className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}>
                                 {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
                                 <AlertCircle size={18} fill="#D97706" color="#FFFFFF" strokeWidth={2.5} />
                               </p>
@@ -2097,7 +2208,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                     style={{ borderRadius: 16 }}
                   >
                     <DialogHeader className="gap-2 text-left">
-                      <DialogTitle style={{ fontSize: 18, fontWeight: 700, color: "#1C1917" }}>
+                      <DialogTitle style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A" }}>
                         Delete Journal Entry?
                       </DialogTitle>
                       <DialogDescription style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}>
@@ -2174,7 +2285,7 @@ export function DetailScreen({ unit, modes, onUpdate }: {
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#78716C" }}>
                       Viability Rate
                     </span>
-                    <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 700, color: "#C85A32" }}>
+                    <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 700, color: "#C8623A" }}>
                       {viabilityRate}%
                     </span>
                   </div>
@@ -2188,41 +2299,53 @@ export function DetailScreen({ unit, modes, onUpdate }: {
       {/* ════════════════ DEVICE SETTINGS ════════════════ */}
       {tab === "settings" && (
         <>
-          {/* Unified outer frame — one white card split by a vertical divider */}
-          <div
-            className="flex flex-col overflow-hidden lg:flex-row"
-            style={{ backgroundColor: "#FFFFFF", border: "1px solid #E5DACB", borderRadius: 16 }}
-          >
-          {/* ── Left pane — sub-settings pill menu ──────────────────────── */}
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          {/* ── Left Sub-Nav Card ────────────────────────────────────────── */}
           <nav
-            className="shrink-0 p-4"
-            style={{ width: "100%", maxWidth: 220 }}
+            className="shrink-0 rounded-2xl p-4 lg:sticky lg:top-6"
+            style={{
+              width: "100%",
+              maxWidth: 240,
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 16,
+              border: "1px solid #E5DACB",
+            }}
             aria-label="Device settings"
           >
             <ul className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
               {[
-                { id: "mode" as const, label: "Incubation Mode", Icon: Egg },
-                { id: "turning" as const, label: "Turning Schedule", Icon: RotateCw },
-                { id: "device" as const, label: "Device & Connection", Icon: Zap },
+                { id: "mode" as const, label: "INCUBATION MODE", Icon: Egg },
+                { id: "turning" as const, label: "TURNING SCHEDULE", Icon: RotateCw },
+                { id: "device" as const, label: "DEVICE & CONNECTION", Icon: Zap },
               ].map(({ id, label, Icon }) => {
                 const isActive = settingTab === id;
                 return (
                   <li key={id} className="min-w-0 shrink-0 lg:shrink lg:w-full">
                     <button
                       onClick={() => setSettingTab(id)}
-                      className="flex w-full items-center gap-2.5 rounded-full px-3 transition-colors hover:bg-[#FAF6EE]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 transition-colors hover:bg-[#FAF6EE]"
                       style={{
                         height: 40,
                         backgroundColor: isActive ? "#8B3A1C" : "transparent",
                         color: isActive ? "#FFFFFF" : "#1A1A1A",
-                        fontSize: 13,
-                        fontWeight: 600,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase",
                         whiteSpace: "nowrap",
                       }}
                       aria-current={isActive ? "page" : undefined}
                     >
-                      <Icon size={16} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
-                      <span className="min-w-0 truncate">{label}</span>
+                      <Icon
+                        size={16}
+                        strokeWidth={isActive ? 2.5 : 2}
+                        className="shrink-0"
+                        style={{ color: isActive ? "#FFFFFF" : "#1A1A1A" }}
+                      />
+                      <span className="min-w-0 truncate" title={label}>
+                        {label}
+                      </span>
                     </button>
                   </li>
                 );
@@ -2230,134 +2353,154 @@ export function DetailScreen({ unit, modes, onUpdate }: {
             </ul>
           </nav>
 
-          {/* Vertical divider */}
-          <div className="hidden lg:block" style={{ width: 1, backgroundColor: "#E5DACB" }} />
-
-          {/* ── Right pane — active sub-setting content ─────────────────── */}
-          <section className="min-w-0 flex-1 p-6">
-              {settingTab === "mode" && (
-                <>
-                  <h2 style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 20, fontWeight: 700, color: TEXT }}>
+          {/* ── Right Content Card ───────────────────────────────────────── */}
+          <section
+            className="min-w-0 flex-1 rounded-2xl"
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              border: "1px solid #E5DACB",
+            }}
+          >
+            {settingTab === "mode" && (
+              <>
+                <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A" }}>
                     Incubation Mode
                   </h2>
-                  <div className="mt-4 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <p className="truncate" style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{mode.name}</p>
-                        <span className="shrink-0 rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 700, backgroundColor: "#F5EFE6", color: "#8B3A1C" }}>
-                          {mode.builtIn ? "Built-in" : "Custom"}
-                        </span>
-                      </div>
-                      <Select
-                        value={unit.modeId}
-                        onValueChange={(val) => {
-                          if (val !== unit.modeId) {
-                            setAcknowledged(false);
-                            setPendingModeId(val);
-                          }
-                        }}
-                      >
-                        <SelectTrigger
-                          className="h-auto w-fit rounded-lg [&_svg]:!text-[#1A1A1A]"
-                          style={{ backgroundColor: "#F4ECE1", border: "1px solid #E5DACB", color: "#1A1A1A", fontSize: 13, fontWeight: 600, padding: "8px 14px" }}
-                        >
-                          Switch Mode
-                        </SelectTrigger>
-                        <SelectContent>
-                          {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                  <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
+                    View target temperature, humidity, and candling schedule for the active species preset.
+                  </p>
+                </div>
+                <div className="pt-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className="truncate" style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{mode.name}</p>
+                      <span className="shrink-0 rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 700, backgroundColor: "#F5EFE6", color: "#8B3A1C" }}>
+                        {mode.builtIn ? "Built-in" : "Custom"}
+                      </span>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <KeyValue label="Target Temperature" value={`${mode.targetTemp.min}–${mode.targetTemp.max}°C`} />
-                      <KeyValue label="Target Humidity" value={`${mode.targetHumidity.min}–${mode.targetHumidity.max}% RH`} />
-                      <KeyValue label="Turning Cadence" value={`Every ${mode.defaultTurnInterval} hours`} />
-                      <KeyValue label="Scheduled Candling Days" value={candling.map((c) => `Day ${c.day}`).join(", ")} />
-                    </div>
-                    <button
-                      onClick={() => toast("Mode Library", { description: "Edit this preset under Settings → Mode Library." })}
-                      className="inline-flex items-center gap-1.5 text-[#C85A32] transition-colors hover:text-[#8B3A1C]"
-                      style={{ fontSize: 13, fontWeight: 600 }}
+                    <Select
+                      value={unit.modeId}
+                      onValueChange={(val) => {
+                        if (val !== unit.modeId) {
+                          setAcknowledged(false);
+                          setPendingModeId(val);
+                        }
+                      }}
                     >
-                      Edit Preset in Mode Library <ChevronRight size={14} />
-                    </button>
+                      <SelectTrigger
+                        className="h-auto w-fit rounded-lg [&_svg]:!text-[#1A1A1A]"
+                        style={{ backgroundColor: "#F4ECE1", border: "1px solid #E5DACB", color: "#1A1A1A", fontSize: 13, fontWeight: 600, padding: "8px 14px" }}
+                      >
+                        Switch Mode
+                      </SelectTrigger>
+                      <SelectContent>
+                        {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </>
-              )}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <KeyValue label="Target Temperature" value={`${mode.targetTemp.min}–${mode.targetTemp.max}°C`} />
+                    <KeyValue label="Target Humidity" value={`${mode.targetHumidity.min}–${mode.targetHumidity.max}% RH`} />
+                    <KeyValue label="Turning Cadence" value={`Every ${mode.defaultTurnInterval} hours`} />
+                    <KeyValue label="Scheduled Candling Days" value={candling.map((c) => `Day ${c.day}`).join(", ")} />
+                  </div>
+                  <button
+                    onClick={() => toast("Mode Library", { description: "Edit this preset under Settings → Mode Library." })}
+                    className="inline-flex items-center gap-1.5 text-[#C8623A] transition-colors hover:text-[#8B3A1C]"
+                    style={{ fontSize: 13, fontWeight: 600 }}
+                  >
+                    Edit Preset in Mode Library <ChevronRight size={14} />
+                  </button>
+                </div>
+              </>
+            )}
 
-              {settingTab === "turning" && (
-                <>
-                  <h2 style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 20, fontWeight: 700, color: TEXT }}>
+            {settingTab === "turning" && (
+              <>
+                <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A" }}>
                     Turning Schedule
                   </h2>
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>Automatic turning</p>
-                        <p style={{ color: MUTED, fontSize: 12 }}>Turn eggs on schedule automatically.</p>
-                      </div>
-                      <Switch checked={unit.autoTurn} onCheckedChange={(v) => onUpdate({ autoTurn: v })} />
+                  <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
+                    Configure automatic egg rotation intervals and manual turning controls.
+                  </p>
+                </div>
+                <div className="pt-5 space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>Automatic turning</p>
+                      <p style={{ color: MUTED, fontSize: 12 }}>Turn eggs on schedule automatically.</p>
                     </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Turn every</span>
-                      <Select value={String(unit.turnInterval)} onValueChange={(v) => onUpdate({ turnInterval: Number(v) })}>
-                        <SelectTrigger className="h-9 w-[110px] rounded-xl" style={{ borderColor: "rgba(120,53,15,0.20)", backgroundColor: SURFACE, fontSize: 13 }}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[2, 4, 6, 8, 12].map((h) => <SelectItem key={h} value={String(h)}>{h} Hours</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate" style={{ fontSize: 12, color: next.overdue ? CRIT.fg : MUTED }}>
-                        Next: {next.text} • Last: {relTime(unit.lastTurned)}
-                      </span>
-                      <Button onClick={handleTurnClick} variant="outline" size="sm" className="shrink-0 rounded-full" style={outlineBtn}>
-                        <RotateCw size={14} /> Turn Now
-                      </Button>
-                    </div>
+                    <Switch checked={unit.autoTurn} onCheckedChange={(v) => onUpdate({ autoTurn: v })} />
                   </div>
-                </>
-              )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Turn every</span>
+                    <Select value={String(unit.turnInterval)} onValueChange={(v) => onUpdate({ turnInterval: Number(v) })}>
+                      <SelectTrigger className="h-9 w-[110px] rounded-xl" style={{ borderColor: "rgba(120,53,15,0.20)", backgroundColor: SURFACE, fontSize: 13 }}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[2, 4, 6, 8, 12].map((h) => <SelectItem key={h} value={String(h)}>{h} Hours</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate" style={{ fontSize: 12, color: next.overdue ? CRIT.fg : MUTED }}>
+                      Next: {next.text} • Last: {relTime(unit.lastTurned)}
+                    </span>
+                    <Button onClick={handleTurnClick} variant="outline" size="sm" className="shrink-0 rounded-full" style={outlineBtn}>
+                      <RotateCw size={14} /> Turn Now
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
 
-              {settingTab === "device" && (
-                <>
-                  <h2 style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 20, fontWeight: 700, color: TEXT }}>
+            {settingTab === "device" && (
+              <>
+                <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A" }}>
                     Device & Connection
                   </h2>
-                  <div className="mt-4 space-y-3">
-                    <KeyValue label="Device ID" value={unit.deviceId} />
-                    <KeyValue
-                      label="Connection Status"
-                      accent={unit.paired ? OK.fg : CRIT.fg}
-                      value={
-                        <span className="flex items-center gap-1.5">
-                          {unit.paired ? <Wifi size={15} /> : <WifiOff size={15} />}
-                          {unit.paired ? "Connected & Paired" : "Connection Lost"}
-                          {!unit.paired && (
-                            <Button
-                              onClick={() => { onUpdate({ paired: true }); toast.success(`${unit.name} reconnected`); }}
-                              variant="outline" size="sm"
-                              className="ml-1 rounded-full"
-                              style={outlineBtn}
-                            >
-                              <WifiOff size={13} /> Reconnect
-                            </Button>
-                          )}
-                        </span>
-                      }
-                    />
-                    <div className="rounded-xl p-3.5" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
-                      <div className="flex items-center justify-between">
-                        <p style={{ fontSize: 12, color: MUTED }}>Battery</p>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: unit.batteryPct <= 25 ? CRIT.fg : TEXT }}>{unit.batteryPct}%</span>
-                      </div>
-                      <Progress value={unit.batteryPct} className="mt-1.5 h-2" />
+                  <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
+                    Manage chamber hardware pairing, connectivity status, and power telemetry.
+                  </p>
+                </div>
+                <div className="pt-5 space-y-4">
+                  <KeyValue label="Device ID" value={unit.deviceId} />
+                  <KeyValue
+                    label="Connection Status"
+                    accent={unit.paired ? OK.fg : CRIT.fg}
+                    value={
+                      <span className="flex items-center gap-1.5">
+                        {unit.paired ? <Wifi size={15} /> : <WifiOff size={15} />}
+                        {unit.paired ? "Connected & Paired" : "Connection Lost"}
+                        {!unit.paired && (
+                          <Button
+                            onClick={() => { onUpdate({ paired: true }); toast.success(`${unit.name} reconnected`); }}
+                            variant="outline" size="sm"
+                            className="ml-1 rounded-full"
+                            style={outlineBtn}
+                          >
+                            <WifiOff size={13} /> Reconnect
+                          </Button>
+                        )}
+                      </span>
+                    }
+                  />
+                  <div className="rounded-xl p-3.5" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
+                    <div className="flex items-center justify-between">
+                      <p style={{ fontSize: 12, color: MUTED }}>Battery</p>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: unit.batteryPct <= 25 ? CRIT.fg : TEXT }}>{unit.batteryPct}%</span>
                     </div>
+                    <Progress value={unit.batteryPct} className="mt-1.5 h-2" />
                   </div>
-                </>
-              )}
+                </div>
+              </>
+            )}
           </section>
         </div>
 
@@ -2483,6 +2626,15 @@ export function DetailScreen({ unit, modes, onUpdate }: {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Final harvest & reset modal */}
+      <HarvestModal
+        open={harvestOpen}
+        onOpenChange={setHarvestOpen}
+        chamberName={unit.name}
+        totalEggsLoaded={unit.totalEggsLoaded ?? 0}
+        onSave={saveHarvest}
+      />
     </div>
   );
 }

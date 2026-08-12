@@ -4,8 +4,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { AlertEntry } from "../../data/mockData";
 import { severityStyle, timeAgo } from "./alertStyle";
 
-const RUST = "#AD3A1D";
-const TEXT = "#2D241E";
+const RUST = "#A84323";
+const TEXT = "#1A1A1A";
 const MUTED = "#5A4838";
 const BORDER = "#E8E2D5";
 const DIVIDER = "#F0EDE6";
@@ -46,7 +46,7 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
                 color: "#FFFFFF",
                 fontSize: 12,
                 fontWeight: 700,
-                border: "2px solid #FBFAF7",
+                border: "2px solid #FAF6F0",
               }}
             >
               {unreadCount}
@@ -94,7 +94,7 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
               return (
                 <li
                   key={a.id}
-                  className="group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[#FBFAF7]"
+                  className="group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[#FAF6F0]"
                   style={{ borderBottom: `1px solid ${DIVIDER}` }}
                 >
                   <span
@@ -157,7 +157,7 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
             setOpen(false);
             onViewAll();
           }}
-          className="flex w-full items-center justify-center gap-1.5 rounded-b-xl py-3 transition-colors hover:bg-[#FBFAF7]"
+          className="flex w-full items-center justify-center gap-1.5 rounded-b-xl py-3 transition-colors hover:bg-[#FAF6F0]"
           style={{ fontSize: 13, fontWeight: 600, color: RUST }}
         >
           View All Notifications <ArrowRight size={15} />

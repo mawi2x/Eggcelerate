@@ -22,12 +22,12 @@ interface Props {
 }
 
 // ── Design tokens ───────────────────────────────────────────────────────────
-const RUST = "#AD3A1D";
+const RUST = "#A84323";
 const CARD = "#F9F6F0";
 const BORDER = "#E8E2D5";
-const TEXT = "#2D241E";
+const TEXT = "#1A1A1A";
 const OK = "#16A34A";
-const HEADING = "#1C1917";
+const HEADING = "#1A1A1A";
 
 // Nominal tray capacity per species mode — used to estimate total eggs on set.
 const EGGS_PER_MODE: Record<string, number> = {
