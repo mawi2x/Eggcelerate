@@ -12,6 +12,7 @@ import {
   Mode,
   UnitStatus,
   hatchHistory,
+  nominalEggCapacity,
 } from "../../data/mockData";
 
 interface Props {
@@ -28,20 +29,6 @@ const BORDER = "#E8E2D5";
 const TEXT = "#1A1A1A";
 const OK = "#16A34A";
 const HEADING = "#1A1A1A";
-
-// Nominal tray capacity per species mode — used to estimate total eggs on set.
-const EGGS_PER_MODE: Record<string, number> = {
-  broiler: 42,
-  duck: 32,
-  quail: 60,
-  goose: 24,
-  turkey: 30,
-  pheasant: 40,
-  peafowl: 24,
-  swan: 16,
-  "broiler-hh": 42,
-  "rapid-quail": 60,
-};
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: CARD,
@@ -168,7 +155,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
   const stats = useMemo(() => {
     const count = (s: UnitStatus) => units.filter((u) => u.status === s).length;
     const connected = units.filter((u) => u.paired).length;
-    const totalEggs = units.reduce((s, u) => s + (EGGS_PER_MODE[u.modeId] ?? 30), 0);
+    const totalEggs = units.reduce((s, u) => s + nominalEggCapacity(u.modeId), 0);
     const modesInUse = Array.from(new Set(units.map((u) => modeOf(u.modeId).name)));
 
     // Chamber closest to hatching (fewest days remaining).
@@ -217,7 +204,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
       { eggs: 0, hatched: 0 },
     );
     return totals.eggs > 0 ? (totals.hatched / totals.eggs) * 100 : 0;
-  }, []);
+  }, [hatchHistory.length]);
 
   return (
     <div className="flex flex-col" style={{ gap: 32 }}>

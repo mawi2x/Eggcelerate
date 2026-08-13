@@ -14,7 +14,7 @@ interface Props {
   modes: Mode[];
   onUpdateMode: (id: string, patch: Partial<Mode>) => void;
   onAddMode: (mode: Mode) => void;
-  onDeleteMode: (id: string) => void;
+  onDeleteMode: (id: string) => boolean;
   account: Account;
   onUpdateAccount: (patch: Partial<Account>) => void;
   units: Incubator[];

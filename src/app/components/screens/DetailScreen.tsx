@@ -34,7 +34,7 @@ import { cn } from "../ui/utils";
 import { TrayFertilityBar, fertilityTones } from "../candling/EggIcons";
 import {
   Incubator, Mode, CandlingLogEntry, CandlingCheckpoint, DevelopmentCheck, developmentCheckLabels,
-  Reading, buildHistory, computeCandling,
+  Reading, buildHistory, computeCandling, localDateString, nominalEggCapacity,
   recordHarvest, resetChamberToReady,
 } from "../../data/mockData";
 
@@ -82,22 +82,8 @@ const MAX_PHOTOS = 9;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const NOTES_MAX = 500;
 
-// Nominal tray capacity per species mode — total eggs set.
-const EGGS_PER_MODE: Record<string, number> = {
-  broiler: 42,
-  duck: 32,
-  quail: 60,
-  goose: 24,
-  turkey: 30,
-  pheasant: 40,
-  peafowl: 24,
-  swan: 16,
-  "broiler-hh": 42,
-  "rapid-quail": 60,
-};
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => localDateString();
 const formatNodeDay = (day: number) => String(day > 99 ? 99 : day).slice(0, 3);
 
 function formatDisplayDate(dateStr: string) {
@@ -110,8 +96,15 @@ function formatDisplayDate(dateStr: string) {
   return isToday ? `Today (${formatted})` : formatted;
 }
 
-const emptyForm = (day: number): CandleForm => ({
-  targetDay: day, date: todayStr(), note: "", photos: [], fertile: 0, clear: 0, uncertain: 0, checks: [],
+const emptyForm = (day: number, previous?: Pick<CandlingLogEntry, "fertile" | "clear" | "uncertain">): CandleForm => ({
+  targetDay: day,
+  date: todayStr(),
+  note: "",
+  photos: [],
+  fertile: previous?.fertile ?? 0,
+  clear: previous?.clear ?? 0,
+  uncertain: previous?.uncertain ?? 0,
+  checks: [],
 });
 
 function markerStatus(day: number, currentDay: number, logged: boolean): MarkerStatus {
@@ -1436,6 +1429,7 @@ function LogModal({
   totalEggsSet,
   modeName,
   initialEntry,
+  previousEntry,
   onSubmit,
 }: {
   open: boolean;
@@ -1447,6 +1441,7 @@ function LogModal({
   totalEggsSet: number;
   modeName: string;
   initialEntry?: CandlingLogEntry | null;
+  previousEntry?: CandlingLogEntry | null;
   onSubmit: (form: CandleForm) => void;
 }) {
   return (
@@ -1464,6 +1459,7 @@ function LogModal({
           totalEggsSet={totalEggsSet}
           modeName={modeName}
           initialEntry={initialEntry}
+          previousEntry={previousEntry}
           onSubmit={onSubmit}
           onCancel={() => onOpenChange(false)}
         />
@@ -1480,6 +1476,7 @@ function LogModalBody({
   totalEggsSet,
   modeName,
   initialEntry,
+  previousEntry,
   onSubmit,
   onCancel,
 }: {
@@ -1490,6 +1487,7 @@ function LogModalBody({
   totalEggsSet: number;
   modeName: string;
   initialEntry?: CandlingLogEntry | null;
+  previousEntry?: CandlingLogEntry | null;
   onSubmit: (form: CandleForm) => void;
   onCancel: () => void;
 }) {
@@ -1526,7 +1524,7 @@ function LogModalBody({
         photos: initialEntry.photos,
         checks: initialEntry.checks,
       }
-    : emptyForm(defaultTargetDay);
+    : emptyForm(defaultTargetDay, previousEntry ?? undefined);
 
   const [form, setForm] = useState<CandleForm>(initialForm);
   const [dragging, setDragging] = useState(false);
@@ -1647,7 +1645,7 @@ function LogModalBody({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {candling.map((c) => (
+                {available.map((c) => (
                   <SelectItem key={c.day} value={String(c.day)}>{c.label} (Day {c.day})</SelectItem>
                 ))}
                 <SelectItem value="custom">Custom Day...</SelectItem>
@@ -1925,6 +1923,10 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
   onOpenTrends: () => void;
 }) {
   const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
+  const totalDays = mode.incubationDays;
+  const totalEggsSet = unit.totalEggsLoaded && unit.totalEggsLoaded > 0
+    ? unit.totalEggsLoaded
+    : nominalEggCapacity(unit.modeId);
   const candling = computeCandling(mode.incubationDays);
   const environmentalReadings = useMemo(() => {
     const generated = buildHistory(unit, mode);
@@ -1974,6 +1976,24 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
   const next = nextTurnLabel();
 
   const submitInspection = (form: CandleForm) => {
+    const counts = {
+      fertile: Math.max(0, Math.floor(Number(form.fertile) || 0)),
+      clear: Math.max(0, Math.floor(Number(form.clear) || 0)),
+      uncertain: Math.max(0, Math.floor(Number(form.uncertain) || 0)),
+    };
+    const inspected = counts.fertile + counts.clear + counts.uncertain;
+    if (!Number.isInteger(form.targetDay) || form.targetDay < 1 || form.targetDay > totalDays) {
+      toast.error(`Inspection day must be between Day 1 and Day ${totalDays}.`);
+      return;
+    }
+    if (inspected < 1) {
+      toast.error("Enter at least one egg count before saving the inspection.");
+      return;
+    }
+    if (inspected > totalEggsSet) {
+      toast.error(`The egg counts cannot exceed ${totalEggsSet} eggs loaded.`);
+      return;
+    }
     const c = candling.find((cp) => cp.day === form.targetDay);
     const label = c
       ? c.label
@@ -1986,7 +2006,7 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
       : `Day ${form.targetDay} Candling`;
     const entry: CandlingLogEntry = {
       day: form.targetDay, label, date: editingEntry?.date ?? todayStr(),
-      fertile: form.fertile, clear: form.clear, uncertain: form.uncertain,
+      fertile: counts.fertile, clear: counts.clear, uncertain: counts.uncertain,
       note: form.note.trim(), photos: form.photos, checks: form.checks,
     };
     onUpdate({
@@ -2064,12 +2084,21 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
   // "Ready" chamber — no active cycle yet; the setup panel starts Day 1.
   const isReady = unit.dayOfIncubation === 0 && unit.paired;
   const setupMode = modes.find((m) => m.id === setupModeId);
+  const setupCapacity = setupMode ? nominalEggCapacity(setupMode.id) : 0;
+  const setupEggCount = Number(setupEggs.replace(/[^0-9]/g, "")) || 0;
   const startCycle = () => {
-    if (!setupMode) return;
+    if (!setupMode) {
+      toast.error("Choose an incubation mode before starting the cycle.");
+      return;
+    }
+    if (setupEggCount < 1 || setupEggCount > setupCapacity) {
+      toast.error(`Enter between 1 and ${setupCapacity} eggs before starting.`);
+      return;
+    }
     onUpdate({
       modeId: setupMode.id,
       dayOfIncubation: 1,
-      totalEggsLoaded: Number(setupEggs.replace(/[^0-9]/g, "")) || 0,
+      totalEggsLoaded: setupEggCount,
       turnInterval: setupMode.defaultTurnInterval,
       status: "optimal",
       lastTurned: new Date().toISOString(),
@@ -2082,12 +2111,17 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
 
   // End of cycle — overtime runs automatically; harvest & reset ends it.
   const saveHarvest = (hatched: number, unhatched: number) => {
+    const hatchedCount = Math.floor(Number(hatched) || 0);
+    if (hatchedCount < 0 || hatchedCount > totalEggsSet) {
+      toast.error(`Hatched eggs must be between 0 and ${totalEggsSet}.`);
+      return;
+    }
     const rate = recordHarvest({
       chamber: unit.name,
       modeName: mode.name,
       cycleDays: Math.max(unit.dayOfIncubation, totalDays),
-      totalEggs: hatched + unhatched,
-      hatchedEggs: hatched,
+      totalEggs: totalEggsSet,
+      hatchedEggs: hatchedCount,
     });
     onUpdate(resetChamberToReady(unit));
     setHarvestOpen(false);
@@ -2096,13 +2130,20 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
     });
   };
 
-  const totalDays = mode.incubationDays;
   const currentDay = unit.dayOfIncubation;
   // Newest recorded checkpoint first, so the feed reads top-down by recency.
   const loggedEntries = [...unit.candlingLog].sort((a, b) => b.day - a.day);
-  const unloggedCount = candling.filter((c) => !unit.candled[c.day]).length;
+  // Keep the checkpoint state consistent even if an older record has a log but
+  // its candled flag was not saved.
+  const effectiveCandled = candling.reduce<Record<number, boolean>>((state, checkpoint) => {
+    state[checkpoint.day] = Boolean(
+      unit.candled[checkpoint.day] || unit.candlingLog.some((entry) => entry.day === checkpoint.day),
+    );
+    return state;
+  }, { ...unit.candled });
+  const unloggedCount = candling.filter((c) => !effectiveCandled[c.day]).length;
   // Checkpoints not yet logged — rendered as hollow nodes below the recorded ones.
-  const futureCheckpoints = candling.filter((c) => !unit.candled[c.day]);
+  const futureCheckpoints = candling.filter((c) => !effectiveCandled[c.day]);
   // One axis node per logged entry plus one per unlogged checkpoint, day-ordered.
   const feedNodes = [
     ...loggedEntries.map((entry) => ({
@@ -2115,15 +2156,20 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
     })),
   ].sort((a, b) => a.day - b.day);
 
-  // Aggregate candling summary for the current cycle.
-  const candSummary = loggedEntries.reduce(
-    (a, e) => ({ fertile: a.fertile + e.fertile, clear: a.clear + e.clear, uncertain: a.uncertain + e.uncertain }),
-    { fertile: 0, clear: 0, uncertain: 0 },
-  );
+  const latestCandlingEntry = loggedEntries[0] ?? null;
+  // Each candling entry is a snapshot of the same eggs. Use the latest
+  // snapshot for the cycle summary instead of adding the same eggs repeatedly.
+  const candSummary = latestCandlingEntry
+    ? {
+        fertile: latestCandlingEntry.fertile,
+        clear: latestCandlingEntry.clear,
+        uncertain: latestCandlingEntry.uncertain,
+      }
+    : { fertile: 0, clear: 0, uncertain: 0 };
   const candTotal = candSummary.fertile + candSummary.clear + candSummary.uncertain;
   const viabilityRate = candTotal > 0 ? Math.round((candSummary.fertile / candTotal) * 100) : 0;
-  const nextCheckpoint = candling.find((c) => !unit.candled[c.day] && c.day >= currentDay)
-    ?? candling.find((c) => !unit.candled[c.day]);
+  const nextCheckpoint = candling.find((c) => !effectiveCandled[c.day] && c.day >= currentDay)
+    ?? candling.find((c) => !effectiveCandled[c.day]);
 
   // Hatch day reached — overtime keeps heating, humidity, and sensors running
   // automatically; the day counter ticks past the target until harvest.
@@ -2225,7 +2271,7 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
 
           {/* Hero: Incubation Timeline */}
           <SectionCard title="Incubation Timeline">
-            <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={unit.candled} />
+            <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={effectiveCandled} />
             <div className="my-4" style={{ height: 1, backgroundColor: BORDER }} />
             {/* Three equal dials — temperature, water, humidity. */}
             <div
@@ -2298,7 +2344,7 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
 
           {/* Timeline header with dynamic completion disabling */}
           <SectionCard title="Incubation Timeline">
-            <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={unit.candled} interactive />
+            <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={effectiveCandled} interactive />
           </SectionCard>
 
           <LogModal
@@ -2308,12 +2354,13 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
               if (!open) setEditingEntry(null);
             }}
             candling={candling}
-            candled={unit.candled}
+            candled={effectiveCandled}
             currentDay={currentDay}
             totalDays={totalDays}
-            totalEggsSet={EGGS_PER_MODE[unit.modeId] ?? 42}
+            totalEggsSet={totalEggsSet}
             modeName={mode.name}
             initialEntry={editingEntry}
+            previousEntry={latestCandlingEntry}
             onSubmit={submitInspection}
           />
 
@@ -2933,7 +2980,7 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
         open={harvestOpen}
         onOpenChange={setHarvestOpen}
         chamberName={unit.name}
-        totalEggsLoaded={unit.totalEggsLoaded ?? 0}
+        totalEggsLoaded={totalEggsSet}
         onSave={saveHarvest}
       />
     </div>

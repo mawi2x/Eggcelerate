@@ -36,7 +36,7 @@ interface Props {
   modes: Mode[];
   onUpdateMode: (id: string, patch: Partial<Mode>) => void;
   onAddMode: (mode: Mode) => void;
-  onDeleteMode: (id: string) => void;
+  onDeleteMode: (id: string) => boolean;
 }
 
 interface ModeDraft {
@@ -170,9 +170,10 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
 
   const confirmDelete = () => {
     if (!deleteTarget) return;
-    onDeleteMode(deleteTarget.id);
-    toast.success(`Deleted "${deleteTarget.name}"`);
-    setDeleteTarget(null);
+    if (onDeleteMode(deleteTarget.id)) {
+      toast.success(`Deleted "${deleteTarget.name}"`);
+      setDeleteTarget(null);
+    }
   };
 
   const saveModal = () => {

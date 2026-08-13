@@ -26,6 +26,32 @@ export interface Mode {
   defaultTurnInterval: number; // hours
 }
 
+// Nominal tray capacity used when an older cycle does not have a stored
+// loaded-egg count. Active cycles should always prefer totalEggsLoaded.
+export const NOMINAL_EGGS_PER_MODE: Record<string, number> = {
+  broiler: 42,
+  duck: 32,
+  quail: 60,
+  goose: 24,
+  turkey: 30,
+  pheasant: 40,
+  peafowl: 24,
+  swan: 16,
+  "broiler-hh": 42,
+  "rapid-quail": 60,
+};
+
+export function nominalEggCapacity(modeId: string): number {
+  return NOMINAL_EGGS_PER_MODE[modeId] ?? 30;
+}
+
+export function localDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 // Candling days are auto-calculated proportionally to the mode duration.
 // Reference: a 21-day cycle candles around days 6 / 13 / 18.
 const CANDLE_PROPORTIONS = [6 / 21, 13 / 21, 18 / 21];
@@ -161,7 +187,11 @@ const iso = (minutesAgo: number) => new Date(now - minutesAgo * 60_000).toISOStr
 const isoAhead = (minutesAhead: number) => new Date(now + minutesAhead * 60_000).toISOString();
 
 // A day-N date string (YYYY-MM-DD) relative to today, for candling log entries.
-const dayAgo = (days: number) => new Date(now - days * 86_400_000).toISOString().slice(0, 10);
+const dayAgo = (days: number) => {
+  const date = new Date(now);
+  date.setDate(date.getDate() - days);
+  return localDateString(date);
+};
 
 // Chamber One has a rich inspection history spanning its 9 elapsed days.
 const chamberOneLog: CandlingLogEntry[] = [
@@ -295,8 +325,12 @@ export function buildHistory(
   for (let i = totalPoints; i >= 0; i--) {
     const ts = now - i * stepHours * 3_600_000;
     const d = new Date(ts);
-    const wobbleT = Math.sin(i / 5) * 0.14 + (Math.random() - 0.5) * 0.1;
-    const wobbleH = Math.cos(i / 4) * 1.2 + (Math.random() - 0.5) * 0.8;
+    const seed = `${unit.id}:${i}`;
+    let hash = 0;
+    for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) | 0;
+    const noise = ((hash >>> 0) % 1000) / 1000 - 0.5;
+    const wobbleT = Math.sin(i / 5) * 0.14 + noise * 0.1;
+    const wobbleH = Math.cos(i / 4) * 1.2 + noise * 0.8;
     // slow reservoir drawdown that resets on refills (sawtooth)
     const water = 30 + ((i * 3) % 70);
     let temp = baseTemp + wobbleT;
@@ -471,8 +505,11 @@ export function recordHarvest(params: {
   chamber: string; modeName: string; cycleDays: number;
   totalEggs: number; hatchedEggs: number;
 }): number {
-  const endDate = new Date().toISOString().slice(0, 10);
-  const startDate = new Date(Date.now() - params.cycleDays * 86_400_000).toISOString().slice(0, 10);
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - Math.max(0, params.cycleDays - 1));
+  const endDate = localDateString(end);
+  const startDate = localDateString(start);
   const rate = params.totalEggs > 0 ? Number(((params.hatchedEggs / params.totalEggs) * 100).toFixed(1)) : 0;
   hatchHistory.push({
     id: `h-${Date.now()}`,

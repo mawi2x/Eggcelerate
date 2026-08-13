@@ -21,7 +21,7 @@ import {
 } from "../ui/select";
 import {
   Incubator, Mode, UnitStatus, rangeState, waterState, readingStateColors, daysUntilHatch,
-  recordHarvest, resetChamberToReady,
+  nominalEggCapacity, recordHarvest, resetChamberToReady,
 } from "../../data/mockData";
 
 interface Props {
@@ -78,12 +78,20 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
 
   const handleHarvestSave = (unit: Incubator, hatched: number, unhatched: number) => {
     const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
+    const totalEggs = unit.totalEggsLoaded && unit.totalEggsLoaded > 0
+      ? unit.totalEggsLoaded
+      : nominalEggCapacity(unit.modeId);
+    const hatchedEggs = Math.floor(Number(hatched) || 0);
+    if (hatchedEggs < 0 || hatchedEggs > totalEggs) {
+      toast.error(`Hatched eggs must be between 0 and ${totalEggs}.`);
+      return;
+    }
     const rate = recordHarvest({
       chamber: unit.name,
       modeName: mode.name,
       cycleDays: Math.max(unit.dayOfIncubation, mode.incubationDays),
-      totalEggs: hatched + unhatched,
-      hatchedEggs: hatched,
+      totalEggs,
+      hatchedEggs,
     });
     onUpdateUnit(unit.id, resetChamberToReady(unit));
     setHarvestUnit(null);
@@ -124,7 +132,10 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
       const m = modeOf(u.modeId);
       return daysUntilHatch(u.dayOfIncubation, m.incubationDays);
     };
-    const pct = (u: Incubator) => u.dayOfIncubation / modeOf(u.modeId).incubationDays;
+    const pct = (u: Incubator) => {
+      const days = modeOf(u.modeId).incubationDays;
+      return days > 0 ? Math.min(1, Math.max(0, u.dayOfIncubation / days)) : 0;
+    };
     const byName = (a: Incubator, b: Incubator) => a.name.localeCompare(b.name);
 
     // Copy first — `filtered` is derived state and must not be mutated in place.
@@ -502,7 +513,11 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         open={harvestUnit !== null}
         onOpenChange={(o) => { if (!o) setHarvestUnit(null); }}
         chamberName={harvestUnit?.name ?? ""}
-        totalEggsLoaded={harvestUnit?.totalEggsLoaded ?? 0}
+        totalEggsLoaded={harvestUnit
+          ? (harvestUnit.totalEggsLoaded && harvestUnit.totalEggsLoaded > 0
+            ? harvestUnit.totalEggsLoaded
+            : nominalEggCapacity(harvestUnit.modeId))
+          : 0}
         onSave={(hatched, unhatched) => {
           if (harvestUnit) handleHarvestSave(harvestUnit, hatched, unhatched);
         }}

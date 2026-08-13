@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import { AppSidebar, ScreenId } from "./components/AppSidebar";
 import { PageHeader } from "./components/PageHeader";
@@ -104,8 +105,13 @@ export default function App() {
     setModes((prev) => [...prev, mode]);
   };
 
-  const deleteMode = (id: string) => {
+  const deleteMode = (id: string): boolean => {
+    if (incubators.some((unit) => unit.modeId === id)) {
+      toast.error("This mode is still assigned to an incubator.");
+      return false;
+    }
     setModes((prev) => prev.filter((m) => m.id !== id));
+    return true;
   };
 
   const activeUnit =

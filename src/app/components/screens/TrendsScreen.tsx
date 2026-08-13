@@ -142,7 +142,8 @@ function ChartTooltip({
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T00:00:00`) : new Date(iso);
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 export function TrendsScreen({ units, modes, initialUnitId }: Props) {
@@ -290,25 +291,29 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
 
   // ── Hatch-history derived data ──────────────────────────────────────────────
   const withPct = useMemo(
-    () => hatchHistory.map((h) => ({ ...h, pct: Math.round((h.hatchedEggs / h.totalEggs) * 100) })),
-    []
+    () => hatchHistory.map((h) => ({
+      ...h,
+      pct: h.totalEggs > 0 ? Math.round((h.hatchedEggs / h.totalEggs) * 100) : 0,
+    })),
+    [hatchHistory.length]
   );
 
   const kpis = useMemo(() => {
     const cycles = withPct.length;
     const hatched = withPct.reduce((s, h) => s + h.hatchedEggs, 0);
-    const avgRate = withPct.reduce((s, h) => s + h.hatchedEggs / h.totalEggs, 0) / cycles;
-    const byMode = new Map<string, { sum: number; n: number }>();
+    const totalEggs = withPct.reduce((s, h) => s + h.totalEggs, 0);
+    const avgRate = totalEggs > 0 ? hatched / totalEggs : 0;
+    const byMode = new Map<string, { hatched: number; eggs: number }>();
     withPct.forEach((h) => {
-      const cur = byMode.get(h.modeName) ?? { sum: 0, n: 0 };
-      cur.sum += h.hatchedEggs / h.totalEggs;
-      cur.n += 1;
+      const cur = byMode.get(h.modeName) ?? { hatched: 0, eggs: 0 };
+      cur.hatched += h.hatchedEggs;
+      cur.eggs += h.totalEggs;
       byMode.set(h.modeName, cur);
     });
     let topMode = "";
     let topAvg = 0;
     byMode.forEach((v, k) => {
-      const a = v.sum / v.n;
+      const a = v.eggs > 0 ? v.hatched / v.eggs : 0;
       if (a > topAvg) {
         topAvg = a;
         topMode = k;
@@ -317,7 +322,7 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
     return { cycles, hatched, avgRate, topMode, topAvg };
   }, [withPct]);
 
-  const speciesOptions = ["All", "Broiler", "Duck", "Quail"];
+  const speciesOptions = ["All", ...Array.from(new Set(hatchHistory.map((h) => h.modeName))).sort()];
 
   const filteredHatch = useMemo(() => {
     const q = hatchSearch.trim().toLowerCase();

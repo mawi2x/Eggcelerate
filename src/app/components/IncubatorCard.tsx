@@ -1,4 +1,4 @@
-import { Thermometer, Droplets, ChevronRight, Egg, Lock, Check, TriangleAlert, Bird } from "lucide-react";
+import { Thermometer, Droplets, ChevronRight, Egg, Check, TriangleAlert, Bird } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { SegmentedBattery } from "./SegmentedBattery";
@@ -28,10 +28,10 @@ const tileBorder: Record<string, string> = { ok: BORDER, warning: "#FCD34D", cri
 function operationalStatus(unit: Incubator, incubationDays: number): {
   label: string; bg: string; fg: string; Icon?: React.ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string }>; dot?: boolean;
 } {
-  if (!unit.paired || unit.status === "alert") return { label: "Offline", bg: "#FCE8E6", fg: "#C5221F", Icon: TriangleAlert };
+  if (!unit.paired) return { label: "Offline", bg: "#FCE8E6", fg: "#C5221F", Icon: TriangleAlert };
   if (unit.dayOfIncubation >= incubationDays) return { label: "Completed", bg: "#D1FAE5", fg: "#065F46", Icon: Check };
   if (unit.dayOfIncubation >= incubationDays - 2) return { label: "Hatching", bg: "#E8F0FE", fg: "#1967D2", Icon: Bird };
-  if (unit.status === "warning") return { label: "Lockdown", bg: "#FEF7E0", fg: "#B06000", Icon: Lock };
+  if (unit.status === "warning") return { label: "Needs Attention", bg: "#FEF7E0", fg: "#B06000", Icon: TriangleAlert };
   if (unit.dayOfIncubation === 0) return { label: "Ready", bg: "#F1F3F4", fg: "#5F6368", dot: true };
   return { label: "Incubating", bg: "#E6F4EA", fg: "#137333", Icon: Egg };
 }
@@ -98,7 +98,9 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
   const humSt = rangeState(unit.humidity, mode.targetHumidity);
   const waterSt = waterState(unit.waterOk);
   const waterInfo = getWaterStatusInfo(unit.waterOk);
-  const progress = Math.round((unit.dayOfIncubation / mode.incubationDays) * 100);
+  const progress = mode.incubationDays > 0
+    ? Math.min(100, Math.max(0, Math.round((unit.dayOfIncubation / mode.incubationDays) * 100)))
+    : 0;
   const status = operationalStatus(unit, mode.incubationDays);
   const ready = status.dot === true;
 
