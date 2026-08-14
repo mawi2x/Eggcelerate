@@ -27,7 +27,7 @@ export function HardwarePanel({ units }: Props) {
         <GroupLabel>Paired Devices</GroupLabel>
         <div className="mt-1">
           {units.map((u) => {
-            const online = u.paired && u.status !== "offline";
+            const online = u.paired;
             return (
               <div
                 key={u.id}

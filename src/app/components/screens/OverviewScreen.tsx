@@ -41,7 +41,6 @@ function KpiCard({
   Icon,
   label,
   value,
-  accent = RUST,
 }: {
   Icon: typeof Layers;
   label: string;

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import {
-  RotateCw, Clock, Check, CheckCircle2, Circle, AlertCircle, Calendar, X,
+  RotateCw, Clock, Check, CheckCircle2, Circle, AlertCircle, X,
   Waves, Wifi, WifiOff,
   Flame, Fan, Camera, Egg, Plus,
   Activity, ScanSearch, Settings2, Zap, ShieldAlert,
@@ -78,23 +78,12 @@ const NEUTRAL = { fg: MUTED, bg: "#EFE9DC", ring: "#C9BEA8" };
 const CANDLE_SHORT_LABELS = ["1st Candling", "2nd Candling", "Lockdown"];
 
 // Upload guards for candling photos.
-const MAX_PHOTOS = 9;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const NOTES_MAX = 500;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const todayStr = () => localDateString();
 const formatNodeDay = (day: number) => String(day > 99 ? 99 : day).slice(0, 3);
-
-function formatDisplayDate(dateStr: string) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d.getTime())) return dateStr;
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const formatted = `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-  const isToday = dateStr === todayStr();
-  return isToday ? `Today (${formatted})` : formatted;
-}
 
 const emptyForm = (day: number, previous?: Pick<CandlingLogEntry, "fertile" | "clear" | "uncertain">): CandleForm => ({
   targetDay: day,
@@ -599,21 +588,6 @@ function EnvironmentalSummary({ readings, onViewTrends }: { readings: Reading[];
   );
 }
 
-// ─── Count badge (candling breakdown) ──────────────────────────────────────────
-function CountBadge({ icon, label, value, tone }: {
-  icon: React.ReactNode; label: string; value: number; tone: typeof OK;
-}) {
-  return (
-    <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ backgroundColor: tone.bg, border: `1px solid ${tone.fg}2E` }}>
-      <span style={{ color: tone.fg }}>{icon}</span>
-      <div>
-        <p style={{ fontSize: 17, fontWeight: 700, color: tone.fg, fontFamily: "Baloo 2, sans-serif", lineHeight: 1 }}>{value}</p>
-        <p style={{ fontSize: 11, color: MUTED }}>{label}</p>
-      </div>
-    </div>
-  );
-}
-
 // ─── Sub-tab nav ─────────────────────────────────────────────────────────────
 function SubTabNav({ active, onChange }: { active: DetailTab; onChange: (t: DetailTab) => void }) {
   const tabs: { id: DetailTab; label: string; icon: React.ReactNode }[] = [
@@ -712,8 +686,6 @@ function Timeline({ currentDay, totalDays, candling, candled }: {
           {/* Layer 3 — milestone labels, 12px below the track line. */}
           {candling.map((c, i) => {
             const pct = dayFraction(c.day, totalDays) * 100;
-            const status = markerStatus(c.day, currentDay, !!candled[c.day]);
-            const filled = status !== "upcoming";
             return (
               <span
                 key={c.day}
@@ -1155,23 +1127,19 @@ function PhotoLightboxModal({
 // ─── Candling feed journal card ──────────────────────────────────────────────
 function JournalEntryCard({
   entry,
-  modeName,
   onAddPhotos,
   onUpdateNote,
   onDeletePhoto,
 }: {
   entry: CandlingLogEntry;
-  modeName: string;
   onAddPhotos: (day: number, urls: string[]) => void;
   onUpdateNote: (day: number, note: string) => void;
   onDeletePhoto: (day: number, photoIndex: number) => void;
 }) {
   const photoRef = useRef<HTMLInputElement>(null);
   const [noteDraft, setNoteDraft] = useState(entry.note);
-  const [noteEdited, setNoteEdited] = useState(false);
   const [noteEditing, setNoteEditing] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-
   const readFiles = (files: FileList | null) => {
     if (!files) return;
     const accepted: File[] = [];
@@ -1199,9 +1167,6 @@ function JournalEntryCard({
       reader.readAsDataURL(file);
     });
   };
-
-  const total = entry.fertile + entry.clear + entry.uncertain;
-  const fertilePct = total > 0 ? `${((entry.fertile / total) * 100).toFixed(1)}%` : undefined;
 
   // Thumbnail grid calculation
   const photos = (entry.photos || []).filter((p) => typeof p === "string" && p.trim().length > 0);
@@ -1289,7 +1254,7 @@ function JournalEntryCard({
                   <textarea
                     value={noteDraft}
                     autoFocus
-                    onChange={(e) => { setNoteDraft(e.target.value.slice(0, NOTES_MAX)); setNoteEdited(e.target.value !== entry.note); }}
+                    onChange={(e) => setNoteDraft(e.target.value.slice(0, NOTES_MAX))}
                     maxLength={NOTES_MAX}
                     placeholder="Add observations — veining, air cell development, movement…"
                     rows={3}
@@ -1297,11 +1262,11 @@ function JournalEntryCard({
                     style={{ border: `1px solid ${INPUT_BORDER}`, backgroundColor: "#F2EEE5", fontSize: 13, color: TEXT }}
                   />
                   <div className="mt-2 flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setNoteDraft(entry.note); setNoteEdited(false); setNoteEditing(false); }}>
+                    <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setNoteDraft(entry.note); setNoteEditing(false); }}>
                       Cancel
                     </Button>
                     <Button size="sm" className="rounded-full" style={{ backgroundColor: RUST, color: "#fff" }}
-                      onClick={() => { onUpdateNote(entry.day, noteDraft); setNoteEdited(false); setNoteEditing(false); toast.success("Note saved"); }}>
+                      onClick={() => { onUpdateNote(entry.day, noteDraft); setNoteEditing(false); toast.success("Note saved"); }}>
                       Save note
                     </Button>
                   </div>
@@ -1517,6 +1482,7 @@ function LogModalBody({
   const initialForm: CandleForm = initialEntry
     ? {
         targetDay: initialEntry.day,
+        date: initialEntry.date,
         fertile: initialEntry.fertile,
         clear: initialEntry.clear,
         uncertain: initialEntry.uncertain,
@@ -2110,7 +2076,7 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
   };
 
   // End of cycle — overtime runs automatically; harvest & reset ends it.
-  const saveHarvest = (hatched: number, unhatched: number) => {
+  const saveHarvest = (hatched: number, _unhatched: number) => {
     const hatchedCount = Math.floor(Number(hatched) || 0);
     if (hatchedCount < 0 || hatchedCount > totalEggsSet) {
       toast.error(`Hatched eggs must be between 0 and ${totalEggsSet}.`);
@@ -2141,7 +2107,6 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
     );
     return state;
   }, { ...unit.candled });
-  const unloggedCount = candling.filter((c) => !effectiveCandled[c.day]).length;
   // Checkpoints not yet logged — rendered as hollow nodes below the recorded ones.
   const futureCheckpoints = candling.filter((c) => !effectiveCandled[c.day]);
   // One axis node per logged entry plus one per unlogged checkpoint, day-ordered.
@@ -2168,8 +2133,6 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
     : { fertile: 0, clear: 0, uncertain: 0 };
   const candTotal = candSummary.fertile + candSummary.clear + candSummary.uncertain;
   const viabilityRate = candTotal > 0 ? Math.round((candSummary.fertile / candTotal) * 100) : 0;
-  const nextCheckpoint = candling.find((c) => !effectiveCandled[c.day] && c.day >= currentDay)
-    ?? candling.find((c) => !effectiveCandled[c.day]);
 
   // Hatch day reached — overtime keeps heating, humidity, and sensors running
   // automatically; the day counter ticks past the target until harvest.
@@ -2344,7 +2307,7 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
 
           {/* Timeline header with dynamic completion disabling */}
           <SectionCard title="Incubation Timeline">
-            <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={effectiveCandled} interactive />
+            <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={effectiveCandled} />
           </SectionCard>
 
           <LogModal
@@ -2481,7 +2444,6 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
                           <div style={{ marginTop: 12 }}>
                             <JournalEntryCard
                               entry={n.entry}
-                              modeName={mode.name}
                               onAddPhotos={addPhotosToEntry}
                               onUpdateNote={updateEntryNote}
                               onDeletePhoto={deletePhotoFromEntry}

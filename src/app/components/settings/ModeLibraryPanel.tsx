@@ -30,7 +30,7 @@ import {
 } from "../ui/table";
 import { ViewToggle, ViewMode } from "../ViewToggle";
 import { Mode, computeCandling } from "../../data/mockData";
-import { PanelHeader, RUST, BORDER, DIVIDER, MUTED, TEXT, CRIT, CRIT_BG, inputClass, inputStyle } from "./tokens";
+import { PanelHeader, RUST, BORDER, MUTED, TEXT, CRIT, CRIT_BG, inputClass, inputStyle } from "./tokens";
 
 interface Props {
   modes: Mode[];

@@ -524,7 +524,7 @@ export function recordHarvest(params: {
 }
 
 /** Patch that returns a chamber to the "Ready" state after harvest. */
-export function resetChamberToReady(unit: Incubator): Partial<Incubator> {
+export function resetChamberToReady(_unit: Incubator): Partial<Incubator> {
   const nowIso = new Date().toISOString();
   return {
     dayOfIncubation: 0,

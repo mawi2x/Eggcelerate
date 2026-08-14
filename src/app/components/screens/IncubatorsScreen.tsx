@@ -76,7 +76,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [harvestUnit, setHarvestUnit] = useState<Incubator | null>(null);
 
-  const handleHarvestSave = (unit: Incubator, hatched: number, unhatched: number) => {
+  const handleHarvestSave = (unit: Incubator, hatched: number, _unhatched: number) => {
     const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
     const totalEggs = unit.totalEggsLoaded && unit.totalEggsLoaded > 0
       ? unit.totalEggsLoaded
