@@ -164,11 +164,6 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
       .sort((a, b) => a.remaining - b.remaining);
     const nextHatch = withRemaining[0];
 
-    // Power infrastructure breakdown.
-    const grid = units.filter((u) => u.powerSource === "grid").length;
-    const solar = units.filter((u) => u.powerSource === "solar").length;
-    const batteryUnits = units.filter((u) => u.powerSource === "battery");
-
     return {
       optimal: count("optimal"),
       warning: count("warning"),
@@ -178,9 +173,6 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
       totalEggs,
       modesInUse,
       nextHatch,
-      grid,
-      solar,
-      batteryUnits,
     };
   }, [units, modes]);
 

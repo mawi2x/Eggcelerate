@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import { AppSidebar, ScreenId } from "./components/AppSidebar";
@@ -9,6 +9,7 @@ import { DetailScreen } from "./components/screens/DetailScreen";
 import { TrendsScreen } from "./components/screens/TrendsScreen";
 import { AlertsScreen } from "./components/screens/AlertsScreen";
 import { SettingsScreen } from "./components/screens/SettingsScreen";
+import { HelpWidget } from "./components/HelpWidget";
 import {
   initialIncubators,
   initialModes,
@@ -20,14 +21,51 @@ import {
   hatchHistory,
 } from "./data/mockData";
 import { Account, initialAccount } from "./data/account";
-import { cyclePhaseDisplayLabels, deriveConditionSeverity, unitStatusFromConditionSeverity } from "./domain/cycle";
+import { deriveConditionSeverity, unitStatusFromConditionSeverity } from "./domain/cycle";
+
+function getInitialNavState(): { screen: ScreenId; selectedUnit: string | null } {
+  if (typeof window === "undefined") return { screen: "overview", selectedUnit: null };
+  const params = new URLSearchParams(window.location.search);
+  const screenParam = params.get("screen") as ScreenId | null;
+  const unitParam = params.get("unit");
+  const validScreens: ScreenId[] = ["overview", "incubators", "detail", "trends", "alerts", "settings"];
+  const screen = screenParam && validScreens.includes(screenParam) ? screenParam : "overview";
+  return { screen, selectedUnit: unitParam };
+}
 
 export default function App() {
-  const [screen, setScreen] = useState<ScreenId>("overview");
-  const [selectedUnit, setSelectedUnit] = useState<
-    string | null
-  >(null);
+  const [initialNav] = useState(getInitialNavState);
+  const [screen, setScreen] = useState<ScreenId>(initialNav.screen);
+  const [selectedUnit, setSelectedUnit] = useState<string | null>(initialNav.selectedUnit);
   const [navCollapsed, setNavCollapsed] = useState(false);
+
+  const syncUrl = (newScreen: ScreenId, newUnit: string | null, replace = false) => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams();
+    if (newScreen !== "overview" || newUnit) {
+      params.set("screen", newScreen);
+    }
+    if (newUnit) {
+      params.set("unit", newUnit);
+    }
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
+    if (replace) {
+      window.history.replaceState({ screen: newScreen, unit: newUnit }, "", newUrl);
+    } else {
+      window.history.pushState({ screen: newScreen, unit: newUnit }, "", newUrl);
+    }
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      const { screen: s, selectedUnit: u } = getInitialNavState();
+      setScreen(s);
+      setSelectedUnit(u);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const [modes, setModes] = useState<Mode[]>(initialModes);
   const [incubators, setIncubators] = useState<Incubator[]>(
@@ -78,16 +116,19 @@ export default function App() {
   const openUnit = (id: string) => {
     setSelectedUnit(id);
     setScreen("detail");
+    syncUrl("detail", id);
   };
 
   const openTrendsForUnit = (id: string) => {
     setSelectedUnit(id);
     setScreen("trends");
+    syncUrl("trends", id);
   };
 
   const navigate = (id: ScreenId) => {
     setSelectedUnit(null);
     setScreen(id);
+    syncUrl(id, null);
   };
 
   const updateIncubator = (
@@ -156,10 +197,8 @@ export default function App() {
     modes.find((m) => m.id === activeUnit.modeId) ?? modes[0];
   const statusTone =
     activeUnit.status === "optimal"
-      ? { fg: "#15803D", bg: "#DCFCE7", label: "Optimal" }
-      : activeUnit.status === "warning"
-        ? { fg: "#B45309", bg: "#FEF3C7", label: "Needs Attention" }
-        : { fg: "#B91C1C", bg: "#FEE2E2", label: "Urgent" };
+      ? { fg: "#15803D", bg: "#DCFCE7", label: "Normal" }
+      : { fg: "#B45309", bg: "#FEF3C7", label: "Needs Attention" };
 
   const detailBadges = (
     <>
@@ -174,17 +213,6 @@ export default function App() {
       >
         Day {activeUnit.dayOfIncubation} of{" "}
         {activeMode.incubationDays}
-      </span>
-      <span
-        className="shrink-0 rounded-full px-3 py-1"
-        style={{
-          backgroundColor: "#F2EEE5",
-          color: "#5A4838",
-          fontSize: 13,
-          fontWeight: 700,
-        }}
-      >
-        {cyclePhaseDisplayLabels[activeUnit.cyclePhase]}
       </span>
       <span
         className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1"
@@ -205,7 +233,7 @@ export default function App() {
   );
 
   const detailHeader = (
-    <div className="flex flex-col">
+    <div className="flex min-w-0 flex-col">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1
           className="min-w-0 truncate"
@@ -340,6 +368,10 @@ export default function App() {
               onDismiss={dismissAlert}
               onMarkAllRead={markAllAlertsRead}
               onClearRead={clearReadAlerts}
+              onOpenUnit={(unitName) => {
+                const target = incubators.find((u) => u.name === unitName);
+                if (target) openUnit(target.id);
+              }}
             />
           )}
           {screen === "settings" && (
@@ -357,6 +389,7 @@ export default function App() {
       </main>
 
       <Toaster position="top-right" richColors />
+      <HelpWidget />
     </div>
   );
 }

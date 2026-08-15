@@ -608,7 +608,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             />
           </div>
 
-          {/* Control bar: search + species filter pills. */}
+          {/* Control bar: search + species filter dropdown */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1" style={{ minWidth: 220 }}>
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
@@ -624,32 +624,34 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 style={inputStyle}
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {speciesOptions.map((s) => {
-                const active = species === s;
-                const count =
-                  s === "All"
-                    ? withPct.length
-                    : withPct.filter((h) => h.modeName === s).length;
-                return (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      setSpecies(s);
-                      setHatchPage(1);
-                    }}
-                    className="rounded-xl px-4 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                    style={{
-                      backgroundColor: active ? RUST : SURFACE,
-                      color: active ? "#fff" : MUTED,
-                      border: active ? "none" : `1px solid ${BORDER}`,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {s} <span style={{ opacity: 0.7 }}>({count})</span>
-                  </button>
-                );
-              })}
+            <div className="w-[200px] shrink-0">
+              <Select
+                value={species}
+                onValueChange={(val) => {
+                  setSpecies(val);
+                  setHatchPage(1);
+                }}
+              >
+                <SelectTrigger
+                  className="w-full rounded-xl"
+                  style={{ ...toolbarInputStyle, ...CONTROL_FONT, color: TEXT }}
+                >
+                  <SelectValue placeholder="Species: All" />
+                </SelectTrigger>
+                <SelectContent style={CONTROL_FONT}>
+                  {speciesOptions.map((s) => {
+                    const count =
+                      s === "All"
+                        ? withPct.length
+                        : withPct.filter((h) => h.modeName === s).length;
+                    return (
+                      <SelectItem key={s} value={s} style={{ ...CONTROL_FONT, color: TEXT }}>
+                        {s === "All" ? `All Species (${count})` : `${s} (${count})`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

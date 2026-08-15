@@ -11,7 +11,7 @@ import {
 } from "../domain/cycle";
 
 export type UnitStatus = "optimal" | "warning" | "alert";
-export type PowerSource = "grid" | "solar" | "battery";
+export type PowerSource = "grid" | "battery";
 export type AlertSeverity = "critical" | "warning" | "info";
 
 export interface Range {
@@ -229,7 +229,7 @@ const initialIncubatorFixtures: IncubatorFixture[] = [
     id: "chamber-2", name: "Chamber Two", deviceId: "EGG-1004", modeId: "duck",
     dayOfIncubation: 14,
     totalEggsLoaded: 32, temp: 37.5, humidity: 51, waterOk: true,
-    tempTrend: -0.1, humidityTrend: -1.4, powerSource: "solar", batteryPct: 82, status: "warning",
+    tempTrend: -0.1, humidityTrend: -1.4, powerSource: "grid", batteryPct: 82, status: "warning",
     lastTurned: iso(50), nextTurn: isoAhead(190), turnInterval: 6, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
@@ -253,7 +253,7 @@ const initialIncubatorFixtures: IncubatorFixture[] = [
     id: "chamber-5", name: "Chamber Five", deviceId: "EGG-1007", modeId: "turkey",
     dayOfIncubation: 5,
     totalEggsLoaded: 30, temp: 37.7, humidity: 58, waterOk: true,
-    tempTrend: 0.2, humidityTrend: -0.2, powerSource: "solar", batteryPct: 91, status: "optimal",
+    tempTrend: 0.2, humidityTrend: -0.2, powerSource: "grid", batteryPct: 91, status: "optimal",
     lastTurned: iso(70), nextTurn: isoAhead(170), turnInterval: 4, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
   },
@@ -560,7 +560,7 @@ export function recordAbortedCycle(params: {
 }
 
 export function calculateFertilityRate(fertileEggs: number, eggsSet: number): number | null {
-  if (fertileEggs <= 0 || eggsSet <= 0) return null;
+  if (fertileEggs < 0 || eggsSet <= 0) return null;
   return Number(((fertileEggs / eggsSet) * 100).toFixed(1));
 }
 

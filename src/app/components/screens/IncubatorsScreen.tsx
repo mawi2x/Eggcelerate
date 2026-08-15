@@ -65,13 +65,29 @@ const sortOptions: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
 ];
 
+const WORD_TO_NUM: Record<string, number> = {
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6,
+  seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+  thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+};
+
+function getChamberNaturalOrder(name: string): number {
+  const lower = name.toLowerCase().trim();
+  const digitMatch = lower.match(/\d+/);
+  if (digitMatch) return parseInt(digitMatch[0], 10);
+  for (const [word, num] of Object.entries(WORD_TO_NUM)) {
+    if (new RegExp(`\\b${word}\\b`, "i").test(lower)) return num;
+  }
+  return 999;
+}
+
 export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onUpdateUnit, onHistoryChanged }: Props) {
   // Chamber search is local to this page's controls row.
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<ViewMode>("grid");
   const [filter, setFilter] = useState<Filter>("all");
-  const [sort, setSort] = useState<SortKey>("progress");
+  const [sort, setSort] = useState<SortKey>("name");
   const [sortAsc, setSortAsc] = useState(true);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -142,14 +158,18 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
       const days = modeOf(u.modeId).incubationDays;
       return days > 0 ? Math.min(1, Math.max(0, u.dayOfIncubation / days)) : 0;
     };
-    const byName = (a: Incubator, b: Incubator) => a.name.localeCompare(b.name);
+    const byName = (a: Incubator, b: Incubator) => {
+      const numA = getChamberNaturalOrder(a.name);
+      const numB = getChamberNaturalOrder(b.name);
+      if (numA !== numB) return numA - numB;
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+    };
 
     // Copy first — `filtered` is derived state and must not be mutated in place.
     return [...filtered].sort((a, b) => {
       const dir = sortAsc ? 1 : -1;
       switch (sort) {
         case "progress":
-          // Ascending = nearest to hatching first; ties break on the further-along cycle.
           return dir * (remaining(a) - remaining(b) || pct(b) - pct(a)) || byName(a, b);
         case "name":
           return dir * byName(a, b);
@@ -371,8 +391,17 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
                   return (
                     <TableRow
                       key={unit.id}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`View incubator ${unit.name}`}
                       onClick={() => onOpenUnit(unit.id)}
-                      className="cursor-pointer transition-colors hover:bg-amber-50/60"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onOpenUnit(unit.id);
+                        }
+                      }}
+                      className="cursor-pointer transition-colors hover:bg-amber-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                     >
                       <TableCell style={{ fontWeight: 700, color: TEXT }}>{unit.name}</TableCell>
                       <TableCell>

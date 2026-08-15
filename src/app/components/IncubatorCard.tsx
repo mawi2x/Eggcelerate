@@ -122,8 +122,15 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
       className="cursor-pointer overflow-hidden transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{ backgroundColor: CARD, borderColor: BORDER, borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
       tabIndex={0}
+      role="button"
+      aria-label={`Open details for ${unit.name}`}
       onClick={() => onOpen(unit.id)}
-      onKeyDown={(e) => { if (e.key === "Enter") onOpen(unit.id); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(unit.id);
+        }
+      }}
     >
       <CardContent className="flex h-full flex-col px-5 pb-5 pt-3">
         {/* Header — name and mode on the left; power indicator alone on the right. */}

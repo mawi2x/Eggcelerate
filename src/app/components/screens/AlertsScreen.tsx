@@ -39,9 +39,10 @@ interface Props {
   onDismiss: (id: string) => void;
   onMarkAllRead: () => void;
   onClearRead: () => void;
+  onOpenUnit?: (unitName: string) => void;
 }
 
-export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, onClearRead }: Props) {
+export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, onClearRead, onOpenUnit }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<SortKey>("recent");
 
@@ -157,11 +158,12 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                     <span
                       className="rounded-full"
                       style={{
-                        width: 4,
-                        height: 4,
+                        width: 6,
+                        height: 6,
                         backgroundColor: a.acknowledged ? "transparent" : RUST,
                       }}
-                      aria-label={a.acknowledged ? undefined : "Unread"}
+                      role="status"
+                      aria-label={a.acknowledged ? "Read notification" : "Unread notification"}
                     />
                     <span
                       className="flex items-center justify-center rounded-xl"
@@ -181,9 +183,21 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                       >
                         {a.title}
                       </span>
-                      <span className="min-w-0 shrink-0 truncate" style={{ fontSize: 13, color: MUTED }}>
-                        {a.unit}
-                      </span>
+                      {onOpenUnit ? (
+                        <button
+                          type="button"
+                          onClick={() => onOpenUnit(a.unit)}
+                          className="min-w-0 shrink-0 truncate rounded px-1.5 py-0.5 transition-colors hover:bg-amber-100/60 focus-visible:outline-none focus-visible:ring-1"
+                          style={{ fontSize: 13, color: RUST, fontWeight: 600, cursor: "pointer" }}
+                          title={`Go to ${a.unit}`}
+                        >
+                          {a.unit} →
+                        </button>
+                      ) : (
+                        <span className="min-w-0 shrink-0 truncate" style={{ fontSize: 13, color: MUTED }}>
+                          {a.unit}
+                        </span>
+                      )}
                     </div>
                     <p className="mt-1" style={{ fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
                       {a.message}

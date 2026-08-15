@@ -45,7 +45,7 @@ export function deriveConditionSeverity(params: {
   targetHumidity: { min: number; max: number };
   waterOk: boolean;
   batteryPct: number;
-  powerSource: "grid" | "solar" | "battery";
+  powerSource: "grid" | "battery";
   nextTurn: string;
 }): ConditionSeverity {
   const temperatureCritical = params.temp < params.targetTemp.min - 0.5 || params.temp > params.targetTemp.max + 0.5;
