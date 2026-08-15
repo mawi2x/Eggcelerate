@@ -46,18 +46,18 @@ export function PageHeader({
     <div>
       {/* ── Row 1: utility bar ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-4">
-        {onBack ? (
-          <button
-            onClick={onBack}
-            className="-ml-2 inline-flex min-w-0 items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2"
-            style={{ color: RUST, fontSize: 14, fontWeight: 500 }}
-          >
-            <ArrowLeft size={16} className="shrink-0" />
-            <span className="min-w-0 truncate">{backLabel}</span>
-          </button>
-        ) : (
-          <span />
-        )}
+        <div className="flex min-w-0 items-center gap-3">
+          {onBack ? (
+            <button
+              onClick={onBack}
+              className="-ml-2 inline-flex min-w-0 items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2"
+              style={{ color: RUST, fontSize: 14, fontWeight: 500 }}
+            >
+              <ArrowLeft size={16} className="shrink-0" />
+              <span className="min-w-0 truncate">{backLabel}</span>
+            </button>
+          ) : null}
+        </div>
 
         <NotificationPopover
           alerts={alerts}

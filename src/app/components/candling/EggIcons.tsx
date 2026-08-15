@@ -120,3 +120,41 @@ export function TrayFertilityBar({ fertile, clear, uncertain }: { fertile: numbe
     </div>
   );
 }
+
+export function TrayDevelopmentBar({
+  developing,
+  clear,
+  uncertain,
+  stoppedDeveloping,
+}: {
+  developing: number;
+  clear: number;
+  uncertain: number;
+  stoppedDeveloping: number;
+}) {
+  const total = developing + clear + uncertain + stoppedDeveloping;
+  if (total === 0) return null;
+  const segments = [
+    { value: developing, color: "#16A34A", label: "developing" },
+    { value: uncertain, color: "#D97706", label: "uncertain" },
+    { value: stoppedDeveloping, color: "#DC2626", label: "stopped developing" },
+    { value: clear, color: "#475569", label: "clear" },
+  ];
+  return (
+    <div
+      className="flex h-2 w-full overflow-hidden rounded-full"
+      style={{ backgroundColor: "#EFE9DC" }}
+      role="img"
+      aria-label={`Development status: ${developing} developing, ${stoppedDeveloping} stopped developing, ${uncertain} uncertain, ${clear} clear of ${total} eggs`}
+    >
+      {segments.map((segment) =>
+        segment.value > 0 ? (
+          <span
+            key={segment.label}
+            style={{ width: `${(segment.value / total) * 100}%`, backgroundColor: segment.color }}
+          />
+        ) : null,
+      )}
+    </div>
+  );
+}

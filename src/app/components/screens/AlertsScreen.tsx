@@ -26,9 +26,9 @@ type SortKey = "recent" | "oldest" | "severity";
 
 const filters: { key: Filter; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "critical", label: "Critical" },
-  { key: "warning", label: "Warning" },
-  { key: "info", label: "Info" },
+  { key: "critical", label: "Urgent" },
+  { key: "warning", label: "Needs Attention" },
+  { key: "info", label: "Reminder" },
 ];
 
 const severityRank: Record<AlertSeverity, number> = { critical: 0, warning: 1, info: 2 };

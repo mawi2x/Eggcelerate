@@ -143,7 +143,7 @@ export function GaugeDial({
       <p className="mt-1 text-center" style={{ color: MUTED, fontSize: 12 }}>
         {safeLabel ?? (
           <>
-            Safe range: {safe.min}–{safe.max}
+            Safe range: {safe.min} to {safe.max}
             {unit === "%" ? "% RH" : unit}
           </>
         )}

@@ -8,23 +8,35 @@ import {
 
 /**
  * Finish Cycle modal: log chicks hatched against the eggs loaded at cycle
- * start. Unhatched count and hatch rate are derived automatically before the
+ * start. Unhatched count and hatchability are derived automatically before the
  * chamber resets back to "Ready".
  */
-export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded, onSave }: {
+export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded, fertileEggs, onSave }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   chamberName: string;
   totalEggsLoaded: number;
+  fertileEggs: number | null;
   onSave: (hatched: number, unhatched: number) => void;
 }) {
   const [hatched, setHatched] = useState("0");
 
   const hatchedNum = Number(hatched.replace(/[^0-9]/g, "").slice(0, 3)) || 0;
   const unhatchedNum = Math.max(0, totalEggsLoaded - hatchedNum);
-  const rate = totalEggsLoaded > 0 ? Number(((hatchedNum / totalEggsLoaded) * 100).toFixed(1)) : 0;
+  const rate = fertileEggs && fertileEggs > 0
+    ? Number(((hatchedNum / fertileEggs) * 100).toFixed(1))
+    : null;
   const exceedsMax = totalEggsLoaded > 0 && hatchedNum > totalEggsLoaded;
   const valid = totalEggsLoaded > 0 && !exceedsMax;
+
+  const handleHatchedChange = (raw: string) => {
+    const digits = raw.replace(/[^0-9]/g, "").slice(0, 3);
+    if (!digits) {
+      setHatched("");
+      return;
+    }
+    setHatched(String(Math.min(Number(digits), totalEggsLoaded)));
+  };
 
   const save = () => {
     if (!valid) return;
@@ -54,7 +66,7 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
             </span>
           </DialogTitle>
           <DialogDescription className="mt-1.5" style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}>
-            Enter the final hatch results for this batch ({totalEggsLoaded} Eggs Loaded).
+            Enter the final chick count for this batch. Eggs loaded: {totalEggsLoaded}.
           </DialogDescription>
         </DialogHeader>
 
@@ -65,8 +77,11 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
               id="harvest-hatched"
               type="text"
               inputMode="numeric"
+              min={0}
+              max={totalEggsLoaded}
+              maxLength={Math.max(1, String(totalEggsLoaded).length)}
               value={hatched}
-              onChange={(e) => setHatched(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))}
+              onChange={(e) => handleHatchedChange(e.target.value)}
               placeholder="0"
               className="mt-1.5 rounded-xl text-center"
               style={{
@@ -93,14 +108,18 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
           >
             <div>
               <span style={{ fontSize: 13, fontWeight: 600, color: "#5A4838" }}>
-                Hatch rate
+                Hatchability
               </span>
               <span className="block" style={{ fontSize: 12, color: "#8A7F72" }}>
-                {exceedsMax ? `-- of ${totalEggsLoaded} hatched` : `${hatchedNum} of ${totalEggsLoaded} hatched • ${unhatchedNum} unhatched`}
+                {exceedsMax
+                  ? `Cannot exceed ${totalEggsLoaded} eggs loaded.`
+                  : fertileEggs
+                  ? `${hatchedNum} of ${fertileEggs} fertile eggs hatched. ${unhatchedNum} unhatched.`
+                  : `Fertility record not available. ${unhatchedNum} unhatched.`}
               </span>
             </div>
             <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 18, fontWeight: 700, color: "#C8623A" }}>
-              {exceedsMax ? "--" : `${rate}%`}
+              {exceedsMax ? "Not available" : rate === null ? "Not available" : `${rate}%`}
             </span>
           </div>
         </div>

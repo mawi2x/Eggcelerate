@@ -11,23 +11,24 @@ interface Props {
 }
 
 export function HardwarePanel({ units }: Props) {
-  const [autoFirmware, setAutoFirmware] = useState(true);
   const [ledIndicators, setLedIndicators] = useState(true);
   const [batterySaver, setBatterySaver] = useState(false);
   const [pollInterval, setPollInterval] = useState("30");
+  const [calibration, setCalibration] = useState("0");
+  const [calibrationSaved, setCalibrationSaved] = useState(false);
 
   return (
     <div>
       <PanelHeader
         title="Hardware & Devices"
-        description="Paired controllers, sensor sampling, and firmware behaviour across every chamber."
+        description="Paired controllers, sensor sampling, and calibration across every incubator."
       />
 
       <div className="pt-5">
         <GroupLabel>Paired Devices</GroupLabel>
         <div className="mt-1">
           {units.map((u) => {
-            const online = u.paired;
+            const online = u.paired && u.connectionState === "connected";
             return (
               <div
                 key={u.id}
@@ -50,7 +51,7 @@ export function HardwarePanel({ units }: Props) {
                     {u.name}
                   </p>
                   <p className="truncate" style={{ fontSize: 12, color: MUTED }}>
-                    {u.deviceId} · firmware v2.4.1
+                    {u.deviceId}
                   </p>
                 </div>
                 <span className="hidden shrink-0 items-center gap-1.5 sm:flex" style={{ fontSize: 12, color: MUTED }}>
@@ -66,7 +67,7 @@ export function HardwarePanel({ units }: Props) {
                     fontWeight: 700,
                   }}
                 >
-                  {online ? "Online" : "Offline"}
+                  {u.connectionState === "connecting" ? "Connecting" : online ? "Online" : "Offline"}
                 </span>
               </div>
             );
@@ -86,7 +87,7 @@ export function HardwarePanel({ units }: Props) {
         <GroupLabel>Sensor & Sampling</GroupLabel>
         <div className="mt-1">
           <SettingRow
-            label="Telemetry interval"
+            label="Sensor Sampling Interval"
             hint="How often each controller reports temperature and humidity."
             control={
               <Select value={pollInterval} onValueChange={setPollInterval}>
@@ -103,21 +104,9 @@ export function HardwarePanel({ units }: Props) {
             }
           />
           <SettingRow
-            label="Temperature calibration offset"
-            hint="Applied to every sensor reading, in °C."
-            htmlFor="calibration"
-            control={
-              <Input
-                id="calibration"
-                type="number"
-                step={0.1}
-                min={-10}
-                max={10}
-                defaultValue={0}
-                className={`${inputClass} w-[110px]`}
-                style={inputStyle}
-              />
-            }
+            label="Research Logging Interval"
+            hint="Stored research records use a fixed five minute interval."
+            control={<span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Every 5 minutes</span>}
           />
           <SettingRow
             label="Battery saver mode"
@@ -134,19 +123,45 @@ export function HardwarePanel({ units }: Props) {
       </div>
 
       <div className="pt-7">
-        <GroupLabel>Maintenance</GroupLabel>
-        <div className="mt-1">
+        <GroupLabel>Advanced and Calibration</GroupLabel>
+        <p className="mt-2" style={{ color: MUTED, fontSize: 12, lineHeight: 1.5 }}>
+          Calibration changes every temperature record. Use a trusted reference thermometer before saving an offset.
+        </p>
+        <div className="mt-2">
           <SettingRow
-            label="Automatic firmware updates"
-            hint="Installs overnight, never mid-hatch."
+            label="Temperature Calibration Offset"
+            hint="Applied to every temperature reading, in °C."
+            htmlFor="calibration"
             control={
-              <Switch
-                checked={autoFirmware}
-                onCheckedChange={(v) => setAutoFirmware(Boolean(v))}
-                aria-label="Automatic firmware updates"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="calibration"
+                  type="number"
+                  step={0.1}
+                  min={-10}
+                  max={10}
+                  value={calibration}
+                  onChange={(e) => { setCalibration(e.target.value); setCalibrationSaved(false); }}
+                  className={`${inputClass} w-[110px]`}
+                  style={inputStyle}
+                />
+                <button
+                  type="button"
+                  onClick={() => setCalibrationSaved(true)}
+                  className="rounded-lg px-2.5 py-1.5"
+                  style={{ backgroundColor: calibrationSaved ? "#DCFCE7" : "#F2EEE5", color: calibrationSaved ? "#166534" : RUST, fontSize: 12, fontWeight: 700 }}
+                >
+                  {calibrationSaved ? "Saved" : "Save"}
+                </button>
+              </div>
             }
           />
+        </div>
+      </div>
+
+      <div className="pt-7">
+        <GroupLabel>Hardware Display</GroupLabel>
+        <div className="mt-1">
           <SettingRow
             label="Status LED indicators"
             hint="Physical light ring on the controller housing."

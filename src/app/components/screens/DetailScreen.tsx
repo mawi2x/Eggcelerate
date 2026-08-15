@@ -4,7 +4,7 @@ import {
   RotateCw, Clock, Check, CheckCircle2, Circle, AlertCircle, X,
   Waves, Wifi, WifiOff,
   Flame, Fan, Camera, Egg, Plus,
-  Activity, ScanSearch, Settings2, Zap, ShieldAlert,
+  Activity, ScanSearch, Settings2, Zap,
   ChevronLeft, ChevronRight, Download, Trash2, Pencil,
   Maximize2, Minimize2, ZoomIn, ZoomOut, Maximize,
   ArrowUpRight, Droplets, Thermometer, TrendingDown, TrendingUp,
@@ -15,7 +15,6 @@ import { Progress } from "../ui/progress";
 import { Switch } from "../ui/switch";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Checkbox } from "../ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../ui/select";
@@ -31,11 +30,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { cn } from "../ui/utils";
-import { TrayFertilityBar, fertilityTones } from "../candling/EggIcons";
+import { TrayDevelopmentBar, TrayFertilityBar } from "../candling/EggIcons";
 import {
   Incubator, Mode, CandlingLogEntry, CandlingCheckpoint, DevelopmentCheck, developmentCheckLabels,
-  Reading, buildHistory, computeCandling, localDateString, nominalEggCapacity,
-  recordHarvest, resetChamberToReady,
+  Reading, buildHistory, calculateFertilityRate, computeCandling, getKnownFertileEggs, localDateString, CURRENT_TRAY_CAPACITY,
+  recordAbortedCycle, recordHarvest, resetChamberToReady,
 } from "../../data/mockData";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -47,12 +46,17 @@ interface CandleForm {
   date: string;
   note: string;
   photos: string[];
-  /** Straight tally inputs — no per-egg tray map. */
+  /** Straight tally inputs. There is no per egg tray map. */
   fertile: number;
   clear: number;
   uncertain: number;
+  developing: number;
+  stoppedDeveloping: number;
+  checkpointType: "first" | "later";
   checks: DevelopmentCheck[];
 }
+
+type TallyKey = "fertile" | "clear" | "uncertain" | "developing" | "stoppedDeveloping";
 
 // ─── Design tokens ──────────────────────────────────────────────────────────────
 const RUST = "#A84323";
@@ -74,18 +78,19 @@ const WARN = { fg: "#D97706", bg: "#FEF3C7", ring: "#D97706" };
 const CRIT = { fg: "#DC2626", bg: "#FEE2E2", ring: "#DC2626" };
 const NEUTRAL = { fg: MUTED, bg: "#EFE9DC", ring: "#C9BEA8" };
 
-// Short checkpoint captions shared by the horizontal and vertical timelines.
+// Short checkpoint captions shared by the timelines.
 const CANDLE_SHORT_LABELS = ["1st Candling", "2nd Candling", "Lockdown"];
 
 // Upload guards for candling photos.
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const NOTES_MAX = 500;
+const UNREACHABLE_DEVICE_IDS = new Set(["EGG-0000", "EGG-9999", "EGG-1005", "EGG-1010"]);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const todayStr = () => localDateString();
 const formatNodeDay = (day: number) => String(day > 99 ? 99 : day).slice(0, 3);
 
-const emptyForm = (day: number, previous?: Pick<CandlingLogEntry, "fertile" | "clear" | "uncertain">): CandleForm => ({
+const emptyForm = (day: number, previous?: Pick<CandlingLogEntry, "fertile" | "clear" | "uncertain" | "developing" | "stoppedDeveloping">): CandleForm => ({
   targetDay: day,
   date: todayStr(),
   note: "",
@@ -93,6 +98,9 @@ const emptyForm = (day: number, previous?: Pick<CandlingLogEntry, "fertile" | "c
   fertile: previous?.fertile ?? 0,
   clear: previous?.clear ?? 0,
   uncertain: previous?.uncertain ?? 0,
+  developing: previous?.developing ?? previous?.fertile ?? 0,
+  stoppedDeveloping: previous?.stoppedDeveloping ?? 0,
+  checkpointType: "first",
   checks: [],
 });
 
@@ -714,7 +722,7 @@ function Timeline({ currentDay, totalDays, candling, candled }: {
               key={c.day}
               className="absolute"
               style={{ left: `${pct}%`, top: "50%", transform: "translate(-50%, -50%)", zIndex: 10 }}
-              title={`${c.label} — day ${c.day} — ${status}`}
+                  title={`${c.label}, Day ${c.day}, ${status}`}
             >
               <div
                 className="flex items-center justify-center rounded-full"
@@ -1145,11 +1153,11 @@ function JournalEntryCard({
     const accepted: File[] = [];
     Array.from(files).forEach((file) => {
       if (!file.type.startsWith("image/")) {
-        toast.error(`"${file.name}" isn't an image — skipped`);
+        toast.error(`"${file.name}" is not an image. File skipped.`);
         return;
       }
       if (file.size > MAX_PHOTO_BYTES) {
-        toast.error(`"${file.name}" is over 5 MB — skipped`);
+        toast.error(`"${file.name}" is over 5 MB. File skipped.`);
         return;
       }
       accepted.push(file);
@@ -1173,6 +1181,9 @@ function JournalEntryCard({
   const hasOverflow = photos.length > 4;
   const visiblePhotos = hasOverflow ? photos.slice(0, 3) : photos.slice(0, 4);
   const overflowCount = photos.length - 3;
+  const isLaterEntry = entry.checkpointType === "later" || entry.developing !== undefined || entry.stoppedDeveloping !== undefined;
+  const developing = entry.developing ?? entry.fertile;
+  const stoppedDeveloping = entry.stoppedDeveloping ?? 0;
 
   return (
     <>
@@ -1182,7 +1193,7 @@ function JournalEntryCard({
             Candling Status
           </p>
 
-          {/* Flat Stat Chips */}
+          {/* Flat stat chips */}
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <span
               className="inline-block whitespace-nowrap"
@@ -1195,7 +1206,7 @@ function JournalEntryCard({
                 fontWeight: 600,
               }}
             >
-              {entry.fertile} Fertile
+              {isLaterEntry ? developing : entry.fertile} {isLaterEntry ? "Developing" : "Fertile"}
             </span>
             <span
               className="inline-block whitespace-nowrap"
@@ -1223,6 +1234,21 @@ function JournalEntryCard({
             >
               {entry.uncertain} Uncertain
             </span>
+            {isLaterEntry && (
+              <span
+                className="inline-block whitespace-nowrap"
+                style={{
+                  backgroundColor: "#FEE2E2",
+                  color: "#991B1B",
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {stoppedDeveloping} Stopped Developing
+              </span>
+            )}
           </div>
 
           {/* Development checklist tags */}
@@ -1256,7 +1282,7 @@ function JournalEntryCard({
                     autoFocus
                     onChange={(e) => setNoteDraft(e.target.value.slice(0, NOTES_MAX))}
                     maxLength={NOTES_MAX}
-                    placeholder="Add observations — veining, air cell development, movement…"
+                    placeholder="Add observations: veining, air cell development, movement"
                     rows={3}
                     className="w-full resize-none rounded-xl px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                     style={{ border: `1px solid ${INPUT_BORDER}`, backgroundColor: "#F2EEE5", fontSize: 13, color: TEXT }}
@@ -1486,11 +1512,17 @@ function LogModalBody({
         fertile: initialEntry.fertile,
         clear: initialEntry.clear,
         uncertain: initialEntry.uncertain,
+        developing: initialEntry.developing ?? initialEntry.fertile,
+        stoppedDeveloping: initialEntry.stoppedDeveloping ?? 0,
+        checkpointType: initialEntry.checkpointType ?? (initialEntry.day > (candling[0]?.day ?? 1) ? "later" : "first"),
         note: initialEntry.note,
         photos: initialEntry.photos,
         checks: initialEntry.checks,
       }
-    : emptyForm(defaultTargetDay, previousEntry ?? undefined);
+    : {
+        ...emptyForm(defaultTargetDay, previousEntry ?? undefined),
+        checkpointType: defaultTargetDay > (candling[0]?.day ?? 1) ? "later" : "first",
+      };
 
   const [form, setForm] = useState<CandleForm>(initialForm);
   const [dragging, setDragging] = useState(false);
@@ -1505,12 +1537,18 @@ function LogModalBody({
       customDayNum <= totalDays);
   const customDayError = selectedOption === "custom" && !isCustomDayValid;
 
-  const inspected = form.fertile + form.clear + form.uncertain;
+  const firstCheckpointDay = candling[0]?.day ?? 1;
+  const isLaterCheckpoint = form.checkpointType === "later" || form.targetDay > firstCheckpointDay;
+  const isLockdownCheckpoint = form.targetDay === candling[2]?.day;
+  const hasUnresolvedUncertain = isLockdownCheckpoint && form.uncertain > 0;
+  const inspected = isLaterCheckpoint
+    ? form.developing + form.clear + form.uncertain + form.stoppedDeveloping
+    : form.fertile + form.clear + form.uncertain;
   const isTallyOverCapacity = inspected > totalEggsSet;
   const isZeroTally = inspected === 0;
   const hasEvidence = form.note.trim().length > 0 || form.photos.length > 0;
 
-  const isSaveDisabled = isZeroTally || isTallyOverCapacity || customDayError;
+  const isSaveDisabled = isZeroTally || isTallyOverCapacity || customDayError || hasUnresolvedUncertain;
 
   const handleSave = () => {
     if (!hasEvidence) {
@@ -1525,11 +1563,11 @@ function LogModalBody({
     const accepted: File[] = [];
     Array.from(files).forEach((file) => {
       if (!file.type.startsWith("image/")) {
-        toast.error(`"${file.name}" isn't an image — skipped`);
+        toast.error(`"${file.name}" is not an image. File skipped.`);
         return;
       }
       if (file.size > MAX_PHOTO_BYTES) {
-        toast.error(`"${file.name}" is over 5 MB — skipped`);
+        toast.error(`"${file.name}" is over 5 MB. File skipped.`);
         return;
       }
       accepted.push(file);
@@ -1555,22 +1593,29 @@ function LogModalBody({
 
   const target = candling.find((c) => c.day === form.targetDay);
 
-  const setCount = (key: "fertile" | "clear" | "uncertain", raw: string) => {
+  const setCount = (key: TallyKey, raw: string) => {
     const clean = raw.replace(/[^0-9]/g, "").slice(0, 3);
     setForm((f) => ({ ...f, [key]: Math.min(totalEggsSet, Number(clean) || 0) }));
   };
 
-  const tallyFields = [
-    { key: "fertile" as const, label: "Fertile" },
-    { key: "clear" as const, label: "Clear" },
-    { key: "uncertain" as const, label: "Uncertain" },
-  ];
+  const tallyFields: { key: TallyKey; label: string; color: string }[] = isLaterCheckpoint
+    ? [
+        { key: "developing", label: "Developing", color: "#166534" },
+        { key: "clear", label: "Clear", color: "#334155" },
+        { key: "uncertain", label: "Uncertain", color: "#92400E" },
+        { key: "stoppedDeveloping", label: "Stopped Developing", color: "#991B1B" },
+      ]
+    : [
+        { key: "fertile", label: "Fertile", color: "#166534" },
+        { key: "clear", label: "Clear", color: "#334155" },
+        { key: "uncertain", label: "Uncertain", color: "#92400E" },
+      ];
 
   return (
     <>
       <DialogHeader className="px-5 pt-5 text-left">
         <DialogTitle style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>
-          {isEditing ? `Edit Inspection Log — Day ${form.targetDay}` : "Candling Journal"}
+          {isEditing ? `Edit Inspection Log: Day ${form.targetDay}` : "Candling Journal"}
         </DialogTitle>
         <DialogDescription className="text-xs font-medium text-[#1A1A1A]">
           {modeName}
@@ -1661,15 +1706,22 @@ function LogModalBody({
 
           {!isEditing && selectedOption !== "custom" && target && target.day > currentDay && (
             <p className="mt-1.5 rounded-lg px-2.5 py-1.5" style={{ fontSize: 12, color: WARN.fg, backgroundColor: WARN.bg }}>
-              Not yet due (Day {target.day}) — you can still log it if candling was performed early.
+              Not yet due. This is Day {target.day}. You can still log it if candling was performed early.
             </p>
           )}
         </div>
 
-        {/* Tally inputs — three numbers in one row */}
+        {/* Tally inputs */}
         <div>
-          <Label style={{ fontSize: 13, color: TEXT }}>Egg tally</Label>
-          <div className="mt-1.5 grid grid-cols-3 gap-3">
+          <Label style={{ fontSize: 13, color: TEXT }}>
+            {isLaterCheckpoint ? "Development tally" : "Fertility tally"}
+          </Label>
+          <p className="mt-1" style={{ fontSize: 12, color: MUTED }}>
+            {isLaterCheckpoint
+              ? "Later checks track developing eggs and eggs that stopped developing."
+              : "Record the first candling result for each egg."}
+          </p>
+          <div className={`mt-1.5 grid gap-3 ${isLaterCheckpoint ? "grid-cols-2" : "grid-cols-3"}`}>
             {tallyFields.map((f) => (
               <div key={f.key}>
                 <Input
@@ -1693,7 +1745,7 @@ function LogModalBody({
                 <label
                   htmlFor={`tally-${f.key}`}
                   className="mt-1 flex justify-center text-xs font-medium"
-                  style={{ color: fertilityTones[f.key].text }}
+                  style={{ color: f.color }}
                 >
                   {f.label}
                 </label>
@@ -1711,6 +1763,13 @@ function LogModalBody({
               style={{ fontSize: 12, color: WARN.fg, backgroundColor: WARN.bg, fontWeight: 600 }}
             >
               <AlertCircle size={13} /> Enter at least one egg count to enable Save Inspection.
+            </p>
+          ) : hasUnresolvedUncertain ? (
+            <p
+              className="mt-1.5 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5"
+              style={{ fontSize: 12, color: "#991B1B", backgroundColor: "#FEE2E2", fontWeight: 600 }}
+            >
+              <AlertCircle size={13} /> Resolve all uncertain eggs before the Lockdown check.
             </p>
           ) : (
             <p className="mt-1.5 text-center text-xs font-semibold text-[#1A1A1A]">
@@ -1830,6 +1889,8 @@ function LogModalBody({
                 ? `Total inspected eggs cannot exceed eggs set (${totalEggsSet})`
                 : customDayError
                 ? `Day must be between 1 and ${totalDays}`
+                : hasUnresolvedUncertain
+                ? "Resolve all uncertain eggs before the Lockdown check"
                 : isZeroTally
                 ? "Enter at least one egg count"
                 : undefined
@@ -1883,16 +1944,17 @@ function KeyValue({ label, value, accent }: { label: string; value: React.ReactN
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
-export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
+export function DetailScreen({ unit, modes, onUpdate, onOpenTrends, onHistoryChanged }: {
   unit: Incubator; modes: Mode[];
   onUpdate: (patch: Partial<Incubator>) => void;
   onOpenTrends: () => void;
+  onHistoryChanged: () => void;
 }) {
   const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
   const totalDays = mode.incubationDays;
   const totalEggsSet = unit.totalEggsLoaded && unit.totalEggsLoaded > 0
     ? unit.totalEggsLoaded
-    : nominalEggCapacity(unit.modeId);
+    : CURRENT_TRAY_CAPACITY;
   const candling = computeCandling(mode.incubationDays);
   const environmentalReadings = useMemo(() => {
     const generated = buildHistory(unit, mode);
@@ -1910,11 +1972,10 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
   const [settingTab, setSettingTab] = useState<"mode" | "turning" | "device">("mode");
   const [setupModeId, setSetupModeId] = useState("");
   const [setupEggs, setSetupEggs] = useState("");
-  const [pendingModeId, setPendingModeId] = useState<string | null>(null);
-  const [acknowledged, setAcknowledged] = useState(false);
   const [earlyTurnOpen, setEarlyTurnOpen] = useState(false);
   const [syncChoice, setSyncChoice] = useState<"reset" | "maintain">("reset");
   const [harvestOpen, setHarvestOpen] = useState(false);
+  const [stopCycleOpen, setStopCycleOpen] = useState(false);
   const [showLogForm, setShowLogForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CandlingLogEntry | null>(null);
   const [entryToDelete, setEntryToDelete] = useState<CandlingLogEntry | null>(null);
@@ -1946,8 +2007,13 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
       fertile: Math.max(0, Math.floor(Number(form.fertile) || 0)),
       clear: Math.max(0, Math.floor(Number(form.clear) || 0)),
       uncertain: Math.max(0, Math.floor(Number(form.uncertain) || 0)),
+      developing: Math.max(0, Math.floor(Number(form.developing) || 0)),
+      stoppedDeveloping: Math.max(0, Math.floor(Number(form.stoppedDeveloping) || 0)),
     };
-    const inspected = counts.fertile + counts.clear + counts.uncertain;
+    const checkpointType = form.targetDay > (candling[0]?.day ?? 1) ? "later" : "first";
+    const inspected = checkpointType === "later"
+      ? counts.developing + counts.clear + counts.uncertain + counts.stoppedDeveloping
+      : counts.fertile + counts.clear + counts.uncertain;
     if (!Number.isInteger(form.targetDay) || form.targetDay < 1 || form.targetDay > totalDays) {
       toast.error(`Inspection day must be between Day 1 and Day ${totalDays}.`);
       return;
@@ -1960,6 +2026,10 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
       toast.error(`The egg counts cannot exceed ${totalEggsSet} eggs loaded.`);
       return;
     }
+    if (form.targetDay === candling[2]?.day && counts.uncertain > 0) {
+      toast.error("Resolve all uncertain eggs before saving the Lockdown check.");
+      return;
+    }
     const c = candling.find((cp) => cp.day === form.targetDay);
     const label = c
       ? c.label
@@ -1970,20 +2040,34 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
       : form.targetDay === candling[2]?.day
       ? "Lockdown Check"
       : `Day ${form.targetDay} Candling`;
+    const baselineFertile = editingEntry?.fertile
+      ?? unit.fertileEggs
+      ?? (counts.fertile > 0 ? counts.fertile : counts.developing);
     const entry: CandlingLogEntry = {
       day: form.targetDay, label, date: editingEntry?.date ?? todayStr(),
-      fertile: counts.fertile, clear: counts.clear, uncertain: counts.uncertain,
+      fertile: checkpointType === "later" ? baselineFertile : counts.fertile,
+      clear: counts.clear,
+      uncertain: counts.uncertain,
       note: form.note.trim(), photos: form.photos, checks: form.checks,
+      checkpointType,
+      ...(checkpointType === "later"
+        ? { developing: counts.developing, stoppedDeveloping: counts.stoppedDeveloping }
+        : {}),
     };
     onUpdate({
       candled: { ...unit.candled, [form.targetDay]: true },
+      fertileEggs: checkpointType === "first"
+        ? counts.fertile
+        : unit.fertileEggs ?? (baselineFertile || undefined),
       candlingLog: [entry, ...unit.candlingLog.filter((e) => e.day !== form.targetDay)],
     });
     const wasEditing = !!editingEntry;
     setShowLogForm(false);
     setEditingEntry(null);
     toast.success(wasEditing ? `Day ${entry.day} inspection updated` : `${label} saved`, {
-      description: `${entry.fertile} fertile · ${entry.clear} clear · ${entry.uncertain} uncertain.`,
+      description: checkpointType === "later"
+        ? `${entry.developing ?? 0} developing. ${entry.stoppedDeveloping ?? 0} stopped developing. ${entry.clear} clear.`
+        : `${entry.fertile} fertile. ${entry.clear} clear. ${entry.uncertain} uncertain.`,
     });
   };
 
@@ -2006,14 +2090,11 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
     toast(`Mode changed to ${m.name}`, { description: "Turning interval reset to mode default." });
   };
 
-  const confirmForceSwitch = () => {
-    if (!pendingModeId) return;
-    changeMode(pendingModeId);
-    setPendingModeId(null);
-    setAcknowledged(false);
-  };
-
   const handleTurn = () => {
+    if (unit.cyclePhase !== "incubating") {
+      toast("Turning is stopped during this cycle phase.");
+      return;
+    }
     onUpdate({
       lastTurned: new Date().toISOString(),
       nextTurn: new Date(Date.now() + unit.turnInterval * 3_600_000).toISOString(),
@@ -2024,6 +2105,10 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
   // Warn before manual turns that are too soon after the last one.
   const lastTurnMin = Math.round((Date.now() - new Date(unit.lastTurned).getTime()) / 60000);
   const handleTurnClick = () => {
+    if (unit.cyclePhase !== "incubating") {
+      toast("Turning is stopped during Lockdown and hatch phases.");
+      return;
+    }
     if (lastTurnMin < 30) {
       setSyncChoice("reset");
       setEarlyTurnOpen(true);
@@ -2047,10 +2132,49 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
     });
   };
 
+  const stopCycle = () => {
+    if (isReady || cycleEnded) return;
+    recordAbortedCycle({
+      incubator: unit.name,
+      modeName: mode.name,
+      dayStopped: unit.dayOfIncubation,
+      totalEggs: totalEggsSet,
+      fertileEggs: getKnownFertileEggs(unit),
+    });
+    onUpdate({ cyclePhase: "stopped_early", autoTurn: false });
+    setStopCycleOpen(false);
+    toast.success(`${unit.name}: cycle stopped`, {
+      description: "The cycle was archived as Stopped Early.",
+    });
+  };
+
+  const resetStoppedCycle = () => {
+    onUpdate(resetChamberToReady(unit));
+    toast.success(`${unit.name}: incubator is Ready`, {
+      description: "The stopped cycle remains in the archive. You can load a new batch.",
+    });
+  };
+
+  const reconnectDevice = () => {
+    onUpdate({ connectionState: "connecting" });
+    window.setTimeout(() => {
+      if (UNREACHABLE_DEVICE_IDS.has(unit.deviceId)) {
+        onUpdate({ paired: false, connectionState: "connection_failed" });
+        toast.error(`${unit.name}: connection failed`, {
+          description: "Check power and WiFi, then try Reconnect again.",
+        });
+        return;
+      }
+      onUpdate({ paired: true, connectionState: "connected" });
+      toast.success(`${unit.name} reconnected`);
+    }, 1200);
+  };
+
   // "Ready" chamber — no active cycle yet; the setup panel starts Day 1.
-  const isReady = unit.dayOfIncubation === 0 && unit.paired;
+  const isReady = unit.cyclePhase === "ready" && unit.paired;
+  const turningStopped = unit.cyclePhase !== "incubating";
   const setupMode = modes.find((m) => m.id === setupModeId);
-  const setupCapacity = setupMode ? nominalEggCapacity(setupMode.id) : 0;
+  const setupCapacity = setupMode ? CURRENT_TRAY_CAPACITY : 0;
   const setupEggCount = Number(setupEggs.replace(/[^0-9]/g, "")) || 0;
   const startCycle = () => {
     if (!setupMode) {
@@ -2065,13 +2189,17 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
       modeId: setupMode.id,
       dayOfIncubation: 1,
       totalEggsLoaded: setupEggCount,
+      cyclePhase: "incubating",
+      conditionSeverity: "info",
+      connectionState: unit.connectionState,
       turnInterval: setupMode.defaultTurnInterval,
+      autoTurn: true,
       status: "optimal",
       lastTurned: new Date().toISOString(),
       nextTurn: new Date(Date.now() + setupMode.defaultTurnInterval * 3_600_000).toISOString(),
     });
     toast.success(`${unit.name}: incubation cycle started`, {
-      description: `Day 1 · ${setupMode.name} — live monitoring active.`,
+      description: `Day 1. ${setupMode.name} mode. Live monitoring is active.`,
     });
   };
 
@@ -2085,20 +2213,27 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
     const rate = recordHarvest({
       chamber: unit.name,
       modeName: mode.name,
-      cycleDays: Math.max(unit.dayOfIncubation, totalDays),
+      cycleDays: Math.max(unit.dayOfIncubation, 1),
       totalEggs: totalEggsSet,
+      fertileEggs: getKnownFertileEggs(unit),
       hatchedEggs: hatchedCount,
     });
+    onHistoryChanged();
     onUpdate(resetChamberToReady(unit));
     setHarvestOpen(false);
     toast.success(`${unit.name}: harvest logged`, {
-      description: `${rate}% hatch rate saved to history — chamber reset to Ready.`,
+      description: rate === null
+        ? "Hatchability is not available because no fertility record was saved. Incubator reset to Ready."
+        : `${rate}% hatchability saved to history. Incubator reset to Ready.`,
     });
   };
 
   const currentDay = unit.dayOfIncubation;
   // Newest recorded checkpoint first, so the feed reads top-down by recency.
-  const loggedEntries = [...unit.candlingLog].sort((a, b) => b.day - a.day);
+  const loggedEntries = [...unit.candlingLog].sort((a, b) => {
+    const byDate = new Date(b.date).getTime() - new Date(a.date).getTime();
+    return byDate || b.day - a.day;
+  });
   // Keep the checkpoint state consistent even if an older record has a log but
   // its candled flag was not saved.
   const effectiveCandled = candling.reduce<Record<number, boolean>>((state, checkpoint) => {
@@ -2124,25 +2259,37 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
   const latestCandlingEntry = loggedEntries[0] ?? null;
   // Each candling entry is a snapshot of the same eggs. Use the latest
   // snapshot for the cycle summary instead of adding the same eggs repeatedly.
+  const latestIsLater = latestCandlingEntry
+    ? latestCandlingEntry.checkpointType === "later"
+      || latestCandlingEntry.developing !== undefined
+      || latestCandlingEntry.stoppedDeveloping !== undefined
+    : false;
   const candSummary = latestCandlingEntry
     ? {
-        fertile: latestCandlingEntry.fertile,
+        fertile: getKnownFertileEggs(unit) ?? latestCandlingEntry.fertile,
         clear: latestCandlingEntry.clear,
         uncertain: latestCandlingEntry.uncertain,
+        developing: latestCandlingEntry.developing ?? latestCandlingEntry.fertile,
+        stoppedDeveloping: latestCandlingEntry.stoppedDeveloping ?? 0,
+        isLater: latestIsLater,
       }
-    : { fertile: 0, clear: 0, uncertain: 0 };
-  const candTotal = candSummary.fertile + candSummary.clear + candSummary.uncertain;
-  const viabilityRate = candTotal > 0 ? Math.round((candSummary.fertile / candTotal) * 100) : 0;
+    : { fertile: 0, clear: 0, uncertain: 0, developing: 0, stoppedDeveloping: 0, isLater: false };
+  const fertilityRate = calculateFertilityRate(candSummary.fertile, totalEggsSet);
 
   // Hatch day reached — overtime keeps heating, humidity, and sensors running
   // automatically; the day counter ticks past the target until harvest.
-  const cycleEnded = !isReady && unit.dayOfIncubation >= totalDays;
+  const cycleEnded = !isReady && (unit.cyclePhase === "hatching" || unit.cyclePhase === "awaiting_finish" || unit.dayOfIncubation >= totalDays);
 
   // Simulated continuous running: +1 day every 20s while in overtime.
   useEffect(() => {
     if (!cycleEnded || !unit.paired) return;
     const t = setInterval(() => {
-      onUpdate({ dayOfIncubation: unit.dayOfIncubation + 1 });
+      const nextDay = unit.dayOfIncubation + 1;
+      onUpdate({
+        dayOfIncubation: nextDay,
+        cyclePhase: nextDay > totalDays ? "awaiting_finish" : "hatching",
+        autoTurn: false,
+      });
     }, 20_000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2154,7 +2301,7 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
   return (
     <div className="space-y-5" style={{ color: TEXT }}>
       {/* Ready chamber — cycle setup panel sits at the top of the view. */}
-      {isReady && (        <SectionCard title="Incubation Cycle Setup" subtitle="Chamber ready — load eggs, pick a mode, and start Day 1.">
+      {isReady && (        <SectionCard title="Incubation Cycle Setup" subtitle="Incubator ready. Load eggs, choose a mode, and start Day 1.">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0 flex-1 space-y-3">
               <div>
@@ -2183,8 +2330,8 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
               {setupMode && (
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { label: "Temperature", value: `${setupMode.targetTemp.min}–${setupMode.targetTemp.max}°C` },
-                    { label: "Humidity", value: `${setupMode.targetHumidity.min}–${setupMode.targetHumidity.max}% RH` },
+                    { label: "Temperature", value: `${setupMode.targetTemp.min} to ${setupMode.targetTemp.max}°C` },
+                    { label: "Humidity", value: `${setupMode.targetHumidity.min} to ${setupMode.targetHumidity.max}% RH` },
                     { label: "Turning cadence", value: `Every ${setupMode.defaultTurnInterval} hours` },
                   ].map((s) => (
                     <span
@@ -2206,6 +2353,28 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
             >
               Start Incubation Cycle
             </Button>
+          </div>
+        </SectionCard>
+      )}
+
+      {unit.cyclePhase === "stopped_early" && (
+        <SectionCard title="Cycle Stopped Early" titleSize={19}>
+          <p style={{ fontSize: 14, color: "#6E6259" }}>
+            This batch was archived before hatch day. Reset the incubator when you are ready to load a new batch.
+          </p>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={resetStoppedCycle} className="rounded-full" style={{ backgroundColor: "#8B3A1C", color: "#fff", minHeight: 40 }}>
+              Reset to Ready
+            </Button>
+          </div>
+        </SectionCard>
+      )}
+
+      {unit.cyclePhase === "lockdown" && (
+        <SectionCard title="Lockdown Active" titleSize={19}>
+          <div className="rounded-xl px-4 py-3" style={{ backgroundColor: "#FFF4D6", border: "1px solid #F2C94C" }}>
+            <p style={{ fontSize: 14, fontWeight: 800, color: "#8A4B08" }}>Do Not Open</p>
+            <p className="mt-1" style={{ fontSize: 13, color: "#8A4B08" }}>Turning Stopped. Keep the incubator closed while hatching begins.</p>
           </div>
         </SectionCard>
       )}
@@ -2480,7 +2649,12 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
                             {isDue ? (
                               <p className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}>
                                 {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
-                                <AlertCircle size={18} fill="#D97706" color="#FFFFFF" strokeWidth={2.5} />
+                                <AlertCircle
+                                  size={16}
+                                  color="#D97706"
+                                  strokeWidth={2}
+                                  aria-label="Inspection due"
+                                />
                               </p>
                             ) : (
                               <p style={{ fontSize: 13, fontWeight: 600, color: "#78716C" }}>
@@ -2522,7 +2696,7 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
                         Delete Journal Entry?
                       </DialogTitle>
                       <DialogDescription style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}>
-                        Are you sure you want to delete this inspection log for Day {entryToDelete?.day}? This will recalculate the cycle's viability rate and cannot be undone.
+                        Are you sure you want to delete this inspection log for Day {entryToDelete?.day}? This will recalculate the cycle summary and cannot be undone.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="mt-4 flex items-center justify-end gap-2.5">
@@ -2560,11 +2734,20 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
               />
               <SectionCard title="Current Cycle Summary">
                 <div className="space-y-2.5">
-                  {[
-                    { label: "Total Fertile", value: candSummary.fertile, border: "#DCFCE7", text: "#16A34A" },
-                    { label: "Total Clear", value: candSummary.clear, border: "#F1F5F9", text: "#475569" },
-                    { label: "Total Uncertain", value: candSummary.uncertain, border: "#FEF3C7", text: "#D97706" },
-                  ].map((row) => (
+                  {(candSummary.isLater
+                    ? [
+                        { label: "Fertility Baseline", value: candSummary.fertile, border: "#DCFCE7", text: "#16A34A" },
+                        { label: "Developing Now", value: candSummary.developing, border: "#DCFCE7", text: "#16A34A" },
+                        { label: "Stopped Developing", value: candSummary.stoppedDeveloping, border: "#FEE2E2", text: "#991B1B" },
+                        { label: "Total Clear", value: candSummary.clear, border: "#F1F5F9", text: "#475569" },
+                        { label: "Total Uncertain", value: candSummary.uncertain, border: "#FEF3C7", text: "#D97706" },
+                      ]
+                    : [
+                        { label: "Total Fertile", value: candSummary.fertile, border: "#DCFCE7", text: "#16A34A" },
+                        { label: "Total Clear", value: candSummary.clear, border: "#F1F5F9", text: "#475569" },
+                        { label: "Total Uncertain", value: candSummary.uncertain, border: "#FEF3C7", text: "#D97706" },
+                      ]
+                  ).map((row) => (
                     <div key={row.label} className="flex items-center justify-between gap-2">
                       <span style={{ fontSize: 13, fontWeight: 600, color: "#78716C" }}>
                         {row.label}
@@ -2584,19 +2767,28 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
                     </div>
                   ))}
                   <div className="mt-3">
-                    <TrayFertilityBar
-                      fertile={candSummary.fertile}
-                      clear={candSummary.clear}
-                      uncertain={candSummary.uncertain}
-                    />
+                    {candSummary.isLater ? (
+                      <TrayDevelopmentBar
+                        developing={candSummary.developing}
+                        clear={candSummary.clear}
+                        uncertain={candSummary.uncertain}
+                        stoppedDeveloping={candSummary.stoppedDeveloping}
+                      />
+                    ) : (
+                      <TrayFertilityBar
+                        fertile={candSummary.fertile}
+                        clear={candSummary.clear}
+                        uncertain={candSummary.uncertain}
+                      />
+                    )}
                   </div>
                   <div className="my-1" style={{ borderTop: `1px solid ${BORDER}` }} />
                   <div className="flex items-center justify-between">
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#78716C" }}>
-                      Viability Rate
+                      Fertility Rate
                     </span>
                     <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 700, color: "#C8623A" }}>
-                      {viabilityRate}%
+                      {fertilityRate === null ? "Not available" : `${fertilityRate}%`}
                     </span>
                   </div>
                 </div>
@@ -2693,27 +2885,30 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
                     </div>
                     <Select
                       value={unit.modeId}
+                      disabled={!isReady}
                       onValueChange={(val) => {
-                        if (val !== unit.modeId) {
-                          setAcknowledged(false);
-                          setPendingModeId(val);
-                        }
+                        if (val !== unit.modeId && isReady) changeMode(val);
                       }}
                     >
                       <SelectTrigger
                         className="h-auto w-fit rounded-lg [&_svg]:!text-[#1A1A1A]"
                         style={{ backgroundColor: "#F4ECE1", border: "1px solid #E5DACB", color: "#1A1A1A", fontSize: 13, fontWeight: 600, padding: "8px 14px" }}
                       >
-                        Switch Mode
+                        {isReady ? "Choose Mode" : "Mode Locked"}
                       </SelectTrigger>
                       <SelectContent>
                         {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
+                  {!isReady && (
+                    <p style={{ fontSize: 12, color: MUTED }}>
+                      Mode is locked during an active cycle. Stop or finish the cycle before choosing another mode.
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <KeyValue label="Target Temperature" value={`${mode.targetTemp.min}–${mode.targetTemp.max}°C`} />
-                    <KeyValue label="Target Humidity" value={`${mode.targetHumidity.min}–${mode.targetHumidity.max}% RH`} />
+                    <KeyValue label="Target Temperature" value={`${mode.targetTemp.min} to ${mode.targetTemp.max}°C`} />
+                    <KeyValue label="Target Humidity" value={`${mode.targetHumidity.min} to ${mode.targetHumidity.max}% RH`} />
                     <KeyValue label="Turning Cadence" value={`Every ${mode.defaultTurnInterval} hours`} />
                     <KeyValue label="Scheduled Candling Days" value={candling.map((c) => `Day ${c.day}`).join(", ")} />
                   </div>
@@ -2744,11 +2939,14 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
                       <p style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>Automatic turning</p>
                       <p style={{ color: MUTED, fontSize: 12 }}>Turn eggs on schedule automatically.</p>
                     </div>
-                    <Switch checked={unit.autoTurn} onCheckedChange={(v) => onUpdate({ autoTurn: v })} />
+                    <Switch checked={unit.autoTurn} disabled={turningStopped} onCheckedChange={(v) => onUpdate({ autoTurn: v })} />
                   </div>
+                  {turningStopped && (
+                    <p style={{ fontSize: 12, color: MUTED }}>Turning is stopped during Lockdown and hatch phases.</p>
+                  )}
                   <div className="flex items-center justify-between gap-2">
                     <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Turn every</span>
-                    <Select value={String(unit.turnInterval)} onValueChange={(v) => onUpdate({ turnInterval: Number(v) })}>
+                    <Select disabled={turningStopped} value={String(unit.turnInterval)} onValueChange={(v) => onUpdate({ turnInterval: Number(v) })}>
                       <SelectTrigger className="h-9 w-[110px] rounded-xl" style={{ borderColor: "rgba(120,53,15,0.20)", backgroundColor: SURFACE, fontSize: 13 }}>
                         <SelectValue />
                       </SelectTrigger>
@@ -2761,7 +2959,7 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
                     <span className="min-w-0 truncate" style={{ fontSize: 12, color: next.overdue ? CRIT.fg : MUTED }}>
                       Next: {next.text} • Last: {relTime(unit.lastTurned)}
                     </span>
-                    <Button onClick={handleTurnClick} variant="outline" size="sm" className="shrink-0 rounded-full" style={outlineBtn}>
+                    <Button disabled={turningStopped} onClick={handleTurnClick} variant="outline" size="sm" className="shrink-0 rounded-full" style={outlineBtn}>
                       <RotateCw size={14} /> Turn Now
                     </Button>
                   </div>
@@ -2787,15 +2985,20 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
                     value={
                       <span className="flex items-center gap-1.5">
                         {unit.paired ? <Wifi size={15} /> : <WifiOff size={15} />}
-                        {unit.paired ? "Connected & Paired" : "Connection Lost"}
-                        {!unit.paired && (
+                        {unit.connectionState === "connecting"
+                          ? "Connecting"
+                          : unit.paired && unit.connectionState === "connected"
+                          ? "Connected and Paired"
+                          : "Connection Lost"}
+                        {(!unit.paired || unit.connectionState !== "connected") && (
                           <Button
-                            onClick={() => { onUpdate({ paired: true }); toast.success(`${unit.name} reconnected`); }}
+                            onClick={reconnectDevice}
+                            disabled={unit.connectionState === "connecting"}
                             variant="outline" size="sm"
                             className="ml-1 rounded-full"
                             style={outlineBtn}
                           >
-                            <WifiOff size={13} /> Reconnect
+                            <WifiOff size={13} /> {unit.connectionState === "connecting" ? "Connecting" : "Reconnect"}
                           </Button>
                         )}
                       </span>
@@ -2808,71 +3011,27 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
                     </div>
                     <Progress value={unit.batteryPct} className="mt-1.5 h-2" />
                   </div>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: "#FFF8E7", border: "1px solid #F2C94C" }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Advanced</p>
+                    <p className="mt-1" style={{ fontSize: 12, color: MUTED }}>
+                      Stop the current cycle early if the batch must be removed before the expected hatch period.
+                    </p>
+                    <Button
+                      className="mt-3 rounded-xl"
+                      variant="outline"
+                      disabled={isReady || cycleEnded || unit.cyclePhase === "stopped_early"}
+                      onClick={() => setStopCycleOpen(true)}
+                      style={{ borderColor: "#C2410C", color: "#9A3412", backgroundColor: "#FFFFFF" }}
+                    >
+                      Stop Cycle
+                    </Button>
+                  </div>
                 </div>
               </>
             )}
           </section>
         </div>
 
-        {/* Safety gate — mid-cycle mode switch requires explicit acknowledgement */}
-        <Dialog open={pendingModeId !== null} onOpenChange={(open) => !open && setPendingModeId(null)}>
-          <DialogContent
-            className="w-[90vw] max-w-[480px] bg-white p-6 shadow-xl border border-[#EAE7E1] [&>[data-slot=dialog-close]]:hidden"
-            style={{ borderRadius: 16 }}
-          >
-            <div className="flex items-start gap-3">
-              <ShieldAlert size={32} color="#F2994A" fill="#F2994A" className="mt-0.5 shrink-0" strokeWidth={2} />
-              <div>
-                <DialogTitle style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A" }}>
-                  Active Incubation in Progress
-                </DialogTitle>
-                <DialogDescription className="mt-1.5" style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}>
-                  {unit.name} is currently at Day {currentDay} of {totalDays} ({mode.name}). Switching modes mid-cycle will alter temperature, humidity, and turning schedules immediately.
-                </DialogDescription>
-              </div>
-            </div>
-
-            <label
-              className="flex cursor-pointer items-start gap-2.5 rounded-xl px-3.5 py-3"
-              style={{ backgroundColor: "#FFF8E7", border: "1px solid #F2C94C" }}
-            >
-              <Checkbox
-                checked={acknowledged}
-                onCheckedChange={(v) => setAcknowledged(v === true)}
-                className="mt-0.5 data-[state=checked]:bg-[#8B3A1C] data-[state=checked]:border-[#8B3A1C]"
-                style={{ borderColor: "#D97706", backgroundColor: "#FFFFFF", borderRadius: 5 }}
-              />
-              <span style={{ fontSize: 13, fontWeight: 500, color: "#5A4838", lineHeight: 1.45 }}>
-                I understand that changing parameters mid-cycle may impact embryo hatch rate.
-              </span>
-            </label>
-
-            <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
-              <Button
-                onClick={confirmForceSwitch}
-                disabled={!acknowledged}
-                variant="outline"
-                className="rounded-xl"
-                style={{
-                  borderColor: "#D9534F",
-                  color: "#D9534F",
-                  backgroundColor: "#FFFFFF",
-                  opacity: acknowledged ? 1 : 0.5,
-                }}
-              >
-                Force Switch Mode
-              </Button>
-              <Button
-                onClick={() => setPendingModeId(null)}
-                autoFocus
-                className="rounded-xl text-white"
-                style={{ backgroundColor: "#8B3A1C" }}
-              >
-                Keep Current Mode
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
         </>
       )}
 
@@ -2937,12 +3096,28 @@ export function DetailScreen({ unit, modes, onUpdate, onOpenTrends }: {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog open={stopCycleOpen} onOpenChange={setStopCycleOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Stop this cycle?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will stop {unit.name} before the expected hatch period and archive the record as Stopped Early. It will not be counted as a completed hatch.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Cycle</AlertDialogCancel>
+            <AlertDialogAction onClick={stopCycle}>Stop Cycle</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Final harvest & reset modal */}
       <HarvestModal
         open={harvestOpen}
         onOpenChange={setHarvestOpen}
         chamberName={unit.name}
         totalEggsLoaded={totalEggsSet}
+        fertileEggs={getKnownFertileEggs(unit)}
         onSave={saveHarvest}
       />
     </div>

@@ -242,7 +242,7 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
     try {
       parsed = JSON.parse(await file.text());
     } catch {
-      toast.error("Could not read that file — invalid JSON.");
+      toast.error("Could not read that file. The JSON is invalid.");
       return;
     }
     const rawModes: any[] = Array.isArray(parsed) ? parsed : parsed?.modes;
@@ -390,7 +390,7 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
     <div>
       <PanelHeader
         title="Mode Library"
-        description="Incubation presets — temperature, humidity, duration and turning cadence per species."
+        description="Incubation presets: temperature, humidity, duration, and turning cadence per species."
       />
 
       {/* Toolbar */}
@@ -462,13 +462,13 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                     <span className="flex items-center gap-1.5" style={{ color: MUTED }}>
                       <Thermometer size={14} /> Temp
                     </span>
-                    {m.targetTemp.min}–{m.targetTemp.max}°C
+                    {m.targetTemp.min} to {m.targetTemp.max}°C
                   </span>
                   <span className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5" style={{ color: MUTED }}>
                       <Droplets size={14} /> Humidity
                     </span>
-                    {m.targetHumidity.min}–{m.targetHumidity.max}%
+                    {m.targetHumidity.min} to {m.targetHumidity.max}%
                   </span>
                   <span className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5" style={{ color: MUTED }}>
@@ -516,8 +516,8 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                         {badge(m)}
                       </div>
                     </TableCell>
-                    <TableCell style={{ color: TEXT }}>{m.targetTemp.min}–{m.targetTemp.max}°C</TableCell>
-                    <TableCell style={{ color: TEXT }}>{m.targetHumidity.min}–{m.targetHumidity.max}%</TableCell>
+                    <TableCell style={{ color: TEXT }}>{m.targetTemp.min} to {m.targetTemp.max}°C</TableCell>
+                    <TableCell style={{ color: TEXT }}>{m.targetHumidity.min} to {m.targetHumidity.max}%</TableCell>
                     <TableCell style={{ color: TEXT }}>{m.incubationDays} days</TableCell>
                     <TableCell style={{ color: TEXT }}>Every {m.defaultTurnInterval}h</TableCell>
                     <TableCell style={{ color: MUTED }}>{candling.map((c) => `d${c.day}`).join(" / ")}</TableCell>

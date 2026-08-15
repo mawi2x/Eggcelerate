@@ -11,7 +11,7 @@ function summarize(unit: Incubator, mode: Mode): string {
   const issues = getUnitIssues(unit, mode);
   if (issues.length === 0) return `${unit.name} needs attention`;
   if (issues.length <= 2) return `${unit.name}: ${issues.join(", ")}`;
-  return `${unit.name} needs attention — ${issues.length} issues found`;
+  return `${unit.name} needs attention. ${issues.length} issues found.`;
 }
 
 export function AlertBanner({ criticalUnits, modes, onView }: Props) {

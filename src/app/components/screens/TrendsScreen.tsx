@@ -21,7 +21,6 @@ import {
   ChevronRight,
   TrendingUp,
   Percent,
-  Award,
   Layers,
 } from "lucide-react";
 import { Switch } from "../ui/switch";
@@ -52,7 +51,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { Incubator, Mode, buildHistory, hatchHistory } from "../../data/mockData";
+import { HatchRecord, Incubator, Mode, buildHistory, calculateHatchabilityRate } from "../../data/mockData";
 
 // ── Design tokens ───────────────────────────────────────────────────────────
 const RUST = "#A84323";
@@ -99,6 +98,7 @@ const HATCH_ROWS = 10;
 interface Props {
   units: Incubator[];
   modes: Mode[];
+  history: HatchRecord[];
   initialUnitId?: string;
 }
 
@@ -146,7 +146,7 @@ function formatDate(iso: string) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function TrendsScreen({ units, modes, initialUnitId }: Props) {
+export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   const [trendView, setTrendView] = useState<TrendView>("environmental");
   const [unitId, setUnitId] = useState(initialUnitId ?? units[0]?.id ?? "");
   const [range, setRange] = useState<RangeKey>("24h");
@@ -255,7 +255,7 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
   // One target-range label when every active chamber shares a band, otherwise a hint.
   const targetRangeLabel =
     bands.length === 1
-      ? `Target Safe Range (${bands[0].min}–${bands[0].max}${metricInfo[metric].unit})`
+      ? `Target Safe Range (${bands[0].min} to ${bands[0].max}${metricInfo[metric].unit})`
       : "Target Safe Range (varies by Mode)";
 
   // Never allow the selection to drop below two chambers — that would blank the chart.
@@ -291,38 +291,22 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
 
   // ── Hatch-history derived data ──────────────────────────────────────────────
   const withPct = useMemo(
-    () => hatchHistory.map((h) => ({
+    () => history.map((h) => ({
       ...h,
-      pct: h.totalEggs > 0 ? Math.round((h.hatchedEggs / h.totalEggs) * 100) : 0,
+      pct: calculateHatchabilityRate(h.hatchedEggs, h.fertileEggs),
     })),
-    [hatchHistory.length]
+    [history]
   );
 
   const kpis = useMemo(() => {
     const cycles = withPct.length;
     const hatched = withPct.reduce((s, h) => s + h.hatchedEggs, 0);
-    const totalEggs = withPct.reduce((s, h) => s + h.totalEggs, 0);
-    const avgRate = totalEggs > 0 ? hatched / totalEggs : 0;
-    const byMode = new Map<string, { hatched: number; eggs: number }>();
-    withPct.forEach((h) => {
-      const cur = byMode.get(h.modeName) ?? { hatched: 0, eggs: 0 };
-      cur.hatched += h.hatchedEggs;
-      cur.eggs += h.totalEggs;
-      byMode.set(h.modeName, cur);
-    });
-    let topMode = "";
-    let topAvg = 0;
-    byMode.forEach((v, k) => {
-      const a = v.eggs > 0 ? v.hatched / v.eggs : 0;
-      if (a > topAvg) {
-        topAvg = a;
-        topMode = k;
-      }
-    });
-    return { cycles, hatched, avgRate, topMode, topAvg };
+    const fertileEggs = withPct.reduce((s, h) => s + (h.fertileEggs ?? 0), 0);
+    const avgRate = calculateHatchabilityRate(hatched, fertileEggs > 0 ? fertileEggs : null);
+    return { cycles, hatched, avgRate };
   }, [withPct]);
 
-  const speciesOptions = ["All", ...Array.from(new Set(hatchHistory.map((h) => h.modeName))).sort()];
+  const speciesOptions: string[] = ["All", ...Array.from(new Set(history.map((h) => h.modeName))).sort()];
 
   const filteredHatch = useMemo(() => {
     const q = hatchSearch.trim().toLowerCase();
@@ -602,7 +586,7 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
       ) : (
         <>
           {/* KPI summary row. */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <KpiCard
               Icon={Layers}
               label="Completed Cycles"
@@ -611,8 +595,8 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
             />
             <KpiCard
               Icon={Percent}
-              label="Average Hatch Rate"
-              value={`${(kpis.avgRate * 100).toFixed(1)}%`}
+              label="Average Hatchability"
+              value={kpis.avgRate === null ? "Not available" : `${kpis.avgRate}%`}
               accent={OK}
               cardStyle={cardStyle}
             />
@@ -620,12 +604,6 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
               Icon={TrendingUp}
               label="Total Chicks Hatched"
               value={`${kpis.hatched} Hatched`}
-              cardStyle={cardStyle}
-            />
-            <KpiCard
-              Icon={Award}
-              label="Top Performing Mode"
-              value={`${kpis.topMode} — ${Math.round(kpis.topAvg * 100)}% Avg`}
               cardStyle={cardStyle}
             />
           </div>
@@ -694,7 +672,7 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
                   </TableHeader>
                   <TableBody>
                     {pagedHatch.map((h) => {
-                      const good = h.pct >= 80;
+                      const good = h.pct !== null && h.pct >= 80;
                       return (
                         <TableRow key={h.id} className="hover:bg-amber-50/60">
                           <TableCell style={{ fontWeight: 700, color: TEXT }}>{h.chamber}</TableCell>
@@ -707,7 +685,7 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
                             </span>
                           </TableCell>
                           <TableCell style={{ color: MUTED }}>
-                            {formatDate(h.startDate)} – {formatDate(h.endDate)}
+                            {formatDate(h.startDate)} to {formatDate(h.endDate)}
                           </TableCell>
                           <TableCell className="text-right">{h.totalEggs}</TableCell>
                           <TableCell className="text-right">{h.hatchedEggs}</TableCell>
@@ -721,7 +699,7 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
                                 fontSize: 13,
                               }}
                             >
-                              {h.pct}%
+                              {h.pct === null ? "Not available" : `${h.pct}%`}
                             </span>
                           </TableCell>
                         </TableRow>
@@ -741,7 +719,7 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
               {/* Pagination. */}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <span style={{ color: MUTED }}>
-                  Showing {rangeStart}–{rangeEnd} of {filteredHatch.length} records
+                  Showing {rangeStart} to {rangeEnd} of {filteredHatch.length} records
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -777,7 +755,7 @@ export function TrendsScreen({ units, modes, initialUnitId }: Props) {
         <DialogContent className="rounded-2xl sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "Baloo 2, sans-serif" }}>
-              Raw readings — {unit.name}
+              Raw readings: {unit.name}
             </DialogTitle>
             <DialogDescription>
               {singleReadings.length} data points for {ranges.find((r) => r.key === range)!.label.toLowerCase()}.

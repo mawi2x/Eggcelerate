@@ -1,4 +1,14 @@
-// Eggcelerate — mock data & types. Single source of truth for the dashboard.
+// Eggcelerate mock data and types.
+
+import {
+  ConditionSeverity,
+  ConnectionState,
+  CyclePhase,
+  connectionStateFromPairing,
+  cyclePhaseFromDay,
+  deriveConditionSeverity,
+  unitStatusFromConditionSeverity,
+} from "../domain/cycle";
 
 export type UnitStatus = "optimal" | "warning" | "alert";
 export type PowerSource = "grid" | "solar" | "battery";
@@ -15,7 +25,7 @@ export interface CandlingCheckpoint {
   day: number;
 }
 
-// A Mode is a reusable preset/template — NOT edited per-chamber.
+// A Mode is a reusable preset template. It is not edited per incubator.
 export interface Mode {
   id: string;
   name: string;
@@ -26,24 +36,9 @@ export interface Mode {
   defaultTurnInterval: number; // hours
 }
 
-// Nominal tray capacity used when an older cycle does not have a stored
-// loaded-egg count. Active cycles should always prefer totalEggsLoaded.
-export const NOMINAL_EGGS_PER_MODE: Record<string, number> = {
-  broiler: 42,
-  duck: 32,
-  quail: 60,
-  goose: 24,
-  turkey: 30,
-  pheasant: 40,
-  peafowl: 24,
-  swan: 16,
-  "broiler-hh": 42,
-  "rapid-quail": 60,
-};
-
-export function nominalEggCapacity(modeId: string): number {
-  return NOMINAL_EGGS_PER_MODE[modeId] ?? 30;
-}
+// The evaluated prototype has one installed tray with room for 38 eggs.
+// Future devices may expose this value from device configuration.
+export const CURRENT_TRAY_CAPACITY = 38;
 
 export function localDateString(date: Date = new Date()): string {
   const year = date.getFullYear();
@@ -61,7 +56,7 @@ export function computeCandling(durationDays: number): CandlingCheckpoint[] {
   return CANDLE_PROPORTIONS.map((p, i) => {
     const day = Math.max(1, Math.round(p * durationDays));
     const isLast = i === CANDLE_PROPORTIONS.length - 1;
-    const dayRange = isLast ? `Day ${day}` : `Day ${Math.max(1, day - 1)}–${day + 1}`;
+    const dayRange = isLast ? `Day ${day}` : `Day ${Math.max(1, day - 1)} to ${day + 1}`;
     return { label: CANDLE_LABELS[i], dayRange, day };
   });
 }
@@ -85,6 +80,9 @@ export interface CandlingLogEntry {
   note: string;
   photos: string[]; // data-URLs from candling session
   checks: DevelopmentCheck[]; // development checklist confirmed by the farmer
+  checkpointType?: "first" | "later";
+  developing?: number;
+  stoppedDeveloping?: number;
 }
 
 export interface Incubator {
@@ -93,8 +91,10 @@ export interface Incubator {
   deviceId: string;
   modeId: string;
   dayOfIncubation: number;
-  /** Eggs loaded at cycle start — used for hatch-rate calculation. */
+  /** Eggs loaded at cycle start. */
   totalEggsLoaded?: number;
+  /** Fertile count recorded during candling, if known. */
+  fertileEggs?: number;
   temp: number; // °C
   humidity: number; // %
   /** Binary float switch: true = closed (water sufficient), false = open (low). */
@@ -109,6 +109,9 @@ export interface Incubator {
   turnInterval: number; // hours (defaults to mode's, editable per-chamber)
   autoTurn: boolean;
   paired: boolean;
+  cyclePhase: CyclePhase;
+  conditionSeverity: ConditionSeverity;
+  connectionState: ConnectionState;
   candled: Record<number, boolean>; // keyed by candling day
   candlingLog: CandlingLogEntry[];
 }
@@ -195,27 +198,29 @@ const dayAgo = (days: number) => {
 
 // Chamber One has a rich inspection history spanning its 9 elapsed days.
 const chamberOneLog: CandlingLogEntry[] = [
-  { day: 2, label: "Initial candling",     date: dayAgo(7), fertile: 24, clear: 0, uncertain: 0, note: "Fresh set — no development expected yet, baseline air cells marked.", photos: [], checks: ["airCell"] },
-  { day: 3, label: "Early veining check",  date: dayAgo(6), fertile: 23, clear: 1, uncertain: 0, note: "Faint spider veining appearing in most eggs. One appears clear.", photos: [], checks: ["veining", "airCell"] },
-  { day: 5, label: "Air cell check",       date: dayAgo(4), fertile: 23, clear: 1, uncertain: 0, note: "Air cells developing evenly. Good progress across the tray.", photos: [], checks: ["veining", "airCell"] },
-  { day: 6, label: "First candling",       date: dayAgo(3), fertile: 22, clear: 2, uncertain: 0, note: "Strong spider veining observed across 22 eggs. 2 clear infertile eggs removed from tray.", photos: [], checks: ["veining", "airCell"] },
-  { day: 7, label: "Fertility recount",    date: dayAgo(2), fertile: 22, clear: 2, uncertain: 0, note: "Recounted after removals — 22 viable, strong dark spots forming.", photos: [], checks: ["veining", "airCell"] },
-  { day: 9, label: "Development check",    date: dayAgo(0), fertile: 21, clear: 2, uncertain: 1, note: "Movement observed in several eggs. One uncertain — will recheck at day 13.", photos: [], checks: ["veining", "airCell", "movement"] },
+  { day: 2, label: "Initial candling",     date: dayAgo(7), fertile: 24, clear: 0, uncertain: 0, checkpointType: "first", note: "Fresh set. No development expected yet. Baseline air cells marked.", photos: [], checks: ["airCell"] },
+  { day: 3, label: "Early veining check",  date: dayAgo(6), fertile: 23, clear: 1, uncertain: 0, checkpointType: "first", note: "Faint spider veining appearing in most eggs. One appears clear.", photos: [], checks: ["veining", "airCell"] },
+  { day: 5, label: "Air cell check",       date: dayAgo(4), fertile: 23, clear: 1, uncertain: 0, checkpointType: "first", note: "Air cells developing evenly. Good progress across the tray.", photos: [], checks: ["veining", "airCell"] },
+  { day: 6, label: "First candling",       date: dayAgo(3), fertile: 22, clear: 2, uncertain: 0, checkpointType: "first", note: "Strong spider veining observed across 22 eggs. 2 clear infertile eggs removed from tray.", photos: [], checks: ["veining", "airCell"] },
+  { day: 7, label: "Fertility recount",    date: dayAgo(2), fertile: 22, clear: 2, uncertain: 0, checkpointType: "first", note: "Recounted after removals. Strong dark spots are forming in 22 eggs.", photos: [], checks: ["veining", "airCell"] },
+  { day: 9, label: "Development check",    date: dayAgo(0), fertile: 22, clear: 2, uncertain: 1, checkpointType: "later", developing: 21, stoppedDeveloping: 0, note: "Movement observed in several eggs. One is uncertain. Recheck at Day 13.", photos: [], checks: ["veining", "airCell", "movement"] },
 ];
 
-// Chamber Twelve is past its 21-day hatch window with fertile eggs still in the
-// tray — the "Completed" badge, Extend (+24h), and Harvest & Reset all show.
+// Chamber Twelve is past its 21-day hatch window and is waiting for the farmer
+// to record the final hatch result.
 const chamberTwelveLog: CandlingLogEntry[] = [
-  { day: 6, label: "First candling",    date: dayAgo(15), fertile: 36, clear: 4, uncertain: 2, note: "Strong veining across 36 eggs. 4 clears culled, 2 uncertain kept for recheck.", photos: [], checks: ["veining", "airCell"] },
-  { day: 13, label: "Second candling",  date: dayAgo(8), fertile: 34, clear: 4, uncertain: 4, note: "Healthy dark spots on 34 eggs. 2 more clears removed; uncertains set aside.", photos: [], checks: ["veining", "airCell", "movement"] },
-  { day: 18, label: "Lockdown check",   date: dayAgo(3), fertile: 33, clear: 5, uncertain: 4, note: "Air cells tilted for hatch position. No internal pip yet at lockdown.", photos: [], checks: ["veining", "airCell", "movement"] },
+  { day: 6, label: "First candling",    date: dayAgo(15), fertile: 31, clear: 4, uncertain: 2, checkpointType: "first", note: "Strong veining across 31 eggs. 4 clears culled, 2 uncertain kept for recheck.", photos: [], checks: ["veining", "airCell"] },
+  { day: 13, label: "Second candling",  date: dayAgo(8), fertile: 31, developing: 29, clear: 4, uncertain: 2, stoppedDeveloping: 2, checkpointType: "later", note: "Healthy dark spots on 29 eggs. 2 stopped developing and were removed. Uncertains set aside.", photos: [], checks: ["veining", "airCell", "movement"] },
+  { day: 18, label: "Lockdown check",   date: dayAgo(3), fertile: 31, developing: 28, clear: 5, uncertain: 2, stoppedDeveloping: 2, checkpointType: "later", note: "Air cells tilted for hatch position. No internal pip yet at lockdown.", photos: [], checks: ["veining", "airCell", "movement"] },
 ];
 
-export const initialIncubators: Incubator[] = [
+type IncubatorFixture = Omit<Incubator, "cyclePhase" | "conditionSeverity" | "connectionState">;
+
+const initialIncubatorFixtures: IncubatorFixture[] = [
   {
     id: "chamber-1", name: "Chamber One", deviceId: "EGG-1003", modeId: "broiler",
     dayOfIncubation: 9,
-    totalEggsLoaded: 42, temp: 37.6, humidity: 57, waterOk: true,
+    totalEggsLoaded: 24, fertileEggs: 22, temp: 37.6, humidity: 57, waterOk: true,
     tempTrend: 0.1, humidityTrend: 0.3, powerSource: "grid", batteryPct: 100, status: "optimal",
     lastTurned: iso(95), nextTurn: isoAhead(145), turnInterval: 4, autoTurn: true, paired: true,
     candled: { 6: true }, candlingLog: chamberOneLog,
@@ -231,7 +236,7 @@ export const initialIncubators: Incubator[] = [
   {
     id: "chamber-3", name: "Chamber Three", deviceId: "EGG-1005", modeId: "quail",
     dayOfIncubation: 15,
-    totalEggsLoaded: 60, temp: 39.2, humidity: 64, waterOk: false,
+    totalEggsLoaded: 38, temp: 39.2, humidity: 64, waterOk: false,
     tempTrend: 1.3, humidityTrend: 0.2, powerSource: "battery", batteryPct: 23, status: "alert",
     lastTurned: iso(220), nextTurn: isoAhead(-40), turnInterval: 4, autoTurn: false, paired: false,
     candled: {}, candlingLog: [],
@@ -255,7 +260,7 @@ export const initialIncubators: Incubator[] = [
   {
     id: "chamber-6", name: "Chamber Six", deviceId: "EGG-1008", modeId: "pheasant",
     dayOfIncubation: 11,
-    totalEggsLoaded: 40, temp: 38.1, humidity: 49, waterOk: false,
+    totalEggsLoaded: 38, temp: 38.1, humidity: 49, waterOk: false,
     tempTrend: 0.5, humidityTrend: -1.1, powerSource: "grid", batteryPct: 100, status: "warning",
     lastTurned: iso(120), nextTurn: isoAhead(240), turnInterval: 6, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
@@ -263,7 +268,7 @@ export const initialIncubators: Incubator[] = [
   {
     id: "chamber-7", name: "Chamber Seven", deviceId: "EGG-1009", modeId: "broiler",
     dayOfIncubation: 1,
-    totalEggsLoaded: 42, temp: 37.6, humidity: 56, waterOk: true,
+    totalEggsLoaded: 38, temp: 37.6, humidity: 56, waterOk: true,
     tempTrend: 0, humidityTrend: 0, powerSource: "grid", batteryPct: 100, status: "optimal",
     lastTurned: iso(20), nextTurn: isoAhead(220), turnInterval: 4, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
@@ -279,7 +284,7 @@ export const initialIncubators: Incubator[] = [
   {
     id: "chamber-9", name: "Chamber Nine", deviceId: "EGG-1011", modeId: "quail",
     dayOfIncubation: 17,
-    totalEggsLoaded: 60, temp: 37.5, humidity: 68, waterOk: true,
+    totalEggsLoaded: 38, temp: 37.5, humidity: 68, waterOk: true,
     tempTrend: 0, humidityTrend: 0.6, powerSource: "battery", batteryPct: 82, status: "optimal",
     lastTurned: iso(35), nextTurn: isoAhead(205), turnInterval: 4, autoTurn: true, paired: true,
     candled: {}, candlingLog: [],
@@ -303,12 +308,45 @@ export const initialIncubators: Incubator[] = [
   {
     id: "chamber-12", name: "Chamber Twelve", deviceId: "EGG-1014", modeId: "broiler-hh",
     dayOfIncubation: 22,
-    totalEggsLoaded: 37, temp: 37.5, humidity: 65, waterOk: true,
+    totalEggsLoaded: 37, fertileEggs: 31, temp: 37.5, humidity: 65, waterOk: true,
     tempTrend: 0, humidityTrend: 0.2, powerSource: "grid", batteryPct: 100, status: "optimal",
     lastTurned: iso(25), nextTurn: isoAhead(215), turnInterval: 4, autoTurn: true, paired: true,
     candled: { 6: true, 13: true, 18: true }, candlingLog: chamberTwelveLog,
   },
 ];
+
+export const initialIncubators: Incubator[] = initialIncubatorFixtures.map((unit) => {
+  const mode = initialModes.find((candidate) => candidate.id === unit.modeId);
+  const lockdownDay = mode ? computeCandling(mode.incubationDays)[2]?.day ?? mode.incubationDays : 18;
+  const cyclePhase = cyclePhaseFromDay({
+    dayOfIncubation: unit.dayOfIncubation,
+    incubationDays: mode?.incubationDays ?? 21,
+    lockdownDay,
+  });
+  const conditionSeverity = mode
+    ? deriveConditionSeverity({
+        paired: unit.paired,
+        temp: unit.temp,
+        targetTemp: mode.targetTemp,
+        humidity: unit.humidity,
+        targetHumidity: mode.targetHumidity,
+        waterOk: unit.waterOk,
+        batteryPct: unit.batteryPct,
+        powerSource: unit.powerSource,
+        nextTurn: unit.nextTurn,
+      })
+    : "info";
+  return {
+    ...unit,
+    cyclePhase,
+    autoTurn: cyclePhase === "lockdown" || cyclePhase === "hatching" || cyclePhase === "awaiting_finish"
+      ? false
+      : unit.autoTurn,
+    conditionSeverity,
+    status: mode ? unitStatusFromConditionSeverity(conditionSeverity) : unit.status,
+    connectionState: connectionStateFromPairing(unit.paired),
+  };
+});
 
 // Build history spanning the elapsed incubation days so each range filter differs.
 export function buildHistory(
@@ -359,7 +397,7 @@ export const initialAlerts: AlertEntry[] = [
     title: "Temperature Too High",
     severity: "critical",
     unit: "Chamber Three",
-    message: "Temperature 39.2°C — above safe range. Check heater and ventilation.",
+    message: "Temperature is 39.2°C, above the safe range. Check the heater and ventilation.",
     timestamp: iso(12),
     acknowledged: false,
   },
@@ -386,7 +424,7 @@ export const initialAlerts: AlertEntry[] = [
     title: "Running on Battery",
     severity: "warning",
     unit: "Chamber Three",
-    message: "Running on battery — 23% remaining. Restore power soon.",
+    message: "Running on battery with 23% remaining. Restore power soon.",
     timestamp: iso(65),
     acknowledged: false,
   },
@@ -395,7 +433,7 @@ export const initialAlerts: AlertEntry[] = [
     title: "Humidity Out of Range",
     severity: "warning",
     unit: "Chamber Two",
-    message: "Humidity 51% — below target. Add water to the reservoir.",
+    message: "Humidity is 51%, below the target. Add water to the reservoir.",
     timestamp: iso(88),
     acknowledged: false,
   },
@@ -404,7 +442,7 @@ export const initialAlerts: AlertEntry[] = [
     title: "Water Reservoir Low",
     severity: "warning",
     unit: "Chamber Two",
-    message: "Water reservoir at 34% — top up soon.",
+    message: "Water reservoir is low. Top it up soon.",
     timestamp: iso(110),
     acknowledged: true,
   },
@@ -431,7 +469,7 @@ export const initialAlerts: AlertEntry[] = [
     title: "Grid Power Lost",
     severity: "warning",
     unit: "Chamber Three",
-    message: "Grid power lost — switched to battery backup automatically.",
+    message: "Grid power was lost. The incubator switched to battery backup.",
     timestamp: iso(200),
     acknowledged: true,
   },
@@ -458,7 +496,7 @@ export const initialAlerts: AlertEntry[] = [
     title: "Hatch Day Approaching",
     severity: "info",
     unit: "Chamber Three",
-    message: "Hatch day approaching — 3 days until expected hatch.",
+    message: "Hatch day is approaching. Expected hatch is in 3 days.",
     timestamp: iso(500),
     acknowledged: true,
   },
@@ -471,24 +509,73 @@ export interface HatchRecord {
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
   totalEggs: number;
+  fertileEggs: number | null;
   hatchedEggs: number;
 }
 
 // 12 completed cycles — totals: 167 chicks hatched, Duck the top-performing mode.
 export const hatchHistory: HatchRecord[] = [
-  { id: "h1",  chamber: "Chamber One",    modeName: "Broiler", startDate: "2026-06-01", endDate: "2026-06-22", totalEggs: 18, hatchedEggs: 16 },
-  { id: "h2",  chamber: "Chamber Two",    modeName: "Duck",    startDate: "2026-05-10", endDate: "2026-06-07", totalEggs: 16, hatchedEggs: 14 },
-  { id: "h3",  chamber: "Chamber Three",  modeName: "Quail",   startDate: "2026-06-15", endDate: "2026-07-03", totalEggs: 20, hatchedEggs: 17 },
-  { id: "h4",  chamber: "Chamber One",    modeName: "Broiler", startDate: "2026-05-01", endDate: "2026-05-22", totalEggs: 17, hatchedEggs: 14 },
-  { id: "h5",  chamber: "Chamber Two",    modeName: "Duck",    startDate: "2026-06-20", endDate: "2026-07-18", totalEggs: 15, hatchedEggs: 13 },
-  { id: "h6",  chamber: "Chamber Four",   modeName: "Goose",   startDate: "2026-04-12", endDate: "2026-05-12", totalEggs: 12, hatchedEggs: 9 },
-  { id: "h7",  chamber: "Chamber Five",   modeName: "Turkey",  startDate: "2026-05-18", endDate: "2026-06-15", totalEggs: 18, hatchedEggs: 15 },
-  { id: "h8",  chamber: "Chamber Nine",   modeName: "Quail",   startDate: "2026-06-25", endDate: "2026-07-13", totalEggs: 22, hatchedEggs: 18 },
-  { id: "h9",  chamber: "Chamber Ten",    modeName: "Duck",    startDate: "2026-05-05", endDate: "2026-06-02", totalEggs: 14, hatchedEggs: 12 },
-  { id: "h10", chamber: "Chamber Seven",  modeName: "Broiler", startDate: "2026-06-08", endDate: "2026-06-29", totalEggs: 16, hatchedEggs: 14 },
-  { id: "h11", chamber: "Chamber Eleven", modeName: "Swan",    startDate: "2026-03-20", endDate: "2026-04-25", totalEggs: 10, hatchedEggs: 7 },
-  { id: "h12", chamber: "Chamber Twelve", modeName: "Quail",   startDate: "2026-07-01", endDate: "2026-07-19", totalEggs: 20, hatchedEggs: 18 },
+  { id: "h1",  chamber: "Chamber One",    modeName: "Broiler", startDate: "2026-06-01", endDate: "2026-06-22", totalEggs: 18, fertileEggs: 17, hatchedEggs: 16 },
+  { id: "h2",  chamber: "Chamber Two",    modeName: "Duck",    startDate: "2026-05-10", endDate: "2026-06-07", totalEggs: 16, fertileEggs: 15, hatchedEggs: 14 },
+  { id: "h3",  chamber: "Chamber Three",  modeName: "Quail",   startDate: "2026-06-15", endDate: "2026-07-03", totalEggs: 20, fertileEggs: 19, hatchedEggs: 17 },
+  { id: "h4",  chamber: "Chamber One",    modeName: "Broiler", startDate: "2026-05-01", endDate: "2026-05-22", totalEggs: 17, fertileEggs: 16, hatchedEggs: 14 },
+  { id: "h5",  chamber: "Chamber Two",    modeName: "Duck",    startDate: "2026-06-20", endDate: "2026-07-18", totalEggs: 15, fertileEggs: 14, hatchedEggs: 13 },
+  { id: "h6",  chamber: "Chamber Four",   modeName: "Goose",   startDate: "2026-04-12", endDate: "2026-05-12", totalEggs: 12, fertileEggs: 11, hatchedEggs: 9 },
+  { id: "h7",  chamber: "Chamber Five",   modeName: "Turkey",  startDate: "2026-05-18", endDate: "2026-06-15", totalEggs: 18, fertileEggs: 17, hatchedEggs: 15 },
+  { id: "h8",  chamber: "Chamber Nine",   modeName: "Quail",   startDate: "2026-06-25", endDate: "2026-07-13", totalEggs: 22, fertileEggs: 20, hatchedEggs: 18 },
+  { id: "h9",  chamber: "Chamber Ten",    modeName: "Duck",    startDate: "2026-05-05", endDate: "2026-06-02", totalEggs: 14, fertileEggs: 13, hatchedEggs: 12 },
+  { id: "h10", chamber: "Chamber Seven",  modeName: "Broiler", startDate: "2026-06-08", endDate: "2026-06-29", totalEggs: 16, fertileEggs: 15, hatchedEggs: 14 },
+  { id: "h11", chamber: "Chamber Eleven", modeName: "Swan",    startDate: "2026-03-20", endDate: "2026-04-25", totalEggs: 10, fertileEggs: 9, hatchedEggs: 7 },
+  { id: "h12", chamber: "Chamber Twelve", modeName: "Quail",   startDate: "2026-07-01", endDate: "2026-07-19", totalEggs: 20, fertileEggs: 19, hatchedEggs: 18 },
 ];
+
+export interface AbortedCycleRecord {
+  id: string;
+  incubator: string;
+  modeName: string;
+  stoppedOn: string;
+  dayStopped: number;
+  totalEggs: number;
+  fertileEggs: number | null;
+}
+
+export const abortedCycleHistory: AbortedCycleRecord[] = [];
+
+export function recordAbortedCycle(params: {
+  incubator: string;
+  modeName: string;
+  dayStopped: number;
+  totalEggs: number;
+  fertileEggs: number | null;
+}): void {
+  abortedCycleHistory.push({
+    id: `aborted-${Date.now()}`,
+    incubator: params.incubator,
+    modeName: params.modeName,
+    stoppedOn: new Date().toISOString(),
+    dayStopped: params.dayStopped,
+    totalEggs: params.totalEggs,
+    fertileEggs: params.fertileEggs,
+  });
+}
+
+export function calculateFertilityRate(fertileEggs: number, eggsSet: number): number | null {
+  if (fertileEggs <= 0 || eggsSet <= 0) return null;
+  return Number(((fertileEggs / eggsSet) * 100).toFixed(1));
+}
+
+export function calculateHatchabilityRate(hatchedEggs: number, fertileEggs: number | null): number | null {
+  if (fertileEggs === null || fertileEggs <= 0) return null;
+  return Number(((hatchedEggs / fertileEggs) * 100).toFixed(1));
+}
+
+export function getKnownFertileEggs(unit: Incubator): number | null {
+  if (typeof unit.fertileEggs === "number" && unit.fertileEggs > 0) return unit.fertileEggs;
+  const earliest = [...unit.candlingLog]
+    .filter((entry) => entry.fertile > 0)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  return earliest?.fertile ?? null;
+}
 
 /** Whole days left before this unit reaches its mode's hatch day. */
 export function daysUntilHatch(dayOfIncubation: number, incubationDays: number): number {
@@ -500,17 +587,17 @@ export function isHatchingSoon(dayOfIncubation: number, incubationDays: number):
   return daysUntilHatch(dayOfIncubation, incubationDays) <= 2;
 }
 
-/** Save a completed cycle to farm history; returns the hatch rate percentage. */
+/** Save a completed cycle to farm history and return the hatchability percentage. */
 export function recordHarvest(params: {
   chamber: string; modeName: string; cycleDays: number;
-  totalEggs: number; hatchedEggs: number;
-}): number {
+  totalEggs: number; fertileEggs: number | null; hatchedEggs: number;
+}): number | null {
   const end = new Date();
   const start = new Date(end);
   start.setDate(start.getDate() - Math.max(0, params.cycleDays - 1));
   const endDate = localDateString(end);
   const startDate = localDateString(start);
-  const rate = params.totalEggs > 0 ? Number(((params.hatchedEggs / params.totalEggs) * 100).toFixed(1)) : 0;
+  const rate = calculateHatchabilityRate(params.hatchedEggs, params.fertileEggs);
   hatchHistory.push({
     id: `h-${Date.now()}`,
     chamber: params.chamber,
@@ -518,6 +605,7 @@ export function recordHarvest(params: {
     startDate,
     endDate,
     totalEggs: params.totalEggs,
+    fertileEggs: params.fertileEggs,
     hatchedEggs: params.hatchedEggs,
   });
   return rate;
@@ -529,10 +617,14 @@ export function resetChamberToReady(_unit: Incubator): Partial<Incubator> {
   return {
     dayOfIncubation: 0,
     totalEggsLoaded: 0,
+    fertileEggs: undefined,
     candled: {},
     candlingLog: [],
     autoTurn: false,
     status: "optimal",
+    cyclePhase: "ready",
+    conditionSeverity: "info",
+    connectionState: _unit.paired ? "connected" : "offline",
     lastTurned: nowIso,
     nextTurn: new Date(Date.now() + 24 * 3_600_000).toISOString(),
   };
@@ -541,7 +633,7 @@ export function resetChamberToReady(_unit: Incubator): Partial<Incubator> {
 export const statusLabels: Record<UnitStatus, string> = {
   optimal: "Optimal",
   warning: "Needs Attention",
-  alert: "Alert",
+  alert: "Urgent",
 };
 
 export const stateColors = {

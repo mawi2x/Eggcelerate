@@ -3,7 +3,7 @@ import {
   Layers,
   Egg,
   Clock,
-  Percent,
+  TriangleAlert,
   ArrowRight,
 } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
@@ -11,8 +11,6 @@ import {
   Incubator,
   Mode,
   UnitStatus,
-  hatchHistory,
-  nominalEggCapacity,
 } from "../../data/mockData";
 
 interface Props {
@@ -153,8 +151,8 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
 
   const stats = useMemo(() => {
     const count = (s: UnitStatus) => units.filter((u) => u.status === s).length;
-    const connected = units.filter((u) => u.paired).length;
-    const totalEggs = units.reduce((s, u) => s + nominalEggCapacity(u.modeId), 0);
+    const connected = units.filter((u) => u.paired && u.connectionState === "connected").length;
+    const totalEggs = units.reduce((s, u) => s + (u.totalEggsLoaded ?? 0), 0);
     const modesInUse = Array.from(new Set(units.map((u) => modeOf(u.modeId).name)));
 
     // Chamber closest to hatching (fewest days remaining).
@@ -175,6 +173,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
       optimal: count("optimal"),
       warning: count("warning"),
       alert: count("alert"),
+      needsAttention: units.filter((u) => u.status !== "optimal").length,
       connected,
       totalEggs,
       modesInUse,
@@ -196,24 +195,15 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
   const hatchValue =
     nextRemaining <= 0 ? "Now" : nextRemaining === 1 ? "~24 Hours" : `${nextRemaining} Days`;
 
-  // Average hatch rate across all completed cycles.
-  const avgHatchRate = useMemo(() => {
-    const totals = hatchHistory.reduce(
-      (a, r) => ({ eggs: a.eggs + r.totalEggs, hatched: a.hatched + r.hatchedEggs }),
-      { eggs: 0, hatched: 0 },
-    );
-    return totals.eggs > 0 ? (totals.hatched / totals.eggs) * 100 : 0;
-  }, [hatchHistory.length]);
-
   return (
     <div className="flex flex-col" style={{ gap: 32 }}>
       {/* Section 2: executive KPI summary — strict 1-row compact cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* Layers reads as stacked multi-tier incubator cabinets. */}
         <KpiCard Icon={Layers} accent={RUST} label="INCUBATORS" value={`${units.length} Active`} />
-        <KpiCard Icon={Egg} accent={RUST} label="TOTAL CAPACITY" value={`${stats.totalEggs} Eggs`} />
+        <KpiCard Icon={Egg} accent={RUST} label="EGGS INCUBATING" value={`${stats.totalEggs} Eggs`} />
         <KpiCard Icon={Clock} accent={OK} label="UPCOMING HATCH" value={hatchValue} />
-        <KpiCard Icon={Percent} accent={OK} label="AVG HATCH RATE" value={`${avgHatchRate.toFixed(1)}%`} />
+        <KpiCard Icon={TriangleAlert} accent={RUST} label="NEEDS ATTENTION" value={`${stats.needsAttention}`} />
       </div>
 
       {/* Section 3: chamber status grid, wrapped in one white container */}

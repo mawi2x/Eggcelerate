@@ -1,8 +1,9 @@
-import { Thermometer, Droplets, ChevronRight, Egg, Check, TriangleAlert, Bird } from "lucide-react";
+import { Thermometer, Droplets, ChevronRight, Egg, Check, TriangleAlert, Bird, LockKeyhole, Clock } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { SegmentedBattery } from "./SegmentedBattery";
 import { Incubator, Mode, ReadingState, rangeState, waterState, getWaterStatusInfo, readingStateColors } from "../data/mockData";
+import { conditionDisplayLabels } from "../domain/cycle";
 
 interface Props {
   unit: Incubator;
@@ -24,15 +25,24 @@ const CTA = "#C8623A";
 const tileBg: Record<string, string> = { ok: TILE, warning: "#FFFBEB", critical: "#FEF2F2" };
 const tileBorder: Record<string, string> = { ok: BORDER, warning: "#FCD34D", critical: "#FCA5A5" };
 
-// Farmer-friendly operational status pill, derived from pairing + unit status.
-function operationalStatus(unit: Incubator, incubationDays: number): {
+// Farmer-friendly lifecycle status pill, derived from the shared cycle phase.
+function operationalStatus(unit: Incubator): {
   label: string; bg: string; fg: string; Icon?: React.ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string }>; dot?: boolean;
 } {
-  if (!unit.paired) return { label: "Offline", bg: "#FCE8E6", fg: "#C5221F", Icon: TriangleAlert };
-  if (unit.dayOfIncubation >= incubationDays) return { label: "Completed", bg: "#D1FAE5", fg: "#065F46", Icon: Check };
-  if (unit.dayOfIncubation >= incubationDays - 2) return { label: "Hatching", bg: "#E8F0FE", fg: "#1967D2", Icon: Bird };
-  if (unit.status === "warning") return { label: "Needs Attention", bg: "#FEF7E0", fg: "#B06000", Icon: TriangleAlert };
-  if (unit.dayOfIncubation === 0) return { label: "Ready", bg: "#F1F3F4", fg: "#5F6368", dot: true };
+  if (!unit.paired || unit.connectionState !== "connected") {
+    const label = unit.connectionState === "connecting"
+      ? "Connecting"
+      : unit.connectionState === "connection_failed"
+      ? "Connection Failed"
+      : "Offline";
+    return { label, bg: "#FCE8E6", fg: "#C5221F", Icon: TriangleAlert };
+  }
+  if (unit.cyclePhase === "completed") return { label: "Completed", bg: "#D1FAE5", fg: "#065F46", Icon: Check };
+  if (unit.cyclePhase === "stopped_early") return { label: "Stopped Early", bg: "#FEE2E2", fg: "#991B1B", Icon: TriangleAlert };
+  if (unit.cyclePhase === "awaiting_finish") return { label: "Awaiting Finish", bg: "#FFF4D6", fg: "#9A6700", Icon: Clock };
+  if (unit.cyclePhase === "hatching") return { label: "Hatching", bg: "#E8F0FE", fg: "#1967D2", Icon: Bird };
+  if (unit.cyclePhase === "lockdown") return { label: "Lockdown", bg: "#FCE4D6", fg: "#A84323", Icon: LockKeyhole };
+  if (unit.cyclePhase === "ready") return { label: "Ready", bg: "#F1F3F4", fg: "#5F6368", dot: true };
   return { label: "Incubating", bg: "#E6F4EA", fg: "#137333", Icon: Egg };
 }
 
@@ -101,7 +111,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
   const progress = mode.incubationDays > 0
     ? Math.min(100, Math.max(0, Math.round((unit.dayOfIncubation / mode.incubationDays) * 100)))
     : 0;
-  const status = operationalStatus(unit, mode.incubationDays);
+  const status = operationalStatus(unit);
   const ready = status.dot === true;
 
   // Hatch day reached — overtime keeps running automatically until harvest.
@@ -137,9 +147,9 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
             className="flex flex-1 flex-col items-center justify-center rounded-2xl px-4 py-5 text-center"
             style={{ backgroundColor: "#F9F6F0" }}
           >
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}>Chamber Ready</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}>Incubator Ready</p>
             <p style={{ fontSize: 12, color: "#6E6259", lineHeight: 1.5, marginTop: 4 }}>
-              Load eggs and select a Mode to begin incubation.
+              Load eggs and choose a mode to begin incubation.
             </p>
           </div>
         ) : (
@@ -189,22 +199,37 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
 
         {/* Footer — status badge left, action button right. */}
         <div className="mt-4 flex items-center justify-between gap-2">
-          <span
-            className="inline-flex shrink-0 items-center rounded-full"
-            style={{ backgroundColor: status.bg, color: status.fg, fontSize: 12, fontWeight: 700, padding: "6px 12px", gap: 6 }}
-          >
-            {status.Icon ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <span
+              className="inline-flex shrink-0 items-center rounded-full"
+              style={{ backgroundColor: status.bg, color: status.fg, fontSize: 12, fontWeight: 700, padding: "6px 12px", gap: 6 }}
+            >
+              {status.Icon ? (
+                <span
+                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: status.fg }}
+                >
+                  <status.Icon size={10} color="#FFFFFF" strokeWidth={3} />
+                </span>
+              ) : (
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: status.fg }} />
+              )}
+              {status.label}
+            </span>
+            {unit.conditionSeverity !== "info" && (
               <span
-                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
-                style={{ backgroundColor: status.fg }}
+                className="inline-flex shrink-0 items-center rounded-full px-2.5 py-1"
+                style={{
+                  backgroundColor: unit.conditionSeverity === "critical" ? "#FEE2E2" : "#FEF3C7",
+                  color: unit.conditionSeverity === "critical" ? "#991B1B" : "#92400E",
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
               >
-                <status.Icon size={10} color="#FFFFFF" strokeWidth={3} />
+                {conditionDisplayLabels[unit.conditionSeverity]}
               </span>
-            ) : (
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: status.fg }} />
             )}
-            {status.label}
-          </span>
+          </div>
           {cycleEnded ? (
             /* Hatch day reached — harvest & reset ends the overtime run. */
             <Button

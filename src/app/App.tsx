@@ -16,8 +16,11 @@ import {
   AlertEntry,
   Incubator,
   Mode,
+  HatchRecord,
+  hatchHistory,
 } from "./data/mockData";
 import { Account, initialAccount } from "./data/account";
+import { cyclePhaseDisplayLabels, deriveConditionSeverity, unitStatusFromConditionSeverity } from "./domain/cycle";
 
 export default function App() {
   const [screen, setScreen] = useState<ScreenId>("overview");
@@ -35,6 +38,7 @@ export default function App() {
 
   const [alerts, setAlerts] =
     useState<AlertEntry[]>(initialAlerts);
+  const [hatchRecords, setHatchRecords] = useState<HatchRecord[]>(() => [...hatchHistory]);
 
   const updateAccount = (patch: Partial<Account>) => {
     setAccount((prev) => ({ ...prev, ...patch }));
@@ -63,6 +67,10 @@ export default function App() {
     setAlerts((prev) => prev.filter((a) => !a.acknowledged));
   };
 
+  const refreshHatchHistory = () => {
+    setHatchRecords([...hatchHistory]);
+  };
+
   const unreadAlerts = alerts.filter(
     (a) => !a.acknowledged,
   ).length;
@@ -87,7 +95,32 @@ export default function App() {
     patch: Partial<Incubator>,
   ) => {
     setIncubators((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, ...patch } : u)),
+      prev.map((u) => {
+        if (u.id !== id) return u;
+        const next = { ...u, ...patch };
+        const mode = modes.find((m) => m.id === next.modeId) ?? modes[0];
+        const conditionSeverity = mode
+          ? deriveConditionSeverity({
+              paired: next.paired,
+              temp: next.temp,
+              targetTemp: mode.targetTemp,
+              humidity: next.humidity,
+              targetHumidity: mode.targetHumidity,
+              waterOk: next.waterOk,
+              batteryPct: next.batteryPct,
+              powerSource: next.powerSource,
+              nextTurn: next.nextTurn,
+            })
+          : next.conditionSeverity;
+        const connectionState = patch.connectionState
+          ?? (patch.paired !== undefined ? (next.paired ? "connected" : "offline") : next.connectionState);
+        return {
+          ...next,
+          conditionSeverity,
+          status: unitStatusFromConditionSeverity(conditionSeverity),
+          connectionState,
+        };
+      }),
     );
   };
 
@@ -126,7 +159,7 @@ export default function App() {
       ? { fg: "#15803D", bg: "#DCFCE7", label: "Optimal" }
       : activeUnit.status === "warning"
         ? { fg: "#B45309", bg: "#FEF3C7", label: "Needs Attention" }
-        : { fg: "#B91C1C", bg: "#FEE2E2", label: "Alert" };
+        : { fg: "#B91C1C", bg: "#FEE2E2", label: "Urgent" };
 
   const detailBadges = (
     <>
@@ -141,6 +174,17 @@ export default function App() {
       >
         Day {activeUnit.dayOfIncubation} of{" "}
         {activeMode.incubationDays}
+      </span>
+      <span
+        className="shrink-0 rounded-full px-3 py-1"
+        style={{
+          backgroundColor: "#F2EEE5",
+          color: "#5A4838",
+          fontSize: 13,
+          fontWeight: 700,
+        }}
+      >
+        {cyclePhaseDisplayLabels[activeUnit.cyclePhase]}
       </span>
       <span
         className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1"
@@ -209,7 +253,7 @@ export default function App() {
     settings: {
       title: "Settings",
       subtitle:
-        "App-level configuration — Modes, notifications and account.",
+        "App settings: modes, notifications, and account.",
     },
   };
 
@@ -272,6 +316,7 @@ export default function App() {
               onOpenUnit={openUnit}
               onAddIncubator={addIncubator}
               onUpdateUnit={updateIncubator}
+              onHistoryChanged={refreshHatchHistory}
             />
           )}
           {screen === "detail" && (
@@ -279,13 +324,14 @@ export default function App() {
               unit={activeUnit}
               modes={modes}
               onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
+              onHistoryChanged={refreshHatchHistory}
               onUpdate={(patch) =>
                 updateIncubator(activeUnit.id, patch)
               }
             />
           )}
           {screen === "trends" && (
-            <TrendsScreen units={incubators} modes={modes} initialUnitId={selectedUnit ?? undefined} />
+            <TrendsScreen units={incubators} modes={modes} history={hatchRecords} initialUnitId={selectedUnit ?? undefined} />
           )}
           {screen === "alerts" && (
             <AlertsScreen

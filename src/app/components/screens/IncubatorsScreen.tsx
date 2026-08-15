@@ -21,7 +21,7 @@ import {
 } from "../ui/select";
 import {
   Incubator, Mode, UnitStatus, rangeState, waterState, readingStateColors, daysUntilHatch,
-  nominalEggCapacity, recordHarvest, resetChamberToReady,
+  CURRENT_TRAY_CAPACITY, getKnownFertileEggs, recordHarvest, resetChamberToReady,
 } from "../../data/mockData";
 
 interface Props {
@@ -30,6 +30,7 @@ interface Props {
   onOpenUnit: (id: string) => void;
   onAddIncubator: (unit: Incubator) => void;
   onUpdateUnit: (id: string, patch: Partial<Incubator>) => void;
+  onHistoryChanged: () => void;
 }
 
 // Design tokens.
@@ -64,7 +65,7 @@ const sortOptions: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
 ];
 
-export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onUpdateUnit }: Props) {
+export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onUpdateUnit, onHistoryChanged }: Props) {
   // Chamber search is local to this page's controls row.
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -80,7 +81,8 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
     const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
     const totalEggs = unit.totalEggsLoaded && unit.totalEggsLoaded > 0
       ? unit.totalEggsLoaded
-      : nominalEggCapacity(unit.modeId);
+      : CURRENT_TRAY_CAPACITY;
+    const fertileEggs = getKnownFertileEggs(unit);
     const hatchedEggs = Math.floor(Number(hatched) || 0);
     if (hatchedEggs < 0 || hatchedEggs > totalEggs) {
       toast.error(`Hatched eggs must be between 0 and ${totalEggs}.`);
@@ -89,14 +91,18 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
     const rate = recordHarvest({
       chamber: unit.name,
       modeName: mode.name,
-      cycleDays: Math.max(unit.dayOfIncubation, mode.incubationDays),
+      cycleDays: Math.max(unit.dayOfIncubation, 1),
       totalEggs,
+      fertileEggs,
       hatchedEggs,
     });
+    onHistoryChanged();
     onUpdateUnit(unit.id, resetChamberToReady(unit));
     setHarvestUnit(null);
     toast.success(`${unit.name}: harvest logged`, {
-      description: `${rate}% hatch rate saved to history — chamber reset to Ready.`,
+      description: rate === null
+        ? "Hatchability is not available because no fertility record was saved. Incubator reset to Ready."
+        : `${rate}% hatchability saved to history. Incubator reset to Ready.`,
     });
   };
 
@@ -156,7 +162,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
     { key: "all", label: "ALL", count: counts.all },
     { key: "optimal", label: "OPTIMAL", count: counts.optimal },
     { key: "warning", label: "NEEDS ATTENTION", count: counts.warning },
-    { key: "alert", label: "ALERT", count: counts.alert },
+    { key: "alert", label: "URGENT", count: counts.alert },
   ];
 
   // Pagination for the list view.
@@ -175,7 +181,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
       return;
     }
     if (!/^[A-Za-z0-9-]{3,20}$/.test(trimmedDeviceId)) {
-      toast.error("Device ID must be 3–20 characters using letters, numbers or dashes (e.g. EGG-1015).");
+      toast.error("Device ID must be 3 to 20 characters using letters, numbers, or dashes. Example: EGG-1015.");
       return;
     }
     if (units.some((u) => u.deviceId.toLowerCase() === trimmedDeviceId.toLowerCase())) {
@@ -213,6 +219,9 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         powerSource: "grid",
         batteryPct: 100,
         status: "optimal",
+        cyclePhase: "ready",
+        conditionSeverity: "info",
+        connectionState: "connected",
         lastTurned: nowIso,
         nextTurn: new Date(Date.now() + mode.defaultTurnInterval * 3_600_000).toISOString(),
         turnInterval: mode.defaultTurnInterval,
@@ -395,7 +404,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
           {/* Pagination bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3" style={{ borderTop: `1px solid ${BORDER}` }}>
             <span style={{ color: MUTED, fontSize: 13 }}>
-              Showing {sorted.length === 0 ? 0 : start + 1}–{Math.min(start + rowsPerPage, sorted.length)} of {sorted.length} chambers
+              Showing {sorted.length === 0 ? 0 : start + 1} to {Math.min(start + rowsPerPage, sorted.length)} of {sorted.length} incubators
             </span>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -516,8 +525,9 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         totalEggsLoaded={harvestUnit
           ? (harvestUnit.totalEggsLoaded && harvestUnit.totalEggsLoaded > 0
             ? harvestUnit.totalEggsLoaded
-            : nominalEggCapacity(harvestUnit.modeId))
+            : CURRENT_TRAY_CAPACITY)
           : 0}
+        fertileEggs={harvestUnit ? getKnownFertileEggs(harvestUnit) : null}
         onSave={(hatched, unhatched) => {
           if (harvestUnit) handleHarvestSave(harvestUnit, hatched, unhatched);
         }}

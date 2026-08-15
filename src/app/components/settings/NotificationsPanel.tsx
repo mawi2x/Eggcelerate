@@ -139,6 +139,9 @@ export function NotificationsPanel() {
             }
           />
         </div>
+        <p className="pt-3" style={{ color: MUTED, fontSize: 12 }}>
+          SMS and email delivery are provisional in this research demo.
+        </p>
 
         <div className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-2">
           <Field label="Phone number" htmlFor="phone">

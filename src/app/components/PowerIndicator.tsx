@@ -19,7 +19,7 @@ export function PowerIndicator({ source, battery }: { source: PowerSource; batte
     <span
       className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1"
       style={{ height: 24, backgroundColor: bg, color, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}
-      title={`${state} — ${battery}%`}
+      title={`${state}: ${battery}%`}
     >
       <Icon size={13} strokeWidth={2.6} aria-hidden />
       <span className="sr-only">{state}: </span>
