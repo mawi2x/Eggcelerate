@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  Egg, RotateCw, Zap, Wifi, WifiOff, ChevronRight,
+  Egg, RotateCw, Zap, Wifi, WifiOff, ChevronRight, LockKeyhole,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
@@ -96,9 +96,9 @@ export function DeviceSettingsTab({
       >
         <ul className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
           {[
-            { id: "mode" as const, label: "INCUBATION MODE", Icon: Egg },
-            { id: "turning" as const, label: "TURNING SCHEDULE", Icon: RotateCw },
-            { id: "device" as const, label: "DEVICE & CONNECTION", Icon: Zap },
+            { id: "mode" as const, label: "Incubation mode", Icon: Egg },
+            { id: "turning" as const, label: "Turning schedule", Icon: RotateCw },
+            { id: "device" as const, label: "Device & connection", Icon: Zap },
           ].map(({ id, label, Icon }) => {
             const isActive = settingTab === id;
             return (
@@ -110,10 +110,8 @@ export function DeviceSettingsTab({
                     height: 40,
                     backgroundColor: isActive ? "#8B3A1C" : "transparent",
                     color: isActive ? "#FFFFFF" : "#1A1A1A",
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 700,
-                    letterSpacing: "0.05em",
-                    textTransform: "uppercase",
                     whiteSpace: "nowrap",
                   }}
                   aria-current={isActive ? "page" : undefined}
@@ -155,64 +153,83 @@ export function DeviceSettingsTab({
               </p>
             </div>
             <div className="pt-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <p className="truncate" style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>
-                    {mode.name}
-                  </p>
+              <div
+                className="flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between"
+                style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
+              >
+                <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className="shrink-0 rounded-full px-2 py-0.5"
-                    style={{ fontSize: 11, fontWeight: 700, backgroundColor: "#F5EFE6", color: "#8B3A1C" }}
+                    aria-hidden="true"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                    style={{ backgroundColor: "#F4ECE1", color: "#8B3A1C" }}
                   >
-                    {mode.builtIn ? "Built-in" : "Custom"}
+                    <Egg size={19} />
                   </span>
+                  <div className="min-w-0">
+                    <p style={{ color: MUTED, fontSize: 11, fontWeight: 700 }}>Active preset</p>
+                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
+                      <p className="truncate" style={{ fontWeight: 800, fontSize: 16, color: TEXT }}>{mode.name}</p>
+                      <span className="shrink-0 rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 700, backgroundColor: "#F5EFE6", color: "#8B3A1C" }}>
+                        {mode.builtIn ? "Built-in" : "Custom"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <Select
-                  value={unit.modeId}
-                  disabled={!isReady}
-                  onValueChange={(val) => {
-                    if (val !== unit.modeId && isReady) changeMode(val);
-                  }}
-                >
-                  <SelectTrigger
-                    className="h-auto w-fit rounded-lg [&_svg]:!text-[#1A1A1A]"
-                    style={{
-                      backgroundColor: "#F4ECE1",
-                      border: "1px solid #E5DACB",
-                      color: "#1A1A1A",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      padding: "8px 14px",
+
+                {isReady ? (
+                  <Select
+                    value={unit.modeId}
+                    onValueChange={(val) => {
+                      if (val !== unit.modeId) changeMode(val);
                     }}
                   >
-                    {isReady ? "Choose Mode" : "Mode Locked"}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {modes.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger aria-label="Choose incubation mode" className="h-10 w-full rounded-xl sm:w-[180px]" style={{ borderColor: "#D8D0C0", backgroundColor: "#FFFFFF", fontSize: 13, fontWeight: 700 }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span className="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-full px-3 sm:self-auto" style={{ backgroundColor: "#EFE9DC", color: MUTED, fontSize: 12, fontWeight: 700 }}>
+                    <LockKeyhole size={14} aria-hidden="true" /> Locked during cycle
+                  </span>
+                )}
               </div>
+
               {!isReady && (
-                <p style={{ fontSize: 12, color: MUTED }}>
-                  Mode is locked during an active cycle. Stop or finish the cycle before choosing another mode.
+                <p className="flex items-start gap-2" style={{ fontSize: 12, color: MUTED }}>
+                  <LockKeyhole size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+                  The active preset cannot change until this cycle is stopped or finished.
                 </p>
               )}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <KeyValue label="Target Temperature" value={`${mode.targetTemp.min} to ${mode.targetTemp.max}°C`} />
-                <KeyValue label="Target Humidity" value={`${mode.targetHumidity.min} to ${mode.targetHumidity.max}% RH`} />
-                <KeyValue label="Turning Cadence" value={`Every ${mode.defaultTurnInterval} hours`} />
-                <KeyValue label="Scheduled Candling Days" value={candling.map((c) => `Day ${c.day}`).join(", ")} />
-              </div>
+
+              <dl className="grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-2" style={{ border: `1px solid ${BORDER}`, backgroundColor: "#FFFFFF" }}>
+                {[
+                  { label: "Target temperature", value: `${mode.targetTemp.min} to ${mode.targetTemp.max}°C` },
+                  { label: "Target humidity", value: `${mode.targetHumidity.min} to ${mode.targetHumidity.max}% RH` },
+                  { label: "Turning cadence", value: `Every ${mode.defaultTurnInterval} hours` },
+                  { label: "Scheduled candling", value: candling.map((c) => `Day ${c.day}`).join(", ") },
+                ].map((item, index) => (
+                  <div
+                    key={item.label}
+                    className={`p-4 ${index < 3 ? "border-b" : ""} ${index % 2 === 0 ? "sm:border-r" : ""} ${index >= 2 ? "sm:border-b-0" : ""}`}
+                    style={{
+                      backgroundColor: "#FCFAF6",
+                      borderColor: BORDER,
+                    }}
+                  >
+                    <dt style={{ color: MUTED, fontSize: 12 }}>{item.label}</dt>
+                    <dd className="mt-1 tabular-nums" style={{ color: TEXT, fontSize: 14, fontWeight: 800 }}>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
               <button
                 onClick={() => toast("Mode Library", { description: "Edit this preset under Settings → Mode Library." })}
-                className="inline-flex items-center gap-1.5 text-[#C8623A] transition-colors hover:text-[#8B3A1C]"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-1 text-[#C8623A] transition-colors hover:text-[#8B3A1C] focus-visible:outline-none focus-visible:ring-2"
                 style={{ fontSize: 13, fontWeight: 600 }}
               >
-                Edit Preset in Mode Library <ChevronRight size={14} />
+                Edit preset for future cycles <ChevronRight size={14} aria-hidden="true" />
               </button>
             </div>
           </>

@@ -1,63 +1,58 @@
-import React, { useState } from "react";
-import { toast } from "sonner";
+import React from "react";
 import {
-  RotateCw, Flame, Fan, Waves,
-  TrendingDown, TrendingUp, ArrowUpRight, Droplets, Thermometer,
+  ArrowUpRight,
+  BatteryMedium,
+  ChevronDown,
+  Droplets,
+  Fan,
+  Flame,
+  Thermometer,
+  TrendingDown,
+  TrendingUp,
+  Waves,
+  Wifi,
+  WifiOff,
+  Zap,
 } from "lucide-react";
-import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { GaugeDial } from "../GaugeDial";
 import { WaterDroplet } from "../WaterDroplet";
-import { SegmentedBattery } from "../SegmentedBattery";
 import { Incubator, Mode, Reading, CandlingCheckpoint } from "../../data/mockData";
 import {
-  RUST, CARD, SURFACE, BORDER, TEXT, MUTED,
-  OK, WARN, CRIT, NEUTRAL, relTime,
+  RUST, BORDER, TEXT, MUTED,
+  OK, WARN, CRIT, NEUTRAL,
 } from "./types";
-import { SectionCard, StatusPill } from "./primitives";
+import { SectionCard } from "./primitives";
 import { Timeline } from "./Timeline";
 
-function ActuatorRow({
+type StatusTone = typeof OK;
+
+function SystemStatusTile({
   icon,
-  name,
-  on,
-  tone,
   label,
-  offLabel,
-  pulse = false,
+  value,
+  tone,
 }: {
   icon: React.ReactNode;
-  name: string;
-  on: boolean;
-  tone: typeof OK;
   label: string;
-  offLabel: string;
-  pulse?: boolean;
+  value: string;
+  tone: StatusTone;
 }) {
   return (
     <div
-      className="flex items-center gap-3 rounded-2xl p-3.5"
-      style={{
-        backgroundColor: on ? tone.bg : SURFACE,
-        border: `1px solid ${on ? `${tone.fg}33` : BORDER}`,
-      }}
+      className="flex min-h-16 items-center gap-3 rounded-xl px-3.5 py-3"
+      style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
     >
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-        style={{ backgroundColor: on ? "#FFFFFF" : "#F3ECDD", color: on ? tone.fg : "#9E8B72" }}
+        aria-hidden="true"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+        style={{ backgroundColor: tone.bg, color: tone.fg }}
       >
         {icon}
       </span>
-      <div className="min-w-0 flex-1">
-        <p style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{name}</p>
+      <div className="min-w-0">
+        <p style={{ color: MUTED, fontSize: 11, fontWeight: 700 }}>{label}</p>
+        <p className="tabular-nums" style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{value}</p>
       </div>
-      {on ? (
-        <StatusPill tone={tone} pulse={pulse}>
-          {label}
-        </StatusPill>
-      ) : (
-        <StatusPill tone={NEUTRAL}>{offLabel}</StatusPill>
-      )}
     </div>
   );
 }
@@ -76,33 +71,23 @@ function ExtremumTile({
   unit,
   reading,
   icon,
-  accent,
 }: {
   label: string;
   value: string;
   unit: string;
   reading: Reading;
   icon: React.ReactNode;
-  accent: string;
 }) {
   const stamp = readingStamp(reading.ts);
   return (
-    <div
-      className="rounded-2xl p-3"
-      style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
-    >
-      <div className="flex items-center justify-between gap-2">
+    <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}>
+      <div className="flex items-center gap-2">
+        <span aria-hidden="true" style={{ color: RUST }}>{icon}</span>
         <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
           {label}
         </span>
-        <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: `${accent}14`, color: accent }}
-        >
-          {icon}
-        </span>
       </div>
-      <p className="mt-2" style={{ color: TEXT, fontFamily: "Baloo 2, sans-serif", fontSize: 21, fontWeight: 700, lineHeight: 1 }}>
+      <p className="mt-2 tabular-nums" style={{ color: TEXT, fontFamily: "Baloo 2, sans-serif", fontSize: 20, fontWeight: 700, lineHeight: 1 }}>
         {value}<span style={{ color: MUTED, fontFamily: "Nunito, sans-serif", fontSize: 12, fontWeight: 600 }}> {unit}</span>
       </p>
       <p className="mt-1.5 truncate" style={{ color: MUTED, fontSize: 11 }} title={`${stamp.date} · ${stamp.time}`}>
@@ -112,7 +97,15 @@ function ExtremumTile({
   );
 }
 
-function EnvironmentalSummary({ readings, onViewTrends }: { readings: Reading[]; onViewTrends: () => void }) {
+function EnvironmentalSummary({
+  readings,
+  mode,
+  onViewTrends,
+}: {
+  readings: Reading[];
+  mode: Mode;
+  onViewTrends: () => void;
+}) {
   if (readings.length === 0) return null;
 
   const highestTemp = readings.reduce((best, reading) => (reading.temp > best.temp ? reading : best), readings[0]);
@@ -121,89 +114,96 @@ function EnvironmentalSummary({ readings, onViewTrends }: { readings: Reading[];
   const lowestHumidity = readings.reduce((best, reading) => (reading.humidity < best.humidity ? reading : best), readings[0]);
   const latest = [...readings].sort((a, b) => b.ts - a.ts).slice(0, 3);
 
+  const tempLowDelta = mode.targetTemp.min - lowestTemp.temp;
+  const tempHighDelta = highestTemp.temp - mode.targetTemp.max;
+  const temperatureException = tempLowDelta <= 0 && tempHighDelta <= 0
+    ? null
+    : tempHighDelta >= tempLowDelta
+      ? { direction: "high" as const, value: highestTemp.temp }
+      : { direction: "low" as const, value: lowestTemp.temp };
+
+  const humidityLowDelta = mode.targetHumidity.min - lowestHumidity.humidity;
+  const humidityHighDelta = highestHumidity.humidity - mode.targetHumidity.max;
+  const humidityException = humidityLowDelta <= 0 && humidityHighDelta <= 0
+    ? null
+    : humidityHighDelta >= humidityLowDelta
+      ? { direction: "high" as const, value: highestHumidity.humidity }
+      : { direction: "low" as const, value: lowestHumidity.humidity };
+
+  const hasExceptions = temperatureException !== null || humidityException !== null;
+
   return (
     <SectionCard
-      title="Environmental readings"
-      subtitle="Recorded during this incubation cycle"
+      title="History & trends"
+      subtitle="Past readings are available when you need more context"
       action={
         <button
           type="button"
           onClick={onViewTrends}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EFE6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+          className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[#F5EFE6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
           style={{ color: RUST, fontSize: 12, fontWeight: 700 }}
         >
-          Full trends <ArrowUpRight size={14} />
+          Full trends <ArrowUpRight size={14} aria-hidden="true" />
         </button>
       }
     >
-      <div className="grid grid-cols-2 gap-2.5">
-        <ExtremumTile
-          label="Highest temperature"
-          value={highestTemp.temp.toFixed(1)}
-          unit="°C"
-          reading={highestTemp}
-          icon={<TrendingUp size={15} />}
-          accent={RUST}
-        />
-        <ExtremumTile
-          label="Lowest temperature"
-          value={lowestTemp.temp.toFixed(1)}
-          unit="°C"
-          reading={lowestTemp}
-          icon={<TrendingDown size={15} />}
-          accent={RUST}
-        />
-        <ExtremumTile
-          label="Highest humidity"
-          value={highestHumidity.humidity.toFixed(1)}
-          unit="% RH"
-          reading={highestHumidity}
-          icon={<TrendingUp size={15} />}
-          accent={RUST}
-        />
-        <ExtremumTile
-          label="Lowest humidity"
-          value={lowestHumidity.humidity.toFixed(1)}
-          unit="% RH"
-          reading={lowestHumidity}
-          icon={<TrendingDown size={15} />}
-          accent={RUST}
-        />
-      </div>
-
-      <div className="mt-4 border-t pt-3.5" style={{ borderColor: BORDER }}>
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <p style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>Latest readings</p>
-            <p style={{ color: MUTED, fontSize: 11 }}>Most recent three check-ins</p>
+      <details className="group rounded-2xl" style={{ border: `1px solid ${BORDER}`, backgroundColor: "#FCFAF6" }}>
+        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+          <div className="min-w-0">
+            <p style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>
+              {hasExceptions ? "Cycle exceptions" : "Cycle stability"}
+            </p>
+            <p className="mt-0.5 grid gap-1 tabular-nums" style={{ color: MUTED, fontSize: 12 }}>
+              <span className="inline-flex items-center gap-1">
+                <Thermometer size={13} aria-hidden="true" />
+                {temperatureException
+                  ? `Temperature went ${temperatureException.direction}: ${temperatureException.direction === "high" ? "peaked at" : "dropped to"} ${temperatureException.value.toFixed(1)}°C`
+                  : "Temperature stayed within target"}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Droplets size={13} aria-hidden="true" />
+                {humidityException
+                  ? `Humidity went ${humidityException.direction}: ${humidityException.direction === "high" ? "peaked at" : "dropped to"} ${humidityException.value.toFixed(1)}% RH`
+                  : "Humidity stayed within target"}
+              </span>
+            </p>
           </div>
-          <span className="rounded-full px-2 py-1" style={{ backgroundColor: "#F4ECE1", color: MUTED, fontSize: 10, fontWeight: 700 }}>
-            TOP 3
+          <span className="inline-flex shrink-0 items-center gap-1.5" style={{ color: RUST, fontSize: 12, fontWeight: 700 }}>
+            Review history
+            <ChevronDown size={16} aria-hidden="true" className="transition-transform group-open:rotate-180" />
           </span>
-        </div>
-        <div className="mt-2 divide-y" style={{ borderColor: BORDER }}>
-          {latest.map((reading, index) => {
-            const stamp = readingStamp(reading.ts);
-            return (
-              <div key={reading.ts} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: "#F4ECE1", color: RUST, fontSize: 11, fontWeight: 800 }}>
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <p style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>{stamp.time}</p>
-                    <p style={{ color: MUTED, fontSize: 11 }}>{stamp.date}</p>
+        </summary>
+
+        <div className="border-t p-4" style={{ borderColor: BORDER }}>
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+            <ExtremumTile label="Highest temperature" value={highestTemp.temp.toFixed(1)} unit="°C" reading={highestTemp} icon={<TrendingUp size={15} />} />
+            <ExtremumTile label="Lowest temperature" value={lowestTemp.temp.toFixed(1)} unit="°C" reading={lowestTemp} icon={<TrendingDown size={15} />} />
+            <ExtremumTile label="Highest humidity" value={highestHumidity.humidity.toFixed(1)} unit="% RH" reading={highestHumidity} icon={<TrendingUp size={15} />} />
+            <ExtremumTile label="Lowest humidity" value={lowestHumidity.humidity.toFixed(1)} unit="% RH" reading={lowestHumidity} icon={<TrendingDown size={15} />} />
+          </div>
+
+          <div className="mt-4 border-t pt-3" style={{ borderColor: BORDER }}>
+            <p style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>Recent readings</p>
+            <div className="mt-1 divide-y" style={{ borderColor: BORDER }}>
+              {latest.map((reading) => {
+                const stamp = readingStamp(reading.ts);
+                return (
+                  <div key={reading.ts} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                    <div>
+                      <p className="tabular-nums" style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>{stamp.time}</p>
+                      <p style={{ color: MUTED, fontSize: 11 }}>{stamp.date}</p>
+                    </div>
+                    <div className="flex items-center gap-3 tabular-nums" style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
+                      <span className="inline-flex items-center gap-1"><Thermometer size={13} color={RUST} aria-hidden="true" />{reading.temp.toFixed(1)}°C</span>
+                      <span className="inline-flex items-center gap-1"><Droplets size={13} color={RUST} aria-hidden="true" />{reading.humidity.toFixed(1)}%</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-3" style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
-                  <span className="inline-flex items-center gap-1"><Thermometer size={13} color={RUST} />{reading.temp.toFixed(1)}°C</span>
-                  <span className="inline-flex items-center gap-1"><Droplets size={13} color={RUST} />{reading.humidity.toFixed(1)}%</span>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
+      </details>
     </SectionCard>
   );
 }
@@ -216,7 +216,6 @@ interface LiveMonitorTabProps {
   candling: CandlingCheckpoint[];
   effectiveCandled: Record<number, boolean>;
   environmentalReadings: Reading[];
-  onUpdate: (patch: Partial<Incubator>) => void;
   onOpenTrends: () => void;
 }
 
@@ -228,72 +227,15 @@ export function LiveMonitorTab({
   candling,
   effectiveCandled,
   environmentalReadings,
-  onUpdate,
   onOpenTrends,
 }: LiveMonitorTabProps) {
-  const [earlyTurnOpen, setEarlyTurnOpen] = useState(false);
-  const [syncChoice, setSyncChoice] = useState<"reset" | "maintain">("reset");
-
   const heaterOn = unit.temp < mode.targetTemp.max;
   const overheating = unit.temp > mode.targetTemp.max;
   const fanOn = heaterOn || overheating;
   const mistOn = unit.humidity < mode.targetHumidity.max && unit.waterOk;
 
-  const nextTurnLabel = () => {
-    const diffMin = Math.round((new Date(unit.nextTurn).getTime() - Date.now()) / 60000);
-    if (diffMin < 0) return { text: `Overdue by ${Math.abs(diffMin)} min`, overdue: true };
-    const h = Math.floor(diffMin / 60);
-    const m = diffMin % 60;
-    return { text: `in ${h > 0 ? `${h}h ` : ""}${m}m`, overdue: false };
-  };
-  const next = nextTurnLabel();
-
-  const handleTurn = () => {
-    if (unit.cyclePhase !== "incubating") {
-      toast("Turning is stopped during this cycle phase.");
-      return;
-    }
-    onUpdate({
-      lastTurned: new Date().toISOString(),
-      nextTurn: new Date(Date.now() + unit.turnInterval * 3_600_000).toISOString(),
-    });
-    toast.success("Egg tray turned successfully");
-  };
-
-  const confirmEarlyTurn = () => {
-    const now = new Date();
-    const nextTurnDate =
-      syncChoice === "reset"
-        ? new Date(now.getTime() + unit.turnInterval * 3_600_000).toISOString()
-        : unit.nextTurn;
-    onUpdate({
-      lastTurned: now.toISOString(),
-      nextTurn: nextTurnDate,
-    });
-    setEarlyTurnOpen(false);
-    toast.success(
-      syncChoice === "reset"
-        ? "Tray turned. Schedule reset to next turn."
-        : "Tray turned. Original schedule maintained."
-    );
-  };
-
-  const executeTurn = () => {
-    if (unit.cyclePhase !== "incubating") {
-      toast("Turning is stopped during this cycle phase.");
-      return;
-    }
-    const diffMin = Math.round((new Date(unit.nextTurn).getTime() - Date.now()) / 60000);
-    if (diffMin > 30) {
-      setEarlyTurnOpen(true);
-      return;
-    }
-    handleTurn();
-  };
-
   return (
     <div className="space-y-5">
-      {/* Hero: Incubation Timeline + Current Conditions (Temp -> Humid -> Water) */}
       <SectionCard title="Incubation Timeline">
         <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={effectiveCandled} />
         <div className="my-4" style={{ height: 1, backgroundColor: BORDER }} />
@@ -320,164 +262,48 @@ export function LiveMonitorTab({
         </div>
       </SectionCard>
 
-      {/* Grid: Actuators, Turning, Power */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {/* Actuators & Controls */}
-        <SectionCard title="Actuators & Controls">
-          <div className="space-y-3">
-            <ActuatorRow
-              icon={<Flame size={18} />}
-              name="Heating Element"
-              on={heaterOn}
-              tone={WARN}
-              label="Heating"
-              offLabel="Standby"
-              pulse
-            />
-            <ActuatorRow
-              icon={<Waves size={18} />}
-              name="Ultrasonic Mist Maker"
-              on={mistOn}
-              tone={OK}
-              label="Misting"
-              offLabel="Off"
-            />
-            <ActuatorRow
-              icon={<Fan size={18} />}
-              name="Circulation Fan"
-              on={fanOn}
-              tone={OK}
-              label="Active"
-              offLabel="Off"
-            />
-          </div>
-        </SectionCard>
+      <SectionCard title="Chamber status" subtitle="Live systems, power, and connectivity">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <SystemStatusTile
+            icon={<Flame size={18} />}
+            label="Heating element"
+            value={heaterOn ? "Heating" : "Standby"}
+            tone={heaterOn ? WARN : NEUTRAL}
+          />
+          <SystemStatusTile
+            icon={<Waves size={18} />}
+            label="Mist maker"
+            value={mistOn ? "Misting" : "Off"}
+            tone={mistOn ? OK : NEUTRAL}
+          />
+          <SystemStatusTile
+            icon={<Fan size={18} />}
+            label="Circulation fan"
+            value={fanOn ? "Active" : "Off"}
+            tone={fanOn ? OK : NEUTRAL}
+          />
+          <SystemStatusTile
+            icon={<Zap size={18} />}
+            label="Power"
+            value={unit.powerSource === "battery" ? "Battery power" : "Grid power"}
+            tone={unit.powerSource === "battery" ? WARN : OK}
+          />
+          <SystemStatusTile
+            icon={unit.paired ? <Wifi size={18} /> : <WifiOff size={18} />}
+            label="Connection"
+            value={unit.paired ? "Connected" : "Offline"}
+            tone={unit.paired ? OK : CRIT}
+          />
+          <SystemStatusTile
+            icon={<BatteryMedium size={18} />}
+            label="Battery"
+            value={unit.batteryPct <= 25 ? `${unit.batteryPct}% · Low` : `${unit.batteryPct}%`}
+            tone={unit.batteryPct <= 25 ? CRIT : OK}
+          />
+        </div>
+      </SectionCard>
 
-        {/* Egg Turning Module */}
-        <SectionCard title="Egg Turning">
-          <div className="flex h-full flex-col justify-between space-y-3">
-            <div className="space-y-2.5">
-              <div className="rounded-xl p-3" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
-                <div className="flex items-center justify-between">
-                  <span style={{ fontSize: 12, color: MUTED }}>Auto-turn schedule</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
-                    Every {unit.turnInterval}h
-                  </span>
-                </div>
-                <div className="mt-1.5 flex items-center justify-between">
-                  <span style={{ fontSize: 12, color: MUTED }}>Next scheduled turn</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: next.overdue ? CRIT.fg : TEXT }}>
-                    {next.text}
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-xl p-3" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
-                <div className="flex items-center justify-between">
-                  <span style={{ fontSize: 12, color: MUTED }}>Last manual/auto turn</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: TEXT }}>
-                    {relTime(unit.lastTurned)}
-                  </span>
-                </div>
-                <div className="mt-1.5 flex items-center justify-between">
-                  <span style={{ fontSize: 12, color: MUTED }}>Tray motor status</span>
-                  <span className="inline-flex items-center gap-1" style={{ fontSize: 12, fontWeight: 700, color: unit.cyclePhase === "incubating" ? OK.fg : MUTED }}>
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: unit.cyclePhase === "incubating" ? OK.fg : MUTED }} />
-                    {unit.cyclePhase === "incubating" ? "Ready" : "Halted"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={executeTurn}
-              disabled={unit.cyclePhase !== "incubating"}
-              className="w-full rounded-xl transition-all"
-              style={{
-                backgroundColor: unit.cyclePhase === "incubating" ? RUST : "#EAE7E1",
-                color: unit.cyclePhase === "incubating" ? "#FFFFFF" : "#78716C",
-                fontWeight: 600,
-                minHeight: 38,
-              }}
-            >
-              <RotateCw size={15} /> Turn Tray Now
-            </Button>
-          </div>
-        </SectionCard>
-
-        {/* Power & Diagnostics */}
-        <SectionCard title="Power & Diagnostics">
-          <div className="space-y-3">
-            <div className="rounded-xl p-3.5" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
-              <div className="flex items-center justify-between">
-                <span style={{ fontSize: 12, color: MUTED }}>Battery backup</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: unit.batteryPct <= 25 ? CRIT.fg : TEXT }}>
-                  {unit.batteryPct}%
-                </span>
-              </div>
-              <div className="mt-2">
-                <SegmentedBattery battery={unit.batteryPct} charging={unit.powerSource !== "battery"} showLabel />
-              </div>
-            </div>
-
-            <div className="rounded-xl p-3.5" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
-              <div className="flex items-center justify-between">
-                <span style={{ fontSize: 12, color: MUTED }}>Device ID</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: TEXT }}>
-                  {unit.deviceId}
-                </span>
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span style={{ fontSize: 12, color: MUTED }}>Connection</span>
-                <span className="inline-flex items-center gap-1" style={{ fontSize: 12, fontWeight: 700, color: unit.paired ? OK.fg : CRIT.fg }}>
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: unit.paired ? OK.fg : CRIT.fg }} />
-                  {unit.paired ? "Connected" : "Offline"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </SectionCard>
-      </div>
-
-      <EnvironmentalSummary readings={environmentalReadings} onViewTrends={onOpenTrends} />
-
-      {/* Early Turn Confirmation Dialog */}
-      <Dialog open={earlyTurnOpen} onOpenChange={setEarlyTurnOpen}>
-        <DialogContent className="max-w-[420px] rounded-2xl p-6" style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}>
-          <DialogHeader className="text-left">
-            <DialogTitle style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>Turn Tray Ahead of Schedule?</DialogTitle>
-            <DialogDescription style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>
-              The next scheduled turn is {next.text}. Turning eggs too frequently can disrupt embryo positioning.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4 space-y-2">
-            <label className="flex items-center gap-2 text-sm text-[#1A1A1A]">
-              <input
-                type="radio"
-                name="syncChoice"
-                checked={syncChoice === "reset"}
-                onChange={() => setSyncChoice("reset")}
-              />
-              Turn now and reset schedule to {unit.turnInterval}h from now
-            </label>
-            <label className="flex items-center gap-2 text-sm text-[#1A1A1A]">
-              <input
-                type="radio"
-                name="syncChoice"
-                checked={syncChoice === "maintain"}
-                onChange={() => setSyncChoice("maintain")}
-              />
-              Turn now but keep existing schedule ({next.text})
-            </label>
-          </div>
-          <div className="mt-5 flex justify-end gap-2">
-            <Button variant="ghost" className="rounded-xl" onClick={() => setEarlyTurnOpen(false)}>Cancel</Button>
-            <Button className="rounded-xl" style={{ backgroundColor: RUST, color: "#fff" }} onClick={confirmEarlyTurn}>
-              Confirm Turn
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <EnvironmentalSummary readings={environmentalReadings} mode={mode} onViewTrends={onOpenTrends} />
     </div>
   );
 }

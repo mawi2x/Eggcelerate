@@ -329,7 +329,6 @@ export function DetailScreen({
           candling={candling}
           effectiveCandled={effectiveCandled}
           environmentalReadings={environmentalReadings}
-          onUpdate={onUpdate}
           onOpenTrends={onOpenTrends}
         />
       )}
