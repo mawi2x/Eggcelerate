@@ -9,7 +9,9 @@ overrides:
 
 importers:
 
-  .:
+  .: {}
+
+  apps/web:
     dependencies:
       '@radix-ui/react-alert-dialog':
         specifier: 1.1.6

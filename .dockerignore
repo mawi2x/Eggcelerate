@@ -1,9 +1,9 @@
 # Dependencies and build output
-node_modules
-.pnpm-store
-dist
-coverage
-.vite
+**/node_modules
+**/.pnpm-store
+**/dist
+**/coverage
+**/.vite
 
 # Repository and local tooling metadata
 .git
@@ -17,9 +17,9 @@ coverage
 *.swo
 
 # Local environment files and logs
-.env
-.env.*
-*.log
+**/.env
+**/.env.*
+**/*.log
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*

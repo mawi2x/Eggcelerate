@@ -4,15 +4,16 @@ WORKDIR /app
 
 # Install dependencies separately so source changes can reuse this layer.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json apps/web/package.json
 RUN corepack enable && corepack prepare pnpm@9.12.3 --activate \
-    && pnpm install --frozen-lockfile
+    && pnpm install --filter eggcelerate-ui... --frozen-lockfile
 
-COPY . .
-RUN pnpm build
+COPY apps/web apps/web
+RUN pnpm --filter eggcelerate-ui build
 
 FROM nginx:alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
