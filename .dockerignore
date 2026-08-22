@@ -1,9 +1,31 @@
+# Dependencies and build output
 node_modules
+.pnpm-store
 dist
+coverage
+.vite
+
+# Repository and local tooling metadata
 .git
 .gitignore
+.agents
+.codex
+.vscode
+.idea
+.DS_Store
+*.swp
+*.swo
+
+# Local environment files and logs
+.env
+.env.*
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Files not required by the production build
 README.md
 docs
 flow
 review
-.agents
