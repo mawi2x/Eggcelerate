@@ -27,13 +27,10 @@ yarn-debug.log*
 .vite/
 node_modules
 
-# documentation folders (markdown) — keep docs/meta tracked
+# documentation folders (markdown) — local only
 review/
 plans/
 guidelines/
 src/imports/pasted_text/
 flow/
-docs/*
-!docs/meta/
-!docs/meta/**
-!docs/README.md
+docs/
