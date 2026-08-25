@@ -23,10 +23,8 @@ interface Props {
 
 // ── Design tokens ───────────────────────────────────────────────────────────
 const RUST = "var(--brand-primary)";
-const CARD = "var(--surface-subtle)";
 const BORDER = "var(--border-default)";
 const TEXT = "var(--text-primary)";
-const OK = "var(--status-success-fg)";
 const HEADING = "var(--text-primary)";
 
 const conditionRowStyle = `
@@ -35,29 +33,25 @@ const conditionRowStyle = `
 `;
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: CARD,
-  borderColor: BORDER,
+  backgroundColor: "var(--surface-subtle)",
+  borderColor: "var(--border-default)",
   borderRadius: 16,
   boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
 };
 
-function KpiCard({
-  Icon,
-  label,
-  value,
-}: {
-  Icon: typeof Layers;
-  label: string;
-  value: string;
-  accent?: string;
+interface KpiPill { text: string; tone: "neutral" | "positive" | "negative" | "warning" }
+interface KpiFooter { primary: string; secondary?: string }
+
+function KpiCard({ Icon, label, value, pill, footer }: {
+  Icon: typeof Layers; label: string; value: string; pill?: KpiPill; footer?: KpiFooter
 }) {
   return (
-    <Card className="relative overflow-hidden" style={{ ...cardStyle, height: "5.625rem" }}>
+    <Card className="relative overflow-hidden" style={{ ...cardStyle, height: pill || footer ? "6.75rem" : "5.625rem" }}>
       {/* Decorative watermark — cropped, tilted, low-opacity so text stays legible. */}
       <Icon
         aria-hidden
         className="pointer-events-none absolute -bottom-3 -right-3"
-        style={{ width: 80, height: 80, color: RUST, opacity: 0.07, transform: "rotate(-12deg)" }}
+        style={{ width: 80, height: 80, color: "var(--brand-primary)", opacity: 0.07, transform: "rotate(-12deg)" }}
         strokeWidth={1.5}
       />
       <CardContent className="relative flex h-full flex-col justify-center p-4">
@@ -68,10 +62,26 @@ function KpiCard({
         </div>
         <div
           className="mt-1 truncate"
-          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 800, color: TEXT, lineHeight: 1.1, whiteSpace: "nowrap" }}
+          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1, whiteSpace: "nowrap" }}
         >
           {value}
         </div>
+        {pill && (
+          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+                style={{
+                  backgroundColor: pill.tone === "neutral" ? "var(--status-info-bg)" : pill.tone === "positive" ? "var(--status-success-bg)" : pill.tone === "negative" ? "var(--status-danger-bg)" : "var(--status-warning-bg)",
+                  color: pill.tone === "neutral" ? "var(--status-info-fg)" : pill.tone === "positive" ? "var(--status-success-fg)" : pill.tone === "negative" ? "var(--status-danger-fg)" : "var(--status-warning-fg)",
+                  borderColor: "var(--border-default)"
+                }}>
+            {pill.tone === "positive" && "↗"} {pill.tone === "negative" && "↘"} {pill.text}
+          </span>
+        )}
+        {footer && (
+          <div className="mt-2">
+            <div className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "var(--text-primary)" }}>{footer.primary}</div>
+            {footer.secondary && <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>{footer.secondary}</div>}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -323,10 +333,10 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
       {/* Section 2: executive KPI summary — strict 1-row compact cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* Layers reads as stacked multi-tier incubator cabinets. */}
-        <KpiCard Icon={Layers} accent={RUST} label="INCUBATORS" value={`${units.length} Active`} />
-        <KpiCard Icon={Egg} accent={RUST} label="EGGS INCUBATING" value={`${stats.totalEggs} Eggs`} />
-        <KpiCard Icon={Clock} accent={OK} label="UPCOMING HATCH" value={hatchValue} />
-        <KpiCard Icon={TriangleAlert} accent={RUST} label="NEEDS ATTENTION" value={`${stats.needsAttention}`} />
+        <KpiCard Icon={Layers} label="INCUBATORS" value={`${units.length} Active`} />
+        <KpiCard Icon={Egg} label="EGGS INCUBATING" value={`${stats.totalEggs} Eggs`} />
+        <KpiCard Icon={Clock} label="UPCOMING HATCH" value={hatchValue} />
+        <KpiCard Icon={TriangleAlert} label="NEEDS ATTENTION" value={`${stats.needsAttention}`} />
       </div>
 
       {/* Section 3: chamber status grid, wrapped in one white container */}
