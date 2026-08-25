@@ -68,11 +68,28 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
               style={{ color: isActive ? "var(--brand-primary)" : "var(--text-secondary)" }}
             >
               <Icon size={22} strokeWidth={isActive ? 2.6 : 2} />
-              <span style={{ fontSize: 11, fontWeight: 600 }}>{label}</span>
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: "var(--leading-snug)",
+                  letterSpacing: "var(--tracking-label)",
+                }}
+              >
+                {label}
+              </span>
               {id === "alerts" && alertCount > 0 && (
                 <span
                   className="absolute right-4 top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1"
-                  style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)", fontSize: 10, fontWeight: 700 }}
+                  style={{
+                    backgroundColor: "var(--brand-primary)",
+                    color: "var(--on-brand)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-bold)",
+                    lineHeight: "var(--leading-snug)",
+                  }}
                 >
                   {alertCount}
                 </span>
@@ -128,7 +145,10 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         style={{
           height: 40,
           width: "100%",
-          fontWeight: 600,
+          fontFamily: "var(--font-body)",
+          fontSize: "var(--type-body)",
+          fontWeight: "var(--weight-semibold)",
+          lineHeight: "var(--leading-snug)",
         }}
         aria-label={label}
         aria-current={isActive ? "page" : undefined}
@@ -138,7 +158,14 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         {badge !== undefined && badge > 0 && (
           <span
             className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5"
-            style={{ backgroundColor: isActive ? "var(--surface-card)" : "var(--brand-primary)", color: isActive ? "var(--brand-primary)" : "var(--on-brand)", fontSize: 11, fontWeight: 700 }}
+            style={{
+              backgroundColor: isActive ? "var(--surface-card)" : "var(--brand-primary)",
+              color: isActive ? "var(--brand-primary)" : "var(--on-brand)",
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-label)",
+              fontWeight: "var(--weight-bold)",
+              lineHeight: "var(--leading-snug)",
+            }}
           >
             {badge}
           </span>
@@ -254,8 +281,10 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
               height: 32,
               backgroundColor: "var(--brand-primary)",
               color: "var(--on-brand)",
-              fontSize: 12,
-              fontWeight: 700,
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-caption)",
+              fontWeight: "var(--weight-bold)",
+              lineHeight: "var(--leading-normal)",
               cursor: "default",
             }}
             title={`${resolveDisplayName(account)} · ${account.farmName}`}
@@ -286,7 +315,13 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         {/* Sized to its own content so the brand never clips. */}
         <span
           className="flex-1 whitespace-nowrap"
-          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--type-heading-md)",
+            fontWeight: "var(--weight-bold)",
+            lineHeight: "var(--leading-snug)",
+            color: "var(--text-primary)",
+          }}
         >
           Eggcelerate
         </span>
@@ -321,21 +356,42 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
       >
         <span
           className="flex shrink-0 items-center justify-center rounded-full"
-          style={{ width: 36, height: 36, backgroundColor: "var(--brand-primary)", color: "var(--on-brand)", fontSize: 13, fontWeight: 700 }}
+          style={{
+            width: 36,
+            height: 36,
+            backgroundColor: "var(--brand-primary)",
+            color: "var(--on-brand)",
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-body-sm)",
+            fontWeight: "var(--weight-bold)",
+            lineHeight: "var(--leading-normal)",
+          }}
         >
           {accountInitials(account)}
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span
             className="truncate"
-            style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-body)",
+              fontWeight: "var(--weight-semibold)",
+              lineHeight: "var(--leading-snug)",
+              color: "var(--text-primary)",
+            }}
             title={resolveDisplayName(account)}
           >
             {resolveDisplayName(account)}
           </span>
           <span
             className="truncate"
-            style={{ fontSize: 12, fontWeight: 500, color: "var(--text-secondary)" }}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-caption)",
+              fontWeight: "var(--weight-medium)",
+              lineHeight: "var(--leading-normal)",
+              color: "var(--text-secondary)",
+            }}
             title={account.farmName}
           >
             {account.farmName}

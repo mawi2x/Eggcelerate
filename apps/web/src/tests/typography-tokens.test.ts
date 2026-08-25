@@ -20,4 +20,28 @@ describe("typography tokens", () => {
     expect(s).toContain("var(--type-body)");
     expect(s).not.toMatch(/fontSize:\s*24[^r]/); // no raw 24px
   });
+  it("button/input/label use body token", () => {
+    const btn = fs.readFileSync("src/app/components/ui/button.tsx", "utf-8");
+    // allow Tailwind text-sm (0.875rem = var(--type-body)) or var(--type-body)
+    expect(btn).toMatch(/text-sm|var\(--type-body\)/);
+    const input = fs.readFileSync("src/app/components/ui/input.tsx", "utf-8");
+    expect(input).toContain("var(--type-body)");
+    expect(input).toContain("var(--font-body)");
+    const label = fs.readFileSync("src/app/components/ui/label.tsx", "utf-8");
+    expect(label).toContain("var(--type-body)");
+    expect(label).toContain("var(--font-body)");
+    expect(label).toContain("var(--weight-medium)");
+    const select = fs.readFileSync("src/app/components/ui/select.tsx", "utf-8");
+    expect(select).toContain("var(--type-body)");
+    expect(select).toContain("var(--font-body)");
+  });
+  it("sidebar brand and nav labels use type tokens", () => {
+    const sb = fs.readFileSync("src/app/components/AppSidebar.tsx", "utf-8");
+    expect(sb).toContain("var(--type-heading-md)");
+    expect(sb).toContain("var(--font-display)");
+    expect(sb).toContain("var(--type-label)");
+    expect(sb).toContain("var(--tracking-label)");
+    expect(sb).toContain("var(--weight-bold)");
+    expect(sb).not.toMatch(/fontFamily:\s*"Baloo 2, sans-serif"/);
+  });
 });
