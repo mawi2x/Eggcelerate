@@ -36,4 +36,21 @@ export default defineConfig({
   server: {
     allowedHosts: ['.trycloudflare.com'],
   },
+  build: {
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom") || id.includes("node_modules/scheduler")) {
+            return "vendor";
+          }
+          // Keep recharts inside TrendsScreen lazy chunk to avoid oversized 559k vendor chunk
+          // motion is unused currently - keep for future but don't force empty chunk
+          if (id.includes("node_modules/motion") || id.includes("node_modules/framer-motion")) {
+            return "motion";
+          }
+        },
+      },
+    },
+  },
 })
