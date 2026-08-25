@@ -46,7 +46,7 @@ function KpiCard({ Icon, label, value, pill, footer }: {
   Icon: typeof Layers; label: string; value: string; pill?: KpiPill; footer?: KpiFooter
 }) {
   return (
-    <Card className="relative overflow-hidden" style={{ ...cardStyle, height: pill || footer ? "6.75rem" : "5.625rem" }}>
+    <Card className="relative overflow-hidden" style={{ ...cardStyle, minHeight: pill || footer ? "7.25rem" : "5.625rem", height: "auto" }}>
       {/* Decorative watermark — cropped, tilted, low-opacity so text stays legible. */}
       <Icon
         aria-hidden
@@ -54,7 +54,7 @@ function KpiCard({ Icon, label, value, pill, footer }: {
         style={{ width: 80, height: 80, color: "var(--brand-primary)", opacity: 0.07, transform: "rotate(-12deg)" }}
         strokeWidth={1.5}
       />
-      <CardContent className="relative flex h-full flex-col justify-center p-4">
+      <CardContent className="relative flex flex-col p-4">
         <div
           style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}
         >
@@ -328,36 +328,38 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
   const hatchValue =
     nextRemaining <= 0 ? "Now" : nextRemaining === 1 ? "~24 Hours" : `${nextRemaining} Days`;
 
-  const upcomingPill: KpiPill | undefined = (() => {
-    if (!stats.nextHatch) return undefined;
-    if (nextRemaining <= 0) return { text: "Now", tone: "positive" };
-    if (nextRemaining === 1) return { text: "~24h", tone: "warning" };
-    return { text: `${nextRemaining}d`, tone: "neutral" };
-  })();
+  const idleCount = units.filter((u) => u.cyclePhase === "ready" || !u.paired).length;
+  const activeCount = units.length - idleCount;
+  const incubatorsFooter: KpiFooter =
+    idleCount === 0
+      ? { primary: "All incubators are running", secondary: "Efficiency to the max!" }
+      : idleCount === 1
+        ? { primary: "1 idle", secondary: `${activeCount} running` }
+        : { primary: `${idleCount} idle`, secondary: `${activeCount} running` };
+  const eggsFooter: KpiFooter = { primary: `Across ${units.length} chambers` };
   const upcomingFooter: KpiFooter | undefined = (() => {
     if (!stats.nextHatch) return undefined;
-    const name = stats.nextHatch.m.name;
-    if (nextRemaining <= 0) return { primary: "Hatching now", secondary: `${name}, check chamber` };
-    if (nextRemaining === 1) return { primary: "Due tomorrow", secondary: `${name}` };
-    return { primary: `In ${nextRemaining} days`, secondary: `${name}` };
+    const chamberName = stats.nextHatch.u.name;
+    const modeName = stats.nextHatch.m.name;
+    if (nextRemaining <= 0) return { primary: chamberName, secondary: `${modeName}, check chamber` };
+    if (nextRemaining === 1) return { primary: "Due tomorrow", secondary: `${modeName}` };
+    return { primary: `In ${nextRemaining} days`, secondary: `${modeName}` };
   })();
-
-  const needsAttentionPill: KpiPill | undefined = stats.needsAttention > 0
-    ? { text: `${stats.needsAttention}`, tone: stats.needsAttention >= 5 ? "negative" : "warning" }
-    : { text: "All good", tone: "positive" };
-  const needsAttentionFooter: KpiFooter | undefined = stats.needsAttention > 0
-    ? { primary: `${stats.needsAttention} chambers`, secondary: "Need a look" }
-    : { primary: "No issues", secondary: "All optimal" };
+  const needsAttentionFooter: KpiFooter | undefined = (() => {
+    if (stats.needsAttention === 0) return { primary: "No issues", secondary: "All optimal" };
+    const top = priorityUnits[0];
+    return { primary: top ? top.name : `${stats.needsAttention} chambers`, secondary: "Need a look" };
+  })();
 
   return (
     <div className="flex flex-col" style={{ gap: 32 }}>
       {/* Section 2: executive KPI summary — strict 1-row compact cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* Layers reads as stacked multi-tier incubator cabinets. */}
-        <KpiCard Icon={Layers} label="INCUBATORS" value={`${units.length} Active`} />
-        <KpiCard Icon={Egg} label="EGGS INCUBATING" value={`${stats.totalEggs} Eggs`} />
-        <KpiCard Icon={Clock} label="UPCOMING HATCH" value={hatchValue} pill={upcomingPill} footer={upcomingFooter} />
-        <KpiCard Icon={TriangleAlert} label="NEEDS ATTENTION" value={`${stats.needsAttention}`} pill={needsAttentionPill} footer={needsAttentionFooter} />
+        <KpiCard Icon={Layers} label="INCUBATORS" value={`${units.length} Active`} footer={incubatorsFooter} />
+        <KpiCard Icon={Egg} label="EGGS INCUBATING" value={`${stats.totalEggs} Eggs`} footer={eggsFooter} />
+        <KpiCard Icon={Clock} label="UPCOMING HATCH" value={hatchValue} footer={upcomingFooter} />
+        <KpiCard Icon={TriangleAlert} label="NEEDS ATTENTION" value={`${stats.needsAttention}`} footer={needsAttentionFooter} />
       </div>
 
       {/* Section 3: chamber status grid, wrapped in one white container */}
@@ -400,7 +402,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
           {/* Left column: temperature */}
           <div className="min-w-0">
             <div className="mb-3">
-              <h3 style={{ fontSize: 13, fontWeight: 700, color: TEXT, letterSpacing: "0.02em", textTransform: "uppercase" }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
                 Temperature
               </h3>
             </div>
@@ -424,7 +426,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
           {/* Right column: humidity */}
           <div className="min-w-0">
             <div className="mb-3">
-              <h3 style={{ fontSize: 13, fontWeight: 700, color: TEXT, letterSpacing: "0.02em", textTransform: "uppercase" }}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
                 Humidity
               </h3>
             </div>
