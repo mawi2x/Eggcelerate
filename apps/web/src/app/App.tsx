@@ -20,7 +20,7 @@ import {
   HatchRecord,
   hatchHistory,
 } from "./data/mockData";
-import { Account, initialAccount } from "./data/account";
+import { Account, initialAccount, resolveDisplayName } from "./data/account";
 import { deriveConditionSeverity, unitStatusFromConditionSeverity } from "./domain/cycle";
 
 function getInitialNavState(): { screen: ScreenId; selectedUnit: string | null } {
@@ -251,12 +251,13 @@ export default function App() {
   );
 
   // One header copy deck, so every screen reads the same way.
+  const overviewName = resolveDisplayName(account) || "farmer";
   const headerCopy: Record<
     ScreenId,
     { title: string; subtitle: string }
   > = {
     overview: {
-      title: "Good day, farmer! test",
+      title: `Good day, ${overviewName}!`,
       subtitle:
         "Here's what needs your attention across your incubation cycles.",
     },
