@@ -328,6 +328,27 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
   const hatchValue =
     nextRemaining <= 0 ? "Now" : nextRemaining === 1 ? "~24 Hours" : `${nextRemaining} Days`;
 
+  const upcomingPill: KpiPill | undefined = (() => {
+    if (!stats.nextHatch) return undefined;
+    if (nextRemaining <= 0) return { text: "Now", tone: "positive" };
+    if (nextRemaining === 1) return { text: "~24h", tone: "warning" };
+    return { text: `${nextRemaining}d`, tone: "neutral" };
+  })();
+  const upcomingFooter: KpiFooter | undefined = (() => {
+    if (!stats.nextHatch) return undefined;
+    const name = stats.nextHatch.m.name;
+    if (nextRemaining <= 0) return { primary: "Hatching now", secondary: `${name}, check chamber` };
+    if (nextRemaining === 1) return { primary: "Due tomorrow", secondary: `${name}` };
+    return { primary: `In ${nextRemaining} days`, secondary: `${name}` };
+  })();
+
+  const needsAttentionPill: KpiPill | undefined = stats.needsAttention > 0
+    ? { text: `${stats.needsAttention}`, tone: stats.needsAttention >= 5 ? "negative" : "warning" }
+    : { text: "All good", tone: "positive" };
+  const needsAttentionFooter: KpiFooter | undefined = stats.needsAttention > 0
+    ? { primary: `${stats.needsAttention} chambers`, secondary: "Need a look" }
+    : { primary: "No issues", secondary: "All optimal" };
+
   return (
     <div className="flex flex-col" style={{ gap: 32 }}>
       {/* Section 2: executive KPI summary — strict 1-row compact cards */}
@@ -335,8 +356,8 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
         {/* Layers reads as stacked multi-tier incubator cabinets. */}
         <KpiCard Icon={Layers} label="INCUBATORS" value={`${units.length} Active`} />
         <KpiCard Icon={Egg} label="EGGS INCUBATING" value={`${stats.totalEggs} Eggs`} />
-        <KpiCard Icon={Clock} label="UPCOMING HATCH" value={hatchValue} />
-        <KpiCard Icon={TriangleAlert} label="NEEDS ATTENTION" value={`${stats.needsAttention}`} />
+        <KpiCard Icon={Clock} label="UPCOMING HATCH" value={hatchValue} pill={upcomingPill} footer={upcomingFooter} />
+        <KpiCard Icon={TriangleAlert} label="NEEDS ATTENTION" value={`${stats.needsAttention}`} pill={needsAttentionPill} footer={needsAttentionFooter} />
       </div>
 
       {/* Section 3: chamber status grid, wrapped in one white container */}
