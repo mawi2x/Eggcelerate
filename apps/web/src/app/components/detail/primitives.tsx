@@ -46,6 +46,7 @@ export function SectionCard({
   titleSize?: number;
   divider?: boolean;
 }) {
+  void titleSize;
   return (
     <Card style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
       <CardContent className="p-5">
@@ -57,8 +58,30 @@ export function SectionCard({
           }}
         >
           <div>
-            <h3 style={{ fontSize: titleSize, fontWeight: 600, color: "var(--text-primary)" }}>{title}</h3>
-            {subtitle && <p style={{ fontSize: 12, color: MUTED }}>{subtitle}</p>}
+            <h3
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-heading-sm)",
+                fontWeight: "var(--weight-semibold)",
+                lineHeight: "var(--leading-snug)",
+                color: "var(--text-primary)",
+              }}
+            >
+              {title}
+            </h3>
+            {subtitle && (
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-caption)",
+                  fontWeight: "var(--weight-regular)",
+                  lineHeight: "var(--leading-normal)",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                {subtitle}
+              </p>
+            )}
           </div>
           {action}
         </div>

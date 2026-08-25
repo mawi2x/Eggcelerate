@@ -23,7 +23,7 @@ interface Props {
 }
 
 const TEXT = "var(--text-primary)";
-const MUTED = "var(--text-muted)";
+const MUTED = "var(--text-secondary)";
 const RUST = "var(--brand-primary)";
 
 /**
@@ -82,7 +82,13 @@ export function PageHeader({
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                     <h1
                       className="min-w-0 truncate"
-                      style={{ fontSize: 24, fontWeight: 700, color: TEXT, lineHeight: 1.25 }}
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "var(--type-page-title)",
+                        fontWeight: "var(--weight-bold)",
+                        lineHeight: "var(--leading-snug)",
+                        color: TEXT,
+                      }}
                       title={title}
                     >
                       {title}
@@ -91,7 +97,14 @@ export function PageHeader({
                   </div>
                   <p
                     className="min-w-0"
-                    style={{ fontSize: 14, fontWeight: 400, color: MUTED, lineHeight: 1.4, marginTop: 4 }}
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-regular)",
+                      lineHeight: "var(--leading-normal)",
+                      color: MUTED,
+                      marginTop: 4,
+                    }}
                   >
                     {subtitle}
                   </p>
@@ -141,14 +154,30 @@ export function PageHeader({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <h1
                 className="min-w-0 truncate"
-                style={{ fontSize: 24, fontWeight: 700, color: TEXT, lineHeight: 1.25 }}
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "var(--type-page-title)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: "var(--leading-snug)",
+                  color: TEXT,
+                }}
                 title={title}
               >
                 {title}
               </h1>
               {badges}
             </div>
-            <p className="min-w-0" style={{ fontSize: 14, fontWeight: 400, color: MUTED, lineHeight: 1.4, marginTop: 4 }}>
+            <p
+              className="min-w-0"
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-body)",
+                fontWeight: "var(--weight-regular)",
+                lineHeight: "var(--leading-normal)",
+                color: MUTED,
+                marginTop: 4,
+              }}
+            >
               {subtitle}
             </p>
           </>

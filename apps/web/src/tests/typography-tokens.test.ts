@@ -14,4 +14,10 @@ describe("typography tokens", () => {
     expect(css).toMatch(/html\s*\{\s*font-size:\s*100%/);
     expect(css).not.toContain("--font-size: 16px");
   });
+  it("PageHeader uses type tokens not hardcoded 24/14", () => {
+    const s = fs.readFileSync("src/app/components/PageHeader.tsx", "utf-8");
+    expect(s).toContain("var(--type-page-title)");
+    expect(s).toContain("var(--type-body)");
+    expect(s).not.toMatch(/fontSize:\s*24[^r]/); // no raw 24px
+  });
 });
