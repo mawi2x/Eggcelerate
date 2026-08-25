@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { NotificationPopover } from "./alerts/NotificationPopover";
 import { AlertEntry } from "../data/mockData";
+import { LiveDateTime } from "./LiveDateTime";
 
 interface Props {
   title: string;
@@ -17,11 +18,13 @@ interface Props {
   badges?: React.ReactNode;
   /** Replaces the default title/subtitle block entirely (e.g. detail headers). */
   titleNode?: React.ReactNode;
+  /** When true, shows ambient live date/time immediately left of the bell (Overview). */
+  showDateTime?: boolean;
 }
 
-const TEXT = "#1A1A1A";
-const MUTED = "#78716C";
-const RUST = "#C8623A";
+const TEXT = "var(--text-primary)";
+const MUTED = "var(--text-muted)";
+const RUST = "var(--brand-primary)";
 
 /**
  * Rows 1 and 2 of the main content area, identical on every screen:
@@ -41,7 +44,70 @@ export function PageHeader({
   backLabel = "Back",
   badges,
   titleNode,
+  showDateTime,
 }: Props) {
+  // Overview: clock aligned with greeting (Row 2), NOT leveled with bell (Row 1) — restores original header spacing
+  if (showDateTime) {
+    return (
+      <div>
+        {/* Row 1: utility bar — bell stays top-right alone */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            {onBack ? (
+              <button
+                onClick={onBack}
+                className="-ml-2 inline-flex min-w-0 items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2"
+                style={{ color: RUST, fontSize: 14, fontWeight: 500 }}
+              >
+                <ArrowLeft size={16} className="shrink-0" />
+                <span className="min-w-0 truncate">{backLabel}</span>
+              </button>
+            ) : null}
+          </div>
+          <NotificationPopover
+            alerts={alerts}
+            unreadCount={alertCount}
+            onViewAll={onViewAlerts}
+            onMarkAllRead={onMarkAllRead}
+            onDismiss={onDismissAlert}
+          />
+        </div>
+
+        {/* Row 2: title block left + ambient date/time right — restores 16px gap to Row 1 */}
+        <header className="w-full min-w-0" style={{ marginTop: 16 }}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div className="min-w-0 flex-1">
+              {titleNode ?? (
+                <>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <h1
+                      className="min-w-0 truncate"
+                      style={{ fontSize: 24, fontWeight: 700, color: TEXT, lineHeight: 1.25 }}
+                      title={title}
+                    >
+                      {title}
+                    </h1>
+                    {badges}
+                  </div>
+                  <p
+                    className="min-w-0"
+                    style={{ fontSize: 14, fontWeight: 400, color: MUTED, lineHeight: 1.4, marginTop: 4 }}
+                  >
+                    {subtitle}
+                  </p>
+                </>
+              )}
+            </div>
+            {/* Right: ambient date/time — no card/border/background, right-aligned, not leveled with bell */}
+            <div className="flex shrink-0 self-end sm:self-start sm:pt-1">
+              <LiveDateTime />
+            </div>
+          </div>
+        </header>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* ── Row 1: utility bar ─────────────────────────────────────────── */}

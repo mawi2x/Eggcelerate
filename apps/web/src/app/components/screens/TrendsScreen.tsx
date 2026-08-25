@@ -17,8 +17,6 @@ import {
   Download,
   ChevronDown,
   Search,
-  ChevronLeft,
-  ChevronRight,
   TrendingUp,
   Percent,
   Layers,
@@ -51,20 +49,22 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { PaginationBar } from "../ui/pagination-bar";
 import { HatchRecord, Incubator, Mode, buildHistory, calculateHatchabilityRate } from "../../data/mockData";
 
 // ── Design tokens ───────────────────────────────────────────────────────────
-const RUST = "#A84323";
-const CARD = "#F9F6F0";
-const SURFACE = "#FFFFFF";
-const BORDER = "#E8E2D5";
-const TEXT = "#1A1A1A";
-const MUTED = "#5A4838";
-const OK = "#16A34A";
-const OK_BG = "#DCFCE7";
-const WARN = "#D97706";
-const WARN_BG = "#FEF3C7";
-const TARGET_BAND = "rgba(22, 163, 74, 0.12)";
+const RUST = "var(--brand-primary)";
+const CARD = "var(--surface-subtle)";
+const SURFACE = "var(--surface-card)";
+const BORDER = "var(--border-default)";
+const TEXT = "var(--text-primary)";
+const MUTED = "var(--text-secondary)";
+const OK = "var(--status-success-fg)";
+const OK_BG = "var(--status-success-bg)";
+const WARN = "var(--status-warning-fg)";
+const WARN_BG = "var(--status-warning-bg)";
+const TARGET_BAND_COLOR = "#16A34A";
+const TARGET_BAND_OPACITY = 0.045;
 const inputStyle = { borderColor: "#D8D0C0", backgroundColor: "#F2EEE5" };
 // Framed white control used inside the trends toolbar.
 const toolbarInputStyle = { borderColor: "#D8D0C0", backgroundColor: SURFACE, height: 38 };
@@ -86,7 +86,20 @@ type TrendView = "environmental" | "hatch";
 type Metric = "temp" | "humidity";
 
 // Muted chamber-identity colors, distinct from the semantic status colors.
-const CHAMBER_COLORS = ["#3E5C76", "#5E8B8B", "#8C6A86", "#7A6A9B", "#A6795C", "#6B8E5A"];
+const CHAMBER_COLORS = [
+  "#3E5C76",
+  "#4F7C82",
+  "#7B5D78",
+  "#675A8C",
+  "#9A6B50",
+  "#66806A",
+  "#466B8A",
+  "#6F8488",
+  "#936D85",
+  "#7F74A8",
+  "#A0826B",
+  "#77906F",
+];
 
 const metricInfo: Record<Metric, { label: string; unit: string; domain: [number, number] }> = {
   temp: { label: "Temperature", unit: "°C", domain: [35, 40] },
@@ -104,38 +117,81 @@ interface Props {
 
 // Per-chamber context the tooltip needs to judge each reading.
 interface TooltipMeta {
-  modeName: string;
   band: { min: number; max: number };
   metricLabel: string;
+}
+
+function formatAxisTime(timestamp: number, range: RangeKey) {
+  const date = new Date(timestamp);
+  if (range === "24h") {
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function formatTooltipTime(timestamp: number) {
+  const date = new Date(timestamp);
+  const day = date.toLocaleDateString([], { month: "short", day: "numeric" });
+  const time = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return `${day} · ${time}`;
+}
+
+function formatMeasurement(value: number, unit: string) {
+  return `${value.toLocaleString(undefined, {
+    maximumFractionDigits: unit === "°C" ? 1 : 0,
+  })}${unit}`;
 }
 
 function ChartTooltip({
   active,
   payload,
-  label,
   unit,
   meta,
+  highlightedId,
 }: any) {
   if (!active || !payload?.length) return null;
+
+  const validPayload = payload.filter((item: any) => typeof item.value === "number");
+  const reading =
+    validPayload.find((item: any) => item.dataKey === highlightedId) ?? validPayload[0];
+  if (!reading) return null;
+
+  const info: TooltipMeta | undefined = meta?.[reading.dataKey];
+  const timestamp = reading.payload?.ts;
+
   return (
-    <div className="p-3 shadow-lg" style={{ backgroundColor: "#1A1510", borderRadius: 12, color: "#FFFFFF" }}>
-      <p style={{ fontSize: 12, fontWeight: 700, color: BORDER }}>⏱ {label}</p>
-      <div className="mt-1.5 space-y-1">
-        {payload.map((p: any) => {
-          const info: TooltipMeta | undefined = meta?.[p.dataKey];
-          let status = info ? `${info.modeName} ✓` : "";
-          if (info && typeof p.value === "number") {
-            if (p.value > info.band.max) status = `⚠️ High ${info.metricLabel}`;
-            else if (p.value < info.band.min) status = `⚠️ Low ${info.metricLabel}`;
-          }
-          return (
-            <p key={p.dataKey} className="whitespace-nowrap" style={{ fontSize: 13 }}>
-              <span style={{ color: p.color }}>•</span> {p.name}: {p.value}
-              {unit}
-              {status ? <span style={{ color: BORDER }}> ({status})</span> : null}
-            </p>
-          );
-        })}
+    <div
+      className="min-w-[196px] rounded-xl border bg-white p-3.5 shadow-lg"
+      style={{ borderColor: BORDER, color: TEXT, fontFamily: '"Nunito", sans-serif' }}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          aria-hidden="true"
+          className="h-0.5 w-4 shrink-0 rounded-full"
+          style={{ backgroundColor: reading.color }}
+        />
+        <p style={{ fontSize: 13, fontWeight: 700 }}>{reading.name}</p>
+      </div>
+      {typeof timestamp === "number" && (
+        <p className="mt-0.5" style={{ color: MUTED, fontSize: 12 }}>
+          {formatTooltipTime(timestamp)}
+        </p>
+      )}
+      <div className="mt-3 space-y-1.5 border-t pt-2.5" style={{ borderColor: BORDER }}>
+        <div className="flex items-baseline justify-between gap-5">
+          <span style={{ color: MUTED, fontSize: 12 }}>{info?.metricLabel ?? "Reading"}</span>
+          <span style={{ fontSize: 14, fontWeight: 700 }}>
+            {formatMeasurement(reading.value, unit)}
+          </span>
+        </div>
+        {info && (
+          <div className="flex items-baseline justify-between gap-5">
+            <span style={{ color: MUTED, fontSize: 12 }}>Target</span>
+            <span style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
+              {info.band.min} to {info.band.max}{unit}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -156,11 +212,13 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   const [compare, setCompare] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>(units.slice(0, 2).map((u) => u.id));
   const [metric, setMetric] = useState<Metric>("temp");
+  const [highlightedUnitId, setHighlightedUnitId] = useState<string | null>(null);
 
   // Hatch history state.
   const [hatchSearch, setHatchSearch] = useState("");
   const [species, setSpecies] = useState<string>("All");
   const [hatchPage, setHatchPage] = useState(1);
+  const [hatchRowsPerPage, setHatchRowsPerPage] = useState(HATCH_ROWS);
 
   const unit = units.find((u) => u.id === unitId) ?? units[0];
   const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
@@ -178,6 +236,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       .map((id) => units.find((u) => u.id === id))
       .filter(Boolean) as Incubator[];
   }, [compare, compareIds, unit, units]);
+  const activeHighlightedUnitId = activeUnits.some((u) => u.id === highlightedUnitId)
+    ? highlightedUnitId
+    : null;
 
   // Merge each active chamber's readings for the chosen metric onto a shared axis.
   const chartData = useMemo(() => {
@@ -244,9 +305,8 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
     activeUnits.forEach((u) => {
       const m = modeOf(u);
       map[u.id] = {
-        modeName: m.name,
         band: metric === "temp" ? m.targetTemp : m.targetHumidity,
-        metricLabel: metric === "temp" ? "Temp" : "Humidity",
+        metricLabel: metricInfo[metric].label,
       };
     });
     return map;
@@ -255,8 +315,8 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   // One target-range label when every active chamber shares a band, otherwise a hint.
   const targetRangeLabel =
     bands.length === 1
-      ? `Target Safe Range (${bands[0].min} to ${bands[0].max}${metricInfo[metric].unit})`
-      : "Target Safe Range (varies by Mode)";
+      ? `Target Safe Range · ${bands[0].min} to ${bands[0].max}${metricInfo[metric].unit}`
+      : "Target Safe Range · varies by incubation mode";
 
   // Never allow the selection to drop below two chambers — that would blank the chart.
   const toggleCompareId = (id: string) =>
@@ -320,11 +380,12 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
     });
   }, [withPct, hatchSearch, species]);
 
-  const hatchPages = Math.max(1, Math.ceil(filteredHatch.length / HATCH_ROWS));
+  const hatchPages = Math.max(1, Math.ceil(filteredHatch.length / hatchRowsPerPage));
   const page = Math.min(hatchPage, hatchPages);
-  const pagedHatch = filteredHatch.slice((page - 1) * HATCH_ROWS, page * HATCH_ROWS);
-  const rangeStart = filteredHatch.length === 0 ? 0 : (page - 1) * HATCH_ROWS + 1;
-  const rangeEnd = Math.min(page * HATCH_ROWS, filteredHatch.length);
+  const pagedHatch = filteredHatch.slice(
+    (page - 1) * hatchRowsPerPage,
+    page * hatchRowsPerPage,
+  );
 
   const viewOptions: { key: TrendView; label: string; Icon: typeof LineChart }[] = [
     { key: "environmental", label: "Environmental Trends", Icon: LineChart },
@@ -488,7 +549,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     className="rounded-xl px-4 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                     style={{
                       backgroundColor: active ? RUST : SURFACE,
-                      color: active ? "#FFFFFF" : "#78716C",
+                      color: active ? "var(--on-brand)" : "var(--text-muted)",
                       fontSize: 11,
                       fontWeight: 700,
                       letterSpacing: "0.05em",
@@ -500,85 +561,163 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   </button>
                 );
               })}
+              {!compare && (
+                <button
+                  onClick={() => setReadingsOpen(true)}
+                  className="ml-auto flex items-center gap-2 rounded-lg px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style={{ color: RUST, fontSize: 13, fontWeight: 700 }}
+                >
+                  <TableProperties size={16} aria-hidden="true" /> See all readings
+                </button>
+              )}
             </div>
           </div>
 
-          <Card style={cardStyle}>
-            <CardContent className="p-5">
-              <div className="h-[420px] w-full">
+          <Card style={{ ...cardStyle, backgroundColor: SURFACE }}>
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-5">
+                <div className="shrink-0">
+                  <h2
+                    id="environmental-chart-title"
+                    style={{ color: TEXT, fontFamily: '"Baloo 2", sans-serif', fontSize: 18, fontWeight: 700 }}
+                  >
+                    {metricInfo[metric].label} History
+                  </h2>
+                  <p className="mt-0.5" style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
+                    {targetRangeLabel}
+                  </p>
+                </div>
+
+                <div
+                  aria-label="Chart legend"
+                  className="flex max-h-[44px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 overflow-y-auto pr-1 lg:max-w-[76%] lg:justify-end"
+                  style={{ color: TEXT, fontSize: 10, fontWeight: 600 }}
+                >
+                  {activeUnits.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      aria-label={`Highlight ${u.name} series`}
+                      onMouseEnter={() => setHighlightedUnitId(u.id)}
+                      onMouseLeave={() => setHighlightedUnitId(null)}
+                      onFocus={() => setHighlightedUnitId(u.id)}
+                      onBlur={() => setHighlightedUnitId(null)}
+                      className="flex min-h-4 items-center gap-1 whitespace-nowrap rounded-md px-0.5 transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 motion-reduce:transition-none"
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        opacity: activeHighlightedUnitId && activeHighlightedUnitId !== u.id ? 0.48 : 1,
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="h-0.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: colorFor(u.id) }}
+                      />
+                      {u.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div
+                className="mt-4 h-[360px] w-full border-t pt-4 sm:h-[420px] lg:h-[440px]"
+                style={{ borderColor: BORDER }}
+                role="img"
+                aria-labelledby="environmental-chart-title"
+                aria-label={`${metricInfo[metric].label} readings for ${activeUnits.map((u) => u.name).join(", ")}`}
+              >
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <ComposedChart data={chartData} margin={{ top: 8, right: 18, left: 22, bottom: 12 }}>
                     {/* Every chart child carries an explicit key: recharts clones children
                         and reuses their keys, so unkeyed siblings collide. */}
-                    <CartesianGrid key="grid" stroke={BORDER} strokeDasharray="4 4" />
+                    <CartesianGrid key="grid" stroke="#ECE9E2" strokeWidth={1} />
                     <XAxis
                       key="x-axis"
-                      dataKey="time"
-                      tick={{ fill: MUTED, fontSize: 12 }}
+                      dataKey="ts"
+                      type="number"
+                      scale="time"
+                      domain={["dataMin", "dataMax"]}
+                      tick={{ fill: MUTED, fontFamily: '"Nunito", sans-serif', fontSize: 11 }}
+                      tickFormatter={(value) => formatAxisTime(Number(value), range)}
+                      axisLine={{ stroke: "#D8D0C0" }}
+                      tickLine={false}
+                      tickMargin={10}
                       interval="preserveStartEnd"
-                      minTickGap={40}
+                      minTickGap={range === "24h" ? 48 : 58}
                     />
-                    <YAxis key="y-axis" domain={domain} tick={{ fill: MUTED, fontSize: 12 }} allowDecimals />
+                    <YAxis
+                      key="y-axis"
+                      domain={domain}
+                      width={72}
+                      tick={{ fill: MUTED, fontFamily: '"Nunito", sans-serif', fontSize: 11 }}
+                      tickCount={5}
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      allowDecimals
+                      label={{
+                        value: `${metricInfo[metric].label} (${metricInfo[metric].unit})`,
+                        angle: -90,
+                        position: "insideLeft",
+                        fill: MUTED,
+                        fontFamily: '"Nunito", sans-serif',
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}
+                    />
                     <Tooltip
                       key="tooltip"
-                      content={<ChartTooltip unit={metricInfo[metric].unit} meta={tooltipMeta} />}
+                      cursor={{ stroke: "#D8D0C0", strokeWidth: 1 }}
+                      wrapperStyle={{ outline: "none" }}
+                      content={(
+                        <ChartTooltip
+                          unit={metricInfo[metric].unit}
+                          meta={tooltipMeta}
+                          highlightedId={activeHighlightedUnitId}
+                        />
+                      )}
                     />
                     {bands.map((b) => (
                       <ReferenceArea
                         key={`band-${b.min}-${b.max}`}
                         y1={b.min}
                         y2={b.max}
-                        fill={TARGET_BAND}
-                        fillOpacity={1}
+                        fill={TARGET_BAND_COLOR}
+                        fillOpacity={bands.length > 1 ? TARGET_BAND_OPACITY / 2 : TARGET_BAND_OPACITY}
+                        strokeOpacity={0}
                       />
                     ))}
-                    {activeUnits.map((u) => (
-                      <Line
-                        key={`line-${u.id}`}
-                        type="monotone"
-                        dataKey={u.id}
-                        name={u.name}
-                        stroke={colorFor(u.id)}
-                        strokeWidth={2.5}
-                        dot={false}
-                        connectNulls
-                      />
-                    ))}
+                    {activeUnits.map((u) => {
+                      const highlighted = activeHighlightedUnitId === u.id;
+                      const faded = Boolean(activeHighlightedUnitId && !highlighted);
+                      return (
+                        <Line
+                          key={`line-${u.id}`}
+                          type="monotone"
+                          dataKey={u.id}
+                          name={u.name}
+                          stroke={colorFor(u.id)}
+                          strokeWidth={highlighted ? 2.4 : 1.8}
+                          strokeOpacity={faded ? 0.22 : 0.92}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          dot={false}
+                          activeDot={
+                            faded || (activeUnits.length > 4 && !highlighted)
+                              ? false
+                              : { r: highlighted ? 4 : 3, strokeWidth: 1.5, fill: SURFACE }
+                          }
+                          connectNulls
+                          isAnimationActive={false}
+                          onMouseEnter={() => setHighlightedUnitId(u.id)}
+                          onMouseLeave={() => setHighlightedUnitId(null)}
+                          className="transition-opacity duration-150 motion-reduce:transition-none"
+                        />
+                      );
+                    })}
                   </ComposedChart>
                 </ResponsiveContainer>
-              </div>
-
-              {/* Compact legend: target band swatch, then a dot + name per chamber.
-                  Mode and safe-range detail now live in the hover tooltip. */}
-              <div
-                className="mt-4 flex flex-wrap items-center justify-center gap-4"
-                style={{ color: TEXT, fontSize: 13, fontWeight: 600 }}
-              >
-                <span className="flex items-center gap-2 whitespace-nowrap">
-                  <span
-                    className="h-3 w-3 rounded-sm"
-                    style={{ backgroundColor: TARGET_BAND, border: `1px solid ${OK}` }}
-                  />
-                  <span style={{ color: MUTED }}>{targetRangeLabel}</span>
-                </span>
-                {activeUnits.map((u) => (
-                  <span key={u.id} className="flex items-center gap-2 whitespace-nowrap">
-                    <span
-                      className="rounded-full"
-                      style={{ width: 10, height: 10, backgroundColor: colorFor(u.id) }}
-                    />
-                    {u.name}
-                  </span>
-                ))}
-                {!compare && (
-                  <button
-                    onClick={() => setReadingsOpen(true)}
-                    className="flex items-center gap-1.5 rounded-xl px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                    style={{ backgroundColor: "#F2EEE5", color: RUST, fontWeight: 600, fontSize: 13 }}
-                  >
-                    <TableProperties size={16} /> See all readings
-                  </button>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -657,6 +796,19 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
           <Card style={cardStyle}>
             <CardContent className="p-5">
+              <PaginationBar
+                className="mb-4 border-b border-t-0 px-0 pt-0"
+                page={page}
+                pageSize={hatchRowsPerPage}
+                totalItems={filteredHatch.length}
+                itemLabel="records"
+                pageSizeOptions={[10, 20, 50]}
+                onPageSizeChange={(value) => {
+                  setHatchRowsPerPage(value);
+                  setHatchPage(1);
+                }}
+                onPageChange={setHatchPage}
+              />
               <div
                 className="h-[520px] overflow-auto rounded-2xl border"
                 style={{ borderColor: BORDER }}
@@ -665,10 +817,10 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   <TableHeader className="sticky top-0 z-10" style={{ backgroundColor: "#F2EEE5" }}>
                     <TableRow>
                       {["CHAMBER", "MODE", "DATES"].map((h) => (
-                        <TableHead key={h} style={{ color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                        <TableHead key={h} style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
                       ))}
                       {["EGGS SET", "HATCHED", "HATCHABILITY"].map((h) => (
-                        <TableHead key={h} className="text-right" style={{ color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                        <TableHead key={h} className="text-right" style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
                       ))}
                     </TableRow>
                   </TableHeader>
@@ -718,35 +870,6 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 </Table>
               </div>
 
-              {/* Pagination. */}
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <span style={{ color: MUTED }}>
-                  Showing {rangeStart} to {rangeEnd} of {filteredHatch.length} records
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="rounded-xl"
-                    style={{ borderColor: BORDER }}
-                    disabled={page <= 1}
-                    onClick={() => setHatchPage((p) => Math.max(1, p - 1))}
-                  >
-                    <ChevronLeft size={16} /> Prev
-                  </Button>
-                  <span style={{ color: MUTED }}>
-                    Page {page} of {hatchPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    className="rounded-xl"
-                    style={{ borderColor: BORDER }}
-                    disabled={page >= hatchPages}
-                    onClick={() => setHatchPage((p) => Math.min(hatchPages, p + 1))}
-                  >
-                    Next <ChevronRight size={16} />
-                  </Button>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </>

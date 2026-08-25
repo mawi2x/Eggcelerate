@@ -55,11 +55,11 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
       }}
     >
       <DialogContent
-        className="w-[90vw] max-w-[460px] bg-white p-6 shadow-xl border border-[#EAE7E1] [&>[data-slot=dialog-close]]:hidden"
+        className="w-[90vw] max-w-[460px] bg-[var(--surface-card)] p-6 shadow-xl border border-[var(--border-subtle)] [&>[data-slot=dialog-close]]:hidden"
         style={{ borderRadius: 16 }}
       >
         <DialogHeader className="text-left">
-          <DialogTitle style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A" }}>
+          <DialogTitle style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
             <span className="block">Finish Cycle</span>
             <span className="block" style={{ fontSize: 14, fontWeight: 600, color: "#6E6259", marginTop: 2 }}>
               {chamberName}
@@ -72,7 +72,7 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="harvest-hatched" style={{ fontSize: 13, color: "#1A1A1A" }}>Chicks hatched</Label>
+            <Label htmlFor="harvest-hatched" style={{ fontSize: 13, color: "var(--text-primary)" }}>Chicks hatched</Label>
             <Input
               id="harvest-hatched"
               type="text"
@@ -85,29 +85,29 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
               placeholder="0"
               className="mt-1.5 rounded-xl text-center"
               style={{
-                borderColor: exceedsMax ? "#DC2626" : "#D8D0C0",
+                borderColor: exceedsMax ? "var(--status-danger-fg)" : "var(--input-border)",
                 backgroundColor: "#FFFFFF",
-                color: "#1A1A1A",
+                color: "var(--text-primary)",
               }}
               aria-invalid={exceedsMax}
             />
             {exceedsMax && (
-              <p className="mt-1.5" style={{ fontSize: 12, color: "#DC2626", fontWeight: 600 }}>
+              <p className="mt-1.5" style={{ fontSize: 12, color: "var(--status-danger-fg)", fontWeight: 600 }}>
                 Cannot exceed total eggs loaded ({totalEggsLoaded})
               </p>
             )}
             {totalEggsLoaded <= 0 && (
-              <p className="mt-1.5" style={{ fontSize: 12, color: "#DC2626", fontWeight: 600 }}>
+              <p className="mt-1.5" style={{ fontSize: 12, color: "var(--status-danger-fg)", fontWeight: 600 }}>
                 No eggs were loaded for this cycle.
               </p>
             )}
           </div>
           <div
             className="flex items-center justify-between rounded-xl px-3.5 py-2.5"
-            style={{ backgroundColor: "#F9F6F0", border: "1px solid #E8E2D5" }}
+            style={{ backgroundColor: "var(--surface-subtle)", border: "1px solid var(--border-default)" }}
           >
             <div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#5A4838" }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>
                 Hatchability
               </span>
               <span className="block" style={{ fontSize: 12, color: "#8A7F72" }}>
@@ -118,7 +118,7 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
                   : `Fertility record not available. ${unhatchedNum} unhatched.`}
               </span>
             </div>
-            <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 18, fontWeight: 700, color: "#C8623A" }}>
+            <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 18, fontWeight: 700, color: "var(--brand-primary)" }}>
               {exceedsMax ? "Not available" : rate === null ? "Not available" : `${rate}%`}
             </span>
           </div>
@@ -128,7 +128,7 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
           <Button
             variant="outline"
             className="rounded-xl"
-            style={{ borderColor: "#E8E2D5", color: "#44403C", backgroundColor: "#FFFFFF" }}
+            style={{ borderColor: "var(--border-default)", color: "#44403C", backgroundColor: "var(--surface-card)" }}
             onClick={() => onOpenChange(false)}
           >
             Cancel

@@ -78,10 +78,10 @@ export function Timeline({ currentDay, totalDays, candling, candled }: TimelineP
                 className="absolute flex flex-col items-center whitespace-nowrap"
                 style={{ left: `${pct}%`, top: "calc(100% + 12px)", transform: "translateX(-50%)", zIndex: 5 }}
               >
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#78716C" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
                   {CANDLE_SHORT_LABELS[i] ?? c.label}
                 </span>
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#78716C" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
                   DAY {c.day}
                 </span>
               </span>
@@ -123,7 +123,7 @@ export function Timeline({ currentDay, totalDays, candling, candled }: TimelineP
           );
         })}
       </div>
-      <div className="mx-1 flex justify-between" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#78716C" }}>
+      <div className="mx-1 flex justify-between" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
         <span>DAY 1</span>
         <span>DAY {totalDays}</span>
       </div>

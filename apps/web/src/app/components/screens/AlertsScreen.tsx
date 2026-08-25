@@ -2,23 +2,25 @@ import { useMemo, useState } from "react";
 import { Check, CheckCheck, X, Eraser } from "lucide-react";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Mascot } from "../Mascot";
+import { PaginationBar } from "../ui/pagination-bar";
 import { AlertEntry, AlertSeverity } from "../../data/mockData";
 import { severityStyle, timeAgo } from "../alerts/alertStyle";
+import logoApp from "../../../imports/logo-app.png";
 
-const RUST = "#A84323";
-const TEXT = "#1A1A1A";
-const MUTED = "#78716C";
-const BORDER = "#E8E2D5";
-const CARD_BORDER = "#EAE7E1";
+const RUST = "var(--brand-primary)";
+const TEXT = "var(--text-primary)";
+const MUTED = "var(--text-muted)";
+const BORDER = "var(--border-default)";
+const CARD_BORDER = "var(--border-subtle)";
 const DIVIDER = "#F5F4F0";
 const ROW_HOVER = "#FAFAF9";
+const ALERTS_PER_PAGE = 10;
 
 /** Severity pill + icon tile tints, tuned for the cream surface. */
 const severityTint: Record<AlertSeverity, { tile: string; tileFg: string; pill: string; pillFg: string }> = {
-  critical: { tile: "#FEE2E2", tileFg: "#B91C1C", pill: "#FEF2F2", pillFg: "#B91C1C" },
-  warning: { tile: "#FEF3C7", tileFg: "#B45309", pill: "#FFFBEB", pillFg: "#B45309" },
-  info: { tile: "#F5F5F4", tileFg: "#57534E", pill: "#FAFAF9", pillFg: "#57534E" },
+  critical: { tile: "var(--status-danger-bg)", tileFg: "var(--status-danger-fg)", pill: "#FEF2F2", pillFg: "var(--status-danger-fg)" },
+  warning: { tile: "var(--status-warning-bg)", tileFg: "var(--status-warning-fg)", pill: "#FFFBEB", pillFg: "var(--status-warning-fg)" },
+  info: { tile: "var(--status-info-bg)", tileFg: "var(--status-info-fg)", pill: "#FAFAF9", pillFg: "var(--status-info-fg)" },
 };
 
 type Filter = "all" | AlertSeverity;
@@ -45,6 +47,8 @@ interface Props {
 export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, onClearRead, onOpenUnit }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<SortKey>("recent");
+  const [alertPage, setAlertPage] = useState(1);
+  const [alertsPerPage, setAlertsPerPage] = useState(ALERTS_PER_PAGE);
 
   const list = useMemo(() => {
     const filtered = alerts.filter((a) => filter === "all" || a.severity === filter);
@@ -56,6 +60,10 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
       return byTime(a, b);
     });
   }, [alerts, filter, sort]);
+
+  const alertPages = Math.max(1, Math.ceil(list.length / alertsPerPage));
+  const page = Math.min(alertPage, alertPages);
+  const pagedAlerts = list.slice((page - 1) * alertsPerPage, page * alertsPerPage);
 
   const unreadCount = alerts.filter((a) => !a.acknowledged).length;
   const readCount = alerts.length - unreadCount;
@@ -71,7 +79,10 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
             return (
               <button
                 key={f.key}
-                onClick={() => setFilter(f.key)}
+                onClick={() => {
+                  setFilter(f.key);
+                  setAlertPage(1);
+                }}
                 className="rounded-full px-4 py-2 transition-colors"
                 style={{
                   backgroundColor: active ? RUST : "#F5EDD8",
@@ -87,7 +98,13 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+          <Select
+            value={sort}
+            onValueChange={(value) => {
+              setSort(value as SortKey);
+              setAlertPage(1);
+            }}
+          >
             <SelectTrigger
               className="h-10 w-[165px] rounded-xl"
               style={{ borderColor: BORDER, backgroundColor: "#FFFFFF", color: TEXT }}
@@ -131,15 +148,33 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
       >
         {list.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-5 py-14 text-center">
-            <Mascot size={140} />
+            <img
+              src={logoApp}
+              alt="Eggcelerate logo"
+              className="h-24 w-24 rounded-3xl object-cover"
+            />
             <h3 style={{ fontSize: 20, color: TEXT }}>All clear here!</h3>
             <p style={{ color: MUTED }}>
-              No {filter === "all" ? "" : filter} notifications right now. Your eggs are happy. 🐣
+              No {filter === "all" ? "" : filter} notifications right now. Your eggs are happy.
             </p>
           </div>
         ) : (
-          <ul>
-            {list.map((a, i) => {
+          <>
+            <PaginationBar
+              className="border-b border-t-0"
+              page={page}
+              pageSize={alertsPerPage}
+              totalItems={list.length}
+              itemLabel="alerts"
+              pageSizeOptions={[10, 20, 50]}
+              onPageSizeChange={(value) => {
+                setAlertsPerPage(value);
+                setAlertPage(1);
+              }}
+              onPageChange={setAlertPage}
+            />
+            <ul>
+            {pagedAlerts.map((a, i) => {
               const s = severityStyle[a.severity];
               const tint = severityTint[a.severity];
               return (
@@ -148,7 +183,7 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                   className="group flex items-start gap-3.5 transition-colors"
                   style={{
                     padding: "16px 20px",
-                    borderBottom: i === list.length - 1 ? "none" : `1px solid ${DIVIDER}`,
+                    borderBottom: i === pagedAlerts.length - 1 ? "none" : `1px solid ${DIVIDER}`,
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = ROW_HOVER)}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
@@ -191,7 +226,7 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                           style={{ fontSize: 13, color: RUST, fontWeight: 600, cursor: "pointer" }}
                           title={`Go to ${a.unit}`}
                         >
-                          {a.unit} →
+                          {a.unit}
                         </button>
                       ) : (
                         <span className="min-w-0 shrink-0 truncate" style={{ fontSize: 13, color: MUTED }}>
@@ -204,7 +239,7 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                     </p>
                   </div>
 
-                  {/* Column 3 — pill above timestamp + quick actions */}
+                  {/* Column 3 — compact severity pill above timestamp + quick actions */}
                   <div className="flex shrink-0 flex-col items-end gap-2" style={{ minHeight: 44 }}>
                     <span
                       className="rounded-full px-2.5 py-0.5"
@@ -219,15 +254,14 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                       {s.label}
                     </span>
 
-                    <div className="flex items-center gap-2">
-                      {/* Timestamp yields to the actions on hover so the row never reflows. */}
+                    <div className="relative h-7 w-[60px]">
                       <span
-                        className="whitespace-nowrap transition-opacity group-hover:opacity-0"
-                        style={{ fontSize: 12, color: MUTED }}
+                        className="absolute inset-0 flex items-center justify-end whitespace-nowrap transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
+                        style={{ fontSize: 11, color: MUTED }}
                       >
                         {timeAgo(a.timestamp)}
                       </span>
-                      <div className="-ml-2 flex items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                      <div className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
                         {!a.acknowledged && (
                           <button
                             onClick={() => onAcknowledge(a.id)}
@@ -254,7 +288,8 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                 </li>
               );
             })}
-          </ul>
+            </ul>
+          </>
         )}
       </div>
     </div>

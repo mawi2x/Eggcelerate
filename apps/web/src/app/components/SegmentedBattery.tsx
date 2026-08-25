@@ -24,9 +24,9 @@ function barCount(pct: number): number {
 }
 
 // Three operational states drive both the leading glyph and the colour.
-const CHARGING = "#16A34A";
+const CHARGING = "var(--status-success-fg)";
 const NEUTRAL = "#44403C";
-const LOW = "#DC2626";
+const LOW = "var(--status-danger-fg)";
 
 /**
  * Charge level text followed by a four-bar graphic gauge, in one of three states:

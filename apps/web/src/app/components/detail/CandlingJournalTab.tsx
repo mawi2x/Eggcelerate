@@ -93,7 +93,7 @@ export function JournalEntryCard({
     <>
       <Card style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: RADIUS, boxShadow: SHADOW }}>
         <CardContent style={{ padding: 18 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "#1A1A1A", marginBottom: 8 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-primary)", marginBottom: 8 }}>
             Candling Status
           </p>
 
@@ -171,7 +171,7 @@ export function JournalEntryCard({
           )}
 
           {/* Note Section */}
-          <span className="block" style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "#1A1A1A", marginBottom: 6 }}>
+          <span className="block" style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-primary)", marginBottom: 6 }}>
             Note:
           </span>
 
@@ -215,7 +215,7 @@ export function JournalEntryCard({
                   style={{
                     backgroundColor: "#FAF9F6",
                     border: `1px solid ${BORDER}`,
-                    borderLeft: `3px solid #C8623A`,
+                    borderLeft: `3px solid var(--brand-primary)`,
                     borderRadius: 12,
                     cursor: "pointer",
                   }}
@@ -524,7 +524,7 @@ function LogModalBody({
         <DialogTitle style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>
           {isEditing ? `Edit Inspection Log: Day ${form.targetDay}` : "Candling Journal"}
         </DialogTitle>
-        <DialogDescription className="text-xs font-medium text-[#1A1A1A]">
+        <DialogDescription className="text-xs font-medium text-[var(--text-primary)]">
           {modeName}
         </DialogDescription>
       </DialogHeader>
@@ -540,7 +540,7 @@ function LogModalBody({
               <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>
                 {target?.label ?? `Day ${form.targetDay} Candling`} (Day {form.targetDay})
               </span>
-              <span className="rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 700, backgroundColor: "#EAE7E1", color: "#78716C" }}>
+              <span className="rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 700, backgroundColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
                 LOCKED
               </span>
             </div>
@@ -595,14 +595,14 @@ function LogModalBody({
                   placeholder="8"
                   className="w-24 rounded-xl"
                   style={{
-                    borderColor: customDayError ? "#DC2626" : INPUT_BORDER,
+                    borderColor: customDayError ? "var(--status-danger-fg)" : INPUT_BORDER,
                     backgroundColor: SURFACE,
                     color: TEXT,
                   }}
                 />
               </div>
               {customDayError && (
-                <p className="mt-1.5 flex items-center gap-1" style={{ fontSize: 12, color: "#DC2626", fontWeight: 600 }}>
+                <p className="mt-1.5 flex items-center gap-1" style={{ fontSize: 12, color: "var(--status-danger-fg)", fontWeight: 600 }}>
                   <AlertCircle size={13} /> Day must be between 1 and {totalDays}
                 </p>
               )}
@@ -642,7 +642,7 @@ function LogModalBody({
                   placeholder="0"
                   className="rounded-xl text-center"
                   style={{
-                    borderColor: isTallyOverCapacity ? "#DC2626" : INPUT_BORDER,
+                    borderColor: isTallyOverCapacity ? "var(--status-danger-fg)" : INPUT_BORDER,
                     backgroundColor: SURFACE,
                     color: TEXT,
                   }}
@@ -659,7 +659,7 @@ function LogModalBody({
           </div>
 
           {isTallyOverCapacity ? (
-            <p className="mt-1.5 flex items-center gap-1" style={{ fontSize: 12, color: "#DC2626", fontWeight: 600 }}>
+            <p className="mt-1.5 flex items-center gap-1" style={{ fontSize: 12, color: "var(--status-danger-fg)", fontWeight: 600 }}>
               <AlertCircle size={13} /> Total inspected eggs cannot exceed eggs set ({totalEggsSet})
             </p>
           ) : isZeroTally ? (
@@ -677,7 +677,7 @@ function LogModalBody({
               <AlertCircle size={13} /> Resolve all uncertain eggs before the Lockdown check.
             </p>
           ) : (
-            <p className="mt-1.5 text-center text-xs font-semibold text-[#1A1A1A]">
+            <p className="mt-1.5 text-center text-xs font-semibold text-[var(--text-primary)]">
               Recorded eggs: {inspected}/{totalEggsSet}
             </p>
           )}
@@ -797,7 +797,7 @@ function LogModalBody({
 
       <AlertDialog open={emptyEvidenceWarningOpen} onOpenChange={setEmptyEvidenceWarningOpen}>
         <AlertDialogContent
-          className="rounded-2xl border-[#E8E2D5]"
+          className="rounded-2xl border-[var(--border-default)]"
           style={{ backgroundColor: CARD, color: TEXT }}
         >
           <AlertDialogHeader className="text-left">
@@ -1101,10 +1101,10 @@ export function CandlingJournalTab({
                       {latestCandlingEntry.uncertain > 0 ? (pendingCheckpoint ? `Recheck Day ${pendingCheckpoint.day}` : "Resolve before finish") : "None to recheck"}
                     </p>
                   </div>
-                  <div className="rounded-xl p-2.5" style={{ backgroundColor: "#F5EFE6", border: "1px solid #EAE7E1" }}>
-                    <span style={{ color: "#78716C", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Total Loaded</span>
+                  <div className="rounded-xl p-2.5" style={{ backgroundColor: "#F5EFE6", border: "1px solid var(--border-subtle)" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Total Loaded</span>
                     <p style={{ fontSize: 24, fontWeight: 800, color: TEXT, lineHeight: 1.1, marginTop: 2 }}>{totalEggsSet}</p>
-                    <p style={{ color: "#78716C", fontSize: 11, marginTop: 2 }}>Eggs in tray</p>
+                    <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>Eggs in tray</p>
                   </div>
                 </>
               )}
@@ -1138,7 +1138,7 @@ export function CandlingJournalTab({
             </p>
             {pendingCheckpoint ? (
               <div className="mt-1 space-y-2">
-                <p style={{ color: "#78716C", fontSize: 13 }}>
+                <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
                   {pendingCheckpoint.label} is scheduled for Day {pendingCheckpoint.day}
                 </p>
                 {checkpointDistance !== null && checkpointDistance <= 0 ? (
@@ -1151,13 +1151,13 @@ export function CandlingJournalTab({
                     </span>
                   </div>
                 ) : (
-                  <p style={{ color: "#78716C", fontSize: 13 }}>
+                  <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
                     {checkpointTiming}
                   </p>
                 )}
               </div>
             ) : (
-              <p style={{ color: "#78716C", fontSize: 13, marginTop: 4 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
                 Record the first inspection for this cycle.
               </p>
             )}
@@ -1190,7 +1190,7 @@ export function CandlingJournalTab({
         {/* LEFT — inspection history feed */}
         <div className="space-y-4 lg:col-span-3">
           <div className="flex items-center justify-between gap-3">
-            <p style={{ fontSize: 18, fontWeight: 600, color: "#1A1A1A" }}>
+            <p style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>
               Candling Journal
             </p>
           </div>
@@ -1207,7 +1207,7 @@ export function CandlingJournalTab({
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
-                  color: "#78716C",
+                  color: "var(--text-muted)",
                   lineHeight: "1",
                   zIndex: 20,
                   whiteSpace: "nowrap",
@@ -1215,7 +1215,7 @@ export function CandlingJournalTab({
               >
                 DAY
               </span>
-              <div className="w-0.5 flex-1" style={{ marginTop: 24, backgroundColor: "#EAE7E1" }} />
+              <div className="w-0.5 flex-1" style={{ marginTop: 24, backgroundColor: "var(--border-subtle)" }} />
             </div>
 
             <ul className="space-y-5">
@@ -1249,17 +1249,17 @@ export function CandlingJournalTab({
                             else next.add(n.day);
                             return next;
                           })}
-                          className="flex min-w-0 flex-wrap items-center gap-1.5 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8623A] focus-visible:ring-offset-2"
-                          style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}
+                          className="flex min-w-0 flex-wrap items-center gap-1.5 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2"
+                          style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}
                           aria-expanded={expandedDays.has(n.day)}
                           aria-controls={`journal-entry-${n.day}`}
                           aria-label={`${expandedDays.has(n.day) ? "Hide" : "Show"} details for Day ${n.entry.day}`}
                         >
                           <span>{n.idx >= 0 ? (CANDLE_SHORT_LABELS[n.idx] ?? n.entry.label) : n.entry.label}</span>
-                          <CheckCircle2 size={18} fill="#16A34A" color="#FFFFFF" strokeWidth={2.5} />
+                          <CheckCircle2 size={18} fill="var(--status-success-fg)" color="var(--on-brand)" strokeWidth={2.5} />
                           <ChevronDown
                             size={17}
-                            className={`ml-0.5 text-[#78716C] transition-transform duration-200 ${expandedDays.has(n.day) ? "rotate-180" : ""}`}
+                            className={`ml-0.5 text-[var(--text-muted)] transition-transform duration-200 ${expandedDays.has(n.day) ? "rotate-180" : ""}`}
                             aria-hidden="true"
                           />
                         </button>
@@ -1272,7 +1272,7 @@ export function CandlingJournalTab({
                               setEditingEntry(n.entry);
                               setShowLogForm(true);
                             }}
-                            className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FFF5F2] hover:text-[#C8623A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                            className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FFF5F2] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                             aria-label={`Edit entry for Day ${n.entry.day}`}
                             title="Edit Inspection"
                           >
@@ -1280,7 +1280,7 @@ export function CandlingJournalTab({
                           </button>
                           <button
                             onClick={() => setEntryToDelete(n.entry)}
-                            className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FEE2E2] hover:text-[#DC2626] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                            className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                             aria-label={`Delete entry for Day ${n.entry.day}`}
                             title="Delete Journal Entry"
                           >
@@ -1318,8 +1318,8 @@ export function CandlingJournalTab({
                             width: 32,
                             height: 32,
                             backgroundColor: "#FFFFFF",
-                            border: isDue ? "2px solid #D97706" : "2px solid #EAE7E1",
-                            color: isDue ? "#D97706" : "#78716C",
+                            border: isDue ? "2px solid var(--status-warning-fg)" : "2px solid var(--border-subtle)",
+                            color: isDue ? "var(--status-warning-fg)" : "var(--text-muted)",
                             fontSize: 13,
                             fontWeight: 700,
                             boxShadow: `0 0 0 3px ${BG}`,
@@ -1331,17 +1331,17 @@ export function CandlingJournalTab({
 
                       <div className="flex-1 min-w-0 pl-3">
                         {isDue ? (
-                          <p className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}>
+                          <p className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
                             {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
                             <AlertCircle
                               size={16}
-                              color="#D97706"
+                              color="var(--status-warning-fg)"
                               strokeWidth={2}
                               aria-label="Inspection due"
                             />
                           </p>
                         ) : (
-                          <p style={{ fontSize: 13, fontWeight: 600, color: "#78716C" }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
                             {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
                           </p>
                         )}
@@ -1372,11 +1372,11 @@ export function CandlingJournalTab({
             {/* Delete Confirmation Modal */}
             <Dialog open={entryToDelete !== null} onOpenChange={(open) => !open && setEntryToDelete(null)}>
               <DialogContent
-                className="max-w-[400px] w-[90vw] p-6 rounded-2xl bg-white shadow-xl border border-[#EAE7E1] [&>[data-slot=dialog-close]]:hidden"
+                className="max-w-[400px] w-[90vw] p-6 rounded-2xl bg-[var(--surface-card)] shadow-xl border border-[var(--border-subtle)] [&>[data-slot=dialog-close]]:hidden"
                 style={{ borderRadius: 16 }}
               >
                 <DialogHeader className="gap-2 text-left">
-                  <DialogTitle style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A" }}>
+                  <DialogTitle style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
                     Delete Journal Entry?
                   </DialogTitle>
                   <DialogDescription style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}>
@@ -1387,7 +1387,7 @@ export function CandlingJournalTab({
                   <Button
                     variant="outline"
                     onClick={() => setEntryToDelete(null)}
-                    className="rounded-xl border-[#EAE7E1] text-[#44403C] hover:bg-stone-50"
+                    className="rounded-xl border-[var(--border-subtle)] text-[#44403C] hover:bg-stone-50"
                   >
                     Cancel
                   </Button>
@@ -1399,7 +1399,7 @@ export function CandlingJournalTab({
                       }
                     }}
                     className="rounded-xl text-white font-medium transition-colors"
-                    style={{ backgroundColor: "#DC2626" }}
+                    style={{ backgroundColor: "var(--status-danger-fg)" }}
                   >
                     Delete Entry
                   </Button>

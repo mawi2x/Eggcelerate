@@ -11,7 +11,7 @@ export function PowerIndicator({ source, battery }: { source: PowerSource; batte
   const critical = !charging && battery < 25;
 
   const Icon = charging ? BatteryCharging : critical ? AlertTriangle : Battery;
-  const color = charging ? "#16A34A" : critical ? "#DC2626" : "#3D3228";
+  const color = charging ? "var(--status-success-fg)" : critical ? "var(--status-danger-fg)" : "#3D3228";
   const bg = charging ? "#DCFCE7" : critical ? "#FEE2E2" : "#F2EEE5";
   const state = charging ? "Charging" : critical ? "Battery critical" : "Battery";
 

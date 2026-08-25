@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Cpu, Search, ChevronLeft, ChevronRight, ArrowUpNarrowWide, ArrowDownWideNarrow, Loader2, TriangleAlert } from "lucide-react";
+import { Plus, Cpu, Search, ArrowUpNarrowWide, ArrowDownWideNarrow, Loader2, TriangleAlert } from "lucide-react";
 import { IncubatorCard } from "../IncubatorCard";
 import { HarvestModal } from "../HarvestModal";
 import { StatusBadge } from "../StatusBadge";
@@ -17,8 +17,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "../ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger,
 } from "../ui/select";
+import { PaginationBar } from "../ui/pagination-bar";
 import {
   Incubator, Mode, UnitStatus, rangeState, waterState, readingStateColors, daysUntilHatch,
   CURRENT_TRAY_CAPACITY, getKnownFertileEggs, recordHarvest, resetChamberToReady,
@@ -34,11 +35,11 @@ interface Props {
 }
 
 // Design tokens.
-const RUST = "#A84323";
-const CARD = "#F9F6F0";
-const BORDER = "#E8E2D5";
-const MUTED = "#5A4838";
-const TEXT = "#1A1A1A";
+const RUST = "var(--brand-primary)";
+const CARD = "var(--surface-subtle)";
+const BORDER = "var(--border-default)";
+const MUTED = "var(--text-secondary)";
+const TEXT = "var(--text-primary)";
 const INPUT_BORDER = "#D8D0C0";
 
 type Filter = "all" | UnitStatus;
@@ -52,8 +53,8 @@ const inputStyle = { borderColor: INPUT_BORDER, backgroundColor: "#F2EEE5" };
 const sortTriggerStyle = {
   height: 38,
   backgroundColor: "#FFFFFF",
-  borderColor: "#EAE7E1",
-  color: "#1A1A1A",
+  borderColor: "var(--border-subtle)",
+  color: "var(--text-primary)",
   fontSize: 13,
   fontWeight: 500,
 };
@@ -276,7 +277,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         <ViewToggle view={view} onChange={setView} />
         <Button
           onClick={() => { setConnectError(null); setOpen(true); }}
-          className="rounded-xl px-5"
+          className="rounded-xl px-5 transition-colors duration-200 hover:!bg-[#8B3A1C] focus-visible:outline-none focus-visible:ring-2"
           style={{ backgroundColor: RUST, color: "#fff", minHeight: 40 }}
         >
           <Plus size={18} /> Add Incubator
@@ -292,10 +293,10 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
             <button
               key={p.key}
               onClick={() => { setFilter(p.key); setPage(1); }}
-              className="rounded-full px-3.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              className={`rounded-full px-3.5 py-1.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 cursor-pointer ${!active ? "hover:!border-[var(--nav-hover-border)] hover:!bg-[var(--nav-hover-bg)] hover:!text-[var(--brand-primary)]" : ""}`}
               style={{
                 backgroundColor: active ? RUST : CARD,
-                color: active ? "#fff" : "#78716C",
+                color: active ? "var(--on-brand)" : "var(--text-muted)",
                 border: `1px solid ${active ? RUST : BORDER}`,
                 fontWeight: 700,
                 fontSize: 11,
@@ -329,7 +330,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
           <button
             onClick={() => { setSortAsc((v) => !v); setPage(1); }}
             className="flex shrink-0 items-center justify-center transition-colors hover:bg-[#FAF7F2] focus-visible:outline-none focus-visible:ring-2"
-            style={{ width: 32, height: 32, backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 8, color: "#1A1A1A" }}
+            style={{ width: 32, height: 32, backgroundColor: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: 8, color: "var(--text-primary)" }}
             title={sortAsc ? "Ascending" : "Descending"}
             aria-label={`Sort direction: ${sortAsc ? "ascending" : "descending"}`}
           >
@@ -367,18 +368,31 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl" style={{ border: `1px solid ${BORDER}`, backgroundColor: CARD }}>
+          <PaginationBar
+            className="border-b border-t-0"
+            page={clampedPage}
+            pageSize={rowsPerPage}
+            totalItems={sorted.length}
+            itemLabel="incubators"
+            pageSizeOptions={[10, 20, 50]}
+            onPageSizeChange={(value) => {
+              setRowsPerPage(value);
+              setPage(1);
+            }}
+            onPageChange={setPage}
+          />
           <div className="h-[560px] overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {["CHAMBER", "MODE", "DAY"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
                   ))}
                   {["TEMP", "HUMIDITY", "WATER"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10 text-right" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                    <TableHead key={h} className="sticky top-0 z-10 text-right" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
                   ))}
                   {["STATUS", "ACTIONS"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -393,7 +407,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
                       key={unit.id}
                       tabIndex={0}
                       role="button"
-                      aria-label={`View incubator ${unit.name}`}
+                      aria-label={`View incubator ${unit.name} — click to open details`}
                       onClick={() => onOpenUnit(unit.id)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
@@ -401,7 +415,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
                           onOpenUnit(unit.id);
                         }
                       }}
-                      className="cursor-pointer transition-colors hover:bg-amber-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                      className="group cursor-pointer transition-colors duration-200 hover:bg-[#FFF7ED] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                     >
                       <TableCell style={{ fontWeight: 700, color: TEXT }}>{unit.name}</TableCell>
                       <TableCell>
@@ -430,36 +444,6 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
             </Table>
           </div>
 
-          {/* Pagination bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3" style={{ borderTop: `1px solid ${BORDER}` }}>
-            <span style={{ color: MUTED, fontSize: 13 }}>
-              Showing {sorted.length === 0 ? 0 : start + 1} to {Math.min(start + rowsPerPage, sorted.length)} of {sorted.length} incubators
-            </span>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span style={{ color: MUTED, fontSize: 13 }}>Rows per page:</span>
-                <Select value={String(rowsPerPage)} onValueChange={(v) => { setRowsPerPage(Number(v)); setPage(1); }}>
-                  <SelectTrigger className="h-8 w-[72px] rounded-lg" style={inputStyle}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[10, 20, 50].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="rounded-lg" style={{ borderColor: BORDER }}
-                  disabled={clampedPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous page">
-                  <ChevronLeft size={16} />
-                </Button>
-                <span style={{ color: MUTED, fontSize: 13 }}>Page {clampedPage} / {totalPages}</span>
-                <Button size="sm" variant="outline" className="rounded-lg" style={{ borderColor: BORDER }}
-                  disabled={clampedPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} aria-label="Next page">
-                  <ChevronRight size={16} />
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -478,7 +462,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
                 style={{ backgroundColor: "#FEE2E2", border: "1px solid #FECACA" }}
                 role="alert"
               >
-                <TriangleAlert size={16} color="#DC2626" className="mt-0.5 shrink-0" />
+                <TriangleAlert size={16} color="var(--status-danger-fg)" className="mt-0.5 shrink-0" />
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "#B91C1C" }}>Connection Failed</p>
                   <p style={{ fontSize: 12, color: "#B91C1C", lineHeight: 1.45, marginTop: 2 }}>
@@ -499,7 +483,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
                   disabled={connecting}
                   placeholder="EGG-1015"
                   className="rounded-xl pl-9"
-                  style={{ ...inputStyle, borderColor: connectError ? "#DC2626" : inputStyle.borderColor }}
+                  style={{ ...inputStyle, borderColor: connectError ? "var(--status-danger-fg)" : inputStyle.borderColor }}
                   aria-invalid={!!connectError}
                 />
               </div>

@@ -24,10 +24,8 @@ export function ViewToggle({ view, onChange }: Props) {
             aria-label={label}
             title={label}
             onClick={() => onChange(key)}
-            className="flex h-9 w-9 items-center justify-center rounded-full transition-colors"
+            className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${active ? "bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-[0_1px_3px_rgba(0,0,0,0.08)]" : "bg-transparent text-[var(--text-secondary)] hover:bg-white/60 hover:text-[var(--brand-primary)]"}`}
             style={{
-              backgroundColor: active ? "#FFFFFF" : "transparent",
-              color: active ? "#A84323" : "#8A6B52",
               boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
             }}
           >

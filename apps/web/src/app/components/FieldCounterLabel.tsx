@@ -1,7 +1,7 @@
 import { Label } from "./ui/label";
 
-const MUTED = "#5A4838";
-const CRIT = "#DC2626";
+const MUTED = "var(--text-secondary)";
+const CRIT = "var(--status-danger-fg)";
 
 /**
  * Field label with a live character counter on the right, e.g. "11 / 20".

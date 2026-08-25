@@ -75,15 +75,15 @@ export function HelpWidget() {
             <div className="flex min-w-0 items-center gap-2.5">
               <img src={logoApp} alt="" aria-hidden="true" className="h-9 w-9 rounded-xl object-cover" />
               <div className="min-w-0">
-                <p style={{ color: "#1A1A1A", fontSize: 14, fontWeight: 800 }}>Eggcelerate Help</p>
-                <p style={{ color: "#78716C", fontSize: 11 }}>Quick answers for your incubator</p>
+                <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 800 }}>Eggcelerate Help</p>
+                <p style={{ color: "var(--text-muted)", fontSize: 11 }}>Quick answers for your incubator</p>
               </div>
             </div>
             <button
               type="button"
               onClick={closePanel}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[#F2E8DC] focus-visible:outline-none focus-visible:ring-2"
-              style={{ color: "#5A4838" }}
+              style={{ color: "var(--text-secondary)" }}
               aria-label="Close help"
             >
               <X size={17} />
@@ -91,7 +91,7 @@ export function HelpWidget() {
           </div>
 
           <div className="overflow-y-auto p-4">
-            <div className="rounded-2xl rounded-tl-md px-3.5 py-3" style={{ backgroundColor: "#F5EFE6", color: "#5A4838" }}>
+            <div className="rounded-2xl rounded-tl-md px-3.5 py-3" style={{ backgroundColor: "#F5EFE6", color: "var(--text-secondary)" }}>
               <p style={{ fontSize: 13, lineHeight: 1.45 }}>
                 Hi, Farmer! Choose a question below and I’ll help you find the answer.
               </p>
@@ -99,10 +99,10 @@ export function HelpWidget() {
 
             {selectedIndex !== null && (
               <div className="mt-3 space-y-2.5" aria-live="polite">
-                <div className="ml-8 rounded-2xl rounded-tr-md px-3.5 py-3" style={{ backgroundColor: "#A84323", color: "#FFFFFF" }}>
+                <div className="ml-8 rounded-2xl rounded-tr-md px-3.5 py-3" style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)" }}>
                   <p style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>{FAQS[selectedIndex].question}</p>
                 </div>
-                <div className="mr-5 rounded-2xl rounded-tl-md px-3.5 py-3" style={{ backgroundColor: "#F5EFE6", color: "#5A4838" }}>
+                <div className="mr-5 rounded-2xl rounded-tl-md px-3.5 py-3" style={{ backgroundColor: "#F5EFE6", color: "var(--text-secondary)" }}>
                   <p style={{ fontSize: 12, lineHeight: 1.5 }}>{FAQS[selectedIndex].answer}</p>
                 </div>
               </div>
@@ -123,7 +123,7 @@ export function HelpWidget() {
                     aria-pressed={selectedIndex === index}
                   >
                     <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.35 }}>{faq.question}</span>
-                    <ChevronRight size={15} className="shrink-0" style={{ color: "#C8623A" }} />
+                    <ChevronRight size={15} className="shrink-0" style={{ color: "var(--brand-primary)" }} />
                   </button>
                 ))}
               </div>
@@ -144,7 +144,7 @@ export function HelpWidget() {
         <img src={logoApp} alt="" aria-hidden="true" className="h-11 w-11 rounded-xl object-cover" />
         <span
           className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1"
-          style={{ backgroundColor: "#A84323", color: "#FFFFFF", border: "2px solid #FFFFFF", fontSize: 11, fontWeight: 800 }}
+          style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)", border: "2px solid var(--surface-card)", fontSize: 11, fontWeight: 800 }}
           aria-hidden="true"
         >
           ?

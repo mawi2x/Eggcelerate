@@ -55,11 +55,9 @@ export function SettingsScreen({
               <li key={id} className="min-w-0 shrink-0 lg:shrink lg:w-full">
                 <button
                   onClick={() => setCategory(id)}
-                  className="flex w-full items-center gap-2.5 rounded-xl px-3 transition-colors hover:bg-[#FAF6EE]"
+                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${isActive ? "border-[var(--brand-primary-soft)] bg-[var(--local-nav-selected-bg)] text-[var(--local-nav-selected-fg)]" : "border-transparent bg-transparent text-[var(--text-muted)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"}`}
                   style={{
                     height: 40,
-                    backgroundColor: isActive ? RUST : "transparent",
-                    color: isActive ? "#FFFFFF" : "#78716C",
                     fontSize: 12,
                     fontWeight: 700,
                     letterSpacing: "0.05em",

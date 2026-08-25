@@ -1,16 +1,16 @@
 // Shared visual language for the Settings master-detail panels.
-export const RUST = "#C8623A";
-export const SURFACE = "#FFFFFF";
-export const BORDER = "#EAE7E1";
+export const RUST = "var(--brand-primary)";
+export const SURFACE = "var(--surface-card)";
+export const BORDER = "var(--border-subtle)";
 export const DIVIDER = "#F0EDE6";
-export const MUTED = "#78716C";
-export const TEXT = "#1A1A1A";
-export const CRIT = "#DC2626";
-export const CRIT_BG = "#FEE2E2";
+export const MUTED = "var(--text-muted)";
+export const TEXT = "var(--text-primary)";
+export const CRIT = "var(--status-danger-fg)";
+export const CRIT_BG = "var(--status-danger-bg)";
 
 export const inputClass =
-  "h-auto w-full rounded-xl px-3.5 py-2.5 transition-colors focus-visible:border-[#C8623A] focus-visible:ring-2 focus-visible:ring-[#C8623A]/25";
-export const inputStyle = { borderColor: "#DDD8CE", backgroundColor: "#FFFFFF", color: TEXT };
+  "h-auto w-full rounded-xl px-3.5 py-2.5 transition-colors focus-visible:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/25";
+export const inputStyle = { borderColor: "var(--input-border)", backgroundColor: SURFACE, color: TEXT };
 export const labelStyle = { color: "#57534E", fontSize: 13, fontWeight: 600 };
 
 /** Uppercase micro-heading that opens a group of rows. */

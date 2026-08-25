@@ -4,10 +4,10 @@ import { Droplet } from "lucide-react";
 // gives us sufficient/low, so the two arc halves communicate state rather than
 // pretending to report an exact percentage.
 const TRACK = "#ECE6D9";
-const OK = "#16A34A";
-const ALERT = "#DC2626";
-const TEXT = "#1A1A1A";
-const MUTED = "#5A4838";
+const OK = "var(--status-success-fg)";
+const ALERT = "var(--status-danger-fg)";
+const TEXT = "var(--text-primary)";
+const MUTED = "var(--text-secondary)";
 
 interface WaterDropletProps {
   /** Binary float switch: true = closed (sufficient), false = open (low). */

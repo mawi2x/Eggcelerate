@@ -74,9 +74,9 @@ export function DeviceSettingsTab({
   const next = nextTurnLabel();
 
   const outlineBtn = {
-    borderColor: "#E5DACB",
-    color: "#1A1A1A",
-    backgroundColor: "#FFFFFF",
+    borderColor: "var(--border-default)",
+    color: "var(--text-primary)",
+    backgroundColor: "var(--surface-card)",
   };
 
   return (
@@ -87,10 +87,10 @@ export function DeviceSettingsTab({
         style={{
           width: "100%",
           maxWidth: 240,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "var(--surface-card)",
           borderRadius: 16,
           padding: 16,
-          border: "1px solid #E5DACB",
+          border: "1px solid var(--border-default)",
         }}
         aria-label="Device settings"
       >
@@ -105,11 +105,9 @@ export function DeviceSettingsTab({
               <li key={id} className="min-w-0 shrink-0 lg:shrink lg:w-full">
                 <button
                   onClick={() => setSettingTab(id)}
-                  className="flex w-full items-center gap-2.5 rounded-xl px-3 transition-colors hover:bg-[#FAF6EE]"
+                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${isActive ? "border-[var(--brand-primary-soft)] bg-[var(--local-nav-selected-bg)] text-[var(--local-nav-selected-fg)]" : "border-transparent bg-transparent text-[var(--text-primary)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"}`}
                   style={{
                     height: 40,
-                    backgroundColor: isActive ? "#8B3A1C" : "transparent",
-                    color: isActive ? "#FFFFFF" : "#1A1A1A",
                     fontSize: 13,
                     fontWeight: 700,
                     whiteSpace: "nowrap",
@@ -120,7 +118,7 @@ export function DeviceSettingsTab({
                     size={16}
                     strokeWidth={isActive ? 2.5 : 2}
                     className="shrink-0"
-                    style={{ color: isActive ? "#FFFFFF" : "#1A1A1A" }}
+                    style={{ color: isActive ? "var(--local-nav-selected-fg)" : "var(--text-primary)" }}
                   />
                   <span className="min-w-0 truncate" title={label}>
                     {label}
@@ -136,16 +134,16 @@ export function DeviceSettingsTab({
       <section
         className="min-w-0 flex-1 rounded-2xl"
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "var(--surface-card)",
           borderRadius: 16,
           padding: 24,
-          border: "1px solid #E5DACB",
+          border: "1px solid var(--border-default)",
         }}
       >
         {settingTab === "mode" && (
           <>
-            <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A" }}>
+            <div className="pb-5" style={{ borderBottom: "1px solid var(--border-default)" }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
                 Incubation Mode
               </h2>
               <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
@@ -226,7 +224,7 @@ export function DeviceSettingsTab({
               </dl>
               <button
                 onClick={() => toast("Mode Library", { description: "Edit this preset under Settings → Mode Library." })}
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-1 text-[#C8623A] transition-colors hover:text-[#8B3A1C] focus-visible:outline-none focus-visible:ring-2"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-1 text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2"
                 style={{ fontSize: 13, fontWeight: 600 }}
               >
                 Edit preset for future cycles <ChevronRight size={14} aria-hidden="true" />
@@ -238,7 +236,7 @@ export function DeviceSettingsTab({
         {settingTab === "turning" && (
           <>
             <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A" }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
                 Turning Schedule
               </h2>
               <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
@@ -290,7 +288,7 @@ export function DeviceSettingsTab({
         {settingTab === "device" && (
           <>
             <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A" }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
                 Device & Connection
               </h2>
               <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>

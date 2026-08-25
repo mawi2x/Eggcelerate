@@ -15,12 +15,11 @@ interface Props {
 }
 
 // Design tokens.
-const CARD = "#F9F6F0";
-const BORDER = "#E8E2D5";
+const BORDER = "var(--border-default)";
 const TILE = "#F2EEE5";
-const MUTED = "#5A4838";
-const RUST = "#A84323";
-const CTA = "#C8623A";
+const MUTED = "var(--text-secondary)";
+const RUST = "var(--brand-primary)";
+const CTA = "var(--brand-primary)";
 
 const tileBg: Record<string, string> = { ok: TILE, warning: "#FFFBEB", critical: "#FEF2F2" };
 const tileBorder: Record<string, string> = { ok: BORDER, warning: "#FCD34D", critical: "#FCA5A5" };
@@ -41,7 +40,7 @@ function operationalStatus(unit: Incubator): {
   if (unit.cyclePhase === "stopped_early") return { label: "Stopped Early", bg: "#FEE2E2", fg: "#991B1B", Icon: TriangleAlert };
   if (unit.cyclePhase === "awaiting_finish") return { label: "Awaiting Finish", bg: "#FFF4D6", fg: "#9A6700", Icon: Clock };
   if (unit.cyclePhase === "hatching") return { label: "Hatching", bg: "#E8F0FE", fg: "#1967D2", Icon: Bird };
-  if (unit.cyclePhase === "lockdown") return { label: "Lockdown", bg: "#FCE4D6", fg: "#A84323", Icon: LockKeyhole };
+  if (unit.cyclePhase === "lockdown") return { label: "Lockdown", bg: "var(--brand-primary-soft)", fg: "var(--brand-primary)", Icon: LockKeyhole };
   if (unit.cyclePhase === "ready") return { label: "Ready", bg: "#F1F3F4", fg: "#5F6368", dot: true };
   return { label: "Incubating", bg: "#E6F4EA", fg: "#137333", Icon: Egg };
 }
@@ -69,7 +68,7 @@ function Reading({ icon, label, value, unit, delta, state, subtext, valueColor, 
       className="min-w-0 overflow-hidden rounded-2xl"
       style={{ backgroundColor: tileBg[state], border: `1px solid ${tileBorder[state]}`, padding: 12, overflow: "hidden" }}
     >
-      <div style={{ color: "#1A1A1A", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+      <div style={{ color: "var(--text-primary)", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
         {label}
       </div>
       <div className="flex min-w-0 items-center gap-1" style={{ height: 22, marginTop: 2 }}>
@@ -119,11 +118,11 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
 
   return (
     <Card
-      className="cursor-pointer overflow-hidden transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-      style={{ backgroundColor: CARD, borderColor: BORDER, borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+      className="group cursor-pointer overflow-hidden border border-[var(--border-default)] bg-[var(--surface-subtle)] transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      style={{ borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
       tabIndex={0}
       role="button"
-      aria-label={`Open details for ${unit.name}`}
+      aria-label={`Open details for ${unit.name} — click to view`}
       onClick={() => onOpen(unit.id)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -136,8 +135,9 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
         {/* Header — name and mode on the left; power indicator alone on the right. */}
         <div className="mb-3 min-w-0">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <h3 className="min-w-0 truncate" style={{ fontSize: 18, fontWeight: 800, color: "#1A1A1A" }}>
-              {unit.name}
+            <h3 className="flex min-w-0 items-center gap-1 truncate" style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>
+              <span className="min-w-0 truncate">{unit.name}</span>
+              <ChevronRight size={14} className="shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ color: "#C27B4A" }} aria-hidden />
             </h3>
             <div className="shrink-0">
               <SegmentedBattery battery={unit.batteryPct} charging={unit.powerSource !== "battery"} showLabel />
@@ -154,7 +154,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
             className="flex flex-1 flex-col items-center justify-center rounded-2xl px-4 py-5 text-center"
             style={{ backgroundColor: "#F9F6F0" }}
           >
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A" }}>Incubator Ready</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>Incubator Ready</p>
             <p style={{ fontSize: 12, color: "#6E6259", lineHeight: 1.5, marginTop: 4 }}>
               Load eggs and choose a mode to begin incubation.
             </p>
@@ -182,7 +182,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
             {/* Cycle progress — the day count gets its own high-visibility row. */}
             <div style={{ marginTop: 12 }}>
               <div className="flex items-center justify-between gap-2" style={{ marginBottom: 6 }}>
-                <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>
+                <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
                   Day {unit.dayOfIncubation} of {mode.incubationDays}
                 </span>
                 <span className="whitespace-nowrap" style={{ fontSize: 12, fontWeight: 500, color: MUTED }}>

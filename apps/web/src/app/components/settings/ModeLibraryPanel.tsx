@@ -499,7 +499,7 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
             <TableHeader style={{ backgroundColor: "#F2EEE5" }}>
               <TableRow>
                 {["MODE NAME", "TEMP RANGE", "HUMIDITY RANGE", "DURATION", "TURN EVERY", "CANDLING DAYS", "ACTIONS"].map((h) => (
-                  <TableHead key={h} style={{ color: "#78716C", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  <TableHead key={h} style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
                     {h}
                   </TableHead>
                 ))}

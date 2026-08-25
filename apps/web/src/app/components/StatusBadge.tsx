@@ -3,9 +3,9 @@ import { UnitStatus, statusLabels } from "../data/mockData";
 
 // Semantic status palette — WCAG AA contrast on each tinted background.
 const styles: Record<UnitStatus, { bg: string; fg: string; Icon: typeof CheckCircle2 }> = {
-  optimal: { bg: "#DCFCE7", fg: "#16A34A", Icon: CheckCircle2 },
-  warning: { bg: "#FEF3C7", fg: "#D97706", Icon: AlertTriangle },
-  alert: { bg: "#FEE2E2", fg: "#DC2626", Icon: AlertOctagon },
+  optimal: { bg: "var(--status-success-bg)", fg: "var(--status-success-fg)", Icon: CheckCircle2 },
+  warning: { bg: "var(--status-warning-bg)", fg: "var(--status-warning-fg)", Icon: AlertTriangle },
+  alert: { bg: "var(--status-danger-bg)", fg: "var(--status-danger-fg)", Icon: AlertOctagon },
 };
 
 export function StatusBadge({ status }: { status: UnitStatus }) {

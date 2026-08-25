@@ -4,25 +4,63 @@
   --font-size: 16px;
   --font-display: "Baloo 2", ui-rounded, system-ui, sans-serif;
   --font-body: "Nunito", ui-rounded, system-ui, sans-serif;
-  --background: #FBFAF7;
-  --foreground: #2D1A0E;
-  --card: #FFFFFF;
-  --card-foreground: #2D1A0E;
-  --popover: #FFFFFF;
-  --popover-foreground: #2D1A0E;
-  --primary: #AD3A1D;
-  --primary-foreground: #FFFFFF;
+
+  /* Eggcelerate primitives: the only place brand colors are authored. */
+  --brand-primary: #AD3A1D;
+  --brand-primary-hover: #8B3A1C;
+  --brand-primary-soft: #FCE4D6;
+  --brand-primary-soft-hover: #F2D4C5;
+  --on-brand: #FFFFFF;
+
+  --text-primary: #1A1A1A;
+  --text-secondary: #5A4838;
+  --text-muted: #78716C;
+  --surface-page: #FBFAF7;
+  --surface-card: #FFFFFF;
+  --surface-subtle: #F9F6F0;
+  --surface-muted: #F5EDD8;
+  --border-default: #E8E2D5;
+  --border-subtle: #EAE7E1;
+  --input-border: #D8D0C0;
+
+  /* Accessible foreground/background pairs for normal-sized status text. */
+  --status-success-fg: #15803D;
+  --status-success-bg: #DCFCE7;
+  --status-warning-fg: #B45309;
+  --status-warning-bg: #FEF3C7;
+  --status-danger-fg: #B91C1C;
+  --status-danger-bg: #FEE2E2;
+  --status-info-fg: #57534E;
+  --status-info-bg: #F5F5F4;
+
+  /* Component semantics preserve navigation hierarchy. */
+  --global-nav-selected-bg: var(--brand-primary);
+  --global-nav-selected-fg: var(--on-brand);
+  --local-nav-selected-bg: var(--brand-primary-soft);
+  --local-nav-selected-fg: var(--brand-primary-hover);
+  --nav-hover-bg: #FFF7ED;
+  --nav-hover-border: #E7D0B8;
+
+  /* shadcn/Tailwind aliases */
+  --background: var(--surface-page);
+  --foreground: var(--text-primary);
+  --card: var(--surface-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-card);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--on-brand);
   --secondary: #EFE1B7;
   --secondary-foreground: #2D1A0E;
-  --muted: #F5EDD8;
-  --muted-foreground: #8A6B52;
+  --muted: var(--surface-muted);
+  --muted-foreground: var(--text-secondary);
   --accent: #D8BE65;
   --accent-foreground: #2D1A0E;
-  --destructive: #AD3A1D;
-  --destructive-foreground: #FFFFFF;
+  --destructive: var(--status-danger-fg);
+  --destructive-foreground: var(--on-brand);
   --border: rgba(173, 58, 29, 0.12);
   --input: transparent;
-  --input-background: #F5EDD8;
+  --input-background: var(--surface-muted);
   --switch-background: #D8C9A0;
   --font-weight-medium: 600;
   --font-weight-normal: 400;
@@ -33,12 +71,12 @@
   --chart-4: #3D9970;
   --chart-5: #8A6B52;
   --radius: 1rem;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #2D1A0E;
-  --sidebar-primary: #AD3A1D;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F5EDD8;
-  --sidebar-accent-foreground: #2D1A0E;
+  --sidebar: var(--surface-card);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--brand-primary);
+  --sidebar-primary-foreground: var(--on-brand);
+  --sidebar-accent: var(--surface-muted);
+  --sidebar-accent-foreground: var(--text-primary);
   --sidebar-border: rgba(173, 58, 29, 0.12);
   --sidebar-ring: #CB6036;
 }

@@ -24,11 +24,11 @@ interface GaugeDialProps {
 
 // Shared semantic status colors used throughout the dashboard.
 const TRACK = "#ECE6D9";
-const SAFE = "#16A34A";
-const WARN = "#D97706";
-const CRITICAL = "#DC2626";
-const TEXT = "#1A1A1A";
-const MUTED = "#5A4838";
+const SAFE = "var(--status-success-fg)";
+const WARN = "var(--status-warning-fg)";
+const CRITICAL = "var(--status-danger-fg)";
+const TEXT = "var(--text-primary)";
+const MUTED = "var(--text-secondary)";
 
 // Open-bottom circular gauge (270° sweep) with a shaded safe band.
 export function GaugeDial({

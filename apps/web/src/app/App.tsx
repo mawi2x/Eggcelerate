@@ -205,7 +205,7 @@ export default function App() {
       <span
         className="shrink-0 rounded-full px-3 py-1"
         style={{
-          backgroundColor: "#C8623A",
+          backgroundColor: "var(--brand-primary)",
           color: "#FFFFFF",
           fontSize: 13,
           fontWeight: 700,
@@ -237,14 +237,14 @@ export default function App() {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1
           className="min-w-0 truncate"
-          style={{ fontSize: 24, fontWeight: 700, color: "#1A1A1A", lineHeight: 1.25 }}
+          style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.25 }}
           title={activeUnit.name}
         >
           {activeUnit.name}
         </h1>
         {detailBadges}
       </div>
-      <p style={{ fontSize: 16, fontWeight: 600, color: "#1A1A1A", lineHeight: 1.4, marginTop: 4 }}>
+      <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.4, marginTop: 4 }}>
         {activeMode.name}
       </p>
     </div>
@@ -327,6 +327,7 @@ export default function App() {
                 screen === "detail" ? detailBadges : undefined
               }
               titleNode={screen === "detail" ? detailHeader : undefined}
+              showDateTime={screen === "overview"}
             />
           </div>
 

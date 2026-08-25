@@ -4,10 +4,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { AlertEntry } from "../../data/mockData";
 import { severityStyle, timeAgo } from "./alertStyle";
 
-const RUST = "#A84323";
-const TEXT = "#1A1A1A";
-const MUTED = "#5A4838";
-const BORDER = "#E8E2D5";
+const RUST = "var(--brand-primary)";
+const TEXT = "var(--text-primary)";
+const MUTED = "var(--text-secondary)";
+const BORDER = "var(--border-default)";
 const DIVIDER = "#F0EDE6";
 
 interface Props {

@@ -47,7 +47,7 @@ export function SectionCard({
   divider?: boolean;
 }) {
   return (
-    <Card style={{ backgroundColor: "#FFFFFF", border: "1px solid #EAE7E1", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+    <Card style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
       <CardContent className="p-5">
         <div
           className={`flex flex-wrap items-center gap-3 min-h-[32px] ${divider ? "mb-3 border-b pb-3" : "mb-4"}`}
@@ -57,7 +57,7 @@ export function SectionCard({
           }}
         >
           <div>
-            <h3 style={{ fontSize: titleSize, fontWeight: 600, color: "#1A1A1A" }}>{title}</h3>
+            <h3 style={{ fontSize: titleSize, fontWeight: 600, color: "var(--text-primary)" }}>{title}</h3>
             {subtitle && <p style={{ fontSize: 12, color: MUTED }}>{subtitle}</p>}
           </div>
           {action}

@@ -56,7 +56,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
     return (
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch justify-around border-t px-2 pb-[env(safe-area-inset-bottom)]"
-        style={{ backgroundColor: "#FFFFFF", borderColor: "rgba(173,58,29,0.12)" }}
+        style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)" }}
       >
         {items.map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
@@ -65,14 +65,14 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
               key={id}
               onClick={() => onNavigate(id)}
               className="relative flex flex-1 flex-col items-center gap-1 py-2.5"
-              style={{ color: isActive ? "#A84323" : "#8A6B52" }}
+              style={{ color: isActive ? "var(--brand-primary)" : "var(--text-secondary)" }}
             >
               <Icon size={22} strokeWidth={isActive ? 2.6 : 2} />
               <span style={{ fontSize: 11, fontWeight: 600 }}>{label}</span>
               {id === "alerts" && alertCount > 0 && (
                 <span
                   className="absolute right-4 top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1"
-                  style={{ backgroundColor: "#A84323", color: "#fff", fontSize: 10, fontWeight: 700 }}
+                  style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)", fontSize: 10, fontWeight: 700 }}
                 >
                   {alertCount}
                 </span>
@@ -103,9 +103,9 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         top: "50%",
         right: -14,
         transform: "translateY(-50%)",
-        backgroundColor: hoverEdge ? "#A84323" : "#FFFFFF",
-        border: `1px solid ${hoverEdge ? "#A84323" : "#EAE7E1"}`,
-        color: hoverEdge ? "#FFFFFF" : "#5A4838",
+        backgroundColor: hoverEdge ? "var(--brand-primary)" : "var(--surface-card)",
+        border: `1px solid ${hoverEdge ? "var(--brand-primary)" : "var(--border-subtle)"}`,
+        color: hoverEdge ? "var(--on-brand)" : "var(--text-secondary)",
         boxShadow: "0 2px 6px rgba(45,36,30,0.12)",
       }}
       title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -124,12 +124,10 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
       <button
         key={id}
         onClick={() => onNavigate(id)}
-        className="relative flex items-center gap-3 rounded-xl px-3 transition-colors"
+        className={`relative flex cursor-pointer items-center gap-3 rounded-xl border px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${isActive ? "border-[var(--global-nav-selected-bg)] bg-[var(--global-nav-selected-bg)] text-[var(--global-nav-selected-fg)]" : "border-transparent bg-transparent text-[var(--text-secondary)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"}`}
         style={{
           height: 40,
           width: "100%",
-          backgroundColor: isActive ? "#A84323" : "transparent",
-          color: isActive ? "#FFFFFF" : "#5C4636",
           fontWeight: 600,
         }}
         aria-label={label}
@@ -140,7 +138,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         {badge !== undefined && badge > 0 && (
           <span
             className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5"
-            style={{ backgroundColor: isActive ? "#FFFFFF" : "#A84323", color: isActive ? "#A84323" : "#fff", fontSize: 11, fontWeight: 700 }}
+            style={{ backgroundColor: isActive ? "var(--surface-card)" : "var(--brand-primary)", color: isActive ? "var(--brand-primary)" : "var(--on-brand)", fontSize: 11, fontWeight: 700 }}
           >
             {badge}
           </span>
@@ -154,7 +152,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
     return (
       <aside
         className="fixed left-0 top-0 z-40 flex h-full flex-col transition-all duration-200"
-        style={{ width: RAIL_W, backgroundColor: "#FFFFFF", borderRight: "1px solid #EAE7E1" }}
+        style={{ width: RAIL_W, backgroundColor: "var(--surface-card)", borderRight: "1px solid var(--border-subtle)" }}
       >
         <EdgeToggle />
 
@@ -170,7 +168,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
             style={{
               width: 36,
               height: 36,
-              backgroundColor: hoverToggle ? "#F5EDD8" : "transparent",
+              backgroundColor: hoverToggle ? "var(--surface-muted)" : "transparent",
             }}
             title="Expand sidebar"
             aria-label="Expand sidebar"
@@ -193,7 +191,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
               size={20}
               strokeWidth={2.2}
               className="absolute transition-opacity duration-150"
-              style={{ color: "#A84323", opacity: hoverToggle ? 1 : 0 }}
+              style={{ color: "var(--brand-primary)", opacity: hoverToggle ? 1 : 0 }}
             />
           </button>
         </div>
@@ -206,12 +204,12 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
               <button
                 key={id}
                 onClick={() => onNavigate(id)}
-                className="relative flex items-center justify-center rounded-xl transition-colors hover:bg-[#F5EDD8]"
+                className="relative flex items-center justify-center rounded-xl transition-colors hover:bg-[var(--surface-muted)]"
                 style={{
                   width: 40,
                   height: 40,
-                  backgroundColor: isActive ? "#C8623A" : "transparent",
-                  color: isActive ? "#FFFFFF" : "#78716C",
+                  backgroundColor: isActive ? "var(--global-nav-selected-bg)" : "transparent",
+                  color: isActive ? "var(--global-nav-selected-fg)" : "var(--text-muted)",
                 }}
                 title={label}
                 aria-label={label}
@@ -221,7 +219,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
                 {id === "alerts" && alertCount > 0 && (
                   <span
                     className="absolute rounded-full"
-                    style={{ top: 7, right: 7, width: 8, height: 8, backgroundColor: "#D92B0F", border: "1.5px solid #FFFFFF" }}
+                    style={{ top: 7, right: 7, width: 8, height: 8, backgroundColor: "var(--status-danger-fg)", border: "1.5px solid var(--surface-card)" }}
                   />
                 )}
               </button>
@@ -234,12 +232,12 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
           {/* Settings */}
           <button
             onClick={() => onNavigate("settings")}
-            className="relative flex items-center justify-center rounded-xl transition-colors hover:bg-[#F5EDD8]"
+            className="relative flex items-center justify-center rounded-xl transition-colors hover:bg-[var(--surface-muted)]"
             style={{
               width: 40,
               height: 40,
-              backgroundColor: activeTab === "settings" ? "#C8623A" : "transparent",
-              color: activeTab === "settings" ? "#FFFFFF" : "#78716C",
+              backgroundColor: activeTab === "settings" ? "var(--global-nav-selected-bg)" : "transparent",
+              color: activeTab === "settings" ? "var(--global-nav-selected-fg)" : "var(--text-muted)",
             }}
             title="Settings"
             aria-label="Settings"
@@ -254,8 +252,8 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
             style={{
               width: 32,
               height: 32,
-              backgroundColor: "#A84323",
-              color: "#FFFFFF",
+              backgroundColor: "var(--brand-primary)",
+              color: "var(--on-brand)",
               fontSize: 12,
               fontWeight: 700,
               cursor: "default",
@@ -273,7 +271,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
   return (
     <aside
       className="fixed left-0 top-0 z-40 flex h-full flex-col border-r transition-all duration-200"
-      style={{ backgroundColor: "#FFFFFF", borderColor: "#EAE7E1", width: PANEL_W }}
+      style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)", width: PANEL_W }}
     >
       <EdgeToggle />
 
@@ -288,14 +286,14 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         {/* Sized to its own content so the brand never clips. */}
         <span
           className="flex-1 whitespace-nowrap"
-          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 18, fontWeight: 700, color: "#1A1A1A" }}
+          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}
         >
           Eggcelerate
         </span>
         <button
           onClick={onToggleCollapsed}
-          className="flex shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2"
-          style={{ width: 32, height: 32, color: "#5A4838" }}
+          className="flex shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2"
+          style={{ width: 32, height: 32, color: "var(--text-secondary)" }}
           title="Collapse sidebar"
           aria-label="Collapse sidebar"
           aria-expanded
@@ -319,25 +317,25 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
       {/* Profile row */}
       <div
         className="flex w-full items-center gap-2.5 border-t"
-        style={{ backgroundColor: "#FFFFFF", borderColor: "#EAE7E1", padding: 16 }}
+        style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)", padding: 16 }}
       >
         <span
           className="flex shrink-0 items-center justify-center rounded-full"
-          style={{ width: 36, height: 36, backgroundColor: "#A84323", color: "#FFFFFF", fontSize: 13, fontWeight: 700 }}
+          style={{ width: 36, height: 36, backgroundColor: "var(--brand-primary)", color: "var(--on-brand)", fontSize: 13, fontWeight: 700 }}
         >
           {accountInitials(account)}
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span
             className="truncate"
-            style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}
+            style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}
             title={resolveDisplayName(account)}
           >
             {resolveDisplayName(account)}
           </span>
           <span
             className="truncate"
-            style={{ fontSize: 12, fontWeight: 500, color: "#5A4838" }}
+            style={{ fontSize: 12, fontWeight: 500, color: "var(--text-secondary)" }}
             title={account.farmName}
           >
             {account.farmName}

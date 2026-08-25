@@ -125,8 +125,8 @@ export function waterState(ok: boolean): ReadingState {
 
 export function getWaterStatusInfo(ok: boolean): { label: string; color: string } {
   return ok
-    ? { label: "Normal", color: "#16A34A" }
-    : { label: "Low", color: "#DC2626" };
+    ? { label: "Normal", color: "var(--status-success-fg)" }
+    : { label: "Low", color: "var(--status-danger-fg)" };
 }
 
 export function rangeState(value: number, safe: Range): ReadingState {
@@ -134,9 +134,9 @@ export function rangeState(value: number, safe: Range): ReadingState {
 }
 
 export const readingStateColors: Record<ReadingState, string> = {
-  ok: "#1A1A1A",
-  warning: "#D97706",
-  critical: "#DC2626",
+  ok: "var(--text-primary)",
+  warning: "var(--status-warning-fg)",
+  critical: "var(--status-danger-fg)",
 };
 
 // Human-readable list of what's wrong with a chamber right now.
@@ -638,8 +638,8 @@ export const statusLabels: Record<UnitStatus, string> = {
 
 export const stateColors = {
   optimal: "#3D9970",
-  warning: "#C8623A",
-  alert: "#A84323",
+  warning: "var(--status-warning-fg)",
+  alert: "var(--status-danger-fg)",
   offline: "#E0C068",
   terracotta: "#BE6239",
 } as const;

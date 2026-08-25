@@ -21,22 +21,22 @@ export interface CandleForm {
 export type TallyKey = "fertile" | "clear" | "uncertain" | "developing" | "stoppedDeveloping";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
-export const RUST = "#A84323";
-export const RUST_NODE = "#C8623A";
+export const RUST = "var(--brand-primary)";
+export const RUST_NODE = "var(--brand-primary)";
 export const BG = "#FAF6F0";
-export const CARD = "#F9F6F0";
-export const SURFACE = "#FFFFFF";
-export const BORDER = "#E8E2D5";
-export const TEXT = "#1A1A1A";
-export const MUTED = "#5A4838";
-export const INPUT_BORDER = "#D8D0C0";
+export const CARD = "var(--surface-subtle)";
+export const SURFACE = "var(--surface-card)";
+export const BORDER = "var(--border-default)";
+export const TEXT = "var(--text-primary)";
+export const MUTED = "var(--text-secondary)";
+export const INPUT_BORDER = "var(--input-border)";
 export const RADIUS = 16;
 export const SHADOW = "0 2px 12px rgba(0,0,0,0.04)";
 
-// Semantic status tokens (all WCAG AA compliant).
-export const OK = { fg: "#16A34A", bg: "#DCFCE7", ring: "#16A34A" };
-export const WARN = { fg: "#D97706", bg: "#FEF3C7", ring: "#D97706" };
-export const CRIT = { fg: "#DC2626", bg: "#FEE2E2", ring: "#DC2626" };
+// Semantic status tokens use verified WCAG AA foreground/background pairs.
+export const OK = { fg: "var(--status-success-fg)", bg: "var(--status-success-bg)", ring: "var(--status-success-fg)" };
+export const WARN = { fg: "var(--status-warning-fg)", bg: "var(--status-warning-bg)", ring: "var(--status-warning-fg)" };
+export const CRIT = { fg: "var(--status-danger-fg)", bg: "var(--status-danger-bg)", ring: "var(--status-danger-fg)" };
 export const NEUTRAL = { fg: MUTED, bg: "#EFE9DC", ring: "#C9BEA8" };
 
 export const CANDLE_SHORT_LABELS = ["1st Candling", "2nd Candling", "Lockdown"];

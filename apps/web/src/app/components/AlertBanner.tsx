@@ -32,7 +32,7 @@ export function AlertBanner({ criticalUnits, modes, onView }: Props) {
     <button
       onClick={onView}
       className="w-full text-left rounded-3xl px-5 py-4 flex items-center gap-4 transition-opacity hover:opacity-95"
-      style={{ backgroundColor: "#A84323", color: "#FFFFFF" }}
+      style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)" }}
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.18)" }}>
         <AlertOctagon size={22} />

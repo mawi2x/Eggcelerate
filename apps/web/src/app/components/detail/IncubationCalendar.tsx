@@ -93,7 +93,7 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
       <div className="mb-3 flex items-center justify-center gap-2">
         <button
           onClick={() => shiftMonth(-1)}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[#C8623A]"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[var(--brand-primary)]"
           aria-label="Previous month"
         >
           <ChevronLeft size={15} />
@@ -103,7 +103,7 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
         </span>
         <button
           onClick={() => shiftMonth(1)}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[#C8623A]"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[var(--brand-primary)]"
           aria-label="Next month"
         >
           <ChevronRight size={15} />
@@ -205,9 +205,9 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
                       m?.kind === "candling"
                         ? "#F2C94C"
                         : m?.kind === "lockdown"
-                        ? "#D97706"
+                        ? "var(--status-warning-fg)"
                         : m?.kind === "hatch"
-                        ? "#16A34A"
+                        ? "var(--status-success-fg)"
                         : "transparent",
                     color:
                       m?.kind === "lockdown"
@@ -218,7 +218,7 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
                         ? "#713F12"
                         : m
                         ? TEXT
-                        : "#78716C",
+                        : "var(--text-muted)",
                     ...(c.trailing ? { color: "#D1C7BD", opacity: 0.4 } : {}),
                   }}
                 >
@@ -241,7 +241,7 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
           { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#D97706" }} />, label: "Lockdown" },
           { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#16A34A" }} />, label: "Hatch" },
         ].map((l) => (
-          <span key={l.label} className="flex select-none items-center gap-1" style={{ fontSize: 12, fontWeight: 600, color: "#78716C" }}>
+          <span key={l.label} className="flex select-none items-center gap-1" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
             {l.swatch} {l.label}
           </span>
         ))}
@@ -252,7 +252,7 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
         <div className="mb-2 flex items-center justify-between gap-2">
           <div>
             <p style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>Key Cycle Schedule</p>
-            <p style={{ color: "#78716C", fontSize: 11 }}>Milestones for this batch</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 11 }}>Milestones for this batch</p>
           </div>
           <span
             className="rounded-full px-2 py-0.5"
@@ -260,44 +260,44 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
               fontSize: 10,
               fontWeight: 700,
               backgroundColor: currentDay >= totalDays ? "#DCFCE7" : currentDay >= lockdownDay ? "#FCE4D6" : "#F4ECE1",
-              color: currentDay >= totalDays ? "#15803D" : currentDay >= lockdownDay ? "#8A4B08" : "#78716C",
+              color: currentDay >= totalDays ? "var(--status-success-fg)" : currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
             }}
           >
             {currentDay >= totalDays ? "Hatch Day" : currentDay >= lockdownDay ? "Lockdown" : `Day ${currentDay} of ${totalDays}`}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl p-2" style={{ backgroundColor: "#FCFAF6", border: "1px solid #EAE7E1" }}>
-            <span style={{ color: "#78716C", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Cycle Start</span>
+          <div className="rounded-xl p-2" style={{ backgroundColor: "#FCFAF6", border: "1px solid var(--border-subtle)" }}>
+            <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Cycle Start</span>
             <p style={{ fontWeight: 700, fontSize: 12, color: TEXT, marginTop: 1 }}>{cycleStartDate.toLocaleDateString([], { month: "short", day: "numeric" })}</p>
-            <p style={{ color: "#78716C", fontSize: 10 }}>Day 1 · Loaded</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 10 }}>Day 1 · Loaded</p>
           </div>
           <div
             className="rounded-xl p-2"
             style={{
               backgroundColor: currentDay >= lockdownDay ? "#FFF4D6" : "#FCFAF6",
-              border: `1px solid ${currentDay >= lockdownDay ? "#F2C94C" : "#EAE7E1"}`,
+              border: `1px solid ${currentDay >= lockdownDay ? "#F2C94C" : "var(--border-subtle)"}`,
             }}
           >
-            <span style={{ color: currentDay >= lockdownDay ? "#8A4B08" : "#78716C", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Lockdown</span>
+            <span style={{ color: currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Lockdown</span>
             <p style={{ fontWeight: 700, fontSize: 12, color: currentDay >= lockdownDay ? "#8A4B08" : TEXT, marginTop: 1 }}>{lockdownDate.toLocaleDateString([], { month: "short", day: "numeric" })}</p>
-            <p style={{ color: currentDay >= lockdownDay ? "#8A4B08" : "#78716C", fontSize: 10 }}>Day {lockdownDay} · Stop Turn</p>
+            <p style={{ color: currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)", fontSize: 10 }}>Day {lockdownDay} · Stop Turn</p>
           </div>
-          <div className="rounded-xl p-2" style={{ backgroundColor: "#FCFAF6", border: "1px solid #EAE7E1" }}>
-            <span style={{ color: "#78716C", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>1st Candling</span>
+          <div className="rounded-xl p-2" style={{ backgroundColor: "#FCFAF6", border: "1px solid var(--border-subtle)" }}>
+            <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>1st Candling</span>
             <p style={{ fontWeight: 700, fontSize: 12, color: TEXT, marginTop: 1 }}>{dayOffset(candlingDays[0]?.day ?? 6).toLocaleDateString([], { month: "short", day: "numeric" })}</p>
-            <p style={{ color: "#78716C", fontSize: 10 }}>Day {candlingDays[0]?.day ?? 6} · Fertility</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 10 }}>Day {candlingDays[0]?.day ?? 6} · Fertility</p>
           </div>
           <div
             className="rounded-xl p-2"
             style={{
               backgroundColor: currentDay >= totalDays ? "#DCFCE7" : "#FCFAF6",
-              border: `1px solid ${currentDay >= totalDays ? "#16A34A" : "#EAE7E1"}`,
+              border: `1px solid ${currentDay >= totalDays ? "var(--status-success-fg)" : "var(--border-subtle)"}`,
             }}
           >
-            <span style={{ color: currentDay >= totalDays ? "#15803D" : "#78716C", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Expected Hatch</span>
+            <span style={{ color: currentDay >= totalDays ? "var(--status-success-fg)" : "var(--text-muted)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Expected Hatch</span>
             <p style={{ fontWeight: 700, fontSize: 12, color: currentDay >= totalDays ? "#15803D" : TEXT, marginTop: 1 }}>{cycleEndDate.toLocaleDateString([], { month: "short", day: "numeric" })}</p>
-            <p style={{ color: currentDay >= totalDays ? "#15803D" : "#78716C", fontSize: 10 }}>Day {totalDays} · Target</p>
+            <p style={{ color: currentDay >= totalDays ? "var(--status-success-fg)" : "var(--text-muted)", fontSize: 10 }}>Day {totalDays} · Target</p>
           </div>
         </div>
       </div>
