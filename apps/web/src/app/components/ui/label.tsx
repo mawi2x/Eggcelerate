@@ -7,6 +7,7 @@ import { cn } from "./utils";
 
 function Label({
   className,
+  style,
   ...props
 }: React.ComponentProps<typeof LabelPrimitive.Root>) {
   return (
@@ -21,6 +22,7 @@ function Label({
         fontSize: "var(--type-body)",
         fontWeight: "var(--weight-medium)",
         lineHeight: "var(--leading-snug)",
+        ...style,
       }}
       {...props}
     />

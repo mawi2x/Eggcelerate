@@ -32,6 +32,7 @@ function SelectTrigger({
   className,
   size = "default",
   children,
+  style,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
   size?: "sm" | "default";
@@ -49,6 +50,7 @@ function SelectTrigger({
         fontSize: "var(--type-body)",
         fontWeight: "var(--weight-regular)",
         lineHeight: "var(--leading-normal)",
+        ...style,
       }}
       {...props}
     >

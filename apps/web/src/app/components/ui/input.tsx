@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "./utils";
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+function Input({ className, type, style, ...props }: React.ComponentProps<"input">) {
   return (
     <input
       type={type}
@@ -18,6 +18,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
         fontSize: "var(--type-body)",
         fontWeight: "var(--weight-regular)",
         lineHeight: "var(--leading-normal)",
+        ...style,
       }}
       {...props}
     />
