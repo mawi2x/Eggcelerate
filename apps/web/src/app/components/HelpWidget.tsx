@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, X } from "lucide-react";
-import logoApp from "../../imports/logo-app.png";
+import logoApp from "../../imports/logo-app.webp";
 
 const FAQS = [
   {

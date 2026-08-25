@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { PaginationBar } from "../ui/pagination-bar";
 import { AlertEntry, AlertSeverity } from "../../data/mockData";
 import { severityStyle, timeAgo } from "../alerts/alertStyle";
-import logoApp from "../../../imports/logo-app.png";
+import logoApp from "../../../imports/logo-app.webp";
 
 const RUST = "var(--brand-primary)";
 const TEXT = "var(--text-primary)";

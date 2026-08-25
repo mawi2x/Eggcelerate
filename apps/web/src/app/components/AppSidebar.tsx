@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "./ui/use-mobile";
 import { Account, accountInitials, resolveDisplayName } from "../data/account";
-import logoApp from "../../imports/logo-app.png";
+import logoApp from "../../imports/logo-app.webp";
 
 export type ScreenId =
   | "overview"
