@@ -1,15 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import { AppSidebar, ScreenId } from "./components/AppSidebar";
 import { PageHeader } from "./components/PageHeader";
 import { OverviewScreen } from "./components/screens/OverviewScreen";
 import { IncubatorsScreen } from "./components/screens/IncubatorsScreen";
-import { DetailScreen } from "./components/screens/DetailScreen";
-import { TrendsScreen } from "./components/screens/TrendsScreen";
 import { AlertsScreen } from "./components/screens/AlertsScreen";
 import { SettingsScreen } from "./components/screens/SettingsScreen";
 import { HelpWidget } from "./components/HelpWidget";
+import { SuspenseFallback } from "./components/SuspenseFallback";
+
+const DetailScreen = lazy(() =>
+  import("./components/screens/DetailScreen").then((m) => ({ default: m.DetailScreen })),
+);
+const TrendsScreen = lazy(() =>
+  import("./components/screens/TrendsScreen").then((m) => ({ default: m.TrendsScreen })),
+);
 import {
   initialIncubators,
   initialModes,
@@ -350,18 +356,25 @@ export default function App() {
             />
           )}
           {screen === "detail" && (
-            <DetailScreen
-              unit={activeUnit}
-              modes={modes}
-              onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
-              onHistoryChanged={refreshHatchHistory}
-              onUpdate={(patch) =>
-                updateIncubator(activeUnit.id, patch)
-              }
-            />
+            <Suspense fallback={<SuspenseFallback label="Loading incubator..." />}>
+              <DetailScreen
+                unit={activeUnit}
+                modes={modes}
+                onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
+                onHistoryChanged={refreshHatchHistory}
+                onUpdate={(patch) => updateIncubator(activeUnit.id, patch)}
+              />
+            </Suspense>
           )}
           {screen === "trends" && (
-            <TrendsScreen units={incubators} modes={modes} history={hatchRecords} initialUnitId={selectedUnit ?? undefined} />
+            <Suspense fallback={<SuspenseFallback label="Loading trends..." />}>
+              <TrendsScreen
+                units={incubators}
+                modes={modes}
+                history={hatchRecords}
+                initialUnitId={selectedUnit ?? undefined}
+              />
+            </Suspense>
           )}
           {screen === "alerts" && (
             <AlertsScreen
