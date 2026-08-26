@@ -47,8 +47,11 @@ export function Timeline({ currentDay, totalDays, candling, candled }: TimelineP
             <span
               className="flex flex-col items-center justify-center whitespace-nowrap"
               style={{
-                fontSize: 11,
-                fontWeight: 800,
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-extrabold)",
+                letterSpacing: "var(--tracking-label)",
+                lineHeight: "var(--leading-snug)",
                 backgroundColor: RUST,
                 color: "#fff",
                 boxShadow: "0 2px 6px rgba(173,58,29,0.28)",
@@ -58,7 +61,15 @@ export function Timeline({ currentDay, totalDays, candling, candled }: TimelineP
               }}
             >
               <span style={{ lineHeight: 1.2 }}>{isReady ? "Ready" : "Today"}</span>
-              <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.2, letterSpacing: "0.05em" }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: 1.2,
+                  letterSpacing: "var(--tracking-label)",
+                }}
+              >
                 DAY {Math.max(0, currentDay)}
               </span>
             </span>
@@ -78,10 +89,43 @@ export function Timeline({ currentDay, totalDays, candling, candled }: TimelineP
                 className="absolute flex flex-col items-center whitespace-nowrap"
                 style={{ left: `${pct}%`, top: "calc(100% + 12px)", transform: "translateX(-50%)", zIndex: 5 }}
               >
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
+                <span
+                  className="inline-flex items-center gap-1"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-bold)",
+                    letterSpacing: "var(--tracking-label)",
+                    lineHeight: "var(--leading-snug)",
+                    textTransform: "uppercase",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor:
+                        markerStatus(c.day, currentDay, !!candled[c.day]) === "logged"
+                          ? "var(--status-success-fg)"
+                          : markerStatus(c.day, currentDay, !!candled[c.day]) === "due"
+                            ? "var(--status-warning-fg)"
+                            : "var(--text-muted)",
+                    }}
+                  />
                   {CANDLE_SHORT_LABELS[i] ?? c.label}
                 </span>
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-bold)",
+                    letterSpacing: "var(--tracking-label)",
+                    lineHeight: "var(--leading-snug)",
+                    textTransform: "uppercase",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   DAY {c.day}
                 </span>
               </span>
@@ -123,7 +167,18 @@ export function Timeline({ currentDay, totalDays, candling, candled }: TimelineP
           );
         })}
       </div>
-      <div className="mx-1 flex justify-between" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
+      <div
+        className="mx-1 flex justify-between"
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "var(--type-label)",
+          fontWeight: "var(--weight-bold)",
+          letterSpacing: "var(--tracking-label)",
+          lineHeight: "var(--leading-snug)",
+          textTransform: "uppercase",
+          color: "var(--text-muted)",
+        }}
+      >
         <span>DAY 1</span>
         <span>DAY {totalDays}</span>
       </div>

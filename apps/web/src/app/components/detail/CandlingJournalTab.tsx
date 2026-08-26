@@ -297,7 +297,17 @@ export function JournalEntryCard({
                 aria-label="Add candling photo"
               >
                 <Plus size={15} color={MUTED} />
-                <span style={{ fontSize: 9, color: MUTED, fontWeight: 600 }}>Photo</span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-semibold)",
+                    letterSpacing: "var(--tracking-label)",
+                    color: MUTED,
+                  }}
+                >
+                  Photo
+                </span>
               </button>
               <input ref={photoRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => readFiles(e.target.files)} />
             </div>

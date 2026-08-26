@@ -113,7 +113,17 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
       {/* Weekday header */}
       <div className="grid grid-cols-7 gap-1">
         {WEEKDAY_HEADS.map((w, i) => (
-          <div key={i} className="text-center" style={{ fontSize: 10, fontWeight: 700, color: "#A8A29E" }}>
+          <div
+            key={i}
+            className="text-center"
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-label)",
+              fontWeight: "var(--weight-bold)",
+              letterSpacing: "var(--tracking-label)",
+              color: "#A8A29E",
+            }}
+          >
             {w}
           </div>
         ))}
@@ -184,10 +194,33 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
                     zIndex: 3,
                   }}
                 >
-                  <span style={{ fontSize: 8, lineHeight: "9px", letterSpacing: "0.04em", fontWeight: 800 }}>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
+                      letterSpacing: "var(--tracking-label)",
+                      lineHeight: "var(--leading-snug)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "3px",
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: "#FFFFFF" }}
+                    />
                     DAY {currentDay}
                   </span>
-                  <span style={{ fontSize: 14, lineHeight: "16px", fontWeight: 700 }}>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-bold)",
+                      lineHeight: "var(--leading-tight)",
+                    }}
+                  >
                     {c.day}
                   </span>
                 </span>
@@ -241,7 +274,17 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
           { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#D97706" }} />, label: "Lockdown" },
           { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#16A34A" }} />, label: "Hatch" },
         ].map((l) => (
-          <span key={l.label} className="flex select-none items-center gap-1" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
+          <span
+            key={l.label}
+            className="flex select-none items-center gap-1"
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-caption)",
+              fontWeight: "var(--weight-semibold)",
+              lineHeight: "var(--leading-normal)",
+              color: "var(--text-muted)",
+            }}
+          >
             {l.swatch} {l.label}
           </span>
         ))}
@@ -251,14 +294,37 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
       <div className="mt-3.5 border-t pt-3" style={{ borderColor: "#EFE9DC" }}>
         <div className="mb-2 flex items-center justify-between gap-2">
           <div>
-            <p style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>Key Cycle Schedule</p>
-            <p style={{ color: "var(--text-muted)", fontSize: 11 }}>Milestones for this batch</p>
+            <p
+              style={{
+                color: TEXT,
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-normal)",
+              }}
+            >
+              Key Cycle Schedule
+            </p>
+            <p
+              style={{
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-regular)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
+              Milestones for this batch
+            </p>
           </div>
           <span
             className="rounded-full px-2 py-0.5"
             style={{
-              fontSize: 10,
-              fontWeight: 700,
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-label)",
+              fontWeight: "var(--weight-bold)",
+              letterSpacing: "var(--tracking-label)",
+              lineHeight: "var(--leading-snug)",
               backgroundColor: currentDay >= totalDays ? "#DCFCE7" : currentDay >= lockdownDay ? "#FCE4D6" : "#F4ECE1",
               color: currentDay >= totalDays ? "var(--status-success-fg)" : currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
             }}
@@ -268,9 +334,42 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl p-2" style={{ backgroundColor: "#FCFAF6", border: "1px solid var(--border-subtle)" }}>
-            <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Cycle Start</span>
-            <p style={{ fontWeight: 700, fontSize: 12, color: TEXT, marginTop: 1 }}>{cycleStartDate.toLocaleDateString([], { month: "short", day: "numeric" })}</p>
-            <p style={{ color: "var(--text-muted)", fontSize: 10 }}>Day 1 · Loaded</p>
+            <span
+              style={{
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-bold)",
+                letterSpacing: "var(--tracking-label)",
+                lineHeight: "var(--leading-snug)",
+                textTransform: "uppercase",
+              }}
+            >
+              Cycle Start
+            </span>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-normal)",
+                color: TEXT,
+                marginTop: 1,
+              }}
+            >
+              {cycleStartDate.toLocaleDateString([], { month: "short", day: "numeric" })}
+            </p>
+            <p
+              style={{
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-regular)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
+              Day 1 · Loaded
+            </p>
           </div>
           <div
             className="rounded-xl p-2"
@@ -279,14 +378,80 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
               border: `1px solid ${currentDay >= lockdownDay ? "#F2C94C" : "var(--border-subtle)"}`,
             }}
           >
-            <span style={{ color: currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Lockdown</span>
-            <p style={{ fontWeight: 700, fontSize: 12, color: currentDay >= lockdownDay ? "#8A4B08" : TEXT, marginTop: 1 }}>{lockdownDate.toLocaleDateString([], { month: "short", day: "numeric" })}</p>
-            <p style={{ color: currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)", fontSize: 10 }}>Day {lockdownDay} · Stop Turn</p>
+            <span
+              style={{
+                color: currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-bold)",
+                letterSpacing: "var(--tracking-label)",
+                lineHeight: "var(--leading-snug)",
+                textTransform: "uppercase",
+              }}
+            >
+              Lockdown
+            </span>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-normal)",
+                color: currentDay >= lockdownDay ? "#8A4B08" : TEXT,
+                marginTop: 1,
+              }}
+            >
+              {lockdownDate.toLocaleDateString([], { month: "short", day: "numeric" })}
+            </p>
+            <p
+              style={{
+                color: currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-regular)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
+              Day {lockdownDay} · Stop Turn
+            </p>
           </div>
           <div className="rounded-xl p-2" style={{ backgroundColor: "#FCFAF6", border: "1px solid var(--border-subtle)" }}>
-            <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>1st Candling</span>
-            <p style={{ fontWeight: 700, fontSize: 12, color: TEXT, marginTop: 1 }}>{dayOffset(candlingDays[0]?.day ?? 6).toLocaleDateString([], { month: "short", day: "numeric" })}</p>
-            <p style={{ color: "var(--text-muted)", fontSize: 10 }}>Day {candlingDays[0]?.day ?? 6} · Fertility</p>
+            <span
+              style={{
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-bold)",
+                letterSpacing: "var(--tracking-label)",
+                lineHeight: "var(--leading-snug)",
+                textTransform: "uppercase",
+              }}
+            >
+              1st Candling
+            </span>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-normal)",
+                color: TEXT,
+                marginTop: 1,
+              }}
+            >
+              {dayOffset(candlingDays[0]?.day ?? 6).toLocaleDateString([], { month: "short", day: "numeric" })}
+            </p>
+            <p
+              style={{
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-regular)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
+              Day {candlingDays[0]?.day ?? 6} · Fertility
+            </p>
           </div>
           <div
             className="rounded-xl p-2"
@@ -295,9 +460,42 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
               border: `1px solid ${currentDay >= totalDays ? "var(--status-success-fg)" : "var(--border-subtle)"}`,
             }}
           >
-            <span style={{ color: currentDay >= totalDays ? "var(--status-success-fg)" : "var(--text-muted)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Expected Hatch</span>
-            <p style={{ fontWeight: 700, fontSize: 12, color: currentDay >= totalDays ? "#15803D" : TEXT, marginTop: 1 }}>{cycleEndDate.toLocaleDateString([], { month: "short", day: "numeric" })}</p>
-            <p style={{ color: currentDay >= totalDays ? "var(--status-success-fg)" : "var(--text-muted)", fontSize: 10 }}>Day {totalDays} · Target</p>
+            <span
+              style={{
+                color: currentDay >= totalDays ? "var(--status-success-fg)" : "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-bold)",
+                letterSpacing: "var(--tracking-label)",
+                lineHeight: "var(--leading-snug)",
+                textTransform: "uppercase",
+              }}
+            >
+              Expected Hatch
+            </span>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-normal)",
+                color: currentDay >= totalDays ? "#15803D" : TEXT,
+                marginTop: 1,
+              }}
+            >
+              {cycleEndDate.toLocaleDateString([], { month: "short", day: "numeric" })}
+            </p>
+            <p
+              style={{
+                color: currentDay >= totalDays ? "var(--status-success-fg)" : "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-regular)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
+              Day {totalDays} · Target
+            </p>
           </div>
         </div>
       </div>

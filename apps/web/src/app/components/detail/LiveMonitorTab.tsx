@@ -50,8 +50,30 @@ function SystemStatusTile({
         {icon}
       </span>
       <div className="min-w-0">
-        <p style={{ color: MUTED, fontSize: 11, fontWeight: 700 }}>{label}</p>
-        <p className="tabular-nums" style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{value}</p>
+        <p
+          style={{
+            color: MUTED,
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-label)",
+            fontWeight: "var(--weight-bold)",
+            letterSpacing: "var(--tracking-label)",
+            lineHeight: "var(--leading-snug)",
+          }}
+        >
+          {label}
+        </p>
+        <p
+          className="tabular-nums"
+          style={{
+            color: TEXT,
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-body-sm)",
+            fontWeight: "var(--weight-bold)",
+            lineHeight: "var(--leading-normal)",
+          }}
+        >
+          {value}
+        </p>
       </div>
     </div>
   );
@@ -83,14 +105,55 @@ function ExtremumTile({
     <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}>
       <div className="flex items-center gap-2">
         <span aria-hidden="true" style={{ color: RUST }}>{icon}</span>
-        <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        <span
+          style={{
+            color: MUTED,
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-label)",
+            fontWeight: "var(--weight-bold)",
+            letterSpacing: "var(--tracking-label)",
+            lineHeight: "var(--leading-snug)",
+            textTransform: "uppercase",
+          }}
+        >
           {label}
         </span>
       </div>
-      <p className="mt-2 tabular-nums" style={{ color: TEXT, fontFamily: "Baloo 2, sans-serif", fontSize: 20, fontWeight: 700, lineHeight: 1 }}>
-        {value}<span style={{ color: MUTED, fontFamily: "Nunito, sans-serif", fontSize: 12, fontWeight: 600 }}> {unit}</span>
+      <p
+        className="mt-2 tabular-nums"
+        style={{
+          color: TEXT,
+          fontFamily: "var(--font-display)",
+          fontSize: "var(--type-heading-lg)",
+          fontWeight: "var(--weight-bold)",
+          lineHeight: "var(--leading-tight)",
+        }}
+      >
+        {value}
+        <span
+          style={{
+            color: MUTED,
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-caption)",
+            fontWeight: "var(--weight-semibold)",
+            lineHeight: "var(--leading-normal)",
+          }}
+        >
+          {" "}
+          {unit}
+        </span>
       </p>
-      <p className="mt-1.5 truncate" style={{ color: MUTED, fontSize: 11 }} title={`${stamp.date} · ${stamp.time}`}>
+      <p
+        className="mt-1.5 truncate"
+        style={{
+          color: MUTED,
+          fontFamily: "var(--font-body)",
+          fontSize: "var(--type-label)",
+          fontWeight: "var(--weight-regular)",
+          lineHeight: "var(--leading-snug)",
+        }}
+        title={`${stamp.date} · ${stamp.time}`}
+      >
         {stamp.date} · {stamp.time}
       </p>
     </div>

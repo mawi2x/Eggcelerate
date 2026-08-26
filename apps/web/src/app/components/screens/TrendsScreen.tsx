@@ -550,9 +550,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     style={{
                       backgroundColor: active ? RUST : SURFACE,
                       color: active ? "var(--on-brand)" : "var(--text-muted)",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      letterSpacing: "0.05em",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
+                      letterSpacing: "var(--tracking-label)",
+                      lineHeight: "var(--leading-snug)",
                       textTransform: "uppercase",
                       border: active ? "none" : `1px solid ${BORDER}`,
                     }}
@@ -579,11 +581,26 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <div className="shrink-0">
                   <h2
                     id="environmental-chart-title"
-                    style={{ color: TEXT, fontFamily: '"Baloo 2", sans-serif', fontSize: 18, fontWeight: 700 }}
+                    style={{
+                      color: TEXT,
+                      fontFamily: "var(--font-display)",
+                      fontSize: "var(--type-heading-md)",
+                      fontWeight: "var(--weight-bold)",
+                      lineHeight: "var(--leading-snug)",
+                    }}
                   >
                     {metricInfo[metric].label} History
                   </h2>
-                  <p className="mt-0.5" style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
+                  <p
+                    className="mt-0.5"
+                    style={{
+                      color: MUTED,
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-caption)",
+                      fontWeight: "var(--weight-semibold)",
+                      lineHeight: "var(--leading-normal)",
+                    }}
+                  >
                     {targetRangeLabel}
                   </p>
                 </div>
@@ -591,7 +608,14 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <div
                   aria-label="Chart legend"
                   className="flex max-h-[44px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 overflow-y-auto pr-1 lg:max-w-[76%] lg:justify-end"
-                  style={{ color: TEXT, fontSize: 10, fontWeight: 600 }}
+                  style={{
+                    color: TEXT,
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-semibold)",
+                    letterSpacing: "var(--tracking-label)",
+                    lineHeight: "var(--leading-snug)",
+                  }}
                 >
                   {activeUnits.map((u) => (
                     <button
@@ -604,8 +628,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       onBlur={() => setHighlightedUnitId(null)}
                       className="flex min-h-4 items-center gap-1 whitespace-nowrap rounded-md px-0.5 transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 motion-reduce:transition-none"
                       style={{
-                        fontSize: 10,
-                        fontWeight: 600,
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-semibold)",
+                        letterSpacing: "var(--tracking-label)",
+                        lineHeight: "var(--leading-snug)",
                         opacity: activeHighlightedUnitId && activeHighlightedUnitId !== u.id ? 0.48 : 1,
                       }}
                     >
@@ -638,7 +665,12 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       type="number"
                       scale="time"
                       domain={["dataMin", "dataMax"]}
-                      tick={{ fill: MUTED, fontFamily: '"Nunito", sans-serif', fontSize: 11 }}
+                      tick={{
+                        fill: MUTED,
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-medium)",
+                      }}
                       tickFormatter={(value) => formatAxisTime(Number(value), range)}
                       axisLine={{ stroke: "#D8D0C0" }}
                       tickLine={false}
@@ -650,7 +682,12 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       key="y-axis"
                       domain={domain}
                       width={72}
-                      tick={{ fill: MUTED, fontFamily: '"Nunito", sans-serif', fontSize: 11 }}
+                      tick={{
+                        fill: MUTED,
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-medium)",
+                      }}
                       tickCount={5}
                       tickLine={false}
                       axisLine={false}
@@ -661,9 +698,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         angle: -90,
                         position: "insideLeft",
                         fill: MUTED,
-                        fontFamily: '"Nunito", sans-serif',
-                        fontSize: 11,
-                        fontWeight: 600,
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-semibold)",
                       }}
                     />
                     <Tooltip
@@ -817,10 +854,37 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   <TableHeader className="sticky top-0 z-10" style={{ backgroundColor: "#F2EEE5" }}>
                     <TableRow>
                       {["CHAMBER", "MODE", "DATES"].map((h) => (
-                        <TableHead key={h} style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                        <TableHead
+                          key={h}
+                          style={{
+                            color: "var(--text-muted)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            letterSpacing: "var(--tracking-label)",
+                            lineHeight: "var(--leading-snug)",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {h}
+                        </TableHead>
                       ))}
                       {["EGGS SET", "HATCHED", "HATCHABILITY"].map((h) => (
-                        <TableHead key={h} className="text-right" style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                        <TableHead
+                          key={h}
+                          className="text-right"
+                          style={{
+                            color: "var(--text-muted)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            letterSpacing: "var(--tracking-label)",
+                            lineHeight: "var(--leading-snug)",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {h}
+                        </TableHead>
                       ))}
                     </TableRow>
                   </TableHeader>
