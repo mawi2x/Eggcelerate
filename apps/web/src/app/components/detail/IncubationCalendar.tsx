@@ -201,16 +201,8 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
                       fontWeight: "var(--weight-bold)",
                       letterSpacing: "var(--tracking-label)",
                       lineHeight: "var(--leading-snug)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "3px",
                     }}
                   >
-                    <span
-                      aria-hidden="true"
-                      className="h-1.5 w-1.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: "#FFFFFF" }}
-                    />
                     DAY {currentDay}
                   </span>
                   <span
