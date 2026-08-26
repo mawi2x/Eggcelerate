@@ -87,7 +87,10 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                 style={{
                   backgroundColor: active ? RUST : "#F5EDD8",
                   color: active ? "#fff" : "#5C4636",
-                  fontWeight: 600,
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-semibold)",
+                  lineHeight: "var(--leading-normal)",
                 }}
                 aria-pressed={active}
               >
@@ -153,8 +156,26 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
               alt="Eggcelerate logo"
               className="h-24 w-24 rounded-3xl object-cover"
             />
-            <h3 style={{ fontSize: 20, color: TEXT }}>All clear here!</h3>
-            <p style={{ color: MUTED }}>
+            <h3
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-page-title)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+                color: TEXT,
+              }}
+            >
+              All clear here!
+            </h3>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-body)",
+                fontWeight: "var(--weight-regular)",
+                lineHeight: "var(--leading-normal)",
+                color: MUTED,
+              }}
+            >
               No {filter === "all" ? "" : filter} notifications right now. Your eggs are happy.
             </p>
           </div>
@@ -213,7 +234,13 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                     <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
                       <span
                         className="min-w-0 truncate"
-                        style={{ fontSize: 15, fontWeight: 600, color: TEXT }}
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-body)",
+                          fontWeight: "var(--weight-semibold)",
+                          lineHeight: "var(--leading-normal)",
+                          color: TEXT,
+                        }}
                         title={a.title}
                       >
                         {a.title}
@@ -223,18 +250,43 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                           type="button"
                           onClick={() => onOpenUnit(a.unit)}
                           className="min-w-0 shrink-0 truncate rounded px-1.5 py-0.5 transition-colors hover:bg-amber-100/60 focus-visible:outline-none focus-visible:ring-1"
-                          style={{ fontSize: 13, color: RUST, fontWeight: 600, cursor: "pointer" }}
+                          style={{
+                            fontFamily: "var(--font-body)",
+                            fontSize: "var(--type-body-sm)",
+                            fontWeight: "var(--weight-semibold)",
+                            lineHeight: "var(--leading-normal)",
+                            color: RUST,
+                            cursor: "pointer",
+                          }}
                           title={`Go to ${a.unit}`}
                         >
                           {a.unit}
                         </button>
                       ) : (
-                        <span className="min-w-0 shrink-0 truncate" style={{ fontSize: 13, color: MUTED }}>
+                        <span
+                          className="min-w-0 shrink-0 truncate"
+                          style={{
+                            fontFamily: "var(--font-body)",
+                            fontSize: "var(--type-body-sm)",
+                            fontWeight: "var(--weight-regular)",
+                            lineHeight: "var(--leading-normal)",
+                            color: MUTED,
+                          }}
+                        >
                           {a.unit}
                         </span>
                       )}
                     </div>
-                    <p className="mt-1" style={{ fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
+                    <p
+                      className="mt-1"
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-body-sm)",
+                        fontWeight: "var(--weight-regular)",
+                        lineHeight: "var(--leading-normal)",
+                        color: MUTED,
+                      }}
+                    >
                       {a.message}
                     </p>
                   </div>
@@ -247,8 +299,11 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                         backgroundColor: tint.pill,
                         color: tint.pillFg,
                         border: `1px solid ${tint.tile}`,
-                        fontSize: 11,
-                        fontWeight: 700,
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                        lineHeight: "var(--leading-snug)",
                       }}
                     >
                       {s.label}
@@ -257,7 +312,13 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                     <div className="relative h-7 w-[60px]">
                       <span
                         className="absolute inset-0 flex items-center justify-end whitespace-nowrap transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
-                        style={{ fontSize: 11, color: MUTED }}
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-label)",
+                          fontWeight: "var(--weight-regular)",
+                          lineHeight: "var(--leading-snug)",
+                          color: MUTED,
+                        }}
                       >
                         {timeAgo(a.timestamp)}
                       </span>

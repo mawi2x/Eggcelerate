@@ -373,14 +373,30 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
     m.builtIn ? (
       <span
         className="shrink-0 rounded-full px-2 py-0.5"
-        style={{ backgroundColor: "rgba(200,90,50,0.12)", color: RUST, fontSize: 11, fontWeight: 700 }}
+        style={{
+          backgroundColor: "rgba(200,90,50,0.12)",
+          color: RUST,
+          fontFamily: "var(--font-body)",
+          fontSize: "var(--type-label)",
+          fontWeight: "var(--weight-bold)",
+          letterSpacing: "var(--tracking-label)",
+          lineHeight: "var(--leading-snug)",
+        }}
       >
         Built-in
       </span>
     ) : (
       <span
         className="shrink-0 rounded-full px-2 py-0.5"
-        style={{ backgroundColor: "#DCFCE7", color: "#15803D", fontSize: 11, fontWeight: 700 }}
+        style={{
+          backgroundColor: "#DCFCE7",
+          color: "#15803D",
+          fontFamily: "var(--font-body)",
+          fontSize: "var(--type-label)",
+          fontWeight: "var(--weight-bold)",
+          letterSpacing: "var(--tracking-label)",
+          lineHeight: "var(--leading-snug)",
+        }}
       >
         Custom
       </span>
@@ -440,8 +456,27 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
           className="rounded-2xl px-5 py-12 text-center"
           style={{ backgroundColor: "#FAF6F0", border: `1px dashed ${BORDER}` }}
         >
-          <p style={{ fontWeight: 700, color: TEXT }}>No modes match "{modeSearch}"</p>
-          <p className="mt-1" style={{ color: MUTED, fontSize: 13 }}>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-body)",
+              fontWeight: "var(--weight-bold)",
+              lineHeight: "var(--leading-normal)",
+              color: TEXT,
+            }}
+          >
+            No modes match "{modeSearch}"
+          </p>
+          <p
+            className="mt-1"
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-body-sm)",
+              fontWeight: "var(--weight-regular)",
+              lineHeight: "var(--leading-normal)",
+              color: MUTED,
+            }}
+          >
             Try a different name, or add it as a custom mode.
           </p>
         </div>
@@ -452,12 +487,30 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
             return (
               <div key={m.id} className="rounded-2xl p-4" style={{ border: `1px solid ${BORDER}` }}>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="min-w-0 truncate" style={{ fontWeight: 700, color: TEXT }}>
+                  <p
+                    className="min-w-0 truncate"
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-bold)",
+                      lineHeight: "var(--leading-normal)",
+                      color: TEXT,
+                    }}
+                  >
                     {m.name}
                   </p>
                   {badge(m)}
                 </div>
-                <div className="mt-3 space-y-2" style={{ fontSize: 13, color: TEXT }}>
+                <div
+                  className="mt-3 space-y-2"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-body-sm)",
+                    fontWeight: "var(--weight-regular)",
+                    lineHeight: "var(--leading-normal)",
+                    color: TEXT,
+                  }}
+                >
                   <span className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5" style={{ color: MUTED }}>
                       <Thermometer size={14} /> Temp
@@ -483,7 +536,16 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                     {m.defaultTurnInterval}h
                   </span>
                 </div>
-                <p className="mt-2" style={{ color: MUTED, fontSize: 12 }}>
+                <p
+                  className="mt-2"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-caption)",
+                    fontWeight: "var(--weight-regular)",
+                    lineHeight: "var(--leading-normal)",
+                    color: MUTED,
+                  }}
+                >
                   Candling ~ {candling.map((c) => `d${c.day}`).join(" / ")}
                 </p>
                 <div className="mt-4">
@@ -499,7 +561,18 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
             <TableHeader style={{ backgroundColor: "#F2EEE5" }}>
               <TableRow>
                 {["MODE NAME", "TEMP RANGE", "HUMIDITY RANGE", "DURATION", "TURN EVERY", "CANDLING DAYS", "ACTIONS"].map((h) => (
-                  <TableHead key={h} style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  <TableHead
+                    key={h}
+                    style={{
+                      color: "var(--text-muted)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
+                      letterSpacing: "var(--tracking-label)",
+                      lineHeight: "var(--leading-snug)",
+                      textTransform: "uppercase",
+                    }}
+                  >
                     {h}
                   </TableHead>
                 ))}
@@ -510,17 +583,75 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                 const candling = computeCandling(m.incubationDays);
                 return (
                   <TableRow key={m.id}>
-                    <TableCell style={{ fontWeight: 700, color: TEXT }}>
+                    <TableCell
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-body-sm)",
+                        fontWeight: "var(--weight-bold)",
+                        lineHeight: "var(--leading-normal)",
+                        color: TEXT,
+                      }}
+                    >
                       <div className="flex items-center gap-2">
                         <span>{m.name}</span>
                         {badge(m)}
                       </div>
                     </TableCell>
-                    <TableCell style={{ color: TEXT }}>{m.targetTemp.min} to {m.targetTemp.max}°C</TableCell>
-                    <TableCell style={{ color: TEXT }}>{m.targetHumidity.min} to {m.targetHumidity.max}%</TableCell>
-                    <TableCell style={{ color: TEXT }}>{m.incubationDays} days</TableCell>
-                    <TableCell style={{ color: TEXT }}>Every {m.defaultTurnInterval}h</TableCell>
-                    <TableCell style={{ color: MUTED }}>{candling.map((c) => `d${c.day}`).join(" / ")}</TableCell>
+                    <TableCell
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-body-sm)",
+                        fontWeight: "var(--weight-regular)",
+                        lineHeight: "var(--leading-normal)",
+                        color: TEXT,
+                      }}
+                    >
+                      {m.targetTemp.min} to {m.targetTemp.max}°C
+                    </TableCell>
+                    <TableCell
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-body-sm)",
+                        fontWeight: "var(--weight-regular)",
+                        lineHeight: "var(--leading-normal)",
+                        color: TEXT,
+                      }}
+                    >
+                      {m.targetHumidity.min} to {m.targetHumidity.max}%
+                    </TableCell>
+                    <TableCell
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-body-sm)",
+                        fontWeight: "var(--weight-regular)",
+                        lineHeight: "var(--leading-normal)",
+                        color: TEXT,
+                      }}
+                    >
+                      {m.incubationDays} days
+                    </TableCell>
+                    <TableCell
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-body-sm)",
+                        fontWeight: "var(--weight-regular)",
+                        lineHeight: "var(--leading-normal)",
+                        color: TEXT,
+                      }}
+                    >
+                      Every {m.defaultTurnInterval}h
+                    </TableCell>
+                    <TableCell
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-body-sm)",
+                        fontWeight: "var(--weight-regular)",
+                        lineHeight: "var(--leading-normal)",
+                        color: MUTED,
+                      }}
+                    >
+                      {candling.map((c) => `d${c.day}`).join(" / ")}
+                    </TableCell>
                     <TableCell><ModeActions m={m} /></TableCell>
                   </TableRow>
                 );
@@ -534,7 +665,16 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       <Dialog open={deleteTarget !== null} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <DialogContent className="rounded-3xl sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "Baloo 2, sans-serif" }}>Delete mode?</DialogTitle>
+            <DialogTitle
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-heading-md)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
+              Delete mode?
+            </DialogTitle>
             <DialogDescription>
               "{deleteTarget?.name}" will be permanently removed from your Mode library. This can't be undone.
             </DialogDescription>
@@ -554,7 +694,14 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="rounded-3xl sm:max-w-md">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "Baloo 2, sans-serif" }}>
+            <DialogTitle
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-heading-md)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
               {modalKind === "edit" ? "Edit Mode" : "Add custom Mode"}
             </DialogTitle>
             <DialogDescription>Candling checkpoints are auto-calculated from the duration.</DialogDescription>
@@ -597,21 +744,48 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       <Dialog open={conflictOpen} onOpenChange={setConflictOpen}>
         <DialogContent className="rounded-3xl sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "Baloo 2, sans-serif" }}>Resolve name conflicts</DialogTitle>
+            <DialogTitle
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-heading-md)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
+              Resolve name conflicts
+            </DialogTitle>
             <DialogDescription>
               These imported modes share a name with an existing custom mode. Choose what to do with each.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             {pendingClean.length > 0 && (
-              <p style={{ color: MUTED }}>
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-regular)",
+                  lineHeight: "var(--leading-normal)",
+                  color: MUTED,
+                }}
+              >
                 {pendingClean.length} other mode{pendingClean.length === 1 ? "" : "s"} will be imported without
                 conflict.
               </p>
             )}
             {conflicts.map((c, idx) => (
               <div key={idx} className="rounded-2xl p-3" style={{ backgroundColor: "#FBF6E7" }}>
-                <p style={{ fontWeight: 700 }}>{c.incoming.name}</p>
+                <p
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-body)",
+                    fontWeight: "var(--weight-bold)",
+                    lineHeight: "var(--leading-normal)",
+                    color: TEXT,
+                  }}
+                >
+                  {c.incoming.name}
+                </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {(["overwrite", "rename"] as const).map((r) => {
                     const active = c.resolution === r;
@@ -626,7 +800,10 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                           backgroundColor: active ? RUST : "#FFFFFF",
                           color: active ? "#FFFFFF" : "#57534E",
                           border: `1px solid ${active ? RUST : BORDER}`,
-                          fontWeight: 600,
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-body-sm)",
+                          fontWeight: "var(--weight-semibold)",
+                          lineHeight: "var(--leading-normal)",
                         }}
                       >
                         {r === "overwrite" ? "Overwrite existing" : "Keep both (rename)"}
