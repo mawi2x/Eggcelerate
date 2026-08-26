@@ -136,7 +136,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
         <div className="mb-3 min-w-0">
           <div className="flex min-w-0 items-center justify-between gap-3">
             <h3 className="flex min-w-0 items-center gap-1 truncate" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
-              <span className="min-w-0 truncate">{unit.name}</span>
+              <span className="min-w-0" style={{ whiteSpace: "normal", wordBreak: "break-word" }}>{unit.name}</span>
               <ChevronRight size={14} className="shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ color: "#C27B4A" }} aria-hidden />
             </h3>
             <div className="shrink-0">

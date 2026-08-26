@@ -70,7 +70,7 @@ export function WaterDroplet({ ok, size = 120 }: WaterDropletProps) {
           <span
             style={{
               color: TEXT,
-              fontFamily: "Baloo 2, sans-serif",
+              fontFamily: "var(--font-display)",
               fontSize: Math.round(size * 0.14),
               fontWeight: 700,
               lineHeight: 1.05,
@@ -82,7 +82,7 @@ export function WaterDroplet({ ok, size = 120 }: WaterDropletProps) {
           <span
             style={{
               color: MUTED,
-              fontFamily: "Nunito, sans-serif",
+              fontFamily: "var(--font-body)",
               fontSize: Math.max(9, Math.round(size * 0.07)),
               fontWeight: 600,
               lineHeight: 1.1,

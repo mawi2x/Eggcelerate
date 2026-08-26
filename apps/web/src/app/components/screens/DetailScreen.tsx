@@ -281,7 +281,7 @@ export function DetailScreen({
               <AlertTriangle size={20} />
             </span>
             <div>
-              <p style={{ fontSize: 15, fontWeight: 800, color: "#92400E" }}>Lockdown Active · Do Not Open</p>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", color: "#92400E", whiteSpace: "normal", wordBreak: "break-word" }}>Lockdown Active · Do Not Open</p>
               <p style={{ fontSize: 13, color: "#B45309", marginTop: 2 }}>
                 Turning Stopped. Keep the incubator closed while hatching begins.
               </p>
@@ -297,7 +297,7 @@ export function DetailScreen({
           style={{ backgroundColor: "#FFF8EB", border: "1px solid #FDE68A" }}
         >
           <div>
-            <p style={{ fontSize: 15, fontWeight: 800, color: "#92400E" }}>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", color: "#92400E", whiteSpace: "normal", wordBreak: "break-word" }}>
               Past Hatch Day
             </p>
             <p style={{ fontSize: 13, color: "#B45309", marginTop: 2 }}>

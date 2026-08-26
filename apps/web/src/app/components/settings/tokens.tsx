@@ -34,7 +34,7 @@ export function GroupLabel({ children }: { children: React.ReactNode }) {
 export function PanelHeader({ title, description }: { title: string; description: string }) {
   return (
     <div className="pb-5" style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-      <h2 style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 700, color: TEXT }}>
+      <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-panel-title)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: TEXT }}>
         {title}
       </h2>
       <p className="mt-1" style={{ color: MUTED, fontSize: 13 }}>

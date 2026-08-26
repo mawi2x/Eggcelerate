@@ -626,7 +626,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       onMouseLeave={() => setHighlightedUnitId(null)}
                       onFocus={() => setHighlightedUnitId(u.id)}
                       onBlur={() => setHighlightedUnitId(null)}
-                      className="flex min-h-4 items-center gap-1 whitespace-nowrap rounded-md px-0.5 transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 motion-reduce:transition-none"
+                      className="flex min-h-4 items-center gap-1 rounded-md px-0.5 transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 motion-reduce:transition-none"
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: "var(--type-label)",
@@ -943,7 +943,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       <Dialog open={readingsOpen} onOpenChange={setReadingsOpen}>
         <DialogContent className="rounded-2xl sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "Baloo 2, sans-serif" }}>
+            <DialogTitle style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)" }}>
               Raw readings: {unit.name}
             </DialogTitle>
             <DialogDescription>
@@ -1002,7 +1002,7 @@ function KpiCard({
         </div>
         <div
           className="mt-2 tracking-tight"
-          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 800, color: accent ?? TEXT, whiteSpace: "nowrap" }}
+          style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-panel-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: accent ?? TEXT, whiteSpace: "normal", wordBreak: "break-word" }}
         >
           {value}
         </div>

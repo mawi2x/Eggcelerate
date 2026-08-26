@@ -75,7 +75,7 @@ export function HelpWidget() {
             <div className="flex min-w-0 items-center gap-2.5">
               <img src={logoApp} alt="" aria-hidden="true" className="h-9 w-9 rounded-xl object-cover" />
               <div className="min-w-0">
-                <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 800 }}>Eggcelerate Help</p>
+                <p style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)", fontSize: "var(--type-body)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)" }}>Eggcelerate Help</p>
                 <p style={{ color: "var(--text-muted)", fontSize: 11 }}>Quick answers for your incubator</p>
               </div>
             </div>
@@ -109,7 +109,7 @@ export function HelpWidget() {
             )}
 
             <div className="mt-4">
-              <p style={{ color: "#8A6B52", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              <p style={{ color: "#8A6B52", fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", letterSpacing: "var(--tracking-label)", lineHeight: "var(--leading-snug)", textTransform: "uppercase" }}>
                 Frequently asked
               </p>
               <div className="mt-2 space-y-2">
@@ -144,7 +144,7 @@ export function HelpWidget() {
         <img src={logoApp} alt="" aria-hidden="true" className="h-11 w-11 rounded-xl object-cover" />
         <span
           className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1"
-          style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)", border: "2px solid var(--surface-card)", fontSize: 11, fontWeight: 800 }}
+          style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)", border: "2px solid var(--surface-card)", fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", letterSpacing: "var(--tracking-label)" }}
           aria-hidden="true"
         >
           ?

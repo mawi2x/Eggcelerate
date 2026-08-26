@@ -38,7 +38,7 @@ export function AlertBanner({ criticalUnits, modes, onView }: Props) {
         <AlertOctagon size={22} />
       </span>
       <div className="flex-1">
-        <p style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 17, fontWeight: 600 }}>{headline}</p>
+        <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--on-brand)", whiteSpace: "normal", wordBreak: "break-word" }}>{headline}</p>
         <p style={{ opacity: 0.9 }}>{detail}</p>
       </div>
       <ChevronRight size={22} className="shrink-0" />

@@ -531,7 +531,7 @@ function LogModalBody({
   return (
     <>
       <DialogHeader className="px-5 pt-5 text-left">
-        <DialogTitle style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>
+        <DialogTitle style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: TEXT }}>
           {isEditing ? `Edit Inspection Log: Day ${form.targetDay}` : "Candling Journal"}
         </DialogTitle>
         <DialogDescription className="text-xs font-medium text-[var(--text-primary)]">
@@ -1031,7 +1031,7 @@ export function CandlingJournalTab({
           <div className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p style={{ fontSize: 11, fontWeight: 800, color: RUST, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", letterSpacing: "var(--tracking-label)", lineHeight: "var(--leading-snug)", color: RUST, textTransform: "uppercase" }}>
                   Latest inspection
                 </p>
                 <p style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginTop: 2 }}>
@@ -1045,12 +1045,12 @@ export function CandlingJournalTab({
                 className="rounded-xl px-3.5 py-2 text-right"
                 style={{ backgroundColor: "#F5EFE6", border: `1px solid ${BORDER}` }}
               >
-                <p style={{ fontSize: 10, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", letterSpacing: "var(--tracking-label)", lineHeight: "var(--leading-snug)", color: MUTED, textTransform: "uppercase" }}>
                   Initial fertility
                 </p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginTop: 1 }}>
                   {latestCandlingEntry.fertile} of {totalEggsSet} eggs
-                  <span style={{ marginLeft: 6, fontFamily: "Baloo 2, sans-serif", fontSize: 17, fontWeight: 800, color: RUST }}>
+                  <span style={{ marginLeft: 6, fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: RUST }}>
                     {summaryFertilityRate !== null ? `${summaryFertilityRate}%` : "N/A"}
                   </span>
                 </p>
@@ -1063,7 +1063,7 @@ export function CandlingJournalTab({
                 <>
                   <div className="rounded-xl p-2.5" style={{ backgroundColor: "#F0FDF4", border: "1px solid #BBF7D0" }}>
                     <span style={{ color: "#15803D", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Developing</span>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: "#15803D", lineHeight: 1.1, marginTop: 2 }}>{summaryDeveloping}</p>
+                    <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: "#15803D", marginTop: 2 }}>{summaryDeveloping}</p>
                     <p style={{ color: "#166534", fontSize: 11, marginTop: 2 }}>Developing embryos</p>
                   </div>
                   <div
@@ -1074,19 +1074,19 @@ export function CandlingJournalTab({
                     }}
                   >
                     <span style={{ color: summaryStopped > 0 ? "#B91C1C" : "#64748B", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Stopped developing</span>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: summaryStopped > 0 ? "#B91C1C" : "#475569", lineHeight: 1.1, marginTop: 2 }}>{summaryStopped}</p>
+                    <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: summaryStopped > 0 ? "#B91C1C" : "#475569", marginTop: 2 }}>{summaryStopped}</p>
                     <p style={{ color: summaryStopped > 0 ? "#991B1B" : "#64748B", fontSize: 11, marginTop: 2 }}>
                       {summaryStopped > 0 ? "Review journal" : "None observed"}
                     </p>
                   </div>
                   <div className="rounded-xl p-2.5" style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0" }}>
                     <span style={{ color: "#475569", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Clear</span>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: "#334155", lineHeight: 1.1, marginTop: 2 }}>{summaryClear}</p>
+                    <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: "#334155", marginTop: 2 }}>{summaryClear}</p>
                     <p style={{ color: "#64748B", fontSize: 11, marginTop: 2 }}>Likely infertile</p>
                   </div>
                   <div className="rounded-xl p-2.5" style={{ backgroundColor: "#FFFBEB", border: "1px solid #FDE68A" }}>
                     <span style={{ color: "#B45309", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Uncertain</span>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: "#B45309", lineHeight: 1.1, marginTop: 2 }}>{summaryUncertain}</p>
+                    <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: "#B45309", marginTop: 2 }}>{summaryUncertain}</p>
                     <p style={{ color: "#92400E", fontSize: 11, marginTop: 2 }}>
                       {summaryUncertain > 0 ? (pendingCheckpoint ? `Recheck Day ${pendingCheckpoint.day}` : "Resolve before finish") : "None to recheck"}
                     </p>
@@ -1096,24 +1096,24 @@ export function CandlingJournalTab({
                 <>
                   <div className="rounded-xl p-2.5" style={{ backgroundColor: "#F0FDF4", border: "1px solid #BBF7D0" }}>
                     <span style={{ color: "#15803D", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Fertile</span>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: "#15803D", lineHeight: 1.1, marginTop: 2 }}>{latestCandlingEntry.fertile}</p>
+                    <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: "#15803D", marginTop: 2 }}>{latestCandlingEntry.fertile}</p>
                     <p style={{ color: "#166534", fontSize: 11, marginTop: 2 }}>Development observed</p>
                   </div>
                   <div className="rounded-xl p-2.5" style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0" }}>
                     <span style={{ color: "#475569", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Clear</span>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: "#334155", lineHeight: 1.1, marginTop: 2 }}>{latestCandlingEntry.clear}</p>
+                    <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: "#334155", marginTop: 2 }}>{latestCandlingEntry.clear}</p>
                     <p style={{ color: "#64748B", fontSize: 11, marginTop: 2 }}>Likely infertile</p>
                   </div>
                   <div className="rounded-xl p-2.5" style={{ backgroundColor: "#FFFBEB", border: "1px solid #FDE68A" }}>
                     <span style={{ color: "#B45309", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Uncertain</span>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: "#B45309", lineHeight: 1.1, marginTop: 2 }}>{latestCandlingEntry.uncertain}</p>
+                    <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: "#B45309", marginTop: 2 }}>{latestCandlingEntry.uncertain}</p>
                     <p style={{ color: "#92400E", fontSize: 11, marginTop: 2 }}>
                       {latestCandlingEntry.uncertain > 0 ? (pendingCheckpoint ? `Recheck Day ${pendingCheckpoint.day}` : "Resolve before finish") : "None to recheck"}
                     </p>
                   </div>
                   <div className="rounded-xl p-2.5" style={{ backgroundColor: "#F5EFE6", border: "1px solid var(--border-subtle)" }}>
                     <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Total Loaded</span>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: TEXT, lineHeight: 1.1, marginTop: 2 }}>{totalEggsSet}</p>
+                    <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: TEXT, marginTop: 2 }}>{totalEggsSet}</p>
                     <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>Eggs in tray</p>
                   </div>
                 </>
@@ -1122,7 +1122,7 @@ export function CandlingJournalTab({
 
             <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: BORDER }}>
               <div>
-                <p style={{ fontSize: 10, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", letterSpacing: "var(--tracking-label)", lineHeight: "var(--leading-snug)", color: MUTED, textTransform: "uppercase" }}>
                   {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
                 </p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginTop: 2 }}>
@@ -1143,7 +1143,7 @@ export function CandlingJournalTab({
           </div>
         ) : (
           <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: "#FFF8F3", border: "1px solid #F2D4C5" }}>
-            <p style={{ color: "#1C1917", fontSize: 17, fontWeight: 800, letterSpacing: "-0.01em" }}>
+            <p style={{ color: "#1C1917", fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", letterSpacing: "var(--tracking-tight)" }}>
               No candling inspections recorded yet
             </p>
             {pendingCheckpoint ? (

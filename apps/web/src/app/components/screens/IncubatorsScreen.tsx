@@ -451,7 +451,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
       <Dialog open={open} onOpenChange={(o) => { if (!connecting) { setOpen(o); if (!o) setConnectError(null); } }}>
         <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "Baloo 2, sans-serif" }}>Add Incubator</DialogTitle>
+            <DialogTitle style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)" }}>Add Incubator</DialogTitle>
             <DialogDescription>Enter the Device ID generated on your physical incubator screen and name this chamber.</DialogDescription>
           </DialogHeader>
 

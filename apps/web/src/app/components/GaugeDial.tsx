@@ -116,7 +116,7 @@ export function GaugeDial({
           x={cx}
           y={cy + 2}
           textAnchor="middle"
-          fontFamily="Baloo 2, sans-serif"
+          fontFamily="var(--font-display)"
           fontSize={centerLabel ? Math.round(valueFont * 0.72) : valueFont}
           fontWeight={700}
           fill={centerColor ?? TEXT}
@@ -132,7 +132,7 @@ export function GaugeDial({
           x={cx}
           y={cy + Math.round(size * 0.14)}
           textAnchor="middle"
-          fontFamily="Nunito, sans-serif"
+          fontFamily="var(--font-body)"
           fontSize={labelFont}
           fontWeight={600}
           fill={MUTED}

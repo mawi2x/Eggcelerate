@@ -61,8 +61,8 @@ function KpiCard({ Icon, label, value, pill, footer }: {
           {label}
         </div>
         <div
-          className="mt-1 truncate"
-          style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-panel-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: "var(--text-primary)", whiteSpace: "nowrap" }}
+          className="mt-1"
+          style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-panel-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: "var(--text-primary)", whiteSpace: "normal", wordBreak: "break-word" }}
         >
           {value}
         </div>
@@ -163,7 +163,7 @@ function OffTargetRow({
             {rank}
           </span>
           <div className="min-w-0">
-            <div className="truncate" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: TEXT }}>
+            <div style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: TEXT, whiteSpace: "normal", wordBreak: "break-word" }}>
               {unit.name}
             </div>
             <div className="truncate" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-snug)", color: "#6E6259" }}>
@@ -214,15 +214,15 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
       {/* Top-left header stack — name over mode over progress. */}
       <div className="w-full min-w-0 text-left">
         <div className="flex items-start justify-between gap-2">
-          <span className="block min-w-0 flex-1 truncate" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)", whiteSpace: "nowrap" }}>
+          <span className="block min-w-0 flex-1" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)", whiteSpace: "normal", wordBreak: "break-word" }}>
             {unit.name}
           </span>
           <ChevronRight size={14} className="mt-1 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ color: "#C27B4A" }} aria-hidden />
         </div>
-        <span className="block min-w-0 truncate" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", whiteSpace: "nowrap", marginTop: 4 }}>
+        <span className="block min-w-0" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", whiteSpace: "normal", wordBreak: "break-word", marginTop: 4 }}>
           {mode.name}
         </span>
-        <span className="block min-w-0 truncate" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", color: "#6E6259", whiteSpace: "nowrap", marginTop: 4 }}>
+        <span className="block min-w-0" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", color: "#6E6259", whiteSpace: "normal", wordBreak: "break-word", marginTop: 4 }}>
           Progress: Day {unit.dayOfIncubation} of {mode.incubationDays}
         </span>
       </div>

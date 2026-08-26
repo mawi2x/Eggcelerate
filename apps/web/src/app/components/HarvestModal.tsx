@@ -118,7 +118,7 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
                   : `Fertility record not available. ${unhatchedNum} unhatched.`}
               </span>
             </div>
-            <span style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 18, fontWeight: 700, color: "var(--brand-primary)" }}>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: "var(--brand-primary)" }}>
               {exceedsMax ? "Not available" : rate === null ? "Not available" : `${rate}%`}
             </span>
           </div>

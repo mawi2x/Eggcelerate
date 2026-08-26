@@ -143,7 +143,7 @@ export function DeviceSettingsTab({
         {settingTab === "mode" && (
           <>
             <div className="pb-5" style={{ borderBottom: "1px solid var(--border-default)" }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-lg)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
                 Incubation Mode
               </h2>
               <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
@@ -166,7 +166,7 @@ export function DeviceSettingsTab({
                   <div className="min-w-0">
                     <p style={{ color: MUTED, fontSize: 11, fontWeight: 700 }}>Active preset</p>
                     <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
-                      <p className="truncate" style={{ fontWeight: 800, fontSize: 16, color: TEXT }}>{mode.name}</p>
+                      <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", color: TEXT, whiteSpace: "normal", wordBreak: "break-word" }}>{mode.name}</p>
                       <span className="shrink-0 rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 700, backgroundColor: "#F5EFE6", color: "#8B3A1C" }}>
                         {mode.builtIn ? "Built-in" : "Custom"}
                       </span>
@@ -218,7 +218,7 @@ export function DeviceSettingsTab({
                     }}
                   >
                     <dt style={{ color: MUTED, fontSize: 12 }}>{item.label}</dt>
-                    <dd className="mt-1 tabular-nums" style={{ color: TEXT, fontSize: 14, fontWeight: 800 }}>{item.value}</dd>
+                    <dd className="mt-1 tabular-nums" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-body)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-normal)", color: TEXT }}>{item.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -236,7 +236,7 @@ export function DeviceSettingsTab({
         {settingTab === "turning" && (
           <>
             <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-lg)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
                 Turning Schedule
               </h2>
               <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
@@ -288,7 +288,7 @@ export function DeviceSettingsTab({
         {settingTab === "device" && (
           <>
             <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-lg)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
                 Device & Connection
               </h2>
               <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
