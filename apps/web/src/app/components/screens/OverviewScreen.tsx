@@ -56,13 +56,13 @@ function KpiCard({ Icon, label, value, pill, footer }: {
       />
       <CardContent className="relative flex flex-col p-4">
         <div
-          style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}
+          style={{ color: "var(--text-muted)", fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", lineHeight: "var(--leading-snug)", textTransform: "uppercase" }}
         >
           {label}
         </div>
         <div
           className="mt-1 truncate"
-          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1, whiteSpace: "nowrap" }}
+          style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-panel-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: "var(--text-primary)", whiteSpace: "nowrap" }}
         >
           {value}
         </div>
@@ -163,20 +163,20 @@ function OffTargetRow({
             {rank}
           </span>
           <div className="min-w-0">
-            <div className="truncate" style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
+            <div className="truncate" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: TEXT }}>
               {unit.name}
             </div>
-            <div className="truncate" style={{ fontSize: 11, fontWeight: 500, color: "#6E6259" }}>
+            <div className="truncate" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-snug)", color: "#6E6259" }}>
               {mode.name}
             </div>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <div className="flex flex-col items-end gap-0.5">
-            <span style={{ fontSize: 13, fontWeight: 700, color: valueColor, whiteSpace: "nowrap" }}>
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: valueColor, whiteSpace: "nowrap" }}>
               {displayValue}{unitLabel}
             </span>
-            <span style={{ fontSize: 11, fontWeight: 500, color: statusColor, whiteSpace: "nowrap", lineHeight: 1.2 }}>
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-snug)", color: statusColor, whiteSpace: "nowrap" }}>
               {statusText}
             </span>
           </div>
@@ -214,15 +214,15 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
       {/* Top-left header stack — name over mode over progress. */}
       <div className="w-full min-w-0 text-left">
         <div className="flex items-start justify-between gap-2">
-          <span className="block min-w-0 flex-1 truncate" style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap" }}>
+          <span className="block min-w-0 flex-1 truncate" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)", whiteSpace: "nowrap" }}>
             {unit.name}
           </span>
           <ChevronRight size={14} className="mt-1 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ color: "#C27B4A" }} aria-hidden />
         </div>
-        <span className="block min-w-0 truncate" style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", marginTop: 4 }}>
+        <span className="block min-w-0 truncate" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", whiteSpace: "nowrap", marginTop: 4 }}>
           {mode.name}
         </span>
-        <span className="block min-w-0 truncate" style={{ fontSize: 12, fontWeight: 400, color: "#6E6259", whiteSpace: "nowrap", marginTop: 4 }}>
+        <span className="block min-w-0 truncate" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", color: "#6E6259", whiteSpace: "nowrap", marginTop: 4 }}>
           Progress: Day {unit.dayOfIncubation} of {mode.incubationDays}
         </span>
       </div>
@@ -252,7 +252,7 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
         <div className="absolute inset-0 flex items-center justify-center">
           <span
             className="tracking-tight"
-            style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 17, fontWeight: 700, color: stroke, lineHeight: 1 }}
+            style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-bold)", color: stroke, lineHeight: "var(--leading-tight)" }}
           >
             {pct}%
           </span>
@@ -368,8 +368,8 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 600, color: HEADING }}>Active Incubators</h2>
-            <p style={{ fontSize: 12, fontWeight: 400, color: "#6E6259", marginTop: 2 }}>Chambers currently running.</p>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: HEADING }}>Active Incubators</h2>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", color: "#6E6259", marginTop: 2 }}>Chambers currently running.</p>
           </div>
           <button
             onClick={onManageAll}
@@ -392,8 +392,8 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
         style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: 16, padding: 24 }}
       >
         <div style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 600, color: HEADING }}>Conditions to Check</h2>
-          <p style={{ fontSize: 12, fontWeight: 400, color: "#6E6259", marginTop: 2 }}>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: HEADING }}>Conditions to Check</h2>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", color: "#6E6259", marginTop: 2 }}>
             Incubators with temperature or humidity that may need attention.
           </p>
         </div>
@@ -402,7 +402,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
           {/* Left column: temperature */}
           <div className="min-w-0">
             <div className="mb-3">
-              <h3 style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
+              <h3 style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: TEXT }}>
                 Temperature
               </h3>
             </div>
@@ -410,7 +410,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
               {offTarget.temp.length === 0 ? (
                 <div className="flex items-center gap-2 rounded-xl border px-3 py-4" style={{ borderColor: BORDER, backgroundColor: "#FBFAF7" }}>
                   <Check size={16} style={{ color: "var(--status-success-fg)" }} />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>All temperatures within target</span>
+                  <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-normal)", color: "var(--text-secondary)" }}>All temperatures within target</span>
                 </div>
               ) : (
                 offTarget.temp.map((entry, idx) => (
@@ -426,7 +426,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
           {/* Right column: humidity */}
           <div className="min-w-0">
             <div className="mb-3">
-              <h3 style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
+              <h3 style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: TEXT }}>
                 Humidity
               </h3>
             </div>
@@ -434,7 +434,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
               {offTarget.humidity.length === 0 ? (
                 <div className="flex items-center gap-2 rounded-xl border px-3 py-4" style={{ borderColor: BORDER, backgroundColor: "#FBFAF7" }}>
                   <Check size={16} style={{ color: "var(--status-success-fg)" }} />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>All humidity levels within target</span>
+                  <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-normal)", color: "var(--text-secondary)" }}>All humidity levels within target</span>
                 </div>
               ) : (
                 offTarget.humidity.map((entry, idx) => (

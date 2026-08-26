@@ -46,9 +46,9 @@ function operationalStatus(unit: Incubator): {
 }
 
 function Trend({ delta }: { delta: number }) {
-  if (Math.abs(delta) < 0.05) return <span style={{ color: MUTED, fontSize: 12 }}>→ Stable</span>;
+  if (Math.abs(delta) < 0.05) return <span style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)" }}>→ Stable</span>;
   return (
-    <span style={{ color: MUTED, fontSize: 12 }}>
+    <span style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)" }}>
       {delta > 0 ? "↗" : "↘"} {Math.abs(delta).toFixed(1)}
     </span>
   );
@@ -68,7 +68,7 @@ function Reading({ icon, label, value, unit, delta, state, subtext, valueColor, 
       className="min-w-0 overflow-hidden rounded-2xl"
       style={{ backgroundColor: tileBg[state], border: `1px solid ${tileBorder[state]}`, padding: 12, overflow: "hidden" }}
     >
-      <div style={{ color: "var(--text-primary)", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+      <div style={{ color: "var(--text-primary)", fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", lineHeight: "var(--leading-snug)", textTransform: "uppercase", whiteSpace: "nowrap" }}>
         {label}
       </div>
       <div className="flex min-w-0 items-center gap-1" style={{ height: 22, marginTop: 2 }}>
@@ -79,12 +79,12 @@ function Reading({ icon, label, value, unit, delta, state, subtext, valueColor, 
         )}
         <span
           className="min-w-0 overflow-hidden tracking-tight"
-          style={{ fontFamily: "Baloo 2, sans-serif", fontSize: valueSize, fontWeight: 700, color, whiteSpace: "nowrap", textOverflow: "clip" }}
+          style={{ fontFamily: "var(--font-display)", fontSize: valueSize === 16 ? "var(--type-heading-sm)" : "var(--type-heading-md)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-tight)", color, whiteSpace: "nowrap", textOverflow: "clip" }}
         >
           {value}
         </span>
         {unit && (
-          <span className="whitespace-nowrap" style={{ color: alert ? color : MUTED, fontSize: 12 }}>
+          <span className="whitespace-nowrap" style={{ color: alert ? color : MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)" }}>
             {unit}
           </span>
         )}
@@ -93,7 +93,7 @@ function Reading({ icon, label, value, unit, delta, state, subtext, valueColor, 
         {delta !== undefined ? (
           <Trend delta={delta} />
         ) : subtext ? (
-          <div className="overflow-hidden whitespace-nowrap" style={{ fontSize: subtextSize, textOverflow: "clip" }}>
+          <div className="overflow-hidden whitespace-nowrap" style={{ fontFamily: "var(--font-body)", fontSize: subtextSize === 11 ? "var(--type-label)" : "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", textOverflow: "clip" }}>
             {subtext}
           </div>
         ) : null}
@@ -135,7 +135,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
         {/* Header — name and mode on the left; power indicator alone on the right. */}
         <div className="mb-3 min-w-0">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <h3 className="flex min-w-0 items-center gap-1 truncate" style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>
+            <h3 className="flex min-w-0 items-center gap-1 truncate" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
               <span className="min-w-0 truncate">{unit.name}</span>
               <ChevronRight size={14} className="shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ color: "#C27B4A" }} aria-hidden />
             </h3>
@@ -143,7 +143,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
               <SegmentedBattery battery={unit.batteryPct} charging={unit.powerSource !== "battery"} showLabel />
             </div>
           </div>
-          <p className="min-w-0 truncate" style={{ color: ready ? "#9CA3AF" : "#6E6259", fontSize: 13, fontWeight: 500, lineHeight: 1.3, marginTop: 2 }}>
+          <p className="min-w-0 truncate" style={{ color: ready ? "#9CA3AF" : "#6E6259", fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-normal)", marginTop: 2 }}>
             {ready ? "Unassigned" : mode.name}
           </p>
         </div>
@@ -154,8 +154,8 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
             className="flex flex-1 flex-col items-center justify-center rounded-2xl px-4 py-5 text-center"
             style={{ backgroundColor: "#F9F6F0" }}
           >
-            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>Incubator Ready</p>
-            <p style={{ fontSize: 12, color: "#6E6259", lineHeight: 1.5, marginTop: 4 }}>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>Incubator Ready</p>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", color: "#6E6259", lineHeight: "var(--leading-normal)", marginTop: 4 }}>
               Load eggs and choose a mode to begin incubation.
             </p>
           </div>
@@ -182,10 +182,10 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
             {/* Cycle progress — the day count gets its own high-visibility row. */}
             <div style={{ marginTop: 12 }}>
               <div className="flex items-center justify-between gap-2" style={{ marginBottom: 6 }}>
-                <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                <span className="whitespace-nowrap" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)" }}>
                   Day {unit.dayOfIncubation} of {mode.incubationDays}
                 </span>
-                <span className="whitespace-nowrap" style={{ fontSize: 12, fontWeight: 500, color: MUTED }}>
+                <span className="whitespace-nowrap" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-normal)", color: MUTED }}>
                   {progress}% Complete
                 </span>
               </div>
@@ -209,7 +209,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             <span
               className="inline-flex shrink-0 items-center rounded-full"
-              style={{ backgroundColor: status.bg, color: status.fg, fontSize: 12, fontWeight: 700, padding: "6px 12px", gap: 6 }}
+              style={{ backgroundColor: status.bg, color: status.fg, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", padding: "6px 12px", gap: 6 }}
             >
               {status.Icon ? (
                 <span
@@ -229,8 +229,12 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
                 style={{
                   backgroundColor: unit.conditionSeverity === "critical" ? "#FEE2E2" : "#FEF3C7",
                   color: unit.conditionSeverity === "critical" ? "#991B1B" : "#92400E",
-                  fontSize: 11,
-                  fontWeight: 700,
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-bold)",
+                  letterSpacing: "var(--tracking-label)",
+                  lineHeight: "var(--leading-snug)",
+                  textTransform: "uppercase",
                 }}
               >
                 {conditionDisplayLabels[unit.conditionSeverity]}
@@ -242,7 +246,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
             <Button
               onClick={(e) => { e.stopPropagation(); onHarvest?.(unit); }}
               className="rounded-xl transition-colors"
-              style={{ backgroundColor: RUST, color: "#FFFFFF", height: 36, fontSize: 12, fontWeight: 600, paddingLeft: 12, paddingRight: 12 }}
+              style={{ backgroundColor: RUST, color: "#FFFFFF", height: 36, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-normal)", paddingLeft: 12, paddingRight: 12 }}
             >
               Finish Cycle
             </Button>
@@ -255,8 +259,10 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
                 color: CTA,
                 height: 36,
                 border: `1px solid ${CTA}`,
-                fontSize: 13,
-                fontWeight: 500,
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-body-sm)",
+                fontWeight: "var(--weight-medium)",
+                lineHeight: "var(--leading-normal)",
               }}
             >
               {ready ? "Start Setup" : cta} <ChevronRight size={16} />
