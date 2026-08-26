@@ -70,9 +70,10 @@ const inputStyle = { borderColor: "#D8D0C0", backgroundColor: "#F2EEE5" };
 const toolbarInputStyle = { borderColor: "#D8D0C0", backgroundColor: SURFACE, height: 38 };
 // One typographic voice for every control in the trends toolbar.
 const CONTROL_FONT: React.CSSProperties = {
-  fontFamily: '"Nunito", sans-serif',
-  fontSize: 13,
-  fontWeight: 600,
+  fontFamily: "var(--font-body)",
+  fontSize: "var(--type-body-sm)",
+  fontWeight: "var(--weight-semibold)",
+  lineHeight: "var(--leading-normal)",
 };
 
 type RangeKey = "24h" | "7d" | "full";
@@ -162,7 +163,7 @@ function ChartTooltip({
   return (
     <div
       className="min-w-[196px] rounded-xl border bg-white p-3.5 shadow-lg"
-      style={{ borderColor: BORDER, color: TEXT, fontFamily: '"Nunito", sans-serif' }}
+      style={{ borderColor: BORDER, color: TEXT, fontFamily: "var(--font-body)" }}
     >
       <div className="flex items-center gap-2">
         <span

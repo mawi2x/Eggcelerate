@@ -8,7 +8,7 @@
 **Plan ref:** `docs/refine/typography-refinement-plan.md:147-156` Phase 4 outliers + Phase 5 validate
 
 ## Summary
-Normalized 17/19/22 one-offs to closest role tokens (17→16/18, 22→panel-title 22), added `var(--font-display)` for all 800-weight (or tokenized to extrabold) per plan:150, gave long labels `whiteSpace normal wordBreak break-word` instead of `truncate` per plan:152, reran inventory (8/9 px 0, 17/19/22 0, 800 without display 0, var(--type-) 152 >50), validated `html 100%`, fallback `ui-rounded/system-ui`, focus visible, 200% zoom no clip, 320/375 no scroll, long names wrap, `typecheck` PASS, `build` 298.72kB <500kB, updated baseline report.
+Normalized 17/19/22 one-offs to closest role tokens (17→16/18, 22→panel-title 22), added `var(--font-display)` for all 800-weight (or tokenized to extrabold) per plan:150, gave long labels `whiteSpace normal wordBreak break-word` instead of `truncate` per plan:152, reran inventory (8/9 px 0, 17/19/22 0, 800 without display 0, var(--type-) 166 >50 — 152 without tests; 167 after Trends CONTROL_FONT fix), validated `html 100%`, fallback `ui-rounded/system-ui`, focus visible, 200% zoom no clip, 320/375 no scroll, long names wrap, `typecheck` PASS, `build` 298.72kB <500kB, updated baseline report.
 
 ## Step 1 — Audit outliers
 
@@ -70,18 +70,18 @@ grep -R "fontWeight: 800" apps/web/src --include="*.tsx" | grep -v "var(--font-d
 ## Step 3 — Rerun inventory
 
 ```bash
-grep -R "fontSize" apps/web/src --include="*.tsx" --include="*.ts" | wc -l          # 356 total (198 numeric + 150 var rem) (was 334 numeric baseline, now 198 numeric -41%)
-grep -R "var(--type-" apps/web/src --include="*.tsx" --include="*.ts" | wc -l       # 152 (>50 ✓, was 0 → 122 in Task3 → 152)
+grep -R "fontSize" apps/web/src --include="*.tsx" --include="*.ts" | wc -l          # 359 total (198 numeric + 150 var rem + 11 dynamic/other; 356 without tests) (was 334 numeric baseline, now 198 numeric -41% → 197 after Trends fix)
+grep -R "var(--type-" apps/web/src --include="*.tsx" --include="*.ts" | wc -l       # 166 total (152 without tests; 167 after Trends CONTROL_FONT fix) (>50 ✓, was 0 → 122 in Task3 → 166)
 grep -R "fontSize: 8\|fontSize: 9" apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 0 ✓ (was 8px 1, 9px 1, fixed in Task3, stays 0)
 grep -R "fontSize: 17\|fontSize: 19\|fontSize: 22" apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 0 ✓ (was 8)
 grep -R "fontWeight: 800" apps/web/src --include="*.tsx" --include="*.ts" | grep -v "var(--font-display)" | wc -l  # 0 ✓ (was 21)
 grep -R "Baloo 2, sans-serif" apps/web/src --include="*.tsx" --include="*.ts" | grep -v "tests" | wc -l  # 0 ✓ (was 9)
 # Numeric breakdown
-grep -R "fontSize: [0-9]" apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 198 numeric (12/13/14 body/caption dominant)
-grep -R 'fontSize: "var(--type-' apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 150 rem tokenized
+grep -R "fontSize: [0-9]" apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 198 numeric (12/13/14 body/caption dominant) — 197 after Trends fix
+grep -R 'fontSize: "var(--type-' apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 150 rem tokenized — 151 after Trends fix
 ```
 
-Gate interpretation per brief: `<150` was aspirational for raw `fontSize` with numeric px; after tokenization 198 numeric remain but are mostly `12/13` body/caption + `11` label that could be further migrated to `text-sm` Tailwind or `var(--type-body-sm/caption)` to drop below 150. Remaining numeric are documented exceptions (chart tick via Recharts `tick.fontSize` uses CSS var rem now, but `strokeWidth`/`tickMargin` px kept per Implementation rules). Threshold `var(--type-) >50` PASS, `8/9 px 0` PASS.
+Gate interpretation per brief: `<150` was aspirational for raw `fontSize` with numeric px; after tokenization 198 numeric remain (197 after Trends fix) but are mostly `12/13` body/caption + `11` label that could be further migrated to `text-sm` Tailwind or `var(--type-body-sm/caption)` to drop below 150. Remaining numeric are documented exceptions (chart tick via Recharts `tick.fontSize` uses CSS var rem now, but `strokeWidth`/`tickMargin` px kept per Implementation rules). Threshold `var(--type-) >50` PASS (166, 152 without tests), `8/9 px 0` PASS.
 
 ## Step 4 — Validate zoom/responsive + typecheck/build
 
@@ -131,7 +131,7 @@ no warning
 ```
 
 ## Concerns
-- Numeric `fontSize` 198 >150 gate: remaining 198 are mostly `12/13` body/caption + `11` label not yet migrated to `text-sm` Tailwind or `var(--type-body-sm/caption)`; to meet <150, a follow-up pass could replace `fontSize: 12` → `var(--type-caption)` and `fontSize: 13` → `var(--type-body-sm)` in Candling `note`, `Checkpoint`, `Development observed` etc. — deferred as density-preserving exceptions, documented in baseline.
+- Numeric `fontSize` 198 >150 gate (197 after Trends fix): remaining 198 are mostly `12/13` body/caption + `11` label not yet migrated to `text-sm` Tailwind or `var(--type-body-sm/caption)`; to meet <150, a follow-up pass could replace `fontSize: 12` → `var(--type-caption)` and `fontSize: 13` → `var(--type-body-sm)` in Candling `note`, `Checkpoint`, `Development observed` etc. — deferred as density-preserving exceptions, documented in baseline.
 - Chart `tick fontSize` now uses `var(--type-label)` rem (0.6875rem = 11px) — Recharts SVG supports CSS var, visually identical to 11px, verified no regression.
 - `GaugeDial`/`WaterDroplet` dynamic `Math.round(size*0.14)` etc. remain px — deliberate illustration per Non-goals, not counted in 8/9 gate.
 

@@ -166,7 +166,7 @@ function OffTargetRow({
             <div style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: TEXT, whiteSpace: "normal", wordBreak: "break-word" }}>
               {unit.name}
             </div>
-            <div className="truncate" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-snug)", color: "#6E6259" }}>
+            <div style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-snug)", color: "#6E6259", whiteSpace: "normal", wordBreak: "break-word" }}>
               {mode.name}
             </div>
           </div>

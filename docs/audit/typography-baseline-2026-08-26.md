@@ -5,10 +5,10 @@ Generated: 2026-08-26 · Source: `apps/web/src` · Method: `grep -R fontSize|var
 ## Inventory (rerun)
 
 ```bash
-grep -R "fontSize" apps/web/src --include="*.tsx" --include="*.ts" | wc -l   # 356 total inline fontSize (numeric + var)
-grep -R "fontSize: [0-9]" apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 198 numeric px (down from 334 baseline, -41%)
-grep -R 'fontSize: "var(--type-' apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 150 tokenized via var(--type-*) rem
-grep -R "var(--type-" apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 152 total var(--type-*) (fontSize + tick etc.) >50 ✓ (was 0, now 152)
+grep -R "fontSize" apps/web/src --include="*.tsx" --include="*.ts" | wc -l   # 359 total inline fontSize (numeric + var) — includes 3 test fixtures; 356 without tests
+grep -R "fontSize: [0-9]" apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 198 numeric px (down from 334 baseline, -41%) — 197 after Trends CONTROL_FONT tokenization
+grep -R 'fontSize: "var(--type-' apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 150 tokenized via var(--type-*) rem — 151 after Trends CONTROL_FONT fix
+grep -R "var(--type-" apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 166 total var(--type-*) (fontSize + tick etc.) — 152 without tests; 167 after Trends fix; >50 ✓ (was 0, now 166)
 grep -R "fontSize: 8\|fontSize: 9" apps/web/src --include="*.tsx" --include="*.ts" | wc -l      # 0 ✓ (was 8px 1, 9px 1)
 grep -R "fontSize: 17\|fontSize: 19\|fontSize: 22" apps/web/src --include="*.tsx" --include="*.ts" | wc -l  # 0 ✓ (was 17×5, 22×3)
 grep -R "fontWeight: 800" apps/web/src --include="*.tsx" --include="*.ts" | grep -v "var(--font-display)" | wc -l  # 0 ✓ (was 21 without display)
@@ -16,9 +16,9 @@ grep -R "Baloo 2, sans-serif" apps/web/src --include="*.tsx" --include="*.ts" | 
 ```
 
 Comparison to audit baseline 2026-08-25 (323 fontSize numeric, 0 var(--type-)):
-- Numeric fontSize 323 → 198 (-125)
-- Tokenized var(--type-) 0 → 150 fontSize rem
-- Total var(--type-) 0 → 152
+- Numeric fontSize 323 → 198 (-125) — 197 after Trends fix
+- Tokenized var(--type-) 0 → 150 fontSize rem — 151 after Trends fix
+- Total var(--type-) 0 → 166 — 152 without tests; 167 after Trends fix
 - 8px/9px 2 → 0
 - 17/19/22 8 → 0
 - 800 without display 21 → 0
@@ -104,8 +104,8 @@ No `fontSize: 8/9` remains. No `fontSize: 17/19/22` raw remains. No `Baloo 2, sa
 
 ## Counts to carry forward
 
-- Inline `fontSize` total 356 (198 numeric + 150 rem var) — numeric 198 remain mostly `12/13/14` body/caption + `11` label + `10?0` — future normalize via `text-sm` Tailwind or body-sm/caption tokens could drop numeric to <100
-- `var(--type-)` 152 — covers high-reuse components (PageHeader, SectionCard, KPI, IncubatorCard, Alerts, Trends, LiveMonitor, Candling, Timeline, Calendar, HelpWidget, Detail banners)
+- Inline `fontSize` total 359 (198 numeric + 150 rem var; 359 includes 3 test fixtures — 356 without tests; 197 numeric + 151 rem after Trends CONTROL_FONT fix) — numeric 198 remain mostly `12/13/14` body/caption + `11` label + `10?0` — future normalize via `text-sm` Tailwind or body-sm/caption tokens could drop numeric to <100
+- `var(--type-)` 166 (152 without tests; 167 after Trends CONTROL_FONT fix) — covers high-reuse components (PageHeader, SectionCard, KPI, IncubatorCard, Alerts, Trends, LiveMonitor, Candling, Timeline, Calendar, HelpWidget, Detail banners)
 - `var(--font-display/body)` replaces all 21 explicit Baloo/Nunito
 - `var(--weight-*)` 700/800 now via tokens in outlier tiles
 

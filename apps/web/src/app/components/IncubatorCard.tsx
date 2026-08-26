@@ -135,7 +135,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
         {/* Header — name and mode on the left; power indicator alone on the right. */}
         <div className="mb-3 min-w-0">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <h3 className="flex min-w-0 items-center gap-1 truncate" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
+            <h3 className="flex min-w-0 items-center gap-1" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
               <span className="min-w-0" style={{ whiteSpace: "normal", wordBreak: "break-word" }}>{unit.name}</span>
               <ChevronRight size={14} className="shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ color: "#C27B4A" }} aria-hidden />
             </h3>
@@ -143,7 +143,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
               <SegmentedBattery battery={unit.batteryPct} charging={unit.powerSource !== "battery"} showLabel />
             </div>
           </div>
-          <p className="min-w-0 truncate" style={{ color: ready ? "#9CA3AF" : "#6E6259", fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-normal)", marginTop: 2 }}>
+          <p className="min-w-0" style={{ color: ready ? "#9CA3AF" : "#6E6259", fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-normal)", whiteSpace: "normal", wordBreak: "break-word", marginTop: 2 }}>
             {ready ? "Unassigned" : mode.name}
           </p>
         </div>
