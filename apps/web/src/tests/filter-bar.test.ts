@@ -44,4 +44,27 @@ describe("filter-bar primitive", () => {
     const horizon = s.slice(s.indexOf('ariaLabel="Time horizon"') - 500, s.indexOf('ariaLabel="Time horizon"') + 500);
     expect(horizon).not.toContain("rounded-xl");
   });
+  it("no remaining hardcoded pill styles in filter bars", () => {
+    const files = [
+      "src/app/components/screens/AlertsScreen.tsx",
+      "src/app/components/screens/IncubatorsScreen.tsx",
+      "src/app/components/screens/TrendsScreen.tsx",
+    ];
+    for (const f of files) {
+      const s = fs.readFileSync(path.resolve(f), "utf-8");
+      if (s.includes("FilterBar")) {
+        expect(s).not.toMatch(/"#F5EDD8"/);
+        expect(s).not.toMatch(/"#5C4636"/);
+        // bar should not contain raw fontSize: 11 number (tokenized)
+        const barSlice = s.slice(s.indexOf("FilterBar") - 200, s.indexOf("FilterBar") + 800);
+        expect(barSlice).not.toMatch(/fontSize:\s*11[^r]/);
+      }
+    }
+  });
+  it("FilterBar has focus ring and aria-pressed", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/ui/filter-bar.tsx"), "utf-8");
+    expect(s).toContain("focus-visible:ring-2");
+    expect(s).toContain("aria-pressed");
+    expect(s).toContain('role="group"');
+  });
 });
