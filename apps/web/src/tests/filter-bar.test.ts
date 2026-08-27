@@ -36,4 +36,12 @@ describe("filter-bar primitive", () => {
     expect(s).not.toMatch(/fontSize: 11,/);
     expect(s.match(/FilterBar/g)?.length).toBeGreaterThanOrEqual(1);
   });
+  it("TrendsScreen horizon uses FilterBar not rounded-xl", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/screens/TrendsScreen.tsx"), "utf-8");
+    expect(s).toContain("FilterBar");
+    expect(s).toContain('ariaLabel="Time horizon"');
+    // horizon section should not contain rounded-xl after migration
+    const horizon = s.slice(s.indexOf('ariaLabel="Time horizon"') - 500, s.indexOf('ariaLabel="Time horizon"') + 500);
+    expect(horizon).not.toContain("rounded-xl");
+  });
 });

@@ -50,6 +50,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { PaginationBar } from "../ui/pagination-bar";
+import { FilterBar } from "../ui/filter-bar";
 import { HatchRecord, Incubator, Mode, buildHistory, calculateHatchabilityRate } from "../../data/mockData";
 
 // ── Design tokens ───────────────────────────────────────────────────────────
@@ -536,39 +537,23 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               </div>
             </div>
 
-            {/* ROW 2 — time horizon presets. */}
-            <div
-              className="mt-4 flex flex-wrap gap-2 pt-4"
-              style={{ borderTop: `1px solid ${BORDER}` }}
-            >
-              {ranges.map((r) => {
-                const active = range === r.key;
-                return (
-                  <button
-                    key={r.key}
-                    onClick={() => setRange(r.key)}
-                    className="rounded-xl px-4 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                    style={{
-                      backgroundColor: active ? RUST : SURFACE,
-                      color: active ? "var(--on-brand)" : "var(--text-muted)",
-                      fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-label)",
-                      fontWeight: "var(--weight-bold)",
-                      letterSpacing: "var(--tracking-label)",
-                      lineHeight: "var(--leading-snug)",
-                      textTransform: "uppercase",
-                      border: active ? "none" : `1px solid ${BORDER}`,
-                    }}
-                  >
-                    {r.label}
-                  </button>
-                );
-              })}
+            <div className="mt-4 flex flex-wrap items-center gap-2 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+              <FilterBar
+                ariaLabel="Time horizon"
+                value={range}
+                onChange={(key) => setRange(key as RangeKey)}
+                options={ranges.map((r) => ({ key: r.key, label: r.label }))}
+              />
               {!compare && (
                 <button
                   onClick={() => setReadingsOpen(true)}
-                  className="ml-auto flex items-center gap-2 rounded-lg px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  style={{ color: RUST, fontSize: 13, fontWeight: 700 }}
+                  className="ml-auto flex items-center gap-2 rounded-lg px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+                  style={{
+                    color: "var(--brand-primary)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-bold)",
+                  }}
                 >
                   <TableProperties size={16} aria-hidden="true" /> See all readings
                 </button>
