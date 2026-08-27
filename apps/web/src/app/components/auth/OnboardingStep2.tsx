@@ -1,0 +1,167 @@
+import { useState } from "react";
+import { Egg, Feather, Sparkles, FlaskConical } from "lucide-react";
+import { AuthCard } from "./AuthCard";
+import { StepperBar } from "./StepperBar";
+import type { PrimaryFocus } from "../../data/onboarding";
+import { OnboardingStep2Schema } from "../../data/onboarding";
+
+type FocusOption = {
+  id: PrimaryFocus;
+  label: string;
+  icon: typeof Egg;
+};
+
+const FOCUS_OPTIONS: FocusOption[] = [
+  { id: "commercial", label: "Commercial hatchery", icon: Egg },
+  { id: "heritage", label: "Heritage breeding", icon: Feather },
+  { id: "backyard", label: "Backyard flock", icon: Sparkles },
+  { id: "research", label: "Research / education", icon: FlaskConical },
+];
+
+const SPECIES_OPTIONS = ["chicken", "duck", "quail", "turkey", "goose", "guinea_fowl"] as const;
+const SPECIES_LABELS: Record<(typeof SPECIES_OPTIONS)[number], string> = {
+  chicken: "Chicken",
+  duck: "Duck",
+  quail: "Quail",
+  turkey: "Turkey",
+  goose: "Goose",
+  guinea_fowl: "Guinea fowl",
+};
+
+export function OnboardingStep2({
+  onContinue,
+  onBack,
+  onHaveAccount,
+}: {
+  onContinue: (data: { primaryFocus: PrimaryFocus; species: string[] }) => void;
+  onBack: () => void;
+  onHaveAccount: () => void;
+}) {
+  const [primaryFocus, setPrimaryFocus] = useState<PrimaryFocus>("commercial");
+  const [species, setSpecies] = useState<string[]>(["chicken"]);
+  const [error, setError] = useState<string | undefined>();
+
+  const toggleSpecies = (s: string) => {
+    setSpecies((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+  };
+
+  const submit = () => {
+    const r = OnboardingStep2Schema.safeParse({ primaryFocus, species });
+    if (!r.success) {
+      setError(r.error.issues[0].message);
+      return;
+    }
+    setError(undefined);
+    onContinue({ primaryFocus, species });
+  };
+
+  return (
+    <AuthCard>
+      <StepperBar step={2} onHaveAccount={onHaveAccount} />
+      <h1
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: "var(--type-page-title)",
+          fontWeight: "var(--weight-bold)",
+          color: "var(--text-primary)",
+          lineHeight: "var(--leading-snug)",
+        }}
+      >
+        What are you hatching?
+      </h1>
+      <p
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "var(--type-body)",
+          color: "var(--text-secondary)",
+        }}
+      >
+        We’ll tailor Mode presets to the species you incubate.
+      </p>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        {FOCUS_OPTIONS.map((opt) => {
+          const selected = primaryFocus === opt.id;
+          const Icon = opt.icon;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => setPrimaryFocus(opt.id)}
+              className="flex flex-col items-center gap-2 rounded-2xl border p-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+              style={{
+                backgroundColor: selected ? "var(--brand-primary-soft)" : "var(--surface-card)",
+                borderColor: selected ? "var(--brand-primary)" : "var(--border-default)",
+                color: selected ? "var(--brand-primary)" : "var(--text-primary)",
+              }}
+            >
+              <Icon size={20} />
+              <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body)", fontWeight: "var(--weight-semibold)" }}>{opt.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-6">
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-label)",
+            fontWeight: "var(--weight-bold)",
+            letterSpacing: "var(--tracking-label)",
+            textTransform: "uppercase",
+            color: "var(--text-primary)",
+          }}
+        >
+          Species
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {SPECIES_OPTIONS.map((s) => {
+            const selected = species.includes(s);
+            return (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => toggleSpecies(s)}
+                className="rounded-full border px-3 py-1.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+                style={{
+                  backgroundColor: selected ? "var(--brand-primary)" : "var(--surface-card)",
+                  color: selected ? "var(--on-brand)" : "var(--text-primary)",
+                  borderColor: selected ? "var(--brand-primary)" : "var(--border-default)",
+                }}
+              >
+                {selected ? "✓ " : ""}
+                {SPECIES_LABELS[s]}
+              </button>
+            );
+          })}
+        </div>
+        {error && (
+          <p className="mt-2 text-xs" style={{ color: "var(--status-danger-fg)" }} role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-6 flex gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex h-12 flex-1 items-center justify-center rounded-xl border bg-white font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}
+        >
+          ← Back
+        </button>
+        <button
+          type="button"
+          onClick={submit}
+          className="flex h-12 flex-1 items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        >
+          Continue →
+        </button>
+      </div>
+    </AuthCard>
+  );
+}

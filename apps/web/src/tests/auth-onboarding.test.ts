@@ -41,3 +41,24 @@ describe("auth primitives tokens", () => {
     expect(s).toContain("htmlFor");
   });
 });
+describe("auth screens copy", () => {
+  it("SignIn has WELCOME BACK + Check on your clutch", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/auth/SignInScreen.tsx"), "utf-8");
+    expect(s).toContain("WELCOME BACK");
+    expect(s).toContain("Check on your clutch.");
+    expect(s).toContain("Set up your farm");
+  });
+  it("Step1 has Lets set up your farm", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/auth/OnboardingStep1.tsx"), "utf-8");
+    expect(s).toContain("Let\u2019s set up your farm.");
+  });
+  it("Step2 has What are you hatching + species pills", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/auth/OnboardingStep2.tsx"), "utf-8");
+    expect(s).toContain("What are you hatching?");
+    expect(s).toContain("aria-pressed");
+  });
+  it("Step3 has Name your first chamber + Chicken", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/auth/OnboardingStep3.tsx"), "utf-8");
+    expect(s).toContain("Name your first chamber.");
+  });
+});
