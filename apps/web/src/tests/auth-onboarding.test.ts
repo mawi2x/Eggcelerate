@@ -62,3 +62,12 @@ describe("auth screens copy", () => {
     expect(s).toContain("Name your first chamber.");
   });
 });
+describe("App wiring (mock flag)", () => {
+  it("App.tsx has login/onboarding ScreenId behind demo flag", () => {
+    const s = fs.readFileSync(path.resolve("src/app/App.tsx"), "utf-8");
+    expect(s).toContain("login");
+    expect(s).toContain("onboarding");
+    expect(s).toContain("demo=onboarding");
+    expect(s).toContain("lazy");
+  });
+});

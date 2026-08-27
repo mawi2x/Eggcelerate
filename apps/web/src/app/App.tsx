@@ -9,12 +9,21 @@ import { AlertsScreen } from "./components/screens/AlertsScreen";
 import { SettingsScreen } from "./components/screens/SettingsScreen";
 import { HelpWidget } from "./components/HelpWidget";
 import { SuspenseFallback } from "./components/SuspenseFallback";
+import { SignInScreen } from "./components/auth/SignInScreen";
+import { OnboardingStep1 } from "./components/auth/OnboardingStep1";
+import { defaultOnboarding, OnboardingState } from "./data/onboarding";
 
 const DetailScreen = lazy(() =>
   import("./components/screens/DetailScreen").then((m) => ({ default: m.DetailScreen })),
 );
 const TrendsScreen = lazy(() =>
   import("./components/screens/TrendsScreen").then((m) => ({ default: m.TrendsScreen })),
+);
+const OnboardingStep2 = lazy(() =>
+  import("./components/auth/OnboardingStep2").then((m) => ({ default: m.OnboardingStep2 })),
+);
+const OnboardingStep3 = lazy(() =>
+  import("./components/auth/OnboardingStep3").then((m) => ({ default: m.OnboardingStep3 })),
 );
 import {
   initialIncubators,
@@ -25,18 +34,29 @@ import {
   Mode,
   HatchRecord,
   hatchHistory,
+  CURRENT_TRAY_CAPACITY,
 } from "./data/mockData";
 import { Account, initialAccount, resolveDisplayName } from "./data/account";
 import { deriveConditionSeverity, unitStatusFromConditionSeverity } from "./domain/cycle";
 
-function getInitialNavState(): { screen: ScreenId; selectedUnit: string | null } {
-  if (typeof window === "undefined") return { screen: "overview", selectedUnit: null };
+function getInitialNavState(): { screen: ScreenId; selectedUnit: string | null; onboardingStep: number } {
+  if (typeof window === "undefined") return { screen: "overview", selectedUnit: null, onboardingStep: 1 };
   const params = new URLSearchParams(window.location.search);
+  // demo flag guard — flip to real auth is 1-line swap: if (!user)
+  if (params.get("demo") === "onboarding") {
+    const demoScreen = params.get("screen") as ScreenId | null;
+    if (demoScreen === "login") return { screen: "login", selectedUnit: null, onboardingStep: 1 };
+    if (demoScreen === "onboarding") {
+      const stepParam = Number(params.get("step") || "1");
+      const step = [1, 2, 3].includes(stepParam) ? stepParam : 1;
+      return { screen: "onboarding", selectedUnit: null, onboardingStep: step };
+    }
+  }
   const screenParam = params.get("screen") as ScreenId | null;
   const unitParam = params.get("unit");
-  const validScreens: ScreenId[] = ["overview", "incubators", "detail", "trends", "alerts", "settings"];
-  const screen = screenParam && validScreens.includes(screenParam) ? screenParam : "overview";
-  return { screen, selectedUnit: unitParam };
+  const validScreens: ScreenId[] = ["overview", "incubators", "detail", "trends", "alerts", "settings", "login", "onboarding"];
+  const screen = screenParam && validScreens.includes(screenParam) && screenParam !== "login" && screenParam !== "onboarding" ? screenParam : "overview";
+  return { screen, selectedUnit: unitParam, onboardingStep: 1 };
 }
 
 export default function App() {
@@ -44,15 +64,25 @@ export default function App() {
   const [screen, setScreen] = useState<ScreenId>(initialNav.screen);
   const [selectedUnit, setSelectedUnit] = useState<string | null>(initialNav.selectedUnit);
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [onboardingState, setOnboardingState] = useState<OnboardingState>(defaultOnboarding);
+  const [onboardingStep, setOnboardingStep] = useState<number>(initialNav.onboardingStep);
 
   const syncUrl = (newScreen: ScreenId, newUnit: string | null, replace = false) => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams();
-    if (newScreen !== "overview" || newUnit) {
+    const isAuthScreen = newScreen === "login" || newScreen === "onboarding";
+    // Preserve demo flag for auth screens
+    if (isAuthScreen) {
+      params.set("demo", "onboarding");
+    }
+    if (newScreen !== "overview" || newUnit || isAuthScreen) {
       params.set("screen", newScreen);
     }
     if (newUnit) {
       params.set("unit", newUnit);
+    }
+    if (newScreen === "onboarding" && onboardingStep) {
+      params.set("step", String(onboardingStep));
     }
     const queryString = params.toString();
     const newUrl = queryString ? `?${queryString}` : window.location.pathname;
@@ -63,11 +93,39 @@ export default function App() {
     }
   };
 
+  const syncOnboardingUrl = (step: number, replace = false) => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams();
+    params.set("demo", "onboarding");
+    params.set("screen", "onboarding");
+    params.set("step", String(step));
+    const newUrl = `?${params.toString()}`;
+    if (replace) {
+      window.history.replaceState({ screen: "onboarding", unit: null }, "", newUrl);
+    } else {
+      window.history.pushState({ screen: "onboarding", unit: null }, "", newUrl);
+    }
+  };
+
+  const syncLoginUrl = (replace = false) => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams();
+    params.set("demo", "onboarding");
+    params.set("screen", "login");
+    const newUrl = `?${params.toString()}`;
+    if (replace) {
+      window.history.replaceState({ screen: "login", unit: null }, "", newUrl);
+    } else {
+      window.history.pushState({ screen: "login", unit: null }, "", newUrl);
+    }
+  };
+
   useEffect(() => {
     const onPopState = () => {
-      const { screen: s, selectedUnit: u } = getInitialNavState();
+      const { screen: s, selectedUnit: u, onboardingStep: step } = getInitialNavState();
       setScreen(s);
       setSelectedUnit(u);
+      setOnboardingStep(step);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -134,6 +192,17 @@ export default function App() {
   const navigate = (id: ScreenId) => {
     setSelectedUnit(null);
     setScreen(id);
+    // For auth screens, use dedicated sync to keep demo=onboarding flag
+    if (id === "login") {
+      // keep onboardingStep at 1
+      syncLoginUrl();
+      return;
+    }
+    if (id === "onboarding") {
+      setOnboardingStep(1);
+      syncOnboardingUrl(1);
+      return;
+    }
     syncUrl(id, null);
   };
 
@@ -290,7 +359,138 @@ export default function App() {
       subtitle:
         "App settings: modes, notifications, and account.",
     },
+    login: {
+      title: "Sign in",
+      subtitle: "Welcome back",
+    },
+    onboarding: {
+      title: "Onboarding",
+      subtitle: "Set up your farm",
+    },
   };
+
+  // Auth screens render full-page without sidebar, behind demo flag
+  if (screen === "login") {
+    return (
+      <>
+        <SignInScreen
+          onSignIn={() => {
+            setScreen("overview");
+            syncUrl("overview", null);
+          }}
+          onSetup={() => {
+            setScreen("onboarding");
+            setOnboardingStep(1);
+            syncOnboardingUrl(1);
+          }}
+        />
+        <Toaster position="top-right" richColors />
+      </>
+    );
+  }
+
+  if (screen === "onboarding") {
+    if (onboardingStep === 1) {
+      return (
+        <>
+          <OnboardingStep1
+            onContinue={(data) => {
+              setOnboardingState((prev) => ({ ...prev, ...data }));
+              setOnboardingStep(2);
+              syncOnboardingUrl(2);
+            }}
+            onHaveAccount={() => {
+              setScreen("login");
+              syncLoginUrl();
+            }}
+          />
+          <Toaster position="top-right" richColors />
+        </>
+      );
+    }
+    if (onboardingStep === 2) {
+      return (
+        <Suspense fallback={<SuspenseFallback label="Loading onboarding..." />}>
+          <OnboardingStep2
+            onContinue={(data) => {
+              setOnboardingState((prev) => ({ ...prev, ...data }));
+              setOnboardingStep(3);
+              syncOnboardingUrl(3);
+            }}
+            onBack={() => {
+              setOnboardingStep(1);
+              syncOnboardingUrl(1);
+            }}
+            onHaveAccount={() => {
+              setScreen("login");
+              syncLoginUrl();
+            }}
+          />
+          <Toaster position="top-right" richColors />
+        </Suspense>
+      );
+    }
+    return (
+      <Suspense fallback={<SuspenseFallback label="Loading onboarding..." />}>
+        <OnboardingStep3
+          onEnter={(data) => {
+            setOnboardingState((prev) => ({ ...prev, ...data }));
+            // set state then finish — use updated value directly for toast/name
+            // merge data synchronously for finish
+            const merged = { ...onboardingState, ...data };
+            // update state and immediately finish with merged
+            setOnboardingState(merged);
+            // finish uses merged via closure? call inline to avoid stale
+            // Instead duplicate finish logic with merged
+            updateAccount({
+              accountHolder: merged.name || initialAccount.accountHolder,
+              farmName: merged.farmName || initialAccount.farmName,
+            });
+            const mode = modes.find((m) => m.id === merged.startingModeId) ?? modes[0];
+            const newIncubator: Incubator = {
+              id: `chamber-${Date.now()}`,
+              name: merged.chamberName,
+              deviceId: `EGG-${String(Date.now()).slice(-4)}`,
+              modeId: merged.startingModeId,
+              dayOfIncubation: 1,
+              totalEggsLoaded: CURRENT_TRAY_CAPACITY,
+              temp: mode.targetTemp.min,
+              humidity: mode.targetHumidity.min,
+              waterOk: true,
+              tempTrend: 0,
+              humidityTrend: 0,
+              powerSource: "grid",
+              batteryPct: 100,
+              status: "optimal",
+              lastTurned: new Date().toISOString(),
+              nextTurn: new Date(Date.now() + (mode.defaultTurnInterval ?? 4) * 3600000).toISOString(),
+              turnInterval: mode.defaultTurnInterval ?? 4,
+              autoTurn: true,
+              paired: true,
+              cyclePhase: "incubating",
+              conditionSeverity: "info",
+              connectionState: "connected",
+              candled: {},
+              candlingLog: [],
+            };
+            addIncubator(newIncubator);
+            toast.success(`Welcome to Eggcelerate, ${merged.name.split(" ")[0] || "farmer"}!`);
+            setScreen("overview");
+            syncUrl("overview", null);
+          }}
+          onBack={() => {
+            setOnboardingStep(2);
+            syncOnboardingUrl(2);
+          }}
+          onHaveAccount={() => {
+            setScreen("login");
+            syncLoginUrl();
+          }}
+        />
+        <Toaster position="top-right" richColors />
+      </Suspense>
+    );
+  }
 
   return (
     <div

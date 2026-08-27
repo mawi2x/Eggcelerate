@@ -20,7 +20,9 @@ export type ScreenId =
   | "detail"
   | "trends"
   | "alerts"
-  | "settings";
+  | "settings"
+  | "login"
+  | "onboarding";
 
 interface NavItem {
   id: ScreenId;
