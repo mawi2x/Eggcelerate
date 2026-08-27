@@ -23,3 +23,21 @@ describe("onboarding schemas (mock)", () => {
   it("Step3 rejects chamberName >30", () => expect(() => OnboardingStep3Schema.parse({ chamberName: "x".repeat(31), startingModeId: "broiler" })).toThrow());
   it("Step2 default species includes chicken", () => expect(OnboardingStep2Schema.parse({ primaryFocus: "backyard", species: ["chicken"] }).species).toContain("chicken"));
 });
+describe("auth primitives tokens", () => {
+  it("AuthCard uses surface-page and rounded-3xl", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/auth/AuthCard.tsx"), "utf-8");
+    expect(s).toContain("var(--surface-page)");
+    expect(s).toContain("rounded-3xl");
+    expect(s).toContain("var(--border-subtle)");
+  });
+  it("StepperBar has progressbar aria", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/auth/StepperBar.tsx"), "utf-8");
+    expect(s).toContain('role="progressbar"');
+    expect(s).toContain("aria-valuenow");
+  });
+  it("FormInput has focus ring and label association", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/auth/FormInput.tsx"), "utf-8");
+    expect(s).toContain("focus-visible:ring-2");
+    expect(s).toContain("htmlFor");
+  });
+});
