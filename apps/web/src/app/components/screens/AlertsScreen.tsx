@@ -3,6 +3,7 @@ import { Check, CheckCheck, X, Eraser } from "lucide-react";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { PaginationBar } from "../ui/pagination-bar";
+import { FilterBar } from "../ui/filter-bar";
 import { AlertEntry, AlertSeverity } from "../../data/mockData";
 import { severityStyle, timeAgo } from "../alerts/alertStyle";
 import logoApp from "../../../imports/logo-app.webp";
@@ -72,33 +73,16 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
     <div className="space-y-5">
       {/* ── Controls header — pills left, actions right ─────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {filters.map((f) => {
-            const active = filter === f.key;
-            const count = f.key === "all" ? alerts.length : alerts.filter((a) => a.severity === f.key).length;
-            return (
-              <button
-                key={f.key}
-                onClick={() => {
-                  setFilter(f.key);
-                  setAlertPage(1);
-                }}
-                className="rounded-full px-4 py-2 transition-colors"
-                style={{
-                  backgroundColor: active ? RUST : "#F5EDD8",
-                  color: active ? "#fff" : "#5C4636",
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-body-sm)",
-                  fontWeight: "var(--weight-semibold)",
-                  lineHeight: "var(--leading-normal)",
-                }}
-                aria-pressed={active}
-              >
-                {f.label} <span style={{ opacity: 0.75 }}>({count})</span>
-              </button>
-            );
-          })}
-        </div>
+        <FilterBar
+          ariaLabel="Alert filter"
+          value={filter}
+          onChange={(key) => { setFilter(key as Filter); setAlertPage(1); }}
+          options={filters.map((f) => ({
+            key: f.key,
+            label: f.label,
+            count: f.key === "all" ? alerts.length : alerts.filter((a) => a.severity === f.key).length,
+          }))}
+        />
 
         <div className="flex flex-wrap items-center gap-2">
           <Select

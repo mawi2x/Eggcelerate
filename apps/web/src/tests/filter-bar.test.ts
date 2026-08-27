@@ -20,4 +20,13 @@ describe("filter-bar primitive", () => {
     expect(css).toContain("--tracking-label: 0.05em");
     expect(css).toContain("--brand-primary: #AD3A1D");
   });
+  it("AlertsScreen uses FilterBar not hardcoded pill styles", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/screens/AlertsScreen.tsx"), "utf-8");
+    expect(s).toContain("FilterBar");
+    expect(s).toContain('ariaLabel="Alert filter"');
+    expect(s).not.toMatch(/backgroundColor: active \? RUST : "#F5EDD8"/);
+    expect(s).not.toMatch(/"#5C4636"/);
+    const barSlice = s.slice(Math.max(0, s.indexOf("FilterBar") - 200), s.indexOf("FilterBar") + 800);
+    expect(barSlice).not.toMatch(/fontSize: "var\(--type-body-sm\)"/);
+  });
 });
