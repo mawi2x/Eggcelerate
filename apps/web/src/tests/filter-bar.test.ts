@@ -29,4 +29,11 @@ describe("filter-bar primitive", () => {
     const barSlice = s.slice(Math.max(0, s.indexOf("FilterBar") - 200), s.indexOf("FilterBar") + 800);
     expect(barSlice).not.toMatch(/fontSize: "var\(--type-body-sm\)"/);
   });
+  it("IncubatorsScreen uses FilterBar not inline 11 raw", () => {
+    const s = fs.readFileSync(path.resolve("src/app/components/screens/IncubatorsScreen.tsx"), "utf-8");
+    expect(s).toContain("FilterBar");
+    expect(s).toContain('ariaLabel="Incubator status filter"');
+    expect(s).not.toMatch(/fontSize: 11,/);
+    expect(s.match(/FilterBar/g)?.length).toBeGreaterThanOrEqual(1);
+  });
 });

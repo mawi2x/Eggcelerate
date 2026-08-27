@@ -20,6 +20,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger,
 } from "../ui/select";
 import { PaginationBar } from "../ui/pagination-bar";
+import { FilterBar } from "../ui/filter-bar";
 import {
   Incubator, Mode, UnitStatus, rangeState, waterState, readingStateColors, daysUntilHatch,
   CURRENT_TRAY_CAPACITY, getKnownFertileEggs, recordHarvest, resetChamberToReady,
@@ -286,30 +287,12 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
 
       {/* Filter pills on the left, hatch timeline sort on the right */}
       <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginTop: 20 }}>
-      <div className="flex flex-wrap gap-2">
-        {filterPills.map((p) => {
-          const active = filter === p.key;
-          return (
-            <button
-              key={p.key}
-              onClick={() => { setFilter(p.key); setPage(1); }}
-              className={`rounded-full px-3.5 py-1.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 cursor-pointer ${!active ? "hover:!border-[var(--nav-hover-border)] hover:!bg-[var(--nav-hover-bg)] hover:!text-[var(--brand-primary)]" : ""}`}
-              style={{
-                backgroundColor: active ? RUST : CARD,
-                color: active ? "var(--on-brand)" : "var(--text-muted)",
-                border: `1px solid ${active ? RUST : BORDER}`,
-                fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              {p.label} ({p.count})
-            </button>
-          );
-        })}
-      </div>
+      <FilterBar
+        ariaLabel="Incubator status filter"
+        value={filter}
+        onChange={(key) => { setFilter(key as typeof filter); setPage(1); }}
+        options={filterPills.map((p) => ({ key: p.key, label: p.label, count: p.count }))}
+      />
 
         <div className="flex items-center gap-2">
           <Select value={sort} onValueChange={(v) => { setSort(v as SortKey); setPage(1); }}>
@@ -386,13 +369,13 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {["CHAMBER", "MODE", "DAY"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>{h}</TableHead>
                   ))}
                   {["TEMP", "HUMIDITY", "WATER"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10 text-right" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                    <TableHead key={h} className="sticky top-0 z-10 text-right" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>{h}</TableHead>
                   ))}
                   {["STATUS", "ACTIONS"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</TableHead>
+                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>{h}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
