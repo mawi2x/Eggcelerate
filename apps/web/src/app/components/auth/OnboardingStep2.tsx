@@ -78,32 +78,7 @@ export function OnboardingStep2({
       >
         We’ll tailor Mode presets to the species you incubate.
       </p>
-
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        {FOCUS_OPTIONS.map((opt) => {
-          const selected = primaryFocus === opt.id;
-          const Icon = opt.icon;
-          return (
-            <button
-              key={opt.id}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => setPrimaryFocus(opt.id)}
-              className="flex flex-col items-center gap-2 rounded-2xl border p-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
-              style={{
-                backgroundColor: selected ? "var(--brand-primary-soft)" : "var(--surface-card)",
-                borderColor: selected ? "var(--brand-primary)" : "var(--border-default)",
-                color: selected ? "var(--brand-primary)" : "var(--text-primary)",
-              }}
-            >
-              <Icon size={20} />
-              <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body)", fontWeight: "var(--weight-semibold)" }}>{opt.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-6">
+      <div className="mt-4">
         <p
           style={{
             fontFamily: "var(--font-body)",
@@ -114,7 +89,54 @@ export function OnboardingStep2({
             color: "var(--text-primary)",
           }}
         >
-          Species
+          Primary focus
+        </p>
+        <div className="mt-2 grid grid-cols-2 gap-2.5">
+          {FOCUS_OPTIONS.map((opt) => {
+            const selected = primaryFocus === opt.id;
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setPrimaryFocus(opt.id)}
+                className="flex items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
+                style={{
+                  backgroundColor: selected ? "#FFF8F5" : "#FFFFFF",
+                  borderColor: selected ? "var(--brand-primary)" : "#E8E2D5",
+                  color: selected ? "var(--brand-primary)" : "var(--text-primary)",
+                }}
+              >
+                <Icon size={18} className="shrink-0" />
+                <span
+                  className="truncate"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-body-sm)",
+                    fontWeight: "var(--weight-semibold)",
+                  }}
+                >
+                  {opt.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-label)",
+            fontWeight: "var(--weight-bold)",
+            letterSpacing: "var(--tracking-label)",
+            textTransform: "uppercase",
+            color: "var(--text-primary)",
+          }}
+        >
+          Species (pick any)
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
           {SPECIES_OPTIONS.map((s) => {

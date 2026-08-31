@@ -28,38 +28,42 @@ export function SignInScreen({
 
   return (
     <AuthCard>
-      <p
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: "var(--type-label)",
-          fontWeight: "var(--weight-bold)",
-          letterSpacing: "var(--tracking-label)",
-          textTransform: "uppercase",
-          color: "var(--text-muted)",
-        }}
-      >
-        WELCOME BACK
-      </p>
-      <h1
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: "var(--type-page-title)",
-          fontWeight: "var(--weight-bold)",
-          color: "var(--text-primary)",
-          lineHeight: "var(--leading-snug)",
-        }}
-      >
-        Check on your clutch.
-      </h1>
-      <p
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: "var(--type-body)",
-          color: "var(--text-secondary)",
-        }}
-      >
-        Sign in to monitor temperature, humidity and hatch progress across every chamber.
-      </p>
+      <div className="mb-2 flex flex-col items-center text-center">
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-label)",
+            fontWeight: "var(--weight-bold)",
+            letterSpacing: "var(--tracking-label)",
+            textTransform: "uppercase",
+            color: "var(--text-muted)",
+          }}
+        >
+          WELCOME BACK
+        </p>
+        <h1
+          className="mt-1"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--type-page-title)",
+            fontWeight: "var(--weight-bold)",
+            color: "var(--text-primary)",
+            lineHeight: "var(--leading-snug)",
+          }}
+        >
+          Check on your clutch.
+        </h1>
+        <p
+          className="mt-1.5 max-w-[340px]"
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-body)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          Sign in to monitor temperature, humidity and hatch progress across every chamber.
+        </p>
+      </div>
       <div className="mt-4 flex flex-col gap-4">
         <FormInput
           label="Email"
@@ -71,26 +75,26 @@ export function SignInScreen({
           type="email"
           error={err}
         />
-        <div className="relative">
-          <FormInput
-            label="Password"
-            id="signin-pw"
-            icon={Lock}
-            value={pw}
-            onChange={(e) => setPw(e.target.value)}
-            placeholder="••••••••"
-            type={show ? "text" : "password"}
-          />
-          <button
-            type="button"
-            onClick={() => setShow(!show)}
-            aria-label={show ? "Hide password" : "Show password"}
-            className="absolute right-3 top-[38px] text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {show ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-        </div>
+        <FormInput
+          label="Password"
+          id="signin-pw"
+          icon={Lock}
+          value={pw}
+          onChange={(e) => setPw(e.target.value)}
+          placeholder="••••••••"
+          type={show ? "text" : "password"}
+          trailing={
+            <button
+              type="button"
+              onClick={() => setShow(!show)}
+              aria-label={show ? "Hide password" : "Show password"}
+              className="p-1 text-muted transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {show ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          }
+        />
       </div>
       <div className="mt-3 flex items-center justify-between">
         <label className="flex items-center gap-2 text-sm" style={{ fontFamily: "var(--font-body)", color: "var(--text-secondary)" }}>

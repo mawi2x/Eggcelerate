@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Egg } from "lucide-react";
+import { Egg, Thermometer, Droplets } from "lucide-react";
 import { AuthCard } from "./AuthCard";
 import { StepperBar } from "./StepperBar";
 import { FormInput } from "./FormInput";
@@ -67,57 +67,101 @@ export function OnboardingStep3({
         />
       </div>
 
-      <div className="mt-6 rounded-2xl border border-[#F5E6CC] bg-[#FFFDF9] p-4"> {/* illustration exception per color-guidelines.md:163 */}
-        <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FCE4D6] text-[#AD3A1D]">
-            <Egg size={16} />
-          </span>
-          <div className="flex flex-col">
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body)",
-                fontWeight: "var(--weight-bold)",
-                color: "var(--text-primary)",
-              }}
-            >
-              Chicken · Standard
-            </span>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-caption)",
-                color: "var(--text-muted)",
-              }}
-            >
-              {mode.targetTemp.min}°C · {mode.targetHumidity.min}% RH · {mode.incubationDays}-day cycle
-            </span>
-          </div>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-white p-3">
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-label)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "var(--weight-bold)" }}>
-              Target temp
-            </p>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body)", fontWeight: "var(--weight-bold)", color: "var(--text-primary)" }}>
-              37.5°C
-            </p>
-          </div>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-white p-3">
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-label)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "var(--weight-bold)" }}>
-              Humidity
-            </p>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body)", fontWeight: "var(--weight-bold)", color: "var(--text-primary)" }}>
-              55% RH
-            </p>
-          </div>
-        </div>
+      <div className="mt-5">
         <p
-          className="mt-3"
-          style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: "var(--text-muted)" }}
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-label)",
+            fontWeight: "var(--weight-bold)",
+            letterSpacing: "var(--tracking-label)",
+            textTransform: "uppercase",
+            color: "var(--text-primary)",
+          }}
         >
-          37.5°C · 55% RH · 21-day
+          Recommended starting Mode
         </p>
+        <div className="mt-2 rounded-2xl border border-[#F5E6CC] bg-[#FFFDF9] p-4"> {/* illustration exception per color-guidelines.md:163 */}
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FCE4D6] text-[#AD3A1D]">
+              <Egg size={18} />
+            </span>
+            <div className="flex flex-col text-left">
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body)",
+                  fontWeight: "var(--weight-bold)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                Chicken · Standard
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-caption)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                {mode.targetTemp.min}°C · {mode.targetHumidity.min}% RH · {mode.incubationDays}-day cycle
+              </span>
+            </div>
+          </div>
+          <div className="mt-3.5 grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-white p-3 text-left">
+              <div className="flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                <Thermometer size={14} className="text-[#AD3A1D]" />
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-label)",
+                    letterSpacing: "var(--tracking-label)",
+                    textTransform: "uppercase",
+                    fontWeight: "var(--weight-bold)",
+                  }}
+                >
+                  Target temp
+                </span>
+              </div>
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body)",
+                  fontWeight: "var(--weight-bold)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {mode.targetTemp.min}°C
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-white p-3 text-left">
+              <div className="flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                <Droplets size={14} className="text-[#0284C7]" />
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-label)",
+                    letterSpacing: "var(--tracking-label)",
+                    textTransform: "uppercase",
+                    fontWeight: "var(--weight-bold)",
+                  }}
+                >
+                  Humidity
+                </span>
+              </div>
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body)",
+                  fontWeight: "var(--weight-bold)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {mode.targetHumidity.min}% RH
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="mt-6 flex gap-3">
