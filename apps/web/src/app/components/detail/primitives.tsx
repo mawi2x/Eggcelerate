@@ -1,7 +1,9 @@
 import React from "react";
 import { Card, CardContent } from "../ui/card";
-import { OK, MUTED, SURFACE, BORDER, TEXT } from "./types";
-
+import { ExclamationIcon } from "../icons/ExclamationIcon";
+import { CheckIcon } from "../icons/CheckIcon";
+import { InfoIcon } from "../icons/CircleInfoIcon";
+import { OK, WARN, CRIT, MUTED, SURFACE, BORDER, TEXT } from "./types";
 export function StatusPill({
   tone,
   children,
@@ -110,6 +112,112 @@ export function KeyValue({ label, value, accent }: { label: string; value: React
     <div className="rounded-xl p-3.5" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
       <p style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>{label}</p>
       <p style={{ fontSize: 14, fontWeight: 700, color: accent ?? TEXT }}>{value}</p>
+    </div>
+  );
+}
+
+export function StatusCallout({
+  tone,
+  size = "default",
+  icon,
+  hideIcon = false,
+  title,
+  description,
+  action,
+  className = "",
+  role,
+}: {
+  tone: "success" | "danger" | "warning" | "info";
+  size?: "sm" | "default" | "lg";
+  icon?: React.ReactNode;
+  hideIcon?: boolean;
+  title: string;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string;
+  role?: string;
+}) {
+  const iconSize = size === "lg" ? 36 : size === "sm" ? 15 : 18;
+  const toneMap = {
+    success: {
+      bg: OK.bg,
+      fg: OK.fg,
+      border: `${OK.fg}33`,
+      defaultIcon: <CheckIcon size={iconSize} color="var(--on-brand)" />,
+    },
+    danger: {
+      bg: CRIT.bg,
+      fg: CRIT.fg,
+      border: `${CRIT.fg}33`,
+      defaultIcon: <ExclamationIcon size={iconSize} color="var(--on-brand)" />,
+    },
+    warning: {
+      bg: WARN.bg,
+      fg: WARN.fg,
+      border: `${WARN.fg}33`,
+      defaultIcon: <ExclamationIcon size={iconSize} color="var(--on-brand)" />,
+    },
+    info: {
+      bg: "var(--status-info-bg)",
+      fg: "var(--status-info-fg)",
+      border: "var(--status-info-fg)33",
+      defaultIcon: <InfoIcon size={iconSize} color="var(--on-brand)" />,
+    },
+  }[tone];
+
+  return (
+    <div
+      role={role ?? (tone === "danger" ? "alert" : "status")}
+      className={`flex ${action ? "items-start" : "items-center"} ${
+        size === "lg"
+          ? "gap-4 rounded-2xl p-5"
+          : size === "sm"
+            ? "gap-2.5 rounded-xl px-3.5 py-2.5"
+            : "gap-3 rounded-xl px-4 py-3"
+      } ${className}`}
+      style={{
+        backgroundColor: toneMap.bg,
+        border: `1px solid ${toneMap.border}`,
+      }}
+    >
+      {!hideIcon && (
+        <span
+          className={`flex shrink-0 items-center justify-center rounded-full ${
+            size === "lg" ? "h-12 w-12" : size === "sm" ? "h-7 w-7" : "h-8 w-8"
+          } ${action ? "mt-0.5" : ""}`}
+          style={{ backgroundColor: toneMap.fg }}
+          aria-hidden="true"
+        >
+          {icon ?? toneMap.defaultIcon}
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p
+          style={{
+            color: toneMap.fg,
+            fontFamily: "var(--font-display)",
+            fontSize: size === "lg" ? "var(--type-heading-md)" : size === "sm" ? 13 : "var(--type-heading-sm)",
+            fontWeight: "var(--weight-bold)",
+            lineHeight: "var(--leading-snug)",
+          }}
+        >
+          {title}
+        </p>
+        {description && (
+          <p
+            className={size === "sm" ? "mt-0.5" : "mt-1"}
+            style={{
+              color: MUTED,
+              fontFamily: "var(--font-body)",
+              fontSize: size === "lg" ? 15 : size === "sm" ? 12 : "var(--type-body)",
+              lineHeight: size === "sm" ? 1.35 : "var(--leading-relaxed)",
+            }}
+          >
+            {description}
+          </p>
+        )}
+        {action && <div className={size === "sm" ? "mt-2" : "mt-3"}>{action}</div>}
+      </div>
     </div>
   );
 }

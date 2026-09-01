@@ -11,9 +11,9 @@ import {
   TrendingUp,
   Waves,
   Wifi,
-  WifiOff,
   Zap,
 } from "lucide-react";
+import { OfflineIcon } from "../icons";
 import { GaugeDial } from "../GaugeDial";
 import { WaterDroplet } from "../WaterDroplet";
 import { Incubator, Mode, Reading, CandlingCheckpoint } from "../../data/mockData";
@@ -152,9 +152,9 @@ function ExtremumTile({
           fontWeight: "var(--weight-regular)",
           lineHeight: "var(--leading-snug)",
         }}
-        title={`${stamp.date} · ${stamp.time}`}
+        title={`${stamp.date} at ${stamp.time}`}
       >
-        {stamp.date} · {stamp.time}
+        {stamp.date} at {stamp.time}
       </p>
     </div>
   );
@@ -253,8 +253,7 @@ function EnvironmentalSummary({
                 return (
                   <div key={reading.ts} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                     <div>
-                      <p className="tabular-nums" style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>{stamp.time}</p>
-                      <p style={{ color: MUTED, fontSize: 11 }}>{stamp.date}</p>
+                      <p className="tabular-nums" style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>{stamp.date} at {stamp.time}</p>
                     </div>
                     <div className="flex items-center gap-3 tabular-nums" style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
                       <span className="inline-flex items-center gap-1"><Thermometer size={13} color={RUST} aria-hidden="true" />{reading.temp.toFixed(1)}°C</span>
@@ -352,7 +351,7 @@ export function LiveMonitorTab({
             tone={unit.powerSource === "battery" ? WARN : OK}
           />
           <SystemStatusTile
-            icon={unit.paired ? <Wifi size={18} /> : <WifiOff size={18} />}
+            icon={unit.paired ? <Wifi size={18} /> : <OfflineIcon size={18} />}
             label="Connection"
             value={unit.paired ? "Connected" : "Offline"}
             tone={unit.paired ? OK : CRIT}

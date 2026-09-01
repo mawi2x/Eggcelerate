@@ -1,4 +1,6 @@
-import { Thermometer, Droplets, ChevronRight, Egg, Check, TriangleAlert, Bird, LockKeyhole, Clock } from "lucide-react";
+import { Thermometer, Droplets, ChevronRight, Check, TriangleAlert, Bird } from "lucide-react";
+import { Lock, EggCrack, Egg } from "@phosphor-icons/react";
+import { OfflineIcon } from "./icons";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { SegmentedBattery } from "./SegmentedBattery";
@@ -25,6 +27,17 @@ const tileBg: Record<string, string> = { ok: TILE, warning: "#FFFBEB", critical:
 const tileBorder: Record<string, string> = { ok: BORDER, warning: "#FCD34D", critical: "#FCA5A5" };
 
 // Farmer-friendly lifecycle status pill, derived from the shared cycle phase.
+function LockFillIcon({ size = 15, color = "#FFFFFF" }: { size?: number | string; color?: string }) {
+  return <Lock size={size} color={color} weight="fill" />;
+}
+
+function EggCrackFillIcon({ size = 15, color = "#FFFFFF" }: { size?: number | string; color?: string }) {
+  return <EggCrack size={size} color={color} weight="fill" />;
+}
+
+function EggFillIcon({ size = 15, color = "#FFFFFF" }: { size?: number | string; color?: string }) {
+  return <Egg size={size} color={color} weight="fill" />;
+}
 function operationalStatus(unit: Incubator): {
   label: string; bg: string; fg: string; Icon?: React.ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string }>; dot?: boolean;
 } {
@@ -34,15 +47,15 @@ function operationalStatus(unit: Incubator): {
       : unit.connectionState === "connection_failed"
       ? "Connection Failed"
       : "Offline";
-    return { label, bg: "#FCE8E6", fg: "#C5221F", Icon: TriangleAlert };
+    return { label, bg: "#FCE8E6", fg: "#C5221F", Icon: OfflineIcon };
   }
   if (unit.cyclePhase === "completed") return { label: "Completed", bg: "#D1FAE5", fg: "#065F46", Icon: Check };
   if (unit.cyclePhase === "stopped_early") return { label: "Stopped Early", bg: "#FEE2E2", fg: "#991B1B", Icon: TriangleAlert };
-  if (unit.cyclePhase === "awaiting_finish") return { label: "Awaiting Finish", bg: "#FFF4D6", fg: "#9A6700", Icon: Clock };
+  if (unit.cyclePhase === "awaiting_finish") return { label: "Awaiting Finish", bg: "#FFF4D6", fg: "#9A6700", Icon: EggCrackFillIcon };
   if (unit.cyclePhase === "hatching") return { label: "Hatching", bg: "#E8F0FE", fg: "#1967D2", Icon: Bird };
-  if (unit.cyclePhase === "lockdown") return { label: "Lockdown", bg: "var(--brand-primary-soft)", fg: "var(--brand-primary)", Icon: LockKeyhole };
+  if (unit.cyclePhase === "lockdown") return { label: "Lockdown", bg: "var(--brand-primary-soft)", fg: "var(--brand-primary)", Icon: LockFillIcon };
   if (unit.cyclePhase === "ready") return { label: "Ready", bg: "#F1F3F4", fg: "#5F6368", dot: true };
-  return { label: "Incubating", bg: "#E6F4EA", fg: "#137333", Icon: Egg };
+  return { label: "Incubating", bg: "#E6F4EA", fg: "#137333", Icon: EggFillIcon };
 }
 
 function Trend({ delta }: { delta: number }) {
@@ -132,7 +145,7 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
       }}
     >
       <CardContent className="flex h-full flex-col px-5 pb-5 pt-3">
-        {/* Header — name and mode on the left; power indicator alone on the right. */}
+        {/* Header — name and mode on the left; power and urgent severity pill on the right. */}
         <div className="mb-3 min-w-0">
           <div className="flex min-w-0 items-center justify-between gap-3">
             <h3 className="flex min-w-0 items-center gap-1" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
@@ -143,9 +156,28 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
               <SegmentedBattery battery={unit.batteryPct} charging={unit.powerSource !== "battery"} showLabel />
             </div>
           </div>
-          <p className="min-w-0" style={{ color: ready ? "#9CA3AF" : "#6E6259", fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-normal)", whiteSpace: "normal", wordBreak: "break-word", marginTop: 2 }}>
-            {ready ? "Unassigned" : mode.name}
-          </p>
+          <div className="mt-1.5 flex min-w-0 items-center justify-between gap-2">
+            <p className="min-w-0 truncate" style={{ color: ready ? "#9CA3AF" : "#6E6259", fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-medium)", lineHeight: "var(--leading-normal)" }}>
+              {ready ? "Unassigned" : mode.name}
+            </p>
+            {unit.conditionSeverity !== "info" && (
+              <span
+                className="inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5"
+                style={{
+                  backgroundColor: unit.conditionSeverity === "critical" ? "#FEE2E2" : "#FEF3C7",
+                  color: unit.conditionSeverity === "critical" ? "#991B1B" : "#92400E",
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-bold)",
+                  letterSpacing: "var(--tracking-label)",
+                  lineHeight: "var(--leading-snug)",
+                  textTransform: "uppercase",
+                }}
+              >
+                {conditionDisplayLabels[unit.conditionSeverity]}
+              </span>
+            )}
+          </div>
         </div>
 
         {ready ? (
@@ -204,68 +236,67 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
           </>
         )}
 
-        {/* Footer — status badge left, action button right. */}
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        {/* Footer — full-width status oval containing the status icon, label, and configure button. */}
+        <div
+          className="mt-4 flex items-center justify-between gap-2 rounded-full p-1.5"
+          style={{
+            backgroundColor: status.bg,
+            border: `1px solid ${status.fg}22`,
+          }}
+        >
+          <div className="flex min-w-0 items-center gap-2 pl-1.5">
+            {status.Icon ? (
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                style={{ backgroundColor: status.fg }}
+              >
+                <status.Icon size={15} color="#FFFFFF" strokeWidth={3} />
+              </span>
+            ) : (
+              <span className="ml-1 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: status.fg }} />
+            )}
             <span
-              className="inline-flex shrink-0 items-center rounded-full"
-              style={{ backgroundColor: status.bg, color: status.fg, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", padding: "6px 12px", gap: 6 }}
+              style={{
+                color: status.fg,
+                fontFamily: "var(--font-body)",
+                fontSize: 14,
+                fontWeight: 700,
+                lineHeight: "var(--leading-normal)",
+              }}
             >
-              {status.Icon ? (
-                <span
-                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
-                  style={{ backgroundColor: status.fg }}
-                >
-                  <status.Icon size={10} color="#FFFFFF" strokeWidth={3} />
-                </span>
-              ) : (
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: status.fg }} />
-              )}
               {status.label}
             </span>
-            {unit.conditionSeverity !== "info" && (
-              <span
-                className="inline-flex shrink-0 items-center rounded-full px-2.5 py-1"
-                style={{
-                  backgroundColor: unit.conditionSeverity === "critical" ? "#FEE2E2" : "#FEF3C7",
-                  color: unit.conditionSeverity === "critical" ? "#991B1B" : "#92400E",
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-label)",
-                  fontWeight: "var(--weight-bold)",
-                  letterSpacing: "var(--tracking-label)",
-                  lineHeight: "var(--leading-snug)",
-                  textTransform: "uppercase",
-                }}
-              >
-                {conditionDisplayLabels[unit.conditionSeverity]}
-              </span>
-            )}
           </div>
+
           {cycleEnded ? (
             /* Hatch day reached — harvest & reset ends the overtime run. */
             <Button
+              type="button"
               onClick={(e) => { e.stopPropagation(); onHarvest?.(unit); }}
-              className="rounded-xl transition-colors"
-              style={{ backgroundColor: RUST, color: "#FFFFFF", height: 36, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-normal)", paddingLeft: 12, paddingRight: 12 }}
+              className="cursor-pointer rounded-full shadow-sm transition-colors hover:brightness-110"
+              style={{ backgroundColor: RUST, color: "#FFFFFF", height: 32, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", paddingLeft: 12, paddingRight: 12 }}
             >
               Finish Cycle
             </Button>
           ) : (
             <Button
+              type="button"
               onClick={(e) => { e.stopPropagation(); onOpen(unit.id); }}
-              className="rounded-xl transition-colors hover:bg-[#FFF5F2]"
+              className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[#FFF5F2]"
               style={{
-                backgroundColor: "transparent",
+                backgroundColor: "#FFFFFF",
                 color: CTA,
-                height: 36,
-                border: `1px solid ${CTA}`,
+                height: 32,
+                border: "1px solid rgba(0,0,0,0.12)",
                 fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body-sm)",
-                fontWeight: "var(--weight-medium)",
+                fontSize: 13,
+                fontWeight: 700,
                 lineHeight: "var(--leading-normal)",
+                paddingLeft: 12,
+                paddingRight: 10,
               }}
             >
-              {ready ? "Start Setup" : cta} <ChevronRight size={16} />
+              {ready ? "Start Setup" : cta} <ChevronRight size={15} />
             </Button>
           )}
         </div>

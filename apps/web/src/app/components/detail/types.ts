@@ -102,5 +102,5 @@ export function fmtTimestamp(d: string) {
     minute: "2-digit",
     hour12: true,
   });
-  return `${date} • ${time}`;
+  return `${date} at ${time}`;
 }

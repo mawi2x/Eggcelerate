@@ -1,16 +1,19 @@
-import { BatteryCharging, Battery, AlertTriangle } from "lucide-react";
+import {
+  BatteryCharging,
+  BatteryFull,
+  BatteryMedium,
+  BatteryWarning,
+} from "@phosphor-icons/react";
 import { PowerSource } from "../data/mockData";
 
 /**
  * Compact power pill: charging, normal battery, or critical.
- * Incubator cards use `SegmentedBattery` in the header instead; this stays for
- * surfaces that need the level as a labelled pill.
  */
 export function PowerIndicator({ source, battery }: { source: PowerSource; battery: number }) {
   const charging = source !== "battery";
-  const critical = !charging && battery < 25;
+  const critical = !charging && battery <= 25;
 
-  const Icon = charging ? BatteryCharging : critical ? AlertTriangle : Battery;
+  const Icon = charging ? BatteryCharging : critical ? BatteryWarning : battery > 60 ? BatteryFull : BatteryMedium;
   const color = charging ? "var(--status-success-fg)" : critical ? "var(--status-danger-fg)" : "#3D3228";
   const bg = charging ? "#DCFCE7" : critical ? "#FEE2E2" : "#F2EEE5";
   const state = charging ? "Charging" : critical ? "Battery critical" : "Battery";
@@ -21,7 +24,7 @@ export function PowerIndicator({ source, battery }: { source: PowerSource; batte
       style={{ height: 24, backgroundColor: bg, color, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}
       title={`${state}: ${battery}%`}
     >
-      <Icon size={13} strokeWidth={2.6} aria-hidden />
+      <Icon size={14} weight="fill" color={color} aria-hidden />
       <span className="sr-only">{state}: </span>
       {battery}%
     </span>

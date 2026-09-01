@@ -1,8 +1,8 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Check, CheckCircle2, Circle, AlertCircle, X,
-  Camera, Plus, Trash2, Pencil, ChevronDown,
+  Camera, Plus, Trash2, Pencil, ChevronDown, ArrowLeft, ArrowRight,
 } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
@@ -26,9 +26,9 @@ import {
   CandleForm, TallyKey,
   RUST, RUST_NODE, BG, CARD, SURFACE, BORDER, TEXT, MUTED, INPUT_BORDER, RADIUS, SHADOW,
   OK, WARN, CANDLE_SHORT_LABELS, MAX_PHOTO_BYTES, NOTES_MAX,
-  emptyForm, formatNodeDay, fmtDate, fmtTimestamp,
+  emptyForm, formatNodeDay, fmtTimestamp,
 } from "./types";
-import { SectionCard } from "./primitives";
+import { SectionCard, StatusCallout } from "./primitives";
 import { PhotoLightboxModal } from "./PhotoLightbox";
 import { IncubationCalendar } from "./IncubationCalendar";
 import { Timeline } from "./Timeline";
@@ -328,6 +328,14 @@ export function JournalEntryCard({
 }
 
 // ─── LogModal Dialog ────────────────────────────────────────────────────────
+type LogStage = 1 | 2 | 3;
+
+const LOG_STAGES: { id: LogStage; label: string; description: string }[] = [
+  { id: 1, label: "Checkpoint", description: "Choose the inspection day." },
+  { id: 2, label: "Egg counts", description: "Record what you observed." },
+  { id: 3, label: "Observations", description: "Add notes, checks, or photos." },
+];
+
 export function LogModal({
   open,
   onOpenChange,
@@ -336,6 +344,7 @@ export function LogModal({
   currentDay,
   totalDays,
   totalEggsSet,
+  chamberName,
   modeName,
   initialEntry,
   previousEntry,
@@ -348,6 +357,7 @@ export function LogModal({
   currentDay: number;
   totalDays: number;
   totalEggsSet: number;
+  chamberName: string;
   modeName: string;
   initialEntry?: CandlingLogEntry | null;
   previousEntry?: CandlingLogEntry | null;
@@ -356,7 +366,7 @@ export function LogModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[88vh] overflow-y-auto p-0 shadow-2xl sm:max-w-[480px]"
+        className="max-h-[88vh] overflow-y-auto p-0 shadow-2xl sm:max-w-[600px]"
         style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: RADIUS }}
       >
         <LogModalBody
@@ -365,6 +375,7 @@ export function LogModal({
           currentDay={currentDay}
           totalDays={totalDays}
           totalEggsSet={totalEggsSet}
+          chamberName={chamberName}
           modeName={modeName}
           initialEntry={initialEntry}
           previousEntry={previousEntry}
@@ -382,6 +393,7 @@ function LogModalBody({
   currentDay,
   totalDays,
   totalEggsSet,
+  chamberName,
   modeName,
   initialEntry,
   previousEntry,
@@ -393,6 +405,7 @@ function LogModalBody({
   currentDay: number;
   totalDays: number;
   totalEggsSet: number;
+  chamberName: string;
   modeName: string;
   initialEntry?: CandlingLogEntry | null;
   previousEntry?: CandlingLogEntry | null;
@@ -443,6 +456,12 @@ function LogModalBody({
   const [form, setForm] = useState<CandleForm>(initialForm);
   const [dragging, setDragging] = useState(false);
   const [emptyEvidenceWarningOpen, setEmptyEvidenceWarningOpen] = useState(false);
+  const [stage, setStage] = useState<LogStage>(isEditing ? 2 : 1);
+  const stageHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    stageHeadingRef.current?.focus();
+  }, [stage]);
 
   const customDayNum = Number(customDayRaw);
   const isCustomDayValid =
@@ -460,11 +479,13 @@ function LogModalBody({
   const inspected = isLaterCheckpoint
     ? form.developing + form.clear + form.uncertain + form.stoppedDeveloping
     : form.fertile + form.clear + form.uncertain;
+  const unaccountedEggs = Math.max(0, totalEggsSet - inspected);
   const isTallyOverCapacity = inspected > totalEggsSet;
   const isZeroTally = inspected === 0;
   const hasEvidence = form.note.trim().length > 0 || form.photos.length > 0;
+  const hasIncompleteLockdown = isLockdownCheckpoint && (hasUnresolvedUncertain || unaccountedEggs > 0);
 
-  const isSaveDisabled = isZeroTally || isTallyOverCapacity || customDayError || hasUnresolvedUncertain;
+  const isSaveDisabled = isZeroTally || isTallyOverCapacity || customDayError || hasIncompleteLockdown;
 
   const handleSave = () => {
     if (!hasEvidence) {
@@ -519,8 +540,8 @@ function LogModalBody({
     ? [
         { key: "developing", label: "Developing", color: "#166534" },
         { key: "clear", label: "Clear", color: "#334155" },
-        { key: "uncertain", label: "Uncertain", color: "#92400E" },
         { key: "stoppedDeveloping", label: "Stopped Developing", color: "#991B1B" },
+        { key: "uncertain", label: "Uncertain or Not sure", color: "#92400E" },
       ]
     : [
         { key: "fertile", label: "Fertile", color: "#166534" },
@@ -528,18 +549,86 @@ function LogModalBody({
         { key: "uncertain", label: "Uncertain", color: "#92400E" },
       ];
 
+  const countRemainingAsUncertain = () => {
+    if (unaccountedEggs <= 0) return;
+    setForm((current) => ({
+      ...current,
+      uncertain: Math.min(totalEggsSet, current.uncertain + unaccountedEggs),
+    }));
+  };
+
+  const canAdvance = stage === 1
+    ? !customDayError
+    : !isZeroTally && !isTallyOverCapacity && !hasIncompleteLockdown && unaccountedEggs === 0;
+
+  const goToNextStage = () => {
+    if (!canAdvance) return;
+    setStage((current) => (current < 3 ? (current + 1) as LogStage : current));
+  };
+
   return (
     <>
       <DialogHeader className="px-5 pt-5 text-left">
         <DialogTitle style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: TEXT }}>
           {isEditing ? `Edit Inspection Log: Day ${form.targetDay}` : "Candling Journal"}
         </DialogTitle>
-        <DialogDescription className="text-xs font-medium text-[var(--text-primary)]">
-          {modeName}
+        <DialogDescription className="text-xs font-medium space-y-0.5">
+          <span className="block" style={{ color: TEXT }}>{chamberName}</span>
+          <span className="block" style={{ color: MUTED }}>{modeName}</span>
         </DialogDescription>
       </DialogHeader>
 
+      <nav className="px-5 pt-1" aria-label="Candling log steps">
+        <ol className="grid grid-cols-3 gap-2">
+          {LOG_STAGES.map((item) => {
+            const active = stage === item.id;
+            const completed = stage > item.id;
+            return (
+              <li key={item.id} aria-current={active ? "step" : undefined}>
+                <div
+                  className="flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2"
+                  style={{
+                    borderColor: active ? RUST : completed ? OK.fg : BORDER,
+                    backgroundColor: active ? `${RUST}12` : completed ? OK.bg : SURFACE,
+                  }}
+                >
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                    style={{
+                      backgroundColor: active ? RUST : completed ? OK.fg : "transparent",
+                      border: active || completed ? "none" : `1px solid ${BORDER}`,
+                      color: active || completed ? "#FFFFFF" : MUTED,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {completed ? <Check size={13} strokeWidth={3} /> : item.id}
+                  </span>
+                  <span className="min-w-0" style={{ color: active ? RUST : TEXT, fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>
+                    {item.label}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+
+      <div className="px-5 pt-1" aria-live="polite">
+        <h3
+          ref={stageHeadingRef}
+          tabIndex={-1}
+          className="focus-visible:outline-none"
+          style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}
+        >
+          {stage}. {LOG_STAGES[stage - 1].label}
+        </h3>
+        <p className="mt-0.5" style={{ color: MUTED, fontSize: 12 }}>
+          {LOG_STAGES[stage - 1].description}
+        </p>
+      </div>
+
       <div className="space-y-4 px-5 pb-1">
+        {stage === 1 && (
         <div>
           <Label style={{ fontSize: 13, color: TEXT }}>Checkpoint</Label>
           {isEditing ? (
@@ -625,20 +714,40 @@ function LogModalBody({
             </p>
           )}
         </div>
+        )}
 
         {/* Tally inputs */}
+        {stage === 2 && (
         <div>
           <Label style={{ fontSize: 13, color: TEXT }}>
             {isLaterCheckpoint ? "Development tally" : "Fertility tally"}
           </Label>
           <p className="mt-1" style={{ fontSize: 12, color: MUTED }}>
             {isLaterCheckpoint
-              ? "Later checks track developing eggs and eggs that stopped developing."
+              ? "Classify every egg as developing, clear, stopped developing, or uncertain."
               : "Record the first candling result for each egg."}
           </p>
-          <div className={`mt-1.5 grid gap-3 ${isLaterCheckpoint ? "grid-cols-2" : "grid-cols-3"}`}>
+          <div className="mt-3 space-y-2.5" role="group" aria-label="Egg category counts">
+            <div
+              className="flex items-center justify-between px-3 text-[11px] font-bold uppercase tracking-wide"
+              style={{ color: MUTED }}
+            >
+              <span>Category</span>
+              <span>Eggs</span>
+            </div>
             {tallyFields.map((f) => (
-              <div key={f.key}>
+              <div
+                key={f.key}
+                className="flex min-h-14 items-center justify-between gap-4 rounded-xl border px-3.5 py-2.5"
+                style={{ backgroundColor: SURFACE, borderColor: BORDER }}
+              >
+                <label
+                  htmlFor={`tally-${f.key}`}
+                  className="min-w-0 leading-5"
+                  style={{ color: f.color, fontSize: 13, fontWeight: 700 }}
+                >
+                  {f.label}
+                </label>
                 <Input
                   id={`tally-${f.key}`}
                   type="text"
@@ -650,50 +759,91 @@ function LogModalBody({
                   }}
                   onChange={(e) => setCount(f.key, e.target.value)}
                   placeholder="0"
-                  className="rounded-xl text-center"
+                  aria-invalid={isTallyOverCapacity ? "true" : undefined}
+                  aria-describedby={isTallyOverCapacity ? "tally-count-error" : undefined}
+                  className="h-11 w-28 shrink-0 rounded-xl text-center"
                   style={{
                     borderColor: isTallyOverCapacity ? "var(--status-danger-fg)" : INPUT_BORDER,
                     backgroundColor: SURFACE,
                     color: TEXT,
                   }}
                 />
-                <label
-                  htmlFor={`tally-${f.key}`}
-                  className="mt-1 flex justify-center text-xs font-medium"
-                  style={{ color: f.color }}
-                >
-                  {f.label}
-                </label>
               </div>
             ))}
           </div>
 
           {isTallyOverCapacity ? (
-            <p className="mt-1.5 flex items-center gap-1" style={{ fontSize: 12, color: "var(--status-danger-fg)", fontWeight: 600 }}>
-              <AlertCircle size={13} /> Total inspected eggs cannot exceed eggs set ({totalEggsSet})
-            </p>
+            <StatusCallout
+              size="sm"
+              tone="danger"
+              title="Too many eggs counted."
+              description={
+                <>
+                  Total counted: <strong className="font-bold">{inspected} of {totalEggsSet}</strong>. Reduce one or more categories before continuing.
+                </>
+              }
+              className="mt-3"
+            />
           ) : isZeroTally ? (
-            <p
-              className="mt-1.5 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5"
-              style={{ fontSize: 12, color: WARN.fg, backgroundColor: WARN.bg, fontWeight: 600 }}
-            >
-              <AlertCircle size={13} /> Enter at least one egg count to enable Save Inspection.
-            </p>
-          ) : hasUnresolvedUncertain ? (
-            <p
-              className="mt-1.5 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5"
-              style={{ fontSize: 12, color: "#991B1B", backgroundColor: "#FEE2E2", fontWeight: 600 }}
-            >
-              <AlertCircle size={13} /> Resolve all uncertain eggs before the Lockdown check.
-            </p>
+            <StatusCallout
+              size="sm"
+              tone="warning"
+              title="Enter at least one egg count"
+              description="Record the count for fertile, clear, or uncertain eggs to continue."
+              className="mt-3"
+            />
+          ) : hasIncompleteLockdown ? (
+            <StatusCallout
+              size="sm"
+              tone="danger"
+              title="Lockdown check incomplete"
+              description={
+                hasUnresolvedUncertain && unaccountedEggs > 0
+                  ? "Resolve uncertain eggs and categorize every egg before the Lockdown check."
+                  : hasUnresolvedUncertain
+                    ? "Resolve all uncertain eggs before the Lockdown check."
+                    : "Categorize every egg before the Lockdown check."
+              }
+              className="mt-3"
+            />
+          ) : unaccountedEggs > 0 ? (
+            <StatusCallout
+              size="sm"
+              tone="warning"
+              title={`${unaccountedEggs} egg${unaccountedEggs === 1 ? " is" : "s are"} not categorized yet.`}
+              description="Add the remaining count before continuing, or mark the remaining eggs as uncertain."
+              action={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full cursor-pointer rounded-lg transition-colors hover:bg-[#FFF8E1] active:bg-[#FEF3C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                  onClick={countRemainingAsUncertain}
+                  style={{ borderColor: WARN.fg, color: WARN.fg, fontSize: 12 }}
+                >
+                  Count remaining as uncertain
+                </Button>
+              }
+              className="mt-3"
+            />
           ) : (
-            <p className="mt-1.5 text-center text-xs font-semibold text-[var(--text-primary)]">
-              Recorded eggs: {inspected}/{totalEggsSet}
-            </p>
+            <StatusCallout
+              size="sm"
+              tone="success"
+              title="All eggs categorized"
+              description={
+                <>
+                  <strong className="font-bold">{inspected} of {totalEggsSet}</strong> eggs accounted for.
+                </>
+              }
+              className="mt-3"
+            />
           )}
         </div>
+        )}
 
         {/* Development checks */}
+        {stage === 3 && (
+        <>
         <div>
           <Label style={{ fontSize: 13, color: TEXT }}>Development observed</Label>
           <div className="mt-1.5 flex flex-wrap gap-2">
@@ -778,30 +928,63 @@ function LogModalBody({
             </div>
           )}
         </div>
+
+        {!hasEvidence && !isSaveDisabled && (
+          <StatusCallout
+            size="sm"
+            tone="info"
+            title="No notes or photos attached."
+            description="You can still save this inspection with the egg tally only."
+            className="mt-3"
+          />
+        )}
+
+        <StatusCallout
+          size="sm"
+          tone="success"
+          title="All eggs categorized"
+          description={
+            <>
+              <strong className="font-bold">{inspected} of {totalEggsSet}</strong> eggs accounted for.
+            </>
+          }
+          className="mt-2.5"
+        />
+        </>
+        )}
       </div>
 
       <div
         className="sticky bottom-0 px-5 py-4"
         style={{ backgroundColor: CARD, borderTop: `1px solid ${BORDER}` }}
       >
-        {!hasEvidence && !isSaveDisabled && (
-          <p
-            className="mb-3 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-center"
-            style={{ fontSize: 12, color: WARN.fg, backgroundColor: WARN.bg, fontWeight: 600 }}
-          >
-            <AlertCircle size={13} /> No notes or photos attached. You can still save the egg tally.
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" className="rounded-full" onClick={onCancel}>Cancel</Button>
+        <div className="flex items-center justify-between gap-2">
           <Button
+            variant="ghost"
             className="rounded-full"
-            style={{ backgroundColor: RUST, color: "#fff", opacity: isSaveDisabled ? 0.5 : 1 }}
-            disabled={isSaveDisabled}
-            onClick={handleSave}
+            onClick={() => stage === 1 ? onCancel() : setStage((current) => (current - 1) as LogStage)}
           >
-            <CheckCircle2 size={15} /> {isEditing ? "Update Inspection" : "Save Inspection"}
+            {stage === 1 ? "Cancel" : <><ArrowLeft size={15} /> Back</>}
           </Button>
+          {stage < 3 ? (
+            <Button
+              className="rounded-full"
+              style={{ backgroundColor: RUST, color: "#fff", opacity: canAdvance ? 1 : 0.5 }}
+              disabled={!canAdvance}
+              onClick={goToNextStage}
+            >
+              Next <ArrowRight size={15} />
+            </Button>
+          ) : (
+            <Button
+              className="rounded-full"
+              style={{ backgroundColor: RUST, color: "#fff", opacity: isSaveDisabled ? 0.5 : 1 }}
+              disabled={isSaveDisabled}
+              onClick={handleSave}
+            >
+              <CheckCircle2 size={15} /> {isEditing ? "Update Inspection" : "Save Inspection"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -814,8 +997,15 @@ function LogModalBody({
             <AlertDialogTitle style={{ color: TEXT, fontSize: 18, fontWeight: 700 }}>
               Save without notes or photos?
             </AlertDialogTitle>
-            <AlertDialogDescription style={{ color: MUTED, fontSize: 13, lineHeight: 1.5 }}>
-              No comments or images are attached. This will record the egg tally only. Are you sure you want to save this candling journal?
+            <AlertDialogDescription asChild>
+              <div className="mt-2">
+                <StatusCallout
+                  size="sm"
+                  tone="info"
+                  title="Tally only inspection"
+                  description="No comments or images are attached. This will record the egg tally only. Are you sure you want to save this candling journal?"
+                />
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -947,8 +1137,12 @@ export function CandlingJournalTab({
       toast.error(`The egg counts cannot exceed ${totalEggsSet} eggs loaded.`);
       return;
     }
-    if (form.targetDay === candling[2]?.day && counts.uncertain > 0) {
-      toast.error("Resolve all uncertain eggs before saving the Lockdown check.");
+    if (form.targetDay === candling[2]?.day && (counts.uncertain > 0 || inspected < totalEggsSet)) {
+      toast.error(
+        counts.uncertain > 0
+          ? "Resolve all uncertain eggs before saving the Lockdown check."
+          : `Categorize all ${totalEggsSet} eggs before saving the Lockdown check.`
+      );
       return;
     }
 
@@ -1038,7 +1232,7 @@ export function CandlingJournalTab({
                   Day {latestCandlingEntry.day} · {latestCandlingEntry.label}
                 </p>
                 <p style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>
-                  Recorded {fmtDate(latestCandlingEntry.date)}
+                  Recorded {fmtTimestamp(latestCandlingEntry.date)}
                 </p>
               </div>
               <div
@@ -1125,16 +1319,25 @@ export function CandlingJournalTab({
                 <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", letterSpacing: "var(--tracking-label)", lineHeight: "var(--leading-snug)", color: MUTED, textTransform: "uppercase" }}>
                   {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
                 </p>
-                <p style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginTop: 2 }}>
-                  {pendingCheckpoint ? (
-                    <>
-                      {pendingCheckpoint.label} · Day {pendingCheckpoint.day}
-                      <span style={{ color: checkpointDistance !== null && checkpointDistance <= 0 ? RUST : MUTED, fontWeight: 600 }}> · {checkpointTiming}</span>
-                    </>
-                  ) : (
-                    "All scheduled checks completed"
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>
+                    {pendingCheckpoint ? `${pendingCheckpoint.label} · Day ${pendingCheckpoint.day}` : "All scheduled checks completed"}
+                  </span>
+                  {pendingCheckpoint && checkpointDistance !== null && (
+                    <span
+                      className="inline-flex items-center rounded-full px-2.5 py-0.5"
+                      style={{
+                        backgroundColor: checkpointDistance < 0 ? "var(--status-danger-bg)" : checkpointDistance === 0 ? "var(--status-warning-bg)" : "var(--surface-muted)",
+                        color: checkpointDistance < 0 ? "var(--status-danger-fg)" : checkpointDistance === 0 ? "var(--status-warning-fg)" : "var(--text-secondary)",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {checkpointTiming}
+                    </span>
                   )}
-                </p>
+                </div>
               </div>
               <Button onClick={openNewInspection} className="w-full rounded-full sm:w-auto" style={{ ...rustBtn, fontSize: 13 }}>
                 <Plus size={14} /> Log Inspection
@@ -1142,37 +1345,33 @@ export function CandlingJournalTab({
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: "#FFF8F3", border: "1px solid #F2D4C5" }}>
-            <p style={{ color: "#1C1917", fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", letterSpacing: "var(--tracking-tight)" }}>
-              No candling inspections recorded yet
-            </p>
-            {pendingCheckpoint ? (
-              <div className="mt-1 space-y-2">
-                <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                  {pendingCheckpoint.label} is scheduled for Day {pendingCheckpoint.day}
-                </p>
-                {checkpointDistance !== null && checkpointDistance <= 0 ? (
-                  <div className="flex justify-center">
-                    <span
-                      className="inline-flex items-center rounded-full px-2.5 py-0.5"
-                      style={{ backgroundColor: "#FEE2E2", color: "#B91C1C", fontSize: 11, fontWeight: 700, letterSpacing: "0.02em" }}
-                    >
-                      {checkpointTiming}
-                    </span>
-                  </div>
-                ) : (
-                  <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+          <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", letterSpacing: "var(--tracking-label)", lineHeight: "var(--leading-snug)", color: MUTED, textTransform: "uppercase" }}>
+                {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>
+                  {pendingCheckpoint ? `${pendingCheckpoint.label} · Day ${pendingCheckpoint.day}` : "Candling checks scheduled"}
+                </span>
+                {pendingCheckpoint && checkpointDistance !== null && (
+                  <span
+                    className="inline-flex items-center rounded-full px-2.5 py-0.5"
+                    style={{
+                      backgroundColor: checkpointDistance < 0 ? "var(--status-danger-bg)" : checkpointDistance === 0 ? "var(--status-warning-bg)" : "var(--surface-muted)",
+                      color: checkpointDistance < 0 ? "var(--status-danger-fg)" : checkpointDistance === 0 ? "var(--status-warning-fg)" : "var(--text-secondary)",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: "0.02em",
+                    }}
+                  >
                     {checkpointTiming}
-                  </p>
+                  </span>
                 )}
               </div>
-            ) : (
-              <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-                Record the first inspection for this cycle.
-              </p>
-            )}
-            <Button onClick={openNewInspection} className="mt-4 rounded-full" style={{ ...rustBtn, fontSize: 13, fontWeight: 700 }}>
-              <Plus size={14} /> Log First Inspection
+            </div>
+            <Button onClick={openNewInspection} className="w-full rounded-full sm:w-auto" style={{ ...rustBtn, fontSize: 13, fontWeight: 700 }}>
+              <Plus size={14} /> Log Inspection
             </Button>
           </div>
         )}
@@ -1189,6 +1388,7 @@ export function CandlingJournalTab({
         currentDay={currentDay}
         totalDays={totalDays}
         totalEggsSet={totalEggsSet}
+        chamberName={unit.name}
         modeName={mode.name}
         initialEntry={editingEntry}
         previousEntry={latestCandlingEntry}
@@ -1363,19 +1563,13 @@ export function CandlingJournalTab({
             </ul>
 
             {loggedEntries.length === 0 && (
-              <div
-                className="ml-[52px] mt-8 flex max-w-xl items-start gap-3 rounded-2xl px-4 py-3.5"
-                style={{ backgroundColor: WARN.bg, border: `1px solid ${WARN.fg}44` }}
-              >
-                <AlertCircle className="mt-0.5 shrink-0" size={18} color={WARN.fg} />
-                <div>
-                  <p style={{ color: WARN.fg, fontSize: 13, fontWeight: 700 }}>
-                    No inspection recorded yet
-                  </p>
-                  <p className="mt-0.5" style={{ color: "#79551A", fontSize: 12, lineHeight: 1.5 }}>
-                    Check the eggs, then click “Log Inspection” above to record your count. Notes and photos are optional.
-                  </p>
-                </div>
+              <div className="ml-[52px] mt-6 max-w-lg">
+                <StatusCallout
+                  size="sm"
+                  tone="warning"
+                  title="No inspection recorded yet"
+                  description="Check the eggs, then click “Log Inspection” above to record your count. Notes and photos are optional."
+                />
               </div>
             )}
 

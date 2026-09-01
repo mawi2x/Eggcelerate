@@ -12,12 +12,16 @@ import { SuspenseFallback } from "./components/SuspenseFallback";
 import { SignInScreen } from "./components/auth/SignInScreen";
 import { OnboardingStep1 } from "./components/auth/OnboardingStep1";
 import { defaultOnboarding, OnboardingState } from "./data/onboarding";
+import type { DetailTab } from "./components/detail/types";
 
 const DetailScreen = lazy(() =>
   import("./components/screens/DetailScreen").then((m) => ({ default: m.DetailScreen })),
 );
 const TrendsScreen = lazy(() =>
   import("./components/screens/TrendsScreen").then((m) => ({ default: m.TrendsScreen })),
+);
+const CandlingLogsScreen = lazy(() =>
+  import("./components/screens/CandlingLogsScreen").then((m) => ({ default: m.CandlingLogsScreen })),
 );
 const OnboardingStep2 = lazy(() =>
   import("./components/auth/OnboardingStep2").then((m) => ({ default: m.OnboardingStep2 })),
@@ -39,35 +43,40 @@ import {
 import { Account, initialAccount, resolveDisplayName } from "./data/account";
 import { deriveConditionSeverity, unitStatusFromConditionSeverity } from "./domain/cycle";
 
-function getInitialNavState(): { screen: ScreenId; selectedUnit: string | null; onboardingStep: number } {
-  if (typeof window === "undefined") return { screen: "overview", selectedUnit: null, onboardingStep: 1 };
+function getInitialNavState(): { screen: ScreenId; selectedUnit: string | null; onboardingStep: number; detailTab: DetailTab } {
+  if (typeof window === "undefined") return { screen: "overview", selectedUnit: null, onboardingStep: 1, detailTab: "monitor" };
   const params = new URLSearchParams(window.location.search);
   // demo flag guard — flip to real auth is 1-line swap: if (!user)
   if (params.get("demo") === "onboarding") {
     const demoScreen = params.get("screen") as ScreenId | null;
-    if (demoScreen === "login") return { screen: "login", selectedUnit: null, onboardingStep: 1 };
+    if (demoScreen === "login") return { screen: "login", selectedUnit: null, onboardingStep: 1, detailTab: "monitor" };
     if (demoScreen === "onboarding") {
       const stepParam = Number(params.get("step") || "1");
       const step = [1, 2, 3].includes(stepParam) ? stepParam : 1;
-      return { screen: "onboarding", selectedUnit: null, onboardingStep: step };
+      return { screen: "onboarding", selectedUnit: null, onboardingStep: step, detailTab: "monitor" };
     }
   }
   const screenParam = params.get("screen") as ScreenId | null;
   const unitParam = params.get("unit");
-  const validScreens: ScreenId[] = ["overview", "incubators", "detail", "trends", "alerts", "settings", "login", "onboarding"];
+  const validScreens: ScreenId[] = ["overview", "incubators", "candling", "detail", "trends", "alerts", "settings", "login", "onboarding"];
   const screen = screenParam && validScreens.includes(screenParam) && screenParam !== "login" && screenParam !== "onboarding" ? screenParam : "overview";
-  return { screen, selectedUnit: unitParam, onboardingStep: 1 };
+  const tabParam = params.get("tab");
+  const detailTab: DetailTab = screen === "detail" && (tabParam === "monitor" || tabParam === "candling" || tabParam === "settings")
+    ? tabParam
+    : "monitor";
+  return { screen, selectedUnit: unitParam, onboardingStep: 1, detailTab };
 }
 
 export default function App() {
   const [initialNav] = useState(getInitialNavState);
   const [screen, setScreen] = useState<ScreenId>(initialNav.screen);
   const [selectedUnit, setSelectedUnit] = useState<string | null>(initialNav.selectedUnit);
+  const [detailTab, setDetailTab] = useState<DetailTab>(initialNav.detailTab);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [onboardingState, setOnboardingState] = useState<OnboardingState>(defaultOnboarding);
   const [onboardingStep, setOnboardingStep] = useState<number>(initialNav.onboardingStep);
 
-  const syncUrl = (newScreen: ScreenId, newUnit: string | null, replace = false) => {
+  const syncUrl = (newScreen: ScreenId, newUnit: string | null, replace = false, newDetailTab: DetailTab = "monitor") => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams();
     const isAuthScreen = newScreen === "login" || newScreen === "onboarding";
@@ -81,15 +90,18 @@ export default function App() {
     if (newUnit) {
       params.set("unit", newUnit);
     }
+    if (newScreen === "detail" && newDetailTab !== "monitor") {
+      params.set("tab", newDetailTab);
+    }
     if (newScreen === "onboarding" && onboardingStep) {
       params.set("step", String(onboardingStep));
     }
     const queryString = params.toString();
     const newUrl = queryString ? `?${queryString}` : window.location.pathname;
     if (replace) {
-      window.history.replaceState({ screen: newScreen, unit: newUnit }, "", newUrl);
+      window.history.replaceState({ screen: newScreen, unit: newUnit, tab: newDetailTab }, "", newUrl);
     } else {
-      window.history.pushState({ screen: newScreen, unit: newUnit }, "", newUrl);
+      window.history.pushState({ screen: newScreen, unit: newUnit, tab: newDetailTab }, "", newUrl);
     }
   };
 
@@ -122,10 +134,11 @@ export default function App() {
 
   useEffect(() => {
     const onPopState = () => {
-      const { screen: s, selectedUnit: u, onboardingStep: step } = getInitialNavState();
+      const { screen: s, selectedUnit: u, onboardingStep: step, detailTab: tab } = getInitialNavState();
       setScreen(s);
       setSelectedUnit(u);
       setOnboardingStep(step);
+      setDetailTab(tab);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -179,8 +192,16 @@ export default function App() {
 
   const openUnit = (id: string) => {
     setSelectedUnit(id);
+    setDetailTab("monitor");
     setScreen("detail");
     syncUrl("detail", id);
+  };
+
+  const openCandling = (id: string) => {
+    setSelectedUnit(id);
+    setDetailTab("candling");
+    setScreen("detail");
+    syncUrl("detail", id, false, "candling");
   };
 
   const openTrendsForUnit = (id: string) => {
@@ -191,6 +212,7 @@ export default function App() {
 
   const navigate = (id: ScreenId) => {
     setSelectedUnit(null);
+    setDetailTab("monitor");
     setScreen(id);
     // For auth screens, use dedicated sync to keep demo=onboarding flag
     if (id === "login") {
@@ -340,6 +362,11 @@ export default function App() {
       title: "Incubators",
       subtitle:
         "Manage each chamber, assign a Mode, and open its full configuration.",
+    },
+    candling: {
+      title: "Candling Logs",
+      subtitle:
+        "Review inspection progress and upcoming checks across all of your chambers.",
     },
     detail: {
       title: activeUnit.name,
@@ -555,11 +582,21 @@ export default function App() {
               onHistoryChanged={refreshHatchHistory}
             />
           )}
+          {screen === "candling" && (
+            <Suspense fallback={<SuspenseFallback label="Loading candling logs..." />}>
+              <CandlingLogsScreen
+                units={incubators}
+                modes={modes}
+                onOpenCandling={openCandling}
+              />
+            </Suspense>
+          )}
           {screen === "detail" && (
             <Suspense fallback={<SuspenseFallback label="Loading incubator..." />}>
               <DetailScreen
                 unit={activeUnit}
                 modes={modes}
+                initialTab={detailTab}
                 onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
                 onHistoryChanged={refreshHatchHistory}
                 onUpdate={(patch) => updateIncubator(activeUnit.id, patch)}

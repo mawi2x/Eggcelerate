@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="500"
+   zoomAndPan="magnify"
+   viewBox="0 0 375 374.999991"
+   height="500"
+   preserveAspectRatio="xMidYMid meet"
+   version="1.0"
+   id="svg4"
+   sodipodi:docname="exclamation-not-filled.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview4"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1" />
+  <defs
+     id="defs2">
+    <clipPath
+       id="9603f6f9ea">
+      <path
+         d="M 166.125 242 L 193 242 L 193 262.5 L 166.125 262.5 Z M 166.125 242 "
+         clip-rule="nonzero"
+         id="path1" />
+    </clipPath>
+    <clipPath
+       id="875eab6890">
+      <path
+         d="M 168 112.5 L 208.875 112.5 L 208.875 225 L 168 225 Z M 168 112.5 "
+         clip-rule="nonzero"
+         id="path2" />
+    </clipPath>
+  </defs>
+  <g
+     clip-path="url(#9603f6f9ea)"
+     id="g3">
+    <path
+       fill="#000000"
+       d="M 166.910156 259.3125 L 189.214844 262.507812 C 189.25 262.511719 189.292969 262.515625 189.328125 262.515625 C 189.507812 262.515625 189.6875 262.453125 189.832031 262.34375 C 190.007812 262.207031 190.117188 262.007812 190.140625 261.785156 L 192.015625 243.394531 C 192.039062 243.164062 191.960938 242.933594 191.8125 242.765625 C 191.660156 242.59375 191.4375 242.496094 191.207031 242.496094 L 168.859375 242.496094 C 168.445312 242.496094 168.097656 242.804688 168.046875 243.214844 L 166.210938 258.410156 C 166.160156 258.847656 166.46875 259.25 166.910156 259.3125 Z M 166.910156 259.3125 "
+       fill-opacity="1"
+       fill-rule="nonzero"
+       id="path3" />
+  </g>
+  <g
+     clip-path="url(#875eab6890)"
+     id="g4">
+    <path
+       fill="#000000"
+       d="M 168.859375 224.792969 L 191.203125 224.792969 C 191.601562 224.792969 191.945312 224.496094 192.011719 224.101562 L 208.769531 117.75 C 208.804688 117.53125 208.75 117.304688 208.613281 117.128906 C 208.472656 116.953125 208.273438 116.839844 208.050781 116.816406 L 169.867188 112.542969 C 169.636719 112.519531 169.410156 112.59375 169.234375 112.746094 C 169.0625 112.898438 168.960938 113.121094 168.960938 113.347656 L 168.042969 223.972656 C 168.042969 224.1875 168.125 224.398438 168.277344 224.550781 C 168.433594 224.707031 168.640625 224.792969 168.859375 224.792969 Z M 168.859375 224.792969 "
+       fill-opacity="1"
+       fill-rule="nonzero"
+       id="path4" />
+  </g>
+</svg>

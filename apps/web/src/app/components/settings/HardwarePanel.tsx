@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Wifi, WifiOff, Plug, BatteryMedium } from "lucide-react";
+import { Wifi, Plug, BatteryMedium } from "lucide-react";
+import { OfflineIcon } from "../icons";
 import { Switch } from "../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Input } from "../ui/input";
@@ -44,7 +45,7 @@ export function HardwarePanel({ units }: Props) {
                     color: online ? RUST : MUTED,
                   }}
                 >
-                  {online ? <Wifi size={17} /> : <WifiOff size={17} />}
+                  {online ? <Wifi size={17} /> : <OfflineIcon size={17} />}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate" style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>

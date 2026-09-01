@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   LayoutGrid,
-  Boxes,
+  ClipboardCheck,
   LineChart,
   Bell,
   Settings,
@@ -9,7 +9,9 @@ import {
   PanelLeftOpen,
   ChevronLeft,
   ChevronRight,
+  MoreHorizontal,
 } from "lucide-react";
+import { IncubatorDeviceIcon } from "./icons";
 import { useIsMobile } from "./ui/use-mobile";
 import { Account, accountInitials, resolveDisplayName } from "../data/account";
 import logoApp from "../../imports/logo-app.webp";
@@ -17,6 +19,7 @@ import logoApp from "../../imports/logo-app.webp";
 export type ScreenId =
   | "overview"
   | "incubators"
+  | "candling"
   | "detail"
   | "trends"
   | "alerts"
@@ -27,12 +30,13 @@ export type ScreenId =
 interface NavItem {
   id: ScreenId;
   label: string;
-  Icon: typeof LayoutGrid;
+  Icon: React.ComponentType<{ size?: number | string; color?: string; className?: string }>;
 }
 
 const items: NavItem[] = [
   { id: "overview", label: "Overview", Icon: LayoutGrid },
-  { id: "incubators", label: "Incubators", Icon: Boxes },
+  { id: "incubators", label: "Incubators", Icon: IncubatorDeviceIcon },
+  { id: "candling", label: "Candling Logs", Icon: ClipboardCheck },
   { id: "trends", label: "Trends", Icon: LineChart },
   { id: "alerts", label: "Alerts", Icon: Bell },
   { id: "settings", label: "Settings", Icon: Settings },
@@ -51,55 +55,131 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
   const isMobile = useIsMobile();
   const [hoverToggle, setHoverToggle] = useState(false);
   const [hoverEdge, setHoverEdge] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   // The per-incubator config page is a sub-view of the Incubators tab.
   const activeTab: ScreenId = active === "detail" ? "incubators" : active;
 
   if (isMobile) {
+    // Keep the bottom navigation to five targets. Less-frequent destinations
+    // remain one tap away in the More menu instead of becoming tiny targets.
+    const mobileItems = items.filter(({ id }) => ["overview", "incubators", "candling", "alerts"].includes(id));
+    const moreItems = items.filter(({ id }) => ["trends", "settings"].includes(id));
+    const moreActive = moreItems.some(({ id }) => activeTab === id);
+
     return (
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch justify-around border-t px-2 pb-[env(safe-area-inset-bottom)]"
-        style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)" }}
-      >
-        {items.map(({ id, label, Icon }) => {
-          const isActive = activeTab === id;
-          return (
-            <button
-              key={id}
-              onClick={() => onNavigate(id)}
-              className="relative flex flex-1 flex-col items-center gap-1 py-2.5"
-              style={{ color: isActive ? "var(--brand-primary)" : "var(--text-secondary)" }}
-            >
-              <Icon size={22} strokeWidth={isActive ? 2.6 : 2} />
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-label)",
-                  fontWeight: "var(--weight-bold)",
-                  lineHeight: "var(--leading-snug)",
-                  letterSpacing: "var(--tracking-label)",
-                }}
+      <>
+        <nav
+          aria-label="Primary navigation"
+          className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch justify-around border-t px-2 pb-[env(safe-area-inset-bottom)]"
+          style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)" }}
+        >
+          {mobileItems.map(({ id, label, Icon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onNavigate(id)}
+                className="relative flex flex-1 flex-col items-center gap-1 py-2.5"
+                style={{ color: isActive ? "var(--brand-primary)" : "var(--text-secondary)" }}
+                aria-label={label}
+                aria-current={isActive ? "page" : undefined}
               >
-                {label}
-              </span>
-              {id === "alerts" && alertCount > 0 && (
+                <Icon size={22} strokeWidth={isActive ? 2.6 : 2} />
                 <span
-                  className="absolute right-4 top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1"
                   style={{
-                    backgroundColor: "var(--brand-primary)",
-                    color: "var(--on-brand)",
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-label)",
                     fontWeight: "var(--weight-bold)",
                     lineHeight: "var(--leading-snug)",
+                    letterSpacing: "var(--tracking-label)",
                   }}
                 >
-                  {alertCount}
+                  {label}
                 </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+                {id === "alerts" && alertCount > 0 && (
+                  <span
+                    className="absolute right-4 top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1"
+                    style={{
+                      backgroundColor: "var(--brand-primary)",
+                      color: "var(--on-brand)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
+                      lineHeight: "var(--leading-snug)",
+                    }}
+                  >
+                    {alertCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={() => setMobileMoreOpen((open) => !open)}
+            className="relative flex flex-1 flex-col items-center gap-1 py-2.5"
+            style={{ color: moreActive || mobileMoreOpen ? "var(--brand-primary)" : "var(--text-secondary)" }}
+            aria-label="More navigation options"
+            aria-haspopup="menu"
+            aria-expanded={mobileMoreOpen}
+          >
+            <MoreHorizontal size={22} strokeWidth={moreActive || mobileMoreOpen ? 2.6 : 2} />
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+                letterSpacing: "var(--tracking-label)",
+              }}
+            >
+              More
+            </span>
+          </button>
+        </nav>
+
+        {mobileMoreOpen && (
+          <div
+            role="menu"
+            aria-label="More navigation options"
+            className="fixed right-2 z-50 w-52 rounded-2xl border p-2 shadow-lg"
+            style={{
+              bottom: "calc(4.5rem + env(safe-area-inset-bottom))",
+              backgroundColor: "var(--surface-card)",
+              borderColor: "var(--border-subtle)",
+            }}
+          >
+            {moreItems.map(({ id, label, Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMobileMoreOpen(false);
+                    onNavigate(id);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2"
+                  style={{
+                    backgroundColor: isActive ? "var(--local-nav-selected-bg)" : "transparent",
+                    color: isActive ? "var(--local-nav-selected-fg)" : "var(--text-secondary)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-body)",
+                    fontWeight: "var(--weight-semibold)",
+                  }}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </>
     );
   }
 

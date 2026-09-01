@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { Activity, ScanSearch, Settings2, AlertTriangle } from "lucide-react";
+import { Activity, ScanSearch, Settings2 } from "lucide-react";
+import { ExclamationIcon } from "../icons";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -71,12 +72,14 @@ function SubTabNav({ active, onChange }: { active: DetailTab; onChange: (t: Deta
 export function DetailScreen({
   unit,
   modes,
+  initialTab = "monitor",
   onUpdate,
   onOpenTrends,
   onHistoryChanged,
 }: {
   unit: Incubator;
   modes: Mode[];
+  initialTab?: DetailTab;
   onUpdate: (patch: Partial<Incubator>) => void;
   onOpenTrends: () => void;
   onHistoryChanged: () => void;
@@ -90,7 +93,7 @@ export function DetailScreen({
       : CURRENT_TRAY_CAPACITY;
   const candling = computeCandling(mode.incubationDays);
 
-  const [tab, setTab] = useState<DetailTab>("monitor");
+  const [tab, setTab] = useState<DetailTab>(initialTab);
   const [setupModeId, setSetupModeId] = useState("");
   const [setupEggs, setSetupEggs] = useState("");
   const [harvestOpen, setHarvestOpen] = useState(false);
@@ -278,7 +281,7 @@ export function DetailScreen({
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold"
               style={{ backgroundColor: "#FEF3C7", color: "#B45309" }}
             >
-              <AlertTriangle size={20} />
+              <ExclamationIcon size={22} color="#B45309" />
             </span>
             <div>
               <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", color: "#92400E", whiteSpace: "normal", wordBreak: "break-word" }}>Lockdown Active · Do Not Open</p>

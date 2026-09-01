@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  Egg, RotateCw, Zap, Wifi, WifiOff, ChevronRight, LockKeyhole,
+  RotateCw, Zap, Wifi, ChevronRight, LockKeyhole,
 } from "lucide-react";
+import { IncubatingIcon, OfflineIcon } from "../icons";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
 import { Progress } from "../ui/progress";
@@ -96,7 +97,7 @@ export function DeviceSettingsTab({
       >
         <ul className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
           {[
-            { id: "mode" as const, label: "Incubation mode", Icon: Egg },
+            { id: "mode" as const, label: "Incubation mode", Icon: IncubatingIcon },
             { id: "turning" as const, label: "Turning schedule", Icon: RotateCw },
             { id: "device" as const, label: "Device & connection", Icon: Zap },
           ].map(({ id, label, Icon }) => {
@@ -161,7 +162,7 @@ export function DeviceSettingsTab({
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                     style={{ backgroundColor: "#F4ECE1", color: "#8B3A1C" }}
                   >
-                    <Egg size={19} />
+                    <IncubatingIcon size={20} color="#8B3A1C" />
                   </span>
                   <div className="min-w-0">
                     <p style={{ color: MUTED, fontSize: 11, fontWeight: 700 }}>Active preset</p>
@@ -302,7 +303,7 @@ export function DeviceSettingsTab({
                 accent={unit.paired ? OK.fg : CRIT.fg}
                 value={
                   <span className="flex items-center gap-1.5">
-                    {unit.paired ? <Wifi size={15} /> : <WifiOff size={15} />}
+                    {unit.paired ? <Wifi size={15} /> : <OfflineIcon size={15} />}
                     {unit.connectionState === "connecting"
                       ? "Connecting"
                       : unit.paired && unit.connectionState === "connected"
@@ -317,7 +318,7 @@ export function DeviceSettingsTab({
                         className="ml-1 rounded-full"
                         style={outlineBtn}
                       >
-                        <WifiOff size={13} /> {unit.connectionState === "connecting" ? "Connecting" : "Reconnect"}
+                        <OfflineIcon size={13} /> {unit.connectionState === "connecting" ? "Connecting" : "Reconnect"}
                       </Button>
                     )}
                   </span>

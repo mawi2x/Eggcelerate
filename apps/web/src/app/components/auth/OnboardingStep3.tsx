@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Egg, Thermometer, Droplets } from "lucide-react";
+import { Thermometer, Droplets } from "lucide-react";
+import { IncubatingIcon } from "../icons";
 import { AuthCard } from "./AuthCard";
 import { StepperBar } from "./StepperBar";
 import { FormInput } from "./FormInput";
@@ -83,7 +84,7 @@ export function OnboardingStep3({
         <div className="mt-2 rounded-2xl border border-[#F5E6CC] bg-[#FFFDF9] p-4"> {/* illustration exception per color-guidelines.md:163 */}
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FCE4D6] text-[#AD3A1D]">
-              <Egg size={18} />
+              <IncubatingIcon size={18} />
             </span>
             <div className="flex flex-col text-left">
               <span
