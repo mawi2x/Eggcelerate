@@ -31,28 +31,90 @@ export function HelpWidget() {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
+  // Dragging state
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragRef = useRef<{
+    isDragging: boolean;
+    startX: number;
+    startY: number;
+    initialPosX: number;
+    initialPosY: number;
+    hasMoved: boolean;
+  }>({
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+    initialPosX: 0,
+    initialPosY: 0,
+    hasMoved: false,
+  });
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    // Only drag on primary click / touch
+    if (e.button !== 0) return;
+    dragRef.current = {
+      isDragging: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialPosX: position.x,
+      initialPosY: position.y,
+      hasMoved: false,
+    };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragRef.current.isDragging) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      dragRef.current.hasMoved = true;
+    }
+    if (dragRef.current.hasMoved) {
+      setPosition({
+        x: dragRef.current.initialPosX + dx,
+        y: dragRef.current.initialPosY + dy,
+      });
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragRef.current.isDragging) return;
+    try {
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch {
+      // ignore
+    }
+    const moved = dragRef.current.hasMoved;
+    dragRef.current.isDragging = false;
+    if (!moved) {
+      setOpen((v) => !v);
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
-        triggerRef.current?.focus();
+        closePanel();
       }
     };
 
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (!panelRef.current?.contains(target) && !triggerRef.current?.contains(target)) {
-        setOpen(false);
+    const handleOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) {
+        return;
       }
+      closePanel();
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointerdown", handleOutsidePointer);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointerdown", handleOutsidePointer);
     };
   }, [open]);
 
@@ -62,13 +124,18 @@ export function HelpWidget() {
   };
 
   return (
-    <div className="fixed bottom-20 right-4 z-[70] lg:bottom-6 lg:right-6">
+    <div
+      className="fixed bottom-20 right-4 z-[70] touch-none select-none lg:bottom-6 lg:right-6"
+      style={{
+        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+      }}
+    >
       {open && (
         <div
           ref={panelRef}
           role="dialog"
           aria-label="Eggcelerate help"
-          className="absolute bottom-[68px] right-0 flex max-h-[min(520px,70vh)] w-[min(360px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl"
+          className="touch-auto select-auto absolute bottom-[68px] right-0 flex max-h-[min(520px,70vh)] w-[min(360px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl"
           style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8DED1", boxShadow: "0 18px 45px rgba(45,26,14,0.18)" }}
         >
           <div className="flex items-center justify-between gap-3 px-4 py-3.5" style={{ backgroundColor: "#FFF8F1", borderBottom: "1px solid #EFE7DC" }}>
@@ -82,7 +149,7 @@ export function HelpWidget() {
             <button
               type="button"
               onClick={closePanel}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[#F2E8DC] focus-visible:outline-none focus-visible:ring-2"
+              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[#F2E8DC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
               style={{ color: "var(--text-secondary)" }}
               aria-label="Close help"
             >
@@ -118,7 +185,7 @@ export function HelpWidget() {
                     key={faq.question}
                     type="button"
                     onClick={() => setSelectedIndex(index)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[#FFF8F1] focus-visible:outline-none focus-visible:ring-2"
+                    className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[#FFF8F1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                     style={{ border: "1px solid #EAE2D8", color: "#3F342C" }}
                     aria-pressed={selectedIndex === index}
                   >
@@ -135,15 +202,18 @@ export function HelpWidget() {
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="relative flex h-14 w-14 items-center justify-center rounded-2xl transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={() => { dragRef.current.isDragging = false; }}
+        className="relative flex h-14 w-14 cursor-grab items-center justify-center rounded-2xl transition-transform hover:-translate-y-0.5 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8DED1", boxShadow: "0 8px 24px rgba(45,26,14,0.18)" }}
         aria-label={open ? "Close Eggcelerate help" : "Open Eggcelerate help"}
         aria-expanded={open}
       >
-        <img src={logoApp} alt="" aria-hidden="true" className="h-11 w-11 rounded-xl object-cover" />
+        <img src={logoApp} alt="" aria-hidden="true" className="pointer-events-none h-11 w-11 rounded-xl object-cover" />
         <span
-          className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1"
+          className="pointer-events-none absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1"
           style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)", border: "2px solid var(--surface-card)", fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", letterSpacing: "var(--tracking-label)" }}
           aria-hidden="true"
         >

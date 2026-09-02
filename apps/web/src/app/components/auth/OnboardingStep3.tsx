@@ -60,7 +60,7 @@ export function OnboardingStep3({
         <FormInput
           label="Chamber name"
           id="chamber-name"
-          icon={Egg}
+          icon={IncubatingIcon}
           value={chamberName}
           onChange={(e) => setChamberName(e.target.value)}
           placeholder="Incubator One"
@@ -169,7 +169,7 @@ export function OnboardingStep3({
         <button
           type="button"
           onClick={onBack}
-          className="flex h-12 flex-1 items-center justify-center rounded-xl border bg-white font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl border bg-white font-semibold transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}
         >
           ← Back
@@ -177,7 +177,7 @@ export function OnboardingStep3({
         <button
           type="button"
           onClick={submit}
-          className="flex h-12 flex-1 items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
           Enter dashboard ✓
         </button>

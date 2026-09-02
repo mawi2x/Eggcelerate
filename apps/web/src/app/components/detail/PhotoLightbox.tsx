@@ -265,8 +265,9 @@ export function PhotoLightboxModal({
               <Trash2 size={14} /> Delete
             </Button>
             <button
+              type="button"
               onClick={onClose}
-              className="ml-2 rounded-full p-1.5 text-stone-300 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2"
+              className="ml-2 cursor-pointer rounded-full p-1.5 text-stone-300 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
               aria-label="Close photo viewer"
               title="Close (Esc)"
             >
@@ -291,7 +292,7 @@ export function PhotoLightboxModal({
                 e.stopPropagation();
                 handlePrev();
               }}
-              className="absolute left-4 sm:left-6 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2"
+              className="absolute left-4 sm:left-6 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
               aria-label="Previous photo"
               title="Previous photo (←)"
             >
@@ -338,7 +339,7 @@ export function PhotoLightboxModal({
                 e.stopPropagation();
                 handleNext();
               }}
-              className="absolute right-4 sm:right-6 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2"
+              className="absolute right-4 sm:right-6 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
               aria-label="Next photo"
               title="Next photo (→)"
             >
@@ -352,7 +353,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={zoomOut}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                 aria-label="Zoom out"
                 title="Zoom out (-)"
               >
@@ -364,7 +365,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={zoomIn}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                 aria-label="Zoom in"
                 title="Zoom in (+)"
               >
@@ -374,7 +375,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={resetView}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                 aria-label="Fit to screen"
                 title="Fit to screen (0)"
               >

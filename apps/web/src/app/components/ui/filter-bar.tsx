@@ -11,7 +11,7 @@ export function FilterBar({ options, value, onChange, ariaLabel = "Filter" }: Fi
             type="button"
             onClick={() => onChange(opt.key)}
             aria-pressed={active}
-            className="rounded-full px-3.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+            className="min-h-[var(--control-height-chip)] rounded-full px-3.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
             style={{
               backgroundColor: active ? "var(--brand-primary)" : "var(--surface-card)",
               color: active ? "var(--on-brand)" : "var(--text-muted)",

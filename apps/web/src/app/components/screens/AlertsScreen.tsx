@@ -93,7 +93,8 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
             }}
           >
             <SelectTrigger
-              className="h-10 w-[165px] rounded-xl"
+              size="toolbar"
+              className="w-[165px] rounded-xl"
               style={{ borderColor: BORDER, backgroundColor: "#FFFFFF", color: TEXT }}
               aria-label="Sort notifications"
             >
@@ -107,8 +108,9 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
           </Select>
 
           <Button
+            size="toolbar"
             className="rounded-xl"
-            style={{ backgroundColor: RUST, color: "#fff", minHeight: 40 }}
+            style={{ backgroundColor: RUST, color: "#fff" }}
             onClick={onMarkAllRead}
             disabled={unreadCount === 0}
           >
@@ -116,9 +118,10 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
           </Button>
 
           <Button
+            size="toolbar"
             variant="outline"
             className="rounded-xl"
-            style={{ borderColor: BORDER, minHeight: 40 }}
+            style={{ borderColor: BORDER }}
             onClick={onClearRead}
             disabled={readCount === 0}
             title="Removes every notification you've already read"
@@ -293,7 +296,7 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                       {s.label}
                     </span>
 
-                    <div className="relative h-7 w-[60px]">
+                    <div className="relative h-7 w-[68px]">
                       <span
                         className="absolute inset-0 flex items-center justify-end whitespace-nowrap transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
                         style={{
@@ -309,9 +312,10 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                       <div className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
                         {!a.acknowledged && (
                           <button
+                            type="button"
                             onClick={() => onAcknowledge(a.id)}
-                            className="flex items-center justify-center rounded-lg border transition-colors hover:bg-[#F5EDD8]"
-                            style={{ width: 28, height: 28, borderColor: CARD_BORDER, color: TEXT }}
+                            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                            style={{ borderColor: CARD_BORDER, color: TEXT }}
                             title="Mark as read"
                             aria-label={`Mark ${a.title} as read`}
                           >
@@ -319,9 +323,10 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={() => onDismiss(a.id)}
-                          className="flex items-center justify-center rounded-lg border transition-colors hover:bg-[#FEE2E2]"
-                          style={{ width: 28, height: 28, borderColor: CARD_BORDER, color: "#B91C1C" }}
+                          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#FEE2E2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                          style={{ borderColor: CARD_BORDER, color: "#B91C1C" }}
                           title="Dismiss"
                           aria-label={`Dismiss ${a.title}`}
                         >

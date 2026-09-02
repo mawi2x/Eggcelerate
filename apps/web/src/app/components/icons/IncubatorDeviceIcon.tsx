@@ -14,7 +14,7 @@ export function IncubatorDeviceIcon({
 
   return (
     <IconSvg {...props} size={size} title={title}>
-      <g transform="translate(2.25, 2.25) scale(0.052)" fill={fill}>
+      <g transform="translate(2.625, 2.625) scale(0.050)" fill={fill}>
         <path d={INCUBATOR_DEVICE_GLYPH_PATH} />
       </g>
     </IconSvg>
@@ -35,7 +35,7 @@ export function FilledIncubatorDeviceIcon({
   return (
     <IconSvg {...props} size={size} title={title}>
       <circle cx="12" cy="12" r="12" fill={backgroundColor} />
-      <g transform="translate(2.25, 2.25) scale(0.052)" fill={glyphColor}>
+      <g transform="translate(2.625, 2.625) scale(0.050)" fill={glyphColor}>
         <path d={INCUBATOR_DEVICE_GLYPH_PATH} />
       </g>
     </IconSvg>

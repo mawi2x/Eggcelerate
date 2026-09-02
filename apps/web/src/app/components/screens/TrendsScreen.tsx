@@ -51,6 +51,7 @@ import {
 } from "../ui/table";
 import { PaginationBar } from "../ui/pagination-bar";
 import { FilterBar } from "../ui/filter-bar";
+import { SegmentedControl, SegmentedControlItem } from "../ui/segmented-control";
 import { HatchRecord, Incubator, Mode, buildHistory, calculateHatchabilityRate } from "../../data/mockData";
 
 // ── Design tokens ───────────────────────────────────────────────────────────
@@ -68,7 +69,7 @@ const TARGET_BAND_COLOR = "#16A34A";
 const TARGET_BAND_OPACITY = 0.045;
 const inputStyle = { borderColor: "#D8D0C0", backgroundColor: "#F2EEE5" };
 // Framed white control used inside the trends toolbar.
-const toolbarInputStyle = { borderColor: "#D8D0C0", backgroundColor: SURFACE, height: 38 };
+const toolbarInputStyle = { borderColor: "#D8D0C0", backgroundColor: SURFACE };
 // One typographic voice for every control in the trends toolbar.
 const CONTROL_FONT: React.CSSProperties = {
   fontFamily: "var(--font-body)",
@@ -404,26 +405,21 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-end gap-4">
-        <div className="flex items-center gap-1 rounded-full p-1" style={{ backgroundColor: "#F2EEE5" }}>
+        <SegmentedControl aria-label="Trend view">
           {viewOptions.map(({ key, label, Icon }) => {
             const active = trendView === key;
             return (
-              <button
+              <SegmentedControlItem
                 key={key}
+                active={active}
+                aria-pressed={active}
                 onClick={() => setTrendView(key)}
-                className="flex items-center gap-2 rounded-full px-4 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                style={{
-                  backgroundColor: active ? SURFACE : "transparent",
-                  color: active ? RUST : MUTED,
-                  boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                  fontWeight: 600,
-                }}
               >
-                <Icon size={16} /> {label}
-              </button>
+                <Icon size={16} aria-hidden="true" /> {label}
+              </SegmentedControlItem>
             );
           })}
-        </div>
+        </SegmentedControl>
       </div>
 
       {trendView === "environmental" ? (
@@ -438,6 +434,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               {!compare ? (
                 <Select value={unitId} onValueChange={setUnitId}>
                   <SelectTrigger
+                    size="toolbar"
                     className="w-[240px] rounded-xl"
                     style={{ ...toolbarInputStyle, ...CONTROL_FONT, color: TEXT }}
                   >
@@ -456,7 +453,8 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
-                      className="flex w-[240px] items-center justify-between gap-2 rounded-xl px-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                      type="button"
+                      className="flex h-[var(--control-height-toolbar)] w-[240px] cursor-pointer items-center justify-between gap-2 rounded-xl px-4 transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
                       style={{
                         ...toolbarInputStyle,
                         ...CONTROL_FONT,
@@ -512,29 +510,23 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               </label>
 
               {/* Metric segmented toggle. */}
-              <div
-                className="ml-auto flex items-center gap-1 rounded-xl p-1"
-                style={{ backgroundColor: "#F2EEE5" }}
-              >
+              <SegmentedControl className="ml-auto" aria-label="Metric">
                 {(Object.keys(metricInfo) as Metric[]).map((mk) => {
                   const active = metric === mk;
                   return (
-                    <button
+                    <SegmentedControlItem
                       key={mk}
+                      size="compact"
+                      active={active}
+                      aria-pressed={active}
                       onClick={() => setMetric(mk)}
-                      className="rounded-lg px-4 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                      style={{
-                        ...CONTROL_FONT,
-                        backgroundColor: active ? SURFACE : "transparent",
-                        color: active ? TEXT : MUTED,
-                        boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                      }}
+                      style={{ color: active ? TEXT : MUTED }}
                     >
                       {metricInfo[mk].label}
-                    </button>
+                    </SegmentedControlItem>
                   );
                 })}
-              </div>
+              </SegmentedControl>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
@@ -546,8 +538,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               />
               {!compare && (
                 <button
+                  type="button"
                   onClick={() => setReadingsOpen(true)}
-                  className="ml-auto flex items-center gap-2 rounded-lg px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+                  className="ml-auto flex min-h-[var(--control-height-chip)] cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
                   style={{
                     color: "var(--brand-primary)",
                     fontFamily: "var(--font-body)",
@@ -612,7 +605,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       onMouseLeave={() => setHighlightedUnitId(null)}
                       onFocus={() => setHighlightedUnitId(u.id)}
                       onBlur={() => setHighlightedUnitId(null)}
-                      className="flex min-h-4 items-center gap-1 rounded-md px-0.5 transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 motion-reduce:transition-none"
+                      className="flex min-h-4 cursor-pointer items-center gap-1 rounded-md px-0.5 transition-[background-color,opacity] duration-150 hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none"
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: "var(--type-label)",
@@ -775,6 +768,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             <div className="relative flex-1" style={{ minWidth: 220 }}>
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
               <Input
+                size="toolbar"
                 value={hatchSearch}
                 onChange={(e) => {
                   setHatchSearch(e.target.value);
@@ -795,6 +789,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 }}
               >
                 <SelectTrigger
+                  size="toolbar"
                   className="w-full rounded-xl"
                   style={{ ...toolbarInputStyle, ...CONTROL_FONT, color: TEXT }}
                 >

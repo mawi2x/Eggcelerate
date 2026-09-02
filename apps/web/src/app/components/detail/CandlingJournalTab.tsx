@@ -891,11 +891,20 @@ function LogModalBody({
         <div>
           <Label style={{ fontSize: 13, color: TEXT }}>Photos</Label>
           <div
+            role="button"
+            tabIndex={0}
+            aria-label="Add candling photos"
             onClick={() => photoRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                photoRef.current?.click();
+              }
+            }}
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
-            className="mt-1.5 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl py-5"
+            className="mt-1.5 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
               border: `1.5px dashed ${dragging ? RUST : "#C9B182"}`,
               backgroundColor: dragging ? `${RUST}0A` : SURFACE,
@@ -918,10 +927,12 @@ function LogModalBody({
                       e.stopPropagation();
                       setForm((f) => ({ ...f, photos: f.photos.filter((_, idx) => idx !== i) }));
                     }}
-                    className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 transition-transform active:scale-95"
+                    className="absolute -top-2 -right-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                     aria-label="Remove photo"
                   >
-                    <X size={11} />
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition-transform hover:bg-red-700 active:scale-95">
+                      <X size={11} />
+                    </span>
                   </button>
                 </div>
               ))}
@@ -1459,7 +1470,7 @@ export function CandlingJournalTab({
                             else next.add(n.day);
                             return next;
                           })}
-                          className="flex min-w-0 flex-wrap items-center gap-1.5 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2"
+                          className="flex min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2"
                           style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}
                           aria-expanded={expandedDays.has(n.day)}
                           aria-controls={`journal-entry-${n.day}`}
@@ -1478,19 +1489,21 @@ export function CandlingJournalTab({
                             {fmtTimestamp(n.entry.date)}
                           </span>
                           <button
+                            type="button"
                             onClick={() => {
                               setEditingEntry(n.entry);
                               setShowLogForm(true);
                             }}
-                            className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FFF5F2] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                            className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FFF5F2] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                             aria-label={`Edit entry for Day ${n.entry.day}`}
                             title="Edit Inspection"
                           >
                             <Pencil size={16} />
                           </button>
                           <button
+                            type="button"
                             onClick={() => setEntryToDelete(n.entry)}
-                            className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                            className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                             aria-label={`Delete entry for Day ${n.entry.day}`}
                             title="Delete Journal Entry"
                           >

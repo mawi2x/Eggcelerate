@@ -3,6 +3,7 @@ import { Card, CardContent } from "../ui/card";
 import { ExclamationIcon } from "../icons/ExclamationIcon";
 import { CheckIcon } from "../icons/CheckIcon";
 import { InfoIcon } from "../icons/CircleInfoIcon";
+import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { OK, WARN, CRIT, MUTED, SURFACE, BORDER, TEXT } from "./types";
 export function StatusPill({
   tone,
@@ -137,31 +138,32 @@ export function StatusCallout({
   className?: string;
   role?: string;
 }) {
-  const iconSize = size === "lg" ? 36 : size === "sm" ? 15 : 18;
+  const badgeSize: "sm" | "md" | "lg" = size === "lg" ? "lg" : size === "sm" ? "sm" : "md";
+  const iconSize = statusIconBadgeGlyphSize(badgeSize);
   const toneMap = {
     success: {
       bg: OK.bg,
       fg: OK.fg,
       border: `${OK.fg}33`,
-      defaultIcon: <CheckIcon size={iconSize} color="var(--on-brand)" />,
+      defaultIcon: <CheckIcon size={iconSize} color="var(--status-icon-badge-fg)" />,
     },
     danger: {
       bg: CRIT.bg,
       fg: CRIT.fg,
       border: `${CRIT.fg}33`,
-      defaultIcon: <ExclamationIcon size={iconSize} color="var(--on-brand)" />,
+      defaultIcon: <ExclamationIcon size={iconSize} color="var(--status-icon-badge-fg)" />,
     },
     warning: {
       bg: WARN.bg,
       fg: WARN.fg,
       border: `${WARN.fg}33`,
-      defaultIcon: <ExclamationIcon size={iconSize} color="var(--on-brand)" />,
+      defaultIcon: <ExclamationIcon size={iconSize} color="var(--status-icon-badge-fg)" />,
     },
     info: {
       bg: "var(--status-info-bg)",
       fg: "var(--status-info-fg)",
       border: "var(--status-info-fg)33",
-      defaultIcon: <InfoIcon size={iconSize} color="var(--on-brand)" />,
+      defaultIcon: <InfoIcon size={iconSize} color="var(--status-icon-badge-fg)" />,
     },
   }[tone];
 
@@ -181,15 +183,12 @@ export function StatusCallout({
       }}
     >
       {!hideIcon && (
-        <span
-          className={`flex shrink-0 items-center justify-center rounded-full ${
-            size === "lg" ? "h-12 w-12" : size === "sm" ? "h-7 w-7" : "h-8 w-8"
-          } ${action ? "mt-0.5" : ""}`}
-          style={{ backgroundColor: toneMap.fg }}
-          aria-hidden="true"
-        >
-          {icon ?? toneMap.defaultIcon}
-        </span>
+        <StatusIconBadge
+          size={badgeSize}
+          backgroundColor={toneMap.fg}
+          className={action ? "mt-0.5" : undefined}
+          icon={icon ?? toneMap.defaultIcon}
+        />
       )}
       <div className="min-w-0 flex-1">
         <p

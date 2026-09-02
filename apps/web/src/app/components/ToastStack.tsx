@@ -64,9 +64,10 @@ export function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismi
         const accent = t.kind === "enabled" ? SAGE : NEUTRAL;
         return (
           <button
+            type="button"
             key={t.id}
             onClick={() => onDismiss(t.id)}
-            className="pointer-events-auto flex max-w-[320px] items-center gap-2.5 rounded-xl px-4 py-3 text-left transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            className="pointer-events-auto flex max-w-[320px] cursor-pointer items-center gap-2.5 rounded-xl px-4 py-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             style={{
               backgroundColor: TOAST_BG,
               boxShadow: "0 8px 16px rgba(26,21,16,0.32)",

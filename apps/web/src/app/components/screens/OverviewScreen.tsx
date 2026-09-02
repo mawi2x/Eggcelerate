@@ -147,6 +147,7 @@ function OffTargetRow({
     <>
       <style>{conditionRowStyle}</style>
       <button
+        type="button"
         onClick={() => onOpen(unit.id)}
         className="condition-row group flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2"
         title={`${unit.name} · ${displayValue}${unitLabel}`}
@@ -207,6 +208,7 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
 
   return (
     <button
+      type="button"
       onClick={() => onOpen(unit.id)}
       className="group flex w-full cursor-pointer flex-col items-center rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       title={`${unit.name} · Day ${unit.dayOfIncubation} of ${mode.incubationDays} — click to view`}
@@ -372,6 +374,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
             <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", color: "#6E6259", marginTop: 2 }}>Chambers currently running.</p>
           </div>
           <button
+            type="button"
             onClick={onManageAll}
             className="inline-flex shrink-0 cursor-pointer items-center rounded-xl border bg-white px-4 py-2 text-sm transition-colors duration-200 hover:bg-[#FFF7ED] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             style={{ borderColor: RUST, color: RUST, fontWeight: 600 }}

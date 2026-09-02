@@ -18,7 +18,7 @@ function formatTime(d: Date): string {
   });
 }
 
-export function LiveDateTime() {
+export function LiveDateTime({ compact = false }: { compact?: boolean } = {}) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -43,6 +43,29 @@ export function LiveDateTime() {
 
   const dateStr = formatDate(now);
   const timeStr = formatTime(now);
+
+  if (compact) {
+    return (
+      <div
+        className="flex items-center gap-1.5 text-left leading-none"
+        aria-live="polite"
+        aria-atomic="true"
+        title={dateStr}
+      >
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 500,
+            color: "var(--text-muted)",
+            lineHeight: 1.2,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {dateStr}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div

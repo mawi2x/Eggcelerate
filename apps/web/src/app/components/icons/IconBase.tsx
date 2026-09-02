@@ -5,6 +5,7 @@ export type CustomIconProps = Omit<SVGProps<SVGSVGElement>, "color" | "title"> &
   color?: string;
   foregroundColor?: string;
   title?: string;
+  strokeWidth?: number | string;
 };
 
 type IconSvgProps = Omit<CustomIconProps, "color" | "foregroundColor"> & {

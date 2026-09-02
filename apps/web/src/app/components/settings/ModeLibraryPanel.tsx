@@ -305,10 +305,11 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
   // Per-item action buttons, shared between grid cards and list rows.
   const ModeActions = ({ m }: { m: Mode }) => {
     const iconBtn =
-      "inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors hover:bg-[#FAF6EE] focus-visible:outline-none focus-visible:ring-2";
+      "inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#FAF6EE] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1";
     return (
       <div className="flex items-center gap-1.5">
         <button
+          type="button"
           onClick={() => openEdit(m)}
           className={iconBtn}
           style={{ borderColor: BORDER, color: TEXT }}
@@ -318,6 +319,7 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
           <Pencil size={14} />
         </button>
         <button
+          type="button"
           onClick={() => duplicateMode(m)}
           className={iconBtn}
           style={{ borderColor: BORDER, color: TEXT }}
@@ -327,6 +329,7 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
           <Copy size={14} />
         </button>
         <button
+          type="button"
           onClick={() => exportSingle(m)}
           className={iconBtn}
           style={{ borderColor: BORDER, color: TEXT }}
@@ -337,6 +340,7 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
         </button>
         {!m.builtIn && (
           <button
+            type="button"
             onClick={() => setDeleteTarget(m)}
             className={iconBtn}
             style={{ borderColor: CRIT_BG, color: CRIT, backgroundColor: CRIT_BG }}
@@ -792,10 +796,11 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                     return (
                       <button
                         key={r}
+                        type="button"
                         onClick={() =>
                           setConflicts((prev) => prev.map((x, i) => (i === idx ? { ...x, resolution: r } : x)))
                         }
-                        className="rounded-full px-3 py-1.5 transition-colors"
+                        className="cursor-pointer rounded-full px-3 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                         style={{
                           backgroundColor: active ? RUST : "#FFFFFF",
                           color: active ? "#FFFFFF" : "#57534E",

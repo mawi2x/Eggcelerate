@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { NotificationPopover } from "./alerts/NotificationPopover";
 import { AlertEntry } from "../data/mockData";
 import { LiveDateTime } from "./LiveDateTime";
+import { useIsMobile } from "./ui/use-mobile";
 
 interface Props {
   title: string;
@@ -46,8 +47,76 @@ export function PageHeader({
   titleNode,
   showDateTime,
 }: Props) {
-  // Overview: clock aligned with greeting (Row 2), NOT leveled with bell (Row 1) — restores original header spacing
+  const isMobile = useIsMobile();
+
+  // Overview: compact Neobank-style on mobile (title+subtitle left, bell right, date inline), spacious two-row on desktop
   if (showDateTime) {
+    if (isMobile) {
+      return (
+        <div>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              {titleNode ? (
+                titleNode
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h1
+                      className="min-w-0"
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "var(--type-page-title)",
+                        fontWeight: "var(--weight-bold)",
+                        lineHeight: "var(--leading-snug)",
+                        color: TEXT,
+                      }}
+                      title={title}
+                    >
+                      {title}
+                    </h1>
+                    {badges}
+                  </div>
+                  <p
+                    className="min-w-0"
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-regular)",
+                      lineHeight: "var(--leading-normal)",
+                      color: MUTED,
+                      marginTop: 2,
+                    }}
+                  >
+                    {subtitle}
+                  </p>
+                </>
+              )}
+              {onBack ? (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="-ml-2 mt-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                  style={{ color: RUST, fontSize: 14, fontWeight: 500 }}
+                >
+                  <ArrowLeft size={16} className="shrink-0" />
+                  <span className="min-w-0 truncate">{backLabel}</span>
+                </button>
+              ) : null}
+            </div>
+            <div className="shrink-0 pt-0.5">
+              <NotificationPopover
+                alerts={alerts}
+                unreadCount={alertCount}
+                onViewAll={onViewAlerts}
+                onMarkAllRead={onMarkAllRead}
+                onDismiss={onDismissAlert}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div>
         {/* Row 1: utility bar — bell stays top-right alone */}
@@ -55,8 +124,9 @@ export function PageHeader({
           <div className="flex min-w-0 items-center gap-3">
             {onBack ? (
               <button
+                type="button"
                 onClick={onBack}
-                className="-ml-2 inline-flex min-w-0 items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2"
+                className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                 style={{ color: RUST, fontSize: 14, fontWeight: 500 }}
               >
                 <ArrowLeft size={16} className="shrink-0" />
@@ -128,8 +198,9 @@ export function PageHeader({
         <div className="flex min-w-0 items-center gap-3">
           {onBack ? (
             <button
+              type="button"
               onClick={onBack}
-              className="-ml-2 inline-flex min-w-0 items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2"
+              className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
               style={{ color: RUST, fontSize: 14, fontWeight: 500 }}
             >
               <ArrowLeft size={16} className="shrink-0" />

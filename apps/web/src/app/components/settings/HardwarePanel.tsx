@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Wifi, Plug, BatteryMedium } from "lucide-react";
-import { OfflineIcon } from "../icons";
+import { WifiSlash } from "@phosphor-icons/react";
 import { Switch } from "../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Input } from "../ui/input";
@@ -45,7 +45,7 @@ export function HardwarePanel({ units }: Props) {
                     color: online ? RUST : MUTED,
                   }}
                 >
-                  {online ? <Wifi size={17} /> : <OfflineIcon size={17} />}
+                  {online ? <Wifi size={17} /> : <WifiSlash size={17} weight="fill" />}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate" style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>
@@ -149,7 +149,7 @@ export function HardwarePanel({ units }: Props) {
                 <button
                   type="button"
                   onClick={() => setCalibrationSaved(true)}
-                  className="rounded-lg px-2.5 py-1.5"
+                  className="cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                   style={{ backgroundColor: calibrationSaved ? "#DCFCE7" : "#F2EEE5", color: calibrationSaved ? "#166534" : RUST, fontSize: 12, fontWeight: 700 }}
                 >
                   {calibrationSaved ? "Saved" : "Save"}

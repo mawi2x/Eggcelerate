@@ -13,7 +13,7 @@ import {
   Wifi,
   Zap,
 } from "lucide-react";
-import { OfflineIcon } from "../icons";
+import { WifiSlash } from "@phosphor-icons/react";
 import { GaugeDial } from "../GaugeDial";
 import { WaterDroplet } from "../WaterDroplet";
 import { Incubator, Mode, Reading, CandlingCheckpoint } from "../../data/mockData";
@@ -203,7 +203,7 @@ function EnvironmentalSummary({
         <button
           type="button"
           onClick={onViewTrends}
-          className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[#F5EFE6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+          className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[#F5EFE6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
           style={{ color: RUST, fontSize: 12, fontWeight: 700 }}
         >
           Full trends <ArrowUpRight size={14} aria-hidden="true" />
@@ -351,7 +351,7 @@ export function LiveMonitorTab({
             tone={unit.powerSource === "battery" ? WARN : OK}
           />
           <SystemStatusTile
-            icon={unit.paired ? <Wifi size={18} /> : <OfflineIcon size={18} />}
+            icon={unit.paired ? <Wifi size={18} /> : <WifiSlash size={18} weight="fill" />}
             label="Connection"
             value={unit.paired ? "Connected" : "Offline"}
             tone={unit.paired ? OK : CRIT}

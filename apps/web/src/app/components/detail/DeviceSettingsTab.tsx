@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import {
   RotateCw, Zap, Wifi, ChevronRight, LockKeyhole,
 } from "lucide-react";
-import { IncubatingIcon, OfflineIcon } from "../icons";
+import { IncubatingIcon } from "../icons";
+import { Egg, WifiSlash } from "@phosphor-icons/react";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
 import { Progress } from "../ui/progress";
@@ -105,6 +106,7 @@ export function DeviceSettingsTab({
             return (
               <li key={id} className="min-w-0 shrink-0 lg:shrink lg:w-full">
                 <button
+                  type="button"
                   onClick={() => setSettingTab(id)}
                   className={`flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${isActive ? "border-[var(--brand-primary-soft)] bg-[var(--local-nav-selected-bg)] text-[var(--local-nav-selected-fg)]" : "border-transparent bg-transparent text-[var(--text-primary)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"}`}
                   style={{
@@ -162,7 +164,7 @@ export function DeviceSettingsTab({
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                     style={{ backgroundColor: "#F4ECE1", color: "#8B3A1C" }}
                   >
-                    <IncubatingIcon size={20} color="#8B3A1C" />
+                    <Egg size={20} color="#8B3A1C" weight="fill" aria-hidden="true" />
                   </span>
                   <div className="min-w-0">
                     <p style={{ color: MUTED, fontSize: 11, fontWeight: 700 }}>Active preset</p>
@@ -224,8 +226,9 @@ export function DeviceSettingsTab({
                 ))}
               </dl>
               <button
+                type="button"
                 onClick={() => toast("Mode Library", { description: "Edit this preset under Settings → Mode Library." })}
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-1 text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2"
+                className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg px-1 text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2"
                 style={{ fontSize: 13, fontWeight: 600 }}
               >
                 Edit preset for future cycles <ChevronRight size={14} aria-hidden="true" />
@@ -303,7 +306,7 @@ export function DeviceSettingsTab({
                 accent={unit.paired ? OK.fg : CRIT.fg}
                 value={
                   <span className="flex items-center gap-1.5">
-                    {unit.paired ? <Wifi size={15} /> : <OfflineIcon size={15} />}
+                    {unit.paired ? <Wifi size={15} /> : <WifiSlash size={15} weight="fill" />}
                     {unit.connectionState === "connecting"
                       ? "Connecting"
                       : unit.paired && unit.connectionState === "connected"
@@ -318,7 +321,7 @@ export function DeviceSettingsTab({
                         className="ml-1 rounded-full"
                         style={outlineBtn}
                       >
-                        <OfflineIcon size={13} /> {unit.connectionState === "connecting" ? "Connecting" : "Reconnect"}
+                        <WifiSlash size={13} weight="fill" /> {unit.connectionState === "connecting" ? "Connecting" : "Reconnect"}
                       </Button>
                     )}
                   </span>

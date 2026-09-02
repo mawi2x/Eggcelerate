@@ -24,7 +24,7 @@ export function Timeline({ currentDay, totalDays, candling, candled }: TimelineP
 
   return (
     <div>
-      <div className="relative mx-1 overflow-visible" style={{ paddingTop: 56, paddingBottom: 62 }}>
+      <div className="relative mx-1 overflow-visible" style={{ paddingTop: 56, paddingBottom: 68 }}>
         {/* Track frame — the axis line, centered vertically in the container. */}
         <div
           className="absolute left-0 right-0"
@@ -80,17 +80,16 @@ export function Timeline({ currentDay, totalDays, candling, candled }: TimelineP
             </svg>
           </div>
 
-          {/* Layer 3 — milestone labels, 12px below the track line. */}
+          {/* Layer 3 — milestone labels, below the track line and nodes. */}
           {candling.map((c, i) => {
             const pct = dayFraction(c.day, totalDays) * 100;
             return (
               <span
                 key={c.day}
                 className="absolute flex flex-col items-center whitespace-nowrap"
-                style={{ left: `${pct}%`, top: "calc(100% + 12px)", transform: "translateX(-50%)", zIndex: 5 }}
+                style={{ left: `${pct}%`, top: "calc(100% + 22px)", transform: "translateX(-50%)", zIndex: 5 }}
               >
                 <span
-                  className="inline-flex items-center gap-1"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-label)",
@@ -101,18 +100,6 @@ export function Timeline({ currentDay, totalDays, candling, candled }: TimelineP
                     color: "var(--text-muted)",
                   }}
                 >
-                  <span
-                    aria-hidden="true"
-                    className="h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{
-                      backgroundColor:
-                        markerStatus(c.day, currentDay, !!candled[c.day]) === "logged"
-                          ? "var(--status-success-fg)"
-                          : markerStatus(c.day, currentDay, !!candled[c.day]) === "due"
-                            ? "var(--status-warning-fg)"
-                            : "var(--text-muted)",
-                    }}
-                  />
                   {CANDLE_SHORT_LABELS[i] ?? c.label}
                 </span>
                 <span

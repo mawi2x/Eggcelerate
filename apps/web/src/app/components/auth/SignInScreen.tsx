@@ -88,7 +88,7 @@ export function SignInScreen({
               type="button"
               onClick={() => setShow(!show)}
               aria-label={show ? "Hide password" : "Show password"}
-              className="p-1 text-muted transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"
+              className="cursor-pointer rounded-md p-1 text-muted transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
               style={{ color: "var(--text-muted)" }}
             >
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -97,14 +97,14 @@ export function SignInScreen({
         />
       </div>
       <div className="mt-3 flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm" style={{ fontFamily: "var(--font-body)", color: "var(--text-secondary)" }}>
-          <input type="checkbox" className="rounded border-[var(--border-default)]" /> Keep me signed in
+        <label className="flex cursor-pointer items-center gap-2 text-sm" style={{ fontFamily: "var(--font-body)", color: "var(--text-secondary)" }}>
+          <input type="checkbox" className="cursor-pointer rounded border-[var(--border-default)]" /> Keep me signed in
         </label>
         <button
           type="button"
           onClick={() => alert("Coming soon")}
           aria-disabled="true"
-          className="text-sm font-semibold text-[var(--brand-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          className="cursor-pointer text-sm font-semibold text-[var(--brand-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
         >
           Forgot password?
         </button>
@@ -112,7 +112,7 @@ export function SignInScreen({
       <button
         type="button"
         onClick={submit}
-        className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
         Sign in →
       </button>
@@ -124,7 +124,7 @@ export function SignInScreen({
       <button
         type="button"
         onClick={onSetup}
-        className="w-full rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        className="w-full cursor-pointer rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
         Set up your farm
       </button>

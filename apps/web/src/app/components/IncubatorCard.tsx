@@ -1,6 +1,7 @@
-import { Thermometer, Droplets, ChevronRight, Check, TriangleAlert, Bird } from "lucide-react";
-import { Lock, EggCrack, Egg } from "@phosphor-icons/react";
-import { OfflineIcon } from "./icons";
+import { Thermometer, Droplets, ChevronRight } from "lucide-react";
+import { Lock, EggCrack, Egg, WifiSlash, Bird, CheckCircle } from "@phosphor-icons/react";
+import { ExclamationIcon } from "./icons";
+import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { SegmentedBattery } from "./SegmentedBattery";
@@ -27,6 +28,7 @@ const tileBg: Record<string, string> = { ok: TILE, warning: "#FFFBEB", critical:
 const tileBorder: Record<string, string> = { ok: BORDER, warning: "#FCD34D", critical: "#FCA5A5" };
 
 // Farmer-friendly lifecycle status pill, derived from the shared cycle phase.
+// Farmer-friendly lifecycle status pill, derived from the shared cycle phase.
 function LockFillIcon({ size = 15, color = "#FFFFFF" }: { size?: number | string; color?: string }) {
   return <Lock size={size} color={color} weight="fill" />;
 }
@@ -38,6 +40,23 @@ function EggCrackFillIcon({ size = 15, color = "#FFFFFF" }: { size?: number | st
 function EggFillIcon({ size = 15, color = "#FFFFFF" }: { size?: number | string; color?: string }) {
   return <Egg size={size} color={color} weight="fill" />;
 }
+
+function WifiSlashIcon({ size = 15, color = "#FFFFFF" }: { size?: number | string; color?: string }) {
+  return <WifiSlash size={size} color={color} weight="fill" />;
+}
+
+function CheckFillIcon({ size = 15, color = "#FFFFFF" }: { size?: number | string; color?: string }) {
+  return <CheckCircle size={size} color={color} weight="fill" />;
+}
+
+function BirdFillIcon({ size = 15, color = "#FFFFFF" }: { size?: number | string; color?: string }) {
+  return <Bird size={size} color={color} weight="fill" />;
+}
+
+function ExclamationFillIcon({ size = 15, color = "#FFFFFF" }: { size?: number | string; color?: string }) {
+  return <ExclamationIcon size={size} color={color} />;
+}
+
 function operationalStatus(unit: Incubator): {
   label: string; bg: string; fg: string; Icon?: React.ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string }>; dot?: boolean;
 } {
@@ -47,12 +66,12 @@ function operationalStatus(unit: Incubator): {
       : unit.connectionState === "connection_failed"
       ? "Connection Failed"
       : "Offline";
-    return { label, bg: "#FCE8E6", fg: "#C5221F", Icon: OfflineIcon };
+    return { label, bg: "#FCE8E6", fg: "#C5221F", Icon: WifiSlashIcon };
   }
-  if (unit.cyclePhase === "completed") return { label: "Completed", bg: "#D1FAE5", fg: "#065F46", Icon: Check };
-  if (unit.cyclePhase === "stopped_early") return { label: "Stopped Early", bg: "#FEE2E2", fg: "#991B1B", Icon: TriangleAlert };
+  if (unit.cyclePhase === "completed") return { label: "Completed", bg: "#D1FAE5", fg: "#065F46", Icon: CheckFillIcon };
+  if (unit.cyclePhase === "stopped_early") return { label: "Stopped Early", bg: "#FEE2E2", fg: "#991B1B", Icon: ExclamationFillIcon };
   if (unit.cyclePhase === "awaiting_finish") return { label: "Awaiting Finish", bg: "#FFF4D6", fg: "#9A6700", Icon: EggCrackFillIcon };
-  if (unit.cyclePhase === "hatching") return { label: "Hatching", bg: "#E8F0FE", fg: "#1967D2", Icon: Bird };
+  if (unit.cyclePhase === "hatching") return { label: "Hatching", bg: "#E8F0FE", fg: "#1967D2", Icon: BirdFillIcon };
   if (unit.cyclePhase === "lockdown") return { label: "Lockdown", bg: "var(--brand-primary-soft)", fg: "var(--brand-primary)", Icon: LockFillIcon };
   if (unit.cyclePhase === "ready") return { label: "Ready", bg: "#F1F3F4", fg: "#5F6368", dot: true };
   return { label: "Incubating", bg: "#E6F4EA", fg: "#137333", Icon: EggFillIcon };
@@ -246,12 +265,11 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
         >
           <div className="flex min-w-0 items-center gap-2 pl-1.5">
             {status.Icon ? (
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-                style={{ backgroundColor: status.fg }}
-              >
-                <status.Icon size={15} color="#FFFFFF" strokeWidth={3} />
-              </span>
+              <StatusIconBadge
+                size="sm"
+                backgroundColor={status.fg}
+                icon={<status.Icon size={statusIconBadgeGlyphSize("sm")} color="var(--status-icon-badge-fg)" strokeWidth={3} />}
+              />
             ) : (
               <span className="ml-1 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: status.fg }} />
             )}

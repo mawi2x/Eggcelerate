@@ -3,6 +3,7 @@ import { Bell, X, ArrowRight } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { AlertEntry } from "../../data/mockData";
 import { severityStyle, timeAgo } from "./alertStyle";
+import { useIsMobile } from "../ui/use-mobile";
 
 const RUST = "var(--brand-primary)";
 const TEXT = "var(--text-primary)";
@@ -21,30 +22,38 @@ interface Props {
 /** Bell button in the utility bar plus its 340px quick-notification dropdown. */
 export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllRead, onDismiss }: Props) {
   const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
   const recent = alerts.slice(0, 5);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="relative flex shrink-0 items-center justify-center rounded-2xl border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-          style={{ height: 52, width: 52, backgroundColor: "#FFFFFF", borderColor: BORDER, color: MUTED }}
+          type="button"
+          className="relative flex shrink-0 cursor-pointer items-center justify-center rounded-[10px] border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          style={{
+            height: isMobile ? 40 : 52,
+            width: isMobile ? 40 : 52,
+            backgroundColor: "#FFFFFF",
+            borderColor: BORDER,
+            color: MUTED,
+          }}
           title="Notifications"
           aria-label={`Notifications, ${unreadCount} unread`}
         >
-          <Bell size={26} strokeWidth={2} />
+          <Bell size={isMobile ? 20 : 26} strokeWidth={2} />
           {unreadCount > 0 && (
             <span
               className="absolute flex items-center justify-center rounded-full"
               style={{
-                top: -6,
-                right: -6,
-                height: 22,
-                minWidth: 22,
-                padding: "0 5px",
+                top: isMobile ? -4 : -6,
+                right: isMobile ? -4 : -6,
+                height: isMobile ? 18 : 22,
+                minWidth: isMobile ? 18 : 22,
+                padding: "0 4px",
                 backgroundColor: "#D92B0F",
                 color: "#FFFFFF",
-                fontSize: 12,
+                fontSize: isMobile ? 11 : 12,
                 fontWeight: 700,
                 border: "2px solid #FAF6F0",
               }}
@@ -70,9 +79,10 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
             Notifications
           </span>
           <button
+            type="button"
             onClick={onMarkAllRead}
             disabled={unreadCount === 0}
-            className="shrink-0 rounded-md px-1 transition-opacity hover:underline disabled:opacity-40 disabled:no-underline"
+            className="shrink-0 cursor-pointer rounded-md px-1 transition-opacity hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline"
             style={{ fontSize: 12, fontWeight: 600, color: RUST }}
           >
             Mark all as read
@@ -137,9 +147,10 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
 
                   {/* Hover-revealed dismiss */}
                   <button
+                    type="button"
                     onClick={() => onDismiss(a.id)}
-                    className="absolute right-2 top-2 flex items-center justify-center rounded-md opacity-0 transition-opacity hover:bg-[#F0EDE6] focus-visible:opacity-100 group-hover:opacity-100"
-                    style={{ width: 22, height: 22, color: MUTED }}
+                    className="absolute right-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-md opacity-0 transition-opacity hover:bg-[#F0EDE6] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 group-hover:opacity-100"
+                    style={{ color: MUTED }}
                     title="Dismiss"
                     aria-label={`Dismiss ${a.title}`}
                   >
@@ -153,11 +164,12 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
 
         {/* Footer */}
         <button
+          type="button"
           onClick={() => {
             setOpen(false);
             onViewAll();
           }}
-          className="flex w-full items-center justify-center gap-1.5 rounded-b-xl py-3 transition-colors hover:bg-[#FAF6F0]"
+          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-b-xl py-3 transition-colors hover:bg-[#FAF6F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset"
           style={{ fontSize: 13, fontWeight: 600, color: RUST }}
         >
           View All Notifications <ArrowRight size={15} />

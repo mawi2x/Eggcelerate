@@ -101,7 +101,7 @@ export function OnboardingStep2({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setPrimaryFocus(opt.id)}
-                className="flex items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
+                className="flex cursor-pointer items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-all hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
                 style={{
                   backgroundColor: selected ? "#FFF8F5" : "#FFFFFF",
                   borderColor: selected ? "var(--brand-primary)" : "#E8E2D5",
@@ -147,7 +147,7 @@ export function OnboardingStep2({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => toggleSpecies(s)}
-                className="rounded-full border px-3 py-1.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+                className="cursor-pointer rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
                 style={{
                   backgroundColor: selected ? "var(--brand-primary)" : "var(--surface-card)",
                   color: selected ? "var(--on-brand)" : "var(--text-primary)",
@@ -171,7 +171,7 @@ export function OnboardingStep2({
         <button
           type="button"
           onClick={onBack}
-          className="flex h-12 flex-1 items-center justify-center rounded-xl border bg-white font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl border bg-white font-semibold transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}
         >
           ← Back
@@ -179,7 +179,7 @@ export function OnboardingStep2({
         <button
           type="button"
           onClick={submit}
-          className="flex h-12 flex-1 items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
           Continue →
         </button>

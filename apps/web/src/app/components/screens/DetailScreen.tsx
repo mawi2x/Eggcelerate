@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Activity, ScanSearch, Settings2 } from "lucide-react";
 import { ExclamationIcon } from "../icons";
 import { Button } from "../ui/button";
+import { SegmentedControl, SegmentedControlItem } from "../ui/segmented-control";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import {
@@ -29,43 +30,33 @@ import { DeviceSettingsTab } from "../detail/DeviceSettingsTab";
 
 function SubTabNav({ active, onChange }: { active: DetailTab; onChange: (t: DetailTab) => void }) {
   const tabs: { id: DetailTab; label: string; icon: React.ReactNode }[] = [
-    { id: "monitor", label: "Live Monitor", icon: <Activity size={15} /> },
-    { id: "candling", label: "Candling & Inspection", icon: <ScanSearch size={15} /> },
-    { id: "settings", label: "Device Settings", icon: <Settings2 size={15} /> },
+    { id: "monitor", label: "Live Monitor", icon: <Activity size={15} aria-hidden="true" /> },
+    { id: "candling", label: "Candling & Inspection", icon: <ScanSearch size={15} aria-hidden="true" /> },
+    { id: "settings", label: "Device Settings", icon: <Settings2 size={15} aria-hidden="true" /> },
   ];
 
   return (
-    <div
-      role="tablist"
-      className="inline-flex items-center gap-3 self-end"
-      style={{ backgroundColor: "#F4ECE1", borderRadius: 9999, padding: 4 }}
-    >
+    <SegmentedControl role="tablist" aria-label="Incubator detail sections" className="self-end">
       {tabs.map((t) => {
         const isActive = active === t.id;
         return (
-          <button
+          <SegmentedControlItem
             key={t.id}
+            size="toolbar"
+            active={isActive}
             role="tab"
             aria-selected={isActive}
             onClick={() => onChange(t.id)}
-            className="flex items-center justify-center gap-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             style={{
-              backgroundColor: isActive ? "#FFFFFF" : "transparent",
-              boxShadow: isActive ? "0px 2px 6px rgba(0,0,0,0.05)" : "none",
-              color: isActive ? "#8B3A1C" : "#6E5E53",
-              fontWeight: 500,
-              fontSize: 13,
-              borderRadius: 9999,
-              padding: "12px 16px",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
+              color: isActive ? "var(--brand-primary)" : "var(--text-secondary)",
+              fontWeight: isActive ? "var(--weight-semibold)" : "var(--weight-medium)",
             }}
           >
             {t.icon} {t.label}
-          </button>
+          </SegmentedControlItem>
         );
       })}
-    </div>
+    </SegmentedControl>
   );
 }
 
@@ -245,10 +236,11 @@ export function DetailScreen({
               )}
             </div>
             <Button
+              size="toolbar"
               onClick={startCycle}
               disabled={!setupMode}
               className="rounded-full"
-              style={{ backgroundColor: "#8B3A1C", color: "#fff", minHeight: 40 }}
+              style={{ backgroundColor: "#8B3A1C", color: "#fff" }}
             >
               Start Incubation Cycle
             </Button>
@@ -263,7 +255,7 @@ export function DetailScreen({
             This batch was archived before hatch day. Reset the incubator when you are ready to load a new batch.
           </p>
           <div className="mt-4 flex justify-end">
-            <Button onClick={resetStoppedCycle} className="rounded-full" style={{ backgroundColor: "#8B3A1C", color: "#fff", minHeight: 40 }}>
+            <Button size="toolbar" onClick={resetStoppedCycle} className="rounded-full" style={{ backgroundColor: "#8B3A1C", color: "#fff" }}>
               Reset to Ready
             </Button>
           </div>
@@ -284,7 +276,7 @@ export function DetailScreen({
               <ExclamationIcon size={22} color="#B45309" />
             </span>
             <div>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", color: "#92400E", whiteSpace: "normal", wordBreak: "break-word" }}>Lockdown Active · Do Not Open</p>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", color: "#92400E", whiteSpace: "normal", wordBreak: "break-word" }}>Lockdown Active, Do Not Open</p>
               <p style={{ fontSize: 13, color: "#B45309", marginTop: 2 }}>
                 Turning Stopped. Keep the incubator closed while hatching begins.
               </p>
@@ -308,9 +300,10 @@ export function DetailScreen({
             </p>
           </div>
           <Button
+            size="toolbar"
             onClick={() => setHarvestOpen(true)}
             className="rounded-xl px-5 font-bold shadow-sm transition-all"
-            style={{ backgroundColor: "#8B3A1C", color: "#FFFFFF", minHeight: 40 }}
+            style={{ backgroundColor: "#8B3A1C", color: "#FFFFFF" }}
           >
             Finish Cycle
           </Button>

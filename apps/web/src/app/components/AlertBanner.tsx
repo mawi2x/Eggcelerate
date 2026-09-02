@@ -1,5 +1,7 @@
-import { AlertOctagon, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Incubator, Mode, getUnitIssues } from "../data/mockData";
+import { ExclamationIcon } from "./icons";
+import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
 
 interface Props {
   criticalUnits: Incubator[];
@@ -30,13 +32,16 @@ export function AlertBanner({ criticalUnits, modes, onView }: Props) {
 
   return (
     <button
+      type="button"
       onClick={onView}
-      className="w-full text-left rounded-3xl px-5 py-4 flex items-center gap-4 transition-opacity hover:opacity-95"
+      className="w-full cursor-pointer text-left rounded-3xl px-5 py-4 flex items-center gap-4 transition-opacity hover:opacity-95 active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)" }}
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.18)" }}>
-        <AlertOctagon size={22} />
-      </span>
+      <StatusIconBadge
+        size="banner"
+        backgroundColor="rgba(255,255,255,0.18)"
+        icon={<ExclamationIcon size={statusIconBadgeGlyphSize("banner")} color="var(--status-icon-badge-fg)" />}
+      />
       <div className="flex-1">
         <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--on-brand)", whiteSpace: "normal", wordBreak: "break-word" }}>{headline}</p>
         <p style={{ opacity: 0.9 }}>{detail}</p>

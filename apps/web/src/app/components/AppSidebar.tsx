@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   LayoutGrid,
-  ClipboardCheck,
   LineChart,
   Bell,
   Settings,
@@ -11,6 +10,7 @@ import {
   ChevronRight,
   MoreHorizontal,
 } from "lucide-react";
+import { Notepad } from "@phosphor-icons/react";
 import { IncubatorDeviceIcon } from "./icons";
 import { useIsMobile } from "./ui/use-mobile";
 import { Account, accountInitials, resolveDisplayName } from "../data/account";
@@ -30,14 +30,15 @@ export type ScreenId =
 interface NavItem {
   id: ScreenId;
   label: string;
-  Icon: React.ComponentType<{ size?: number | string; color?: string; className?: string }>;
+  mobileLabel?: string;
+  Icon: React.ComponentType<{ size?: number | string; color?: string; className?: string; strokeWidth?: number | string }>;
 }
 
 const items: NavItem[] = [
   { id: "overview", label: "Overview", Icon: LayoutGrid },
   { id: "incubators", label: "Incubators", Icon: IncubatorDeviceIcon },
-  { id: "candling", label: "Candling Logs", Icon: ClipboardCheck },
-  { id: "trends", label: "Trends", Icon: LineChart },
+  { id: "candling", label: "Candling Logs", mobileLabel: "Candling", Icon: Notepad },
+  { id: "trends", label: "Trends", mobileLabel: "Analytics", Icon: LineChart },
   { id: "alerts", label: "Alerts", Icon: Bell },
   { id: "settings", label: "Settings", Icon: Settings },
 ];
@@ -62,8 +63,8 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
   if (isMobile) {
     // Keep the bottom navigation to five targets. Less-frequent destinations
     // remain one tap away in the More menu instead of becoming tiny targets.
-    const mobileItems = items.filter(({ id }) => ["overview", "incubators", "candling", "alerts"].includes(id));
-    const moreItems = items.filter(({ id }) => ["trends", "settings"].includes(id));
+    const mobileItems = items.filter(({ id }) => ["overview", "incubators", "candling", "trends"].includes(id));
+    const moreItems = items.filter(({ id }) => ["alerts", "settings"].includes(id));
     const moreActive = moreItems.some(({ id }) => activeTab === id);
 
     return (
@@ -73,14 +74,15 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
           className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch justify-around border-t px-2 pb-[env(safe-area-inset-bottom)]"
           style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)" }}
         >
-          {mobileItems.map(({ id, label, Icon }) => {
+          {mobileItems.map(({ id, label, mobileLabel, Icon }) => {
             const isActive = activeTab === id;
+            const displayLabel = mobileLabel ?? label;
             return (
               <button
                 key={id}
                 type="button"
                 onClick={() => onNavigate(id)}
-                className="relative flex flex-1 flex-col items-center gap-1 py-2.5"
+                className="relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                 style={{ color: isActive ? "var(--brand-primary)" : "var(--text-secondary)" }}
                 aria-label={label}
                 aria-current={isActive ? "page" : undefined}
@@ -95,7 +97,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
                     letterSpacing: "var(--tracking-label)",
                   }}
                 >
-                  {label}
+                  {displayLabel}
                 </span>
                 {id === "alerts" && alertCount > 0 && (
                   <span
@@ -119,7 +121,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
           <button
             type="button"
             onClick={() => setMobileMoreOpen((open) => !open)}
-            className="relative flex flex-1 flex-col items-center gap-1 py-2.5"
+            className="relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             style={{ color: moreActive || mobileMoreOpen ? "var(--brand-primary)" : "var(--text-secondary)" }}
             aria-label="More navigation options"
             aria-haspopup="menu"
@@ -137,6 +139,21 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
             >
               More
             </span>
+            {alertCount > 0 && (
+              <span
+                className="absolute right-4 top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1"
+                style={{
+                  backgroundColor: "var(--brand-primary)",
+                  color: "var(--on-brand)",
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: "var(--leading-snug)",
+                }}
+              >
+                {alertCount}
+              </span>
+            )}
           </button>
         </nav>
 
@@ -162,7 +179,7 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
                     setMobileMoreOpen(false);
                     onNavigate(id);
                   }}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2"
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                   style={{
                     backgroundColor: isActive ? "var(--local-nav-selected-bg)" : "transparent",
                     color: isActive ? "var(--local-nav-selected-fg)" : "var(--text-secondary)",
@@ -173,7 +190,22 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
                   aria-current={isActive ? "page" : undefined}
                 >
                   <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
-                  {label}
+                  <span className="flex-1">{label}</span>
+                  {id === "alerts" && alertCount > 0 && (
+                    <span
+                      className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5"
+                      style={{
+                        backgroundColor: "var(--brand-primary)",
+                        color: "var(--on-brand)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        lineHeight: "var(--leading-snug)",
+                      }}
+                    >
+                      {alertCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -190,12 +222,13 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
   // Circular chevron straddling the sidebar / content dividing line.
   const EdgeToggle = () => (
     <button
+      type="button"
       onClick={onToggleCollapsed}
       onMouseEnter={() => setHoverEdge(true)}
       onMouseLeave={() => setHoverEdge(false)}
       onFocus={() => setHoverEdge(true)}
       onBlur={() => setHoverEdge(false)}
-      className="absolute z-50 flex items-center justify-center rounded-full transition-colors focus-visible:outline-none"
+      className="absolute z-50 flex cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       style={{
         width: 28,
         height: 28,
@@ -217,11 +250,12 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
 
 
   // Expanded-state row renderer.
-  const expandedNavButton = (id: ScreenId, label: string, Icon: typeof LayoutGrid, badge?: number) => {
+  const expandedNavButton = (id: ScreenId, label: string, Icon: NavItem["Icon"], badge?: number) => {
     const isActive = activeTab === id;
     return (
       <button
         key={id}
+        type="button"
         onClick={() => onNavigate(id)}
         className={`relative flex cursor-pointer items-center gap-3 rounded-xl border px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${isActive ? "border-[var(--global-nav-selected-bg)] bg-[var(--global-nav-selected-bg)] text-[var(--global-nav-selected-fg)]" : "border-transparent bg-transparent text-[var(--text-secondary)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"}`}
         style={{
@@ -268,12 +302,13 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         {/* ① Logo → toggle hover-swap (Variant A / Variant B) */}
         <div className="flex items-center justify-center pt-5">
           <button
+            type="button"
             onClick={onToggleCollapsed}
             onMouseEnter={() => setHoverToggle(true)}
             onMouseLeave={() => setHoverToggle(false)}
             onFocus={() => setHoverToggle(true)}
             onBlur={() => setHoverToggle(false)}
-            className="relative flex items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2"
+            className="relative flex cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
               width: 36,
               height: 36,
@@ -312,8 +347,9 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
             return (
               <button
                 key={id}
+                type="button"
                 onClick={() => onNavigate(id)}
-                className="relative flex items-center justify-center rounded-xl transition-colors hover:bg-[var(--surface-muted)]"
+                className="relative flex cursor-pointer items-center justify-center rounded-xl transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                 style={{
                   width: 40,
                   height: 40,
@@ -340,8 +376,9 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         <div className="mt-auto flex flex-col items-center gap-3 pb-5">
           {/* Settings */}
           <button
+            type="button"
             onClick={() => onNavigate("settings")}
-            className="relative flex items-center justify-center rounded-xl transition-colors hover:bg-[var(--surface-muted)]"
+            className="relative flex cursor-pointer items-center justify-center rounded-xl transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
               width: 40,
               height: 40,
@@ -408,8 +445,9 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
           Eggcelerate
         </span>
         <button
+          type="button"
           onClick={onToggleCollapsed}
-          className="flex shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2"
+          className="flex shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
           style={{ width: 32, height: 32, color: "var(--text-secondary)" }}
           title="Collapse sidebar"
           aria-label="Collapse sidebar"

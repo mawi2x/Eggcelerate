@@ -17,7 +17,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "../ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../ui/select";
 import { PaginationBar } from "../ui/pagination-bar";
 import { FilterBar } from "../ui/filter-bar";
@@ -52,7 +52,6 @@ const inputStyle = { borderColor: INPUT_BORDER, backgroundColor: "#F2EEE5" };
 
 // Framed white control matching the toolbar spec.
 const sortTriggerStyle = {
-  height: 38,
   backgroundColor: "#FFFFFF",
   borderColor: "var(--border-subtle)",
   color: "var(--text-primary)",
@@ -89,6 +88,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<ViewMode>("grid");
   const [filter, setFilter] = useState<Filter>("all");
+  const [modeFilter, setModeFilter] = useState("all");
   const [sort, setSort] = useState<SortKey>("name");
   const [sortAsc, setSortAsc] = useState(true);
   const [page, setPage] = useState(1);
@@ -145,12 +145,11 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
     const q = search.trim().toLowerCase();
     return units.filter((u) => {
       if (filter !== "all" && u.status !== filter) return false;
+      if (modeFilter !== "all" && u.modeId !== modeFilter) return false;
       if (!q) return true;
       return u.name.toLowerCase().includes(q) || modeOf(u.modeId).name.toLowerCase().includes(q);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [units, search, filter, modes]);
-
+  }, [units, search, filter, modeFilter, modes]);
   const sorted = useMemo(() => {
     const remaining = (u: Incubator) => {
       const m = modeOf(u.modeId);
@@ -266,6 +265,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         <div className="relative min-w-[220px] flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
           <Input
+            size="toolbar"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             maxLength={50}
@@ -277,9 +277,10 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         </div>
         <ViewToggle view={view} onChange={setView} />
         <Button
+          size="toolbar"
           onClick={() => { setConnectError(null); setOpen(true); }}
           className="rounded-xl px-5 transition-colors duration-200 hover:!bg-[#8B3A1C] focus-visible:outline-none focus-visible:ring-2"
-          style={{ backgroundColor: RUST, color: "#fff", minHeight: 40 }}
+          style={{ backgroundColor: RUST, color: "#fff" }}
         >
           <Plus size={18} /> Add Incubator
         </Button>
@@ -294,27 +295,44 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         options={filterPills.map((p) => ({ key: p.key, label: p.label, count: p.count }))}
       />
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={modeFilter} onValueChange={(v) => { setModeFilter(v); setPage(1); }}>
+            <SelectTrigger
+              size="toolbar"
+              className="w-auto min-w-[140px] rounded-xl"
+              style={sortTriggerStyle}
+              aria-label="Filter by incubation mode"
+            >
+              <SelectValue placeholder="All modes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All modes</SelectItem>
+              {modes.map((mode) => <SelectItem key={mode.id} value={mode.id}>{mode.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
           <Select value={sort} onValueChange={(v) => { setSort(v as SortKey); setPage(1); }}>
             <SelectTrigger
+              size="toolbar"
               className="w-auto min-w-[140px] rounded-xl"
               style={sortTriggerStyle}
               aria-label="Sort chambers"
             >
-              <span className="whitespace-nowrap">Sort: {sortOptions.find((o) => o.key === sort)?.label}</span>
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {sortOptions.map((o) => (
-                <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
+                <SelectItem key={o.key} value={o.key}>Sort: {o.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {/* Flips the current sort between ascending and descending. */}
+
           <button
+            type="button"
             onClick={() => { setSortAsc((v) => !v); setPage(1); }}
-            className="flex shrink-0 items-center justify-center transition-colors hover:bg-[#FAF7F2] focus-visible:outline-none focus-visible:ring-2"
-            style={{ width: 32, height: 32, backgroundColor: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: 8, color: "var(--text-primary)" }}
-            title={sortAsc ? "Ascending" : "Descending"}
+            className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] cursor-pointer items-center justify-center rounded-xl border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2"
+            style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}
+            title={sortAsc ? "Sort ascending" : "Sort descending"}
             aria-label={`Sort direction: ${sortAsc ? "ascending" : "descending"}`}
           >
             {sortAsc ? <ArrowUpNarrowWide size={16} /> : <ArrowDownWideNarrow size={16} />}
@@ -326,13 +344,14 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         <div className="rounded-2xl px-5 py-12 text-center" style={{ backgroundColor: CARD, border: `1px dashed ${BORDER}` }}>
           <p style={{ fontWeight: 700, color: TEXT }}>No chambers match your filters</p>
           <p style={{ color: MUTED, fontSize: 13, marginTop: 4 }}>Try a different search term or filter.</p>
-          {search && (
+          {(search || filter !== "all" || modeFilter !== "all") && (
             <button
-              onClick={() => setSearch("")}
-              className="mt-3 rounded-xl px-3 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              type="button"
+              onClick={() => { setSearch(""); setFilter("all"); setModeFilter("all"); }}
+              className="mt-3 cursor-pointer rounded-xl px-3 py-1.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
               style={{ color: RUST, fontWeight: 600, fontSize: 13 }}
             >
-              Clear search
+              Clear filters
             </button>
           )}
         </div>
