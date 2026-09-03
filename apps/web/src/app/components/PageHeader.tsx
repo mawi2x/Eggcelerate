@@ -19,6 +19,8 @@ interface Props {
   badges?: React.ReactNode;
   /** Replaces the default title/subtitle block entirely (e.g. detail headers). */
   titleNode?: React.ReactNode;
+  /** Optional substring to emphasize inside the default page title. */
+  titleHighlight?: string;
   /** When true, shows ambient live date/time immediately left of the bell (Overview). */
   showDateTime?: boolean;
 }
@@ -45,9 +47,31 @@ export function PageHeader({
   backLabel = "Back",
   badges,
   titleNode,
+  titleHighlight,
   showDateTime,
 }: Props) {
   const isMobile = useIsMobile();
+
+  const renderTitle = () => {
+    if (!titleHighlight) return title;
+    const start = title.indexOf(titleHighlight);
+    if (start < 0) return title;
+    const end = start + titleHighlight.length;
+    return (
+      <>
+        {title.slice(0, start)}
+        <span
+          style={{
+            color: "var(--brand-primary)",
+            fontWeight: "var(--weight-extrabold)",
+          }}
+        >
+          {titleHighlight}
+        </span>
+        {title.slice(end)}
+      </>
+    );
+  };
 
   // Overview: compact Neobank-style on mobile (title+subtitle left, bell right, date inline), spacious two-row on desktop
   if (showDateTime) {
@@ -72,7 +96,7 @@ export function PageHeader({
                       }}
                       title={title}
                     >
-                      {title}
+                      {renderTitle()}
                     </h1>
                     {badges}
                   </div>
@@ -161,7 +185,7 @@ export function PageHeader({
                       }}
                       title={title}
                     >
-                      {title}
+                      {renderTitle()}
                     </h1>
                     {badges}
                   </div>
@@ -234,7 +258,7 @@ export function PageHeader({
                 }}
                 title={title}
               >
-                {title}
+                {renderTitle()}
               </h1>
               {badges}
             </div>

@@ -44,8 +44,8 @@ export function SettingsScreen({
     <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
       {/* ── Left column — category menu ───────────────────────────────────── */}
       <nav
-        className="shrink-0 rounded-2xl p-2 lg:sticky lg:top-6"
-        style={{ width: "100%", maxWidth: 220, backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
+        className="w-full max-w-none shrink-0 rounded-2xl p-2 lg:sticky lg:top-6 lg:max-w-[220px]"
+        style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
         aria-label="Settings categories"
       >
         <ul className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
@@ -98,7 +98,7 @@ export function SettingsScreen({
 
         {/* Inline save bar, anchored bottom-right of the detail panel. */}
         <div
-          className="sticky bottom-0 flex items-center justify-between gap-4 rounded-b-2xl px-6 py-3.5"
+          className="sticky bottom-[var(--mobile-bottom-nav-clearance)] z-30 flex items-center justify-between gap-4 rounded-b-2xl px-6 py-3.5 md:bottom-0"
           style={{
             backgroundColor: "rgba(255,255,255,0.92)",
             backdropFilter: "blur(8px)",

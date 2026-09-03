@@ -85,10 +85,8 @@ export function DeviceSettingsTab({
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
       {/* Left Sub-Nav Card */}
       <nav
-        className="shrink-0 rounded-2xl p-4 lg:sticky lg:top-6"
+        className="w-full max-w-none shrink-0 rounded-2xl p-4 lg:sticky lg:top-6 lg:max-w-[240px]"
         style={{
-          width: "100%",
-          maxWidth: 240,
           backgroundColor: "var(--surface-card)",
           borderRadius: 16,
           padding: 16,

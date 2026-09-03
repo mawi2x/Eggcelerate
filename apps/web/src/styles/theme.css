@@ -75,6 +75,7 @@
   --control-height-chip: 1.75rem;      /* 28px visual baseline */
   --control-size-icon: 2.25rem;        /* 36px visual control */
   --control-hit-area-icon: 2.75rem;    /* 44px touch-friendly area */
+  --mobile-bottom-nav-clearance: calc(4.5rem + env(safe-area-inset-bottom, 0px));
   --control-segment-height: 2.25rem;   /* 36px default segmented item */
 
   /* Component semantics preserve navigation hierarchy. */

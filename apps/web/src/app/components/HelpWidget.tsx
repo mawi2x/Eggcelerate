@@ -125,7 +125,7 @@ export function HelpWidget() {
 
   return (
     <div
-      className="fixed bottom-20 right-4 z-[70] touch-none select-none lg:bottom-6 lg:right-6"
+      className="fixed bottom-[var(--mobile-bottom-nav-clearance)] right-4 z-[70] touch-none select-none md:bottom-6 md:right-6"
       style={{
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
       }}

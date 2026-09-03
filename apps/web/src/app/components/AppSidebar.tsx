@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutGrid,
   LineChart,
@@ -57,6 +57,33 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
   const [hoverToggle, setHoverToggle] = useState(false);
   const [hoverEdge, setHoverEdge] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const mobileMoreMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMoreTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isMobile || !mobileMoreOpen) return;
+
+    const closeMenu = () => {
+      setMobileMoreOpen(false);
+      mobileMoreTriggerRef.current?.focus();
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target || mobileMoreMenuRef.current?.contains(target) || mobileMoreTriggerRef.current?.contains(target)) return;
+      closeMenu();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [isMobile, mobileMoreOpen]);
+
   // The per-incubator config page is a sub-view of the Incubators tab.
   const activeTab: ScreenId = active === "detail" ? "incubators" : active;
 
@@ -81,7 +108,10 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
               <button
                 key={id}
                 type="button"
-                onClick={() => onNavigate(id)}
+                onClick={() => {
+                  setMobileMoreOpen(false);
+                  onNavigate(id);
+                }}
                 className="relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                 style={{ color: isActive ? "var(--brand-primary)" : "var(--text-secondary)" }}
                 aria-label={label}
@@ -120,12 +150,14 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
 
           <button
             type="button"
+            ref={mobileMoreTriggerRef}
             onClick={() => setMobileMoreOpen((open) => !open)}
             className="relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             style={{ color: moreActive || mobileMoreOpen ? "var(--brand-primary)" : "var(--text-secondary)" }}
             aria-label="More navigation options"
             aria-haspopup="menu"
             aria-expanded={mobileMoreOpen}
+            aria-controls="mobile-more-menu"
           >
             <MoreHorizontal size={22} strokeWidth={moreActive || mobileMoreOpen ? 2.6 : 2} />
             <span
@@ -159,11 +191,13 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
 
         {mobileMoreOpen && (
           <div
+            ref={mobileMoreMenuRef}
+            id="mobile-more-menu"
             role="menu"
             aria-label="More navigation options"
             className="fixed right-2 z-50 w-52 rounded-2xl border p-2 shadow-lg"
             style={{
-              bottom: "calc(4.5rem + env(safe-area-inset-bottom))",
+              bottom: "var(--mobile-bottom-nav-clearance)",
               backgroundColor: "var(--surface-card)",
               borderColor: "var(--border-subtle)",
             }}

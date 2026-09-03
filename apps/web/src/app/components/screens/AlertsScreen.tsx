@@ -279,7 +279,7 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                   </div>
 
                   {/* Column 3 — compact severity pill above timestamp + quick actions */}
-                  <div className="flex shrink-0 flex-col items-end gap-2" style={{ minHeight: 44 }}>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5 sm:relative sm:h-7 sm:w-[68px]" style={{ minHeight: 44 }}>
                     <span
                       className="rounded-full px-2.5 py-0.5"
                       style={{
@@ -296,9 +296,9 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                       {s.label}
                     </span>
 
-                    <div className="relative h-7 w-[68px]">
+                    <div className="relative flex min-h-11 items-center justify-end gap-1 sm:absolute sm:inset-0 sm:block">
                       <span
-                        className="absolute inset-0 flex items-center justify-end whitespace-nowrap transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
+                        className="flex items-center justify-end whitespace-nowrap transition-opacity sm:absolute sm:inset-0 sm:group-focus-within:opacity-0 sm:group-hover:opacity-0"
                         style={{
                           fontFamily: "var(--font-body)",
                           fontSize: "var(--type-label)",
@@ -309,12 +309,12 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                       >
                         {timeAgo(a.timestamp)}
                       </span>
-                      <div className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                      <div className="flex items-center justify-end gap-1 transition-opacity sm:absolute sm:inset-0 sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
                         {!a.acknowledged && (
                           <button
                             type="button"
                             onClick={() => onAcknowledge(a.id)}
-                            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                             style={{ borderColor: CARD_BORDER, color: TEXT }}
                             title="Mark as read"
                             aria-label={`Mark ${a.title} as read`}
@@ -325,7 +325,7 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                         <button
                           type="button"
                           onClick={() => onDismiss(a.id)}
-                          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#FEE2E2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#FEE2E2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                           style={{ borderColor: CARD_BORDER, color: "#B91C1C" }}
                           title="Dismiss"
                           aria-label={`Dismiss ${a.title}`}

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Layers,
   Egg,
@@ -201,8 +201,8 @@ function OffTargetRow({
 function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen: (id: string) => void }) {
   const pct = Math.min(100, Math.round((unit.dayOfIncubation / mode.incubationDays) * 100));
   const stroke = PROGRESS_STROKE;
-  const size = 88;
-  const width = 10;
+  const size = 70;
+  const width = 8;
   const r = (size - width) / 2;
   const circumference = 2 * Math.PI * r;
 
@@ -210,27 +210,58 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
     <button
       type="button"
       onClick={() => onOpen(unit.id)}
-      className="group flex w-full cursor-pointer flex-col items-center rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 sm:p-4 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       title={`${unit.name} · Day ${unit.dayOfIncubation} of ${mode.incubationDays} — click to view`}
     >
       {/* Top-left header stack — name over mode over progress. */}
       <div className="w-full min-w-0 text-left">
-        <div className="flex items-start justify-between gap-2">
-          <span className="block min-w-0 flex-1" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)", whiteSpace: "normal", wordBreak: "break-word" }}>
+        <div className="flex items-start justify-between gap-1">
+          <span
+            className="block min-w-0 flex-1 truncate"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--type-heading-sm)",
+              fontWeight: "var(--weight-semibold)",
+              lineHeight: "var(--leading-snug)",
+              color: "var(--text-primary)",
+            }}
+            title={unit.name}
+          >
             {unit.name}
           </span>
-          <ChevronRight size={14} className="mt-1 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ color: "#C27B4A" }} aria-hidden />
+          <ChevronRight size={14} className="mt-0.5 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 hidden sm:block" style={{ color: "#C27B4A" }} aria-hidden />
         </div>
-        <span className="block min-w-0" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-normal)", color: "var(--text-primary)", whiteSpace: "normal", wordBreak: "break-word", marginTop: 4 }}>
+        <span
+          className="block min-w-0 truncate"
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-body-sm)",
+            fontWeight: "var(--weight-semibold)",
+            lineHeight: "var(--leading-normal)",
+            color: "var(--text-primary)",
+            marginTop: 2,
+          }}
+        >
           {mode.name}
         </span>
-        <span className="block min-w-0" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", color: "#6E6259", whiteSpace: "normal", wordBreak: "break-word", marginTop: 4 }}>
+        <span
+          className="block min-w-0 truncate"
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-caption)",
+            fontWeight: "var(--weight-regular)",
+            lineHeight: "var(--leading-normal)",
+            color: "#6E6259",
+            marginTop: 2,
+          }}
+          title={`Progress: Day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
+        >
           Progress: Day {unit.dayOfIncubation} of {mode.incubationDays}
         </span>
       </div>
 
       {/* Center body — the ring */}
-      <div className="relative mt-3 flex min-h-0 items-center justify-center">
+      <div className="relative mt-2.5 flex min-h-0 items-center justify-center sm:mt-3">
         <svg
           width={size}
           height={size}
@@ -253,8 +284,8 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <span
-            className="tracking-tight"
-            style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-bold)", color: stroke, lineHeight: "var(--leading-tight)" }}
+            className="tracking-tight font-bold text-sm sm:text-base"
+            style={{ fontFamily: "var(--font-display)", color: stroke, lineHeight: "var(--leading-tight)" }}
           >
             {pct}%
           </span>
@@ -266,6 +297,15 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
 
 export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props) {
   const modeOf = (id: string) => modes.find((m) => m.id === id) ?? modes[0];
+  const [carouselPage, setCarouselPage] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const handleCarouselScroll = () => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const page = Math.round(el.scrollLeft / el.clientWidth);
+    setCarouselPage(page);
+  };
 
   const stats = useMemo(() => {
     const count = (s: UnitStatus) => units.filter((u) => u.status === s).length;
@@ -366,28 +406,64 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
 
       {/* Section 3: chamber status grid, wrapped in one white container */}
       <section
-        style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: 16, padding: 24 }}
+        className="rounded-2xl border p-4 sm:p-6"
+        style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)" }}
       >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: HEADING }}>Active Incubators</h2>
             <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", color: "#6E6259", marginTop: 2 }}>Chambers currently running.</p>
           </div>
           <button
             type="button"
             onClick={onManageAll}
-            className="inline-flex shrink-0 cursor-pointer items-center rounded-xl border bg-white px-4 py-2 text-sm transition-colors duration-200 hover:bg-[#FFF7ED] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-            style={{ borderColor: RUST, color: RUST, fontWeight: 600 }}
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-xl border bg-white px-3 py-1.5 text-xs font-semibold transition-colors duration-200 hover:bg-[#FFF7ED] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:px-4 sm:py-2 sm:text-sm"
+            style={{ borderColor: RUST, color: RUST }}
+            aria-label="View all incubators"
           >
-            View All Incubators
+            <span className="sm:hidden">View all →</span>
+            <span className="hidden sm:inline">View All Incubators</span>
           </button>
         </div>
-        <div className="my-4 h-px w-full" style={{ backgroundColor: "#EFE9DC" }} />
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="my-3.5 h-px w-full sm:my-4" style={{ backgroundColor: "#EFE9DC" }} />
+        <div
+          ref={carouselRef}
+          onScroll={handleCarouselScroll}
+          className="flex gap-2.5 overflow-x-auto pb-1 pt-0.5 snap-x snap-mandatory scrollbar-none sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
+        >
           {priorityUnits.map((u) => (
-            <MiniCard key={u.id} unit={u} mode={modeOf(u.modeId)} onOpen={onOpenUnit} />
+            <div
+              key={u.id}
+              className="w-[calc((100%-10px)/2)] shrink-0 snap-start sm:w-auto sm:shrink sm:snap-none"
+            >
+              <MiniCard unit={u} mode={modeOf(u.modeId)} onOpen={onOpenUnit} />
+            </div>
           ))}
         </div>
+        {priorityUnits.length > 2 && (
+          <div className="mt-3 flex justify-center gap-1.5 sm:hidden">
+            {Array.from({ length: Math.ceil(priorityUnits.length / 2) }).map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => {
+                  if (!carouselRef.current) return;
+                  carouselRef.current.scrollTo({
+                    left: idx * carouselRef.current.clientWidth,
+                    behavior: "smooth",
+                  });
+                  setCarouselPage(idx);
+                }}
+                className="h-1.5 rounded-full transition-all cursor-pointer"
+                style={{
+                  width: carouselPage === idx ? 16 : 6,
+                  backgroundColor: carouselPage === idx ? RUST : "#D5CABE",
+                }}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Section 4: Conditions to Check — 1 container, 2 columns inside, ranked by deviation */}

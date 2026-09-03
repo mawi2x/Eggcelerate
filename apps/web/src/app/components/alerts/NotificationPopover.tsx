@@ -67,8 +67,8 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
       <PopoverContent
         align="end"
         sideOffset={10}
-        className="p-0 shadow-lg"
-        style={{ width: 340, backgroundColor: "#FFFFFF", borderColor: BORDER, borderRadius: 12 }}
+        className="w-[min(340px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-0 shadow-lg"
+        style={{ backgroundColor: "#FFFFFF", borderColor: BORDER, borderRadius: 12 }}
       >
         {/* Header */}
         <div
@@ -104,7 +104,7 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
               return (
                 <li
                   key={a.id}
-                  className="group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[#FAF6F0]"
+                  className="group relative flex items-start gap-3 px-4 py-3 pr-14 transition-colors hover:bg-[#FAF6F0] sm:pr-4"
                   style={{ borderBottom: `1px solid ${DIVIDER}` }}
                 >
                   <span
@@ -149,7 +149,7 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
                   <button
                     type="button"
                     onClick={() => onDismiss(a.id)}
-                    className="absolute right-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-md opacity-0 transition-opacity hover:bg-[#F0EDE6] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 group-hover:opacity-100"
+                    className="absolute right-2 top-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-md opacity-100 transition-opacity hover:bg-[#F0EDE6] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
                     style={{ color: MUTED }}
                     title="Dismiss"
                     aria-label={`Dismiss ${a.title}`}

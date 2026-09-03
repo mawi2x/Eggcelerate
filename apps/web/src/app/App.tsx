@@ -534,7 +534,7 @@ export default function App() {
       />
 
       <main
-        className={`transition-all duration-200 ${navCollapsed ? "lg:pl-16" : "lg:pl-64"}`}
+        className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
       >
         <div
           className="mx-auto max-w-6xl px-4 pb-28 sm:px-6 lg:px-8 lg:pb-20"
@@ -545,6 +545,7 @@ export default function App() {
             <PageHeader
               title={headerCopy[screen].title}
               subtitle={headerCopy[screen].subtitle}
+              titleHighlight={screen === "overview" ? `${overviewName}!` : undefined}
               alertCount={unreadAlerts}
               onViewAlerts={() => navigate("alerts")}
               alerts={alerts}

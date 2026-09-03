@@ -231,43 +231,48 @@ export function PhotoLightboxModal({
         </DialogDescription>
 
         {/* Top Header Bar with Single Unified Close Button */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 select-none">
-          <span className="text-sm font-semibold text-stone-200">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3 select-none sm:flex-nowrap sm:px-6 sm:py-4">
+          <span className="shrink-0 text-sm font-semibold text-stone-200">
             Photo {safeIndex + 1} of {total}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1 sm:gap-2">
             <Button
               size="sm"
               variant="ghost"
-              className="text-stone-200 hover:text-white hover:bg-white/10 rounded-full h-8 px-3 text-xs gap-1.5"
+              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-stone-200 hover:bg-white/10 hover:text-white sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
               onClick={toggleFullscreen}
               title={fullscreen ? "Exit Fullscreen (Esc)" : "Enlarge / Fullscreen"}
+              aria-label={fullscreen ? "Exit fullscreen" : "Enlarge photo"}
             >
               {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-              {fullscreen ? "Exit Fullscreen" : "Enlarge"}
+              <span className="hidden sm:inline">{fullscreen ? "Exit Fullscreen" : "Enlarge"}</span>
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="text-stone-200 hover:text-white hover:bg-white/10 rounded-full h-8 px-3 text-xs gap-1.5"
+              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-stone-200 hover:bg-white/10 hover:text-white sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
               onClick={handleDownload}
               title="Download photo"
+              aria-label="Download photo"
             >
-              <Download size={14} /> Download
+              <Download size={14} />
+              <span className="hidden sm:inline">Download</span>
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full h-8 px-3 text-xs gap-1.5"
+              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-red-400 hover:bg-red-500/10 hover:text-red-300 sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
               onClick={handleDeleteCurrent}
               title="Delete photo"
+              aria-label="Delete photo"
             >
-              <Trash2 size={14} /> Delete
+              <Trash2 size={14} />
+              <span className="hidden sm:inline">Delete</span>
             </Button>
             <button
               type="button"
               onClick={onClose}
-              className="ml-2 cursor-pointer rounded-full p-1.5 text-stone-300 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+              className="ml-0 flex h-11 w-11 min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full p-0 text-stone-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:ml-2 sm:h-8 sm:w-8 sm:min-h-0 sm:min-w-0 sm:p-1.5"
               aria-label="Close photo viewer"
               title="Close (Esc)"
             >
@@ -353,7 +358,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={zoomOut}
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                 aria-label="Zoom out"
                 title="Zoom out (-)"
               >
@@ -365,7 +370,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={zoomIn}
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                 aria-label="Zoom in"
                 title="Zoom in (+)"
               >
@@ -375,7 +380,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={resetView}
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                 aria-label="Fit to screen"
                 title="Fit to screen (0)"
               >

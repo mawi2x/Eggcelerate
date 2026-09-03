@@ -435,7 +435,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <Select value={unitId} onValueChange={setUnitId}>
                   <SelectTrigger
                     size="toolbar"
-                    className="w-[240px] rounded-xl"
+                    className="w-full rounded-xl sm:w-[240px]"
                     style={{ ...toolbarInputStyle, ...CONTROL_FONT, color: TEXT }}
                   >
                     <SelectValue />
@@ -454,7 +454,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="flex h-[var(--control-height-toolbar)] w-[240px] cursor-pointer items-center justify-between gap-2 rounded-xl px-4 transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+                      className="flex h-[var(--control-height-toolbar)] w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-4 transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 sm:w-[240px]"
                       style={{
                         ...toolbarInputStyle,
                         ...CONTROL_FONT,

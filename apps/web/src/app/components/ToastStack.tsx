@@ -56,7 +56,7 @@ export function useToastStack() {
 export function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
   return (
     <div
-      className="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2"
+      className="pointer-events-none fixed bottom-[var(--mobile-bottom-nav-clearance)] right-4 z-50 flex flex-col items-end gap-2 md:bottom-6 md:right-6"
       role="status"
       aria-live="polite"
     >
@@ -67,7 +67,7 @@ export function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismi
             type="button"
             key={t.id}
             onClick={() => onDismiss(t.id)}
-            className="pointer-events-auto flex max-w-[320px] cursor-pointer items-center gap-2.5 rounded-xl px-4 py-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            className="pointer-events-auto flex max-w-[calc(100vw-2rem)] cursor-pointer items-center gap-2.5 rounded-xl px-4 py-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:max-w-[320px]"
             style={{
               backgroundColor: TOAST_BG,
               boxShadow: "0 8px 16px rgba(26,21,16,0.32)",

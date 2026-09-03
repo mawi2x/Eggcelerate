@@ -29,34 +29,38 @@ import { CandlingJournalTab } from "../detail/CandlingJournalTab";
 import { DeviceSettingsTab } from "../detail/DeviceSettingsTab";
 
 function SubTabNav({ active, onChange }: { active: DetailTab; onChange: (t: DetailTab) => void }) {
-  const tabs: { id: DetailTab; label: string; icon: React.ReactNode }[] = [
-    { id: "monitor", label: "Live Monitor", icon: <Activity size={15} aria-hidden="true" /> },
-    { id: "candling", label: "Candling & Inspection", icon: <ScanSearch size={15} aria-hidden="true" /> },
-    { id: "settings", label: "Device Settings", icon: <Settings2 size={15} aria-hidden="true" /> },
+  const tabs: { id: DetailTab; label: string; mobileLabel: string; icon: React.ReactNode }[] = [
+    { id: "monitor", label: "Live Monitor", mobileLabel: "Monitor", icon: <Activity size={15} aria-hidden="true" /> },
+    { id: "candling", label: "Candling & Inspection", mobileLabel: "Candling", icon: <ScanSearch size={15} aria-hidden="true" /> },
+    { id: "settings", label: "Device Settings", mobileLabel: "Settings", icon: <Settings2 size={15} aria-hidden="true" /> },
   ];
 
   return (
-    <SegmentedControl role="tablist" aria-label="Incubator detail sections" className="self-end">
-      {tabs.map((t) => {
-        const isActive = active === t.id;
-        return (
-          <SegmentedControlItem
-            key={t.id}
-            size="toolbar"
-            active={isActive}
-            role="tab"
-            aria-selected={isActive}
-            onClick={() => onChange(t.id)}
-            style={{
-              color: isActive ? "var(--brand-primary)" : "var(--text-secondary)",
-              fontWeight: isActive ? "var(--weight-semibold)" : "var(--weight-medium)",
-            }}
-          >
-            {t.icon} {t.label}
-          </SegmentedControlItem>
-        );
-      })}
-    </SegmentedControl>
+    <div className="flex max-w-full justify-start overflow-x-auto pb-1 lg:justify-end">
+      <SegmentedControl role="tablist" aria-label="Incubator detail sections" className="w-max shrink-0">
+        {tabs.map((t) => {
+          const isActive = active === t.id;
+          return (
+            <SegmentedControlItem
+              key={t.id}
+              size="toolbar"
+              active={isActive}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onChange(t.id)}
+              style={{
+                color: isActive ? "var(--brand-primary)" : "var(--text-secondary)",
+                fontWeight: isActive ? "var(--weight-semibold)" : "var(--weight-medium)",
+              }}
+            >
+              {t.icon}
+              <span className="sm:hidden">{t.mobileLabel}</span>
+              <span className="hidden sm:inline">{t.label}</span>
+            </SegmentedControlItem>
+          );
+        })}
+      </SegmentedControl>
+    </div>
   );
 }
 
