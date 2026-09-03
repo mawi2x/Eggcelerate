@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import fs from "fs"; import path from "path";
 import { SignInSchema, OnboardingStep1Schema, OnboardingStep2Schema, OnboardingStep3Schema } from "../app/data/onboarding";
 describe("auth guide + folder prep", () => {
-  it("guide exists and mentions mock flag", () => {
+  it("guide exists and identifies the mock-only auth routes", () => {
     const s = fs.readFileSync(path.resolve("docs/guide/auth-onboarding-guide.md"), "utf-8");
-    expect(s).toContain("?demo=onboarding");
+    expect(s).toContain("/login");
+    expect(s).toContain("/onboarding/:step");
     expect(s).toContain("var(--brand-primary)");
     expect(s).toContain("mock-only");
   });
@@ -62,12 +63,13 @@ describe("auth screens copy", () => {
     expect(s).toContain("Name your first chamber.");
   });
 });
-describe("App wiring (mock flag)", () => {
-  it("App.tsx has login/onboarding ScreenId behind demo flag", () => {
+describe("App wiring (mock auth boundary)", () => {
+  it("App.tsx uses routed login/onboarding screens and a guard", () => {
     const s = fs.readFileSync(path.resolve("src/app/App.tsx"), "utf-8");
     expect(s).toContain("login");
     expect(s).toContain("onboarding");
-    expect(s).toContain("demo=onboarding");
+    expect(s).toContain("RequireAuth");
+    expect(s).toContain("useAppRouter");
     expect(s).toContain("lazy");
   });
 });

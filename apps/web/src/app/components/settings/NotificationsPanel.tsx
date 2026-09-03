@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
-import { ToastStack, useToastStack } from "../ToastStack";
 import { PanelHeader, GroupLabel, SettingRow, Field, inputClass, inputStyle, MUTED, CRIT } from "./tokens";
+import type { NotificationPreferences } from "../../data/settings";
 
 // E.164: leading "+", country code 1-9, then 10-14 digits (max 15 total).
 const PHONE_RE = /^\+[1-9]\d{1,14}$/;
@@ -72,48 +72,42 @@ const triggerGroups: TriggerGroup[] = [
   },
 ];
 
-export function NotificationsPanel() {
-  const [notifs, setNotifs] = useState<Record<string, boolean>>({
-    temp: true,
-    humidity: true,
-    water: true,
-    offline: true,
-    batteryLow: true,
-    batteryFull: false,
-    power: true,
-    candling: false,
-    turning: true,
-    hatch: true,
-  });
-  const [sms, setSms] = useState(true);
-  const [email, setEmail] = useState(true);
+export function validateNotificationPreferences(value: NotificationPreferences): string | null {
+  if (value.phone.trim() && !PHONE_RE.test(value.phone.trim())) {
+    return "Use international phone format, e.g. +639171234567.";
+  }
+  if (value.emailAddress.trim() && !EMAIL_RE.test(value.emailAddress.trim())) {
+    return "Enter a valid notification email address.";
+  }
+  return null;
+}
 
-  const [phone, setPhone] = useState(() => localStorage.getItem("ec.phone") ?? "");
+export function NotificationsPanel({
+  value,
+  onChange,
+}: {
+  value: NotificationPreferences;
+  onChange: (value: NotificationPreferences) => void;
+}) {
   const [phoneErr, setPhoneErr] = useState<string | null>(null);
-  const [emailAddr, setEmailAddr] = useState(() => localStorage.getItem("ec.email") ?? "");
   const [emailErr, setEmailErr] = useState<string | null>(null);
 
-  const { toasts, push, dismiss } = useToastStack();
-
   const commitPhone = () => {
-    const v = phone.trim();
+    const v = value.phone.trim();
     if (!v) { setPhoneErr(null); return; }
     if (!PHONE_RE.test(v)) { setPhoneErr("Use international format, e.g. +639171234567"); return; }
-    localStorage.setItem("ec.phone", v);
     setPhoneErr(null);
   };
 
   const commitEmail = () => {
-    const v = emailAddr.trim();
+    const v = value.emailAddress.trim();
     if (!v) { setEmailErr(null); return; }
     if (!EMAIL_RE.test(v)) { setEmailErr("That doesn't look like a valid email address."); return; }
-    localStorage.setItem("ec.email", v);
     setEmailErr(null);
   };
 
-  const toggleNotif = (id: string, toastLabel: string, value: boolean) => {
-    setNotifs((prev) => ({ ...prev, [id]: value }));
-    push(`${toastLabel} ${value ? "enabled" : "disabled"}`, value ? "enabled" : "disabled");
+  const toggleNotif = (id: string, _toastLabel: string, enabled: boolean) => {
+    onChange({ ...value, enabled: { ...value.enabled, [id]: enabled } });
   };
 
   return (
@@ -129,13 +123,13 @@ export function NotificationsPanel() {
           <SettingRow
             label="SMS"
             hint="Text the number below for critical alerts only."
-            control={<Switch checked={sms} onCheckedChange={(v) => setSms(Boolean(v))} aria-label="SMS delivery" />}
+            control={<Switch checked={value.sms} onCheckedChange={(v) => onChange({ ...value, sms: Boolean(v) })} aria-label="SMS delivery" />}
           />
           <SettingRow
             label="Email"
             hint="Full alert digest, including non-critical events."
             control={
-              <Switch checked={email} onCheckedChange={(v) => setEmail(Boolean(v))} aria-label="Email delivery" />
+              <Switch checked={value.email} onCheckedChange={(v) => onChange({ ...value, email: Boolean(v) })} aria-label="Email delivery" />
             }
           />
         </div>
@@ -149,8 +143,8 @@ export function NotificationsPanel() {
               id="phone"
               type="tel"
               maxLength={16}
-              value={phone}
-              onChange={(e) => { setPhone(e.target.value); if (phoneErr) setPhoneErr(null); }}
+              value={value.phone}
+              onChange={(e) => { onChange({ ...value, phone: e.target.value }); if (phoneErr) setPhoneErr(null); }}
               onBlur={commitPhone}
               placeholder="+1 555 000 1234"
               className={inputClass}
@@ -165,8 +159,8 @@ export function NotificationsPanel() {
               id="email-addr"
               type="email"
               maxLength={254}
-              value={emailAddr}
-              onChange={(e) => { setEmailAddr(e.target.value); if (emailErr) setEmailErr(null); }}
+              value={value.emailAddress}
+              onChange={(e) => { onChange({ ...value, emailAddress: e.target.value }); if (emailErr) setEmailErr(null); }}
               onBlur={commitEmail}
               placeholder="you@farm.com"
               className={inputClass}
@@ -190,7 +184,7 @@ export function NotificationsPanel() {
                 hint={t.hint || undefined}
                 control={
                   <Switch
-                    checked={notifs[t.id]}
+                    checked={value.enabled[t.id]}
                     onCheckedChange={(v) => toggleNotif(t.id, t.toastLabel, Boolean(v))}
                     aria-label={t.label}
                   />
@@ -204,8 +198,6 @@ export function NotificationsPanel() {
       <p className="pt-4" style={{ color: MUTED, fontSize: 12 }}>
         Critical environment alerts always push to the in-app bell, regardless of the channels above.
       </p>
-
-      <ToastStack toasts={toasts} onDismiss={dismiss} />
     </div>
   );
 }

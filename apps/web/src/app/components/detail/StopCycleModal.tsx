@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +14,7 @@ interface StopCycleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   unitName: string;
-  onConfirm: () => void;
+  onConfirm: () => Promise<boolean>;
 }
 
 export function StopCycleModal({
@@ -22,8 +23,10 @@ export function StopCycleModal({
   unitName,
   onConfirm,
 }: StopCycleModalProps) {
+  const [isStopping, setIsStopping] = useState(false);
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={(next) => { if (!isStopping) onOpenChange(next); }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Stop this cycle?</AlertDialogTitle>
@@ -32,8 +35,21 @@ export function StopCycleModal({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Keep Cycle</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Stop Cycle</AlertDialogAction>
+          <AlertDialogCancel disabled={isStopping}>Keep Cycle</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isStopping}
+            aria-busy={isStopping}
+            onClick={(event) => {
+              event.preventDefault();
+              setIsStopping(true);
+              void onConfirm().then((stopped) => {
+                setIsStopping(false);
+                if (stopped) onOpenChange(false);
+              });
+            }}
+          >
+            {isStopping ? "Stopping…" : "Stop Cycle"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

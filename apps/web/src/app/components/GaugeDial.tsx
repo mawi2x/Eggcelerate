@@ -1,4 +1,4 @@
-import { Range } from "../data/mockData";
+import type { Range } from "../domain/types";
 
 interface GaugeDialProps {
   value: number;

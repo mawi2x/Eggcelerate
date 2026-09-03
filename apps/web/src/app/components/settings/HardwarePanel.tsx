@@ -4,7 +4,7 @@ import { WifiSlash } from "@phosphor-icons/react";
 import { Switch } from "../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Input } from "../ui/input";
-import { Incubator } from "../../data/mockData";
+import type { Incubator } from "../../domain/types";
 import { PanelHeader, GroupLabel, SettingRow, DIVIDER, BORDER, MUTED, TEXT, RUST, inputClass, inputStyle } from "./tokens";
 
 interface Props {

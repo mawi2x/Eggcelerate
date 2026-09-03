@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bell, X, ArrowRight } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { AlertEntry } from "../../data/mockData";
+import type { AlertEntry } from "../../domain/types";
 import { severityStyle, timeAgo } from "./alertStyle";
 import { useIsMobile } from "../ui/use-mobile";
 
@@ -15,12 +15,22 @@ interface Props {
   alerts: AlertEntry[];
   unreadCount: number;
   onViewAll: () => void;
-  onMarkAllRead: () => void;
-  onDismiss: (id: string) => void;
+  onMarkAllRead: () => Promise<boolean>;
+  onDismiss: (id: string) => Promise<boolean>;
+  pendingAlertId: string | null;
+  markingAllRead: boolean;
 }
 
 /** Bell button in the utility bar plus its 340px quick-notification dropdown. */
-export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllRead, onDismiss }: Props) {
+export function NotificationPopover({
+  alerts,
+  unreadCount,
+  onViewAll,
+  onMarkAllRead,
+  onDismiss,
+  pendingAlertId,
+  markingAllRead,
+}: Props) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
   const recent = alerts.slice(0, 5);
@@ -80,12 +90,13 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
           </span>
           <button
             type="button"
-            onClick={onMarkAllRead}
-            disabled={unreadCount === 0}
+            onClick={() => void onMarkAllRead()}
+            disabled={unreadCount === 0 || markingAllRead}
+            aria-busy={markingAllRead}
             className="shrink-0 cursor-pointer rounded-md px-1 transition-opacity hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline"
             style={{ fontSize: 12, fontWeight: 600, color: RUST }}
           >
-            Mark all as read
+            {markingAllRead ? "Marking…" : "Mark all as read"}
           </button>
         </div>
 
@@ -148,7 +159,9 @@ export function NotificationPopover({ alerts, unreadCount, onViewAll, onMarkAllR
                   {/* Hover-revealed dismiss */}
                   <button
                     type="button"
-                    onClick={() => onDismiss(a.id)}
+                    onClick={() => void onDismiss(a.id)}
+                    disabled={pendingAlertId === a.id}
+                    aria-busy={pendingAlertId === a.id}
                     className="absolute right-2 top-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-md opacity-100 transition-opacity hover:bg-[#F0EDE6] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
                     style={{ color: MUTED }}
                     title="Dismiss"

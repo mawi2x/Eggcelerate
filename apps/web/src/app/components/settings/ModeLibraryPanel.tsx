@@ -29,14 +29,15 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "../ui/table";
 import { ViewToggle, ViewMode } from "../ViewToggle";
-import { Mode, computeCandling } from "../../data/mockData";
+import { computeCandling } from "../../domain/candling";
+import type { Mode } from "../../domain/types";
 import { PanelHeader, RUST, BORDER, MUTED, TEXT, CRIT, CRIT_BG, inputClass, inputStyle } from "./tokens";
 
 interface Props {
   modes: Mode[];
-  onUpdateMode: (id: string, patch: Partial<Mode>) => void;
-  onAddMode: (mode: Mode) => void;
-  onDeleteMode: (id: string) => boolean;
+  onUpdateMode: (id: string, patch: Partial<Mode>) => Promise<boolean>;
+  onAddMode: (mode: Mode) => Promise<boolean>;
+  onDeleteMode: (id: string) => Promise<boolean>;
 }
 
 interface ModeDraft {
@@ -124,6 +125,7 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
   const [pendingClean, setPendingClean] = useState<Mode[]>([]);
   const [conflictOpen, setConflictOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Mode | null>(null);
+  const [isMutating, setIsMutating] = useState(false);
 
   const openEdit = (m: Mode) => {
     setModalKind("edit");
@@ -140,8 +142,9 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
   };
 
   // Clone a preset into a fresh custom mode the user can then customize.
-  const duplicateMode = (m: Mode) => {
-    onAddMode({
+  const duplicateMode = async (m: Mode) => {
+    setIsMutating(true);
+    const saved = await onAddMode({
       id: `mode-${Date.now()}`,
       name: `${m.name} Copy`,
       builtIn: false,
@@ -150,7 +153,8 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       incubationDays: m.incubationDays,
       defaultTurnInterval: m.defaultTurnInterval,
     });
-    toast.success(`Duplicated "${m.name}"`);
+    setIsMutating(false);
+    if (saved) toast.success(`Duplicated "${m.name}"`);
   };
 
   // Download a single mode as its own .json file.
@@ -168,15 +172,17 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
     toast.success(`Exported "${m.name}"`);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return;
-    if (onDeleteMode(deleteTarget.id)) {
+    setIsMutating(true);
+    if (await onDeleteMode(deleteTarget.id)) {
       toast.success(`Deleted "${deleteTarget.name}"`);
       setDeleteTarget(null);
     }
+    setIsMutating(false);
   };
 
-  const saveModal = () => {
+  const saveModal = async () => {
     if (!draft.name.trim()) {
       toast.error("Please name your Mode.");
       return;
@@ -214,13 +220,13 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       incubationDays,
       defaultTurnInterval,
     };
-    if (modalKind === "edit" && modalId) {
-      onUpdateMode(modalId, payload);
-      toast.success(`${payload.name} mode updated`);
-    } else {
-      onAddMode({ id: `mode-${Date.now()}`, builtIn: false, ...payload });
-      toast.success(`Custom mode "${payload.name}" added`);
-    }
+    setIsMutating(true);
+    const saved = modalKind === "edit" && modalId
+      ? await onUpdateMode(modalId, payload)
+      : await onAddMode({ id: `mode-${Date.now()}`, builtIn: false, ...payload });
+    setIsMutating(false);
+    if (!saved) return;
+    toast.success(modalKind === "edit" ? `${payload.name} mode updated` : `Custom mode "${payload.name}" added`);
     setModalOpen(false);
   };
 
@@ -275,27 +281,34 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       setConflicts(found);
       setConflictOpen(true);
     } else {
-      clean.forEach((m) => onAddMode(m));
-      toast.success(`Imported ${clean.length} mode${clean.length === 1 ? "" : "s"}`);
+      setIsMutating(true);
+      const results = await Promise.all(clean.map(onAddMode));
+      setIsMutating(false);
+      const savedCount = results.filter(Boolean).length;
+      if (savedCount > 0) toast.success(`Imported ${savedCount} mode${savedCount === 1 ? "" : "s"}`);
     }
   };
 
-  const applyImport = () => {
-    pendingClean.forEach((m) => onAddMode(m));
+  const applyImport = async () => {
+    setIsMutating(true);
+    const actions: Promise<boolean>[] = pendingClean.map(onAddMode);
     conflicts.forEach((c) => {
       if (c.resolution === "overwrite") {
-        onUpdateMode(c.existingId, {
+        actions.push(onUpdateMode(c.existingId, {
           name: c.incoming.name,
           targetTemp: c.incoming.targetTemp,
           targetHumidity: c.incoming.targetHumidity,
           incubationDays: c.incoming.incubationDays,
           defaultTurnInterval: c.incoming.defaultTurnInterval,
-        });
+        }));
       } else {
-        onAddMode({ ...c.incoming, name: `${c.incoming.name} (imported)` });
+        actions.push(onAddMode({ ...c.incoming, name: `${c.incoming.name} (imported)` }));
       }
     });
-    const total = pendingClean.length + conflicts.length;
+    const results = await Promise.all(actions);
+    setIsMutating(false);
+    if (results.some((saved) => !saved)) return;
+    const total = results.length;
     toast.success(`Imported ${total} mode${total === 1 ? "" : "s"}`);
     setConflictOpen(false);
     setConflicts([]);
@@ -320,7 +333,8 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
         </button>
         <button
           type="button"
-          onClick={() => duplicateMode(m)}
+          onClick={() => void duplicateMode(m)}
+          disabled={isMutating}
           className={iconBtn}
           style={{ borderColor: BORDER, color: TEXT }}
           title="Duplicate"
@@ -684,11 +698,11 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" className="rounded-xl" onClick={() => setDeleteTarget(null)}>
+            <Button variant="outline" className="rounded-xl" disabled={isMutating} onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
-            <Button className="rounded-xl" style={{ backgroundColor: CRIT, color: "#fff" }} onClick={confirmDelete}>
-              <Trash2 size={15} /> Delete
+            <Button className="rounded-xl" style={{ backgroundColor: CRIT, color: "#fff" }} disabled={isMutating} aria-busy={isMutating} onClick={() => void confirmDelete()}>
+              <Trash2 size={15} /> {isMutating ? "Deleting…" : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -734,11 +748,11 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="rounded-xl" onClick={() => setModalOpen(false)}>
+            <Button variant="outline" className="rounded-xl" disabled={isMutating} onClick={() => setModalOpen(false)}>
               Cancel
             </Button>
-            <Button className="rounded-xl" style={{ backgroundColor: RUST, color: "#fff" }} onClick={saveModal}>
-              Save
+            <Button className="rounded-xl" style={{ backgroundColor: RUST, color: "#fff" }} disabled={isMutating} aria-busy={isMutating} onClick={() => void saveModal()}>
+              {isMutating ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -820,11 +834,11 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
             ))}
           </div>
           <DialogFooter>
-            <Button variant="outline" className="rounded-xl" onClick={() => setConflictOpen(false)}>
+            <Button variant="outline" className="rounded-xl" disabled={isMutating} onClick={() => setConflictOpen(false)}>
               Cancel
             </Button>
-            <Button className="rounded-xl" style={{ backgroundColor: RUST, color: "#fff" }} onClick={applyImport}>
-              Import
+            <Button className="rounded-xl" style={{ backgroundColor: RUST, color: "#fff" }} disabled={isMutating} aria-busy={isMutating} onClick={() => void applyImport()}>
+              {isMutating ? "Importing…" : "Import"}
             </Button>
           </DialogFooter>
         </DialogContent>

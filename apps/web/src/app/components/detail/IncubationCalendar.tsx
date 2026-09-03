@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { CandlingCheckpoint } from "../../data/mockData";
+import type { CandlingCheckpoint } from "../../domain/types";
 import { TEXT } from "./types";
 import { SectionCard } from "./primitives";
 

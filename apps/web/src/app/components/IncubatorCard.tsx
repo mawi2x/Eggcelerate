@@ -5,8 +5,11 @@ import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { SegmentedBattery } from "./SegmentedBattery";
-import { Incubator, Mode, ReadingState, rangeState, waterState, getWaterStatusInfo, readingStateColors } from "../data/mockData";
+import { cn } from "./ui/utils";
+import { getWaterStatusInfo, readingStateColors } from "./statusPresentation";
 import { conditionDisplayLabels } from "../domain/cycle";
+import { rangeState, waterState } from "../domain/incubator";
+import type { Incubator, Mode, ReadingState } from "../domain/types";
 
 interface Props {
   unit: Incubator;
@@ -15,6 +18,8 @@ interface Props {
   cta?: string;
   /** Opens the final harvest flow (hatch day and later). */
   onHarvest?: (unit: Incubator) => void;
+  /** Active / selected visual highlight state (e.g. mobile active chamber). */
+  highlighted?: boolean;
 }
 
 // Design tokens.
@@ -134,7 +139,7 @@ function Reading({ icon, label, value, unit, delta, state, subtext, valueColor, 
   );
 }
 
-export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest }: Props) {
+export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest, highlighted = false }: Props) {
   const tempSt = rangeState(unit.temp, mode.targetTemp);
   const humSt = rangeState(unit.humidity, mode.targetHumidity);
   const waterSt = waterState(unit.waterOk);
@@ -150,8 +155,13 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
 
   return (
     <Card
-      className="group cursor-pointer overflow-hidden border border-[var(--border-default)] bg-[var(--surface-subtle)] transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-      style={{ borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+      className={cn(
+        "group cursor-pointer overflow-hidden border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        highlighted
+          ? "border-[var(--nav-hover-border)] bg-[var(--nav-hover-bg)] shadow-md"
+          : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[0_2px_12px_rgba(0,0,0,0.04)]",
+      )}
+      style={{ borderRadius: 16 }}
       tabIndex={0}
       role="button"
       aria-label={`Open details for ${unit.name} — click to view`}
@@ -169,7 +179,15 @@ export function IncubatorCard({ unit, mode, onOpen, cta = "Configure", onHarvest
           <div className="flex min-w-0 items-center justify-between gap-3">
             <h3 className="flex min-w-0 items-center gap-1" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
               <span className="min-w-0" style={{ whiteSpace: "normal", wordBreak: "break-word" }}>{unit.name}</span>
-              <ChevronRight size={14} className="shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ color: "#C27B4A" }} aria-hidden />
+              <ChevronRight
+                size={14}
+                className={cn(
+                  "shrink-0 transition-opacity duration-200",
+                  highlighted ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                )}
+                style={{ color: "#C27B4A" }}
+                aria-hidden
+              />
             </h3>
             <div className="shrink-0">
               <SegmentedBattery battery={unit.batteryPct} charging={unit.powerSource !== "battery"} showLabel />

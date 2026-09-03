@@ -17,9 +17,10 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
   chamberName: string;
   totalEggsLoaded: number;
   fertileEggs: number | null;
-  onSave: (hatched: number, unhatched: number) => void;
+  onSave: (hatched: number, unhatched: number) => Promise<boolean>;
 }) {
   const [hatched, setHatched] = useState("0");
+  const [isSaving, setIsSaving] = useState(false);
 
   const hatchedNum = Number(hatched.replace(/[^0-9]/g, "").slice(0, 3)) || 0;
   const unhatchedNum = Math.max(0, totalEggsLoaded - hatchedNum);
@@ -38,16 +39,19 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
     setHatched(String(Math.min(Number(digits), totalEggsLoaded)));
   };
 
-  const save = () => {
+  const save = async () => {
     if (!valid) return;
-    onSave(hatchedNum, unhatchedNum);
-    setHatched("0");
+    setIsSaving(true);
+    const saved = await onSave(hatchedNum, unhatchedNum);
+    setIsSaving(false);
+    if (saved) setHatched("0");
   };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(o) => {
+        if (isSaving) return;
         if (o) {
           setHatched("0");
         }
@@ -130,16 +134,18 @@ export function HarvestModal({ open, onOpenChange, chamberName, totalEggsLoaded,
             className="rounded-xl"
             style={{ borderColor: "var(--border-default)", color: "#44403C", backgroundColor: "var(--surface-card)" }}
             onClick={() => onOpenChange(false)}
+            disabled={isSaving}
           >
             Cancel
           </Button>
           <Button
-            onClick={save}
-            disabled={!valid}
+            onClick={() => void save()}
+            disabled={!valid || isSaving}
+            aria-busy={isSaving}
             className="rounded-xl text-white"
             style={{ backgroundColor: "#8B3A1C" }}
           >
-            Save &amp; Reset
+            {isSaving ? "Saving…" : "Save & Reset"}
           </Button>
         </div>
       </DialogContent>

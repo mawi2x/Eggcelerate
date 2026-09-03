@@ -14,9 +14,13 @@ import { PanelHeader, GroupLabel, Field, inputClass, inputStyle, labelStyle, RUS
 interface Props {
   account: Account;
   onUpdateAccount: (patch: Partial<Account>) => void;
+  temperatureUnit: "c" | "f";
+  timeZone: "gmt8" | "gmt0" | "est" | "pst";
+  onTemperatureUnitChange: (value: "c" | "f") => void;
+  onTimeZoneChange: (value: "gmt8" | "gmt0" | "est" | "pst") => void;
 }
 
-export function FarmAccountPanel({ account, onUpdateAccount }: Props) {
+export function FarmAccountPanel({ account, onUpdateAccount, temperatureUnit, timeZone, onTemperatureUnitChange, onTimeZoneChange }: Props) {
   return (
     <div>
       <PanelHeader title="Farm & Account" description="Who you are, what your farm is called, and how units read." />
@@ -114,7 +118,7 @@ export function FarmAccountPanel({ account, onUpdateAccount }: Props) {
         <GroupLabel>Regional</GroupLabel>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Temperature Units" htmlFor="units">
-            <Select defaultValue="c">
+            <Select value={temperatureUnit} onValueChange={(value) => onTemperatureUnitChange(value as "c" | "f")}>
               <SelectTrigger id="units" className={inputClass} style={inputStyle}>
                 <SelectValue />
               </SelectTrigger>
@@ -126,7 +130,7 @@ export function FarmAccountPanel({ account, onUpdateAccount }: Props) {
           </Field>
 
           <Field label="Time Zone" htmlFor="tz">
-            <Select defaultValue="gmt8">
+            <Select value={timeZone} onValueChange={(value) => onTimeZoneChange(value as Props["timeZone"])}>
               <SelectTrigger id="tz" className={inputClass} style={inputStyle}>
                 <SelectValue />
               </SelectTrigger>

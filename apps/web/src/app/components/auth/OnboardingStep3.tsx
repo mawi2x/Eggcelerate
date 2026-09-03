@@ -5,31 +5,36 @@ import { AuthCard } from "./AuthCard";
 import { StepperBar } from "./StepperBar";
 import { FormInput } from "./FormInput";
 import { OnboardingStep3Schema } from "../../data/onboarding";
-import { initialModes } from "../../data/mockData";
+import type { Mode } from "../../domain/types";
 
 export function OnboardingStep3({
   onEnter,
   onBack,
   onHaveAccount,
+  modes,
 }: {
-  onEnter: (data: { chamberName: string; startingModeId: string }) => void;
+  onEnter: (data: { chamberName: string; startingModeId: string }) => Promise<boolean>;
   onBack: () => void;
   onHaveAccount: () => void;
+  modes: Mode[];
 }) {
   const [chamberName, setChamberName] = useState("Incubator One");
   const [startingModeId] = useState("broiler");
   const [error, setError] = useState<string | undefined>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const mode = initialModes.find((m) => m.id === startingModeId) ?? initialModes[0];
+  const mode = modes.find((candidate) => candidate.id === startingModeId) ?? modes[0];
 
-  const submit = () => {
+  const submit = async () => {
     const r = OnboardingStep3Schema.safeParse({ chamberName, startingModeId });
     if (!r.success) {
       setError(r.error.issues[0].message);
       return;
     }
     setError(undefined);
-    onEnter({ chamberName, startingModeId });
+    setIsSubmitting(true);
+    await onEnter({ chamberName, startingModeId });
+    setIsSubmitting(false);
   };
 
   return (
@@ -169,6 +174,7 @@ export function OnboardingStep3({
         <button
           type="button"
           onClick={onBack}
+          disabled={isSubmitting}
           className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl border bg-white font-semibold transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}
         >
@@ -176,10 +182,12 @@ export function OnboardingStep3({
         </button>
         <button
           type="button"
-          onClick={submit}
+          onClick={() => void submit()}
+          disabled={isSubmitting}
+          aria-busy={isSubmitting}
           className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
-          Enter dashboard ✓
+          {isSubmitting ? "Preparing dashboard…" : "Enter dashboard ✓"}
         </button>
       </div>
     </AuthCard>

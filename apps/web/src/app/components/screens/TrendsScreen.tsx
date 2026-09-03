@@ -52,7 +52,11 @@ import {
 import { PaginationBar } from "../ui/pagination-bar";
 import { FilterBar } from "../ui/filter-bar";
 import { SegmentedControl, SegmentedControlItem } from "../ui/segmented-control";
-import { HatchRecord, Incubator, Mode, buildHistory, calculateHatchabilityRate } from "../../data/mockData";
+import type { ReadingWindow } from "../../data/repositories/repository";
+import { calculateHatchabilityRate } from "../../domain/fertility";
+import type { HatchRecord, Incubator, Mode } from "../../domain/types";
+import { useIncubatorReadingMap } from "../../features/farm/use-incubator-readings";
+import { selectFilteredHatch, selectHatchWithPct } from "../../features/trends/selectors";
 
 // ── Design tokens ───────────────────────────────────────────────────────────
 const RUST = "var(--brand-primary)";
@@ -78,7 +82,7 @@ const CONTROL_FONT: React.CSSProperties = {
   lineHeight: "var(--leading-normal)",
 };
 
-type RangeKey = "24h" | "7d" | "full";
+type RangeKey = ReadingWindow;
 const ranges: { key: RangeKey; label: string; hours: number | null }[] = [
   { key: "24h", label: "LAST 24H", hours: 24 },
   { key: "7d", label: "LAST 7 DAYS", hours: 24 * 7 },
@@ -224,13 +228,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   const [hatchRowsPerPage, setHatchRowsPerPage] = useState(HATCH_ROWS);
 
   const unit = units.find((u) => u.id === unitId) ?? units[0];
-  const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
   const modeOf = (u: Incubator) => modes.find((m) => m.id === u.modeId) ?? modes[0];
-
-  const cutoffFor = (key: RangeKey) => {
-    const spec = ranges.find((r) => r.key === key)!;
-    return spec.hours === null ? 0 : Date.now() - spec.hours * 3_600_000;
-  };
 
   // The active set of chambers to chart (single selection, or the compare set).
   const activeUnits = useMemo<Incubator[]>(() => {
@@ -242,14 +240,17 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   const activeHighlightedUnitId = activeUnits.some((u) => u.id === highlightedUnitId)
     ? highlightedUnitId
     : null;
+  const readingUnitIds = useMemo(
+    () => Array.from(new Set([...activeUnits.map((activeUnit) => activeUnit.id), unit.id])),
+    [activeUnits, unit.id],
+  );
+  const { readingsByIncubator } = useIncubatorReadingMap(readingUnitIds, range);
 
   // Merge each active chamber's readings for the chosen metric onto a shared axis.
   const chartData = useMemo(() => {
-    const cutoff = cutoffFor(range);
     const rows = new Map<number, any>();
     activeUnits.forEach((u) => {
-      buildHistory(u, modeOf(u)).forEach((p) => {
-        if (p.ts < cutoff) return;
+      (readingsByIncubator[u.id] ?? []).forEach((p) => {
         let row = rows.get(p.ts);
         if (!row) {
           row = { ts: p.ts, time: p.time };
@@ -259,13 +260,10 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       });
     });
     return Array.from(rows.values()).sort((a, b) => a.ts - b.ts);
-  }, [activeUnits, range, metric]);
+  }, [activeUnits, metric, readingsByIncubator]);
 
   // Raw readings for the single selected chamber (used by the export modal).
-  const singleReadings = useMemo(() => {
-    const cutoff = cutoffFor(range);
-    return buildHistory(unit, mode).filter((p) => p.ts >= cutoff);
-  }, [unit, mode, range]);
+  const singleReadings = readingsByIncubator[unit.id] ?? [];
 
   // Unique safe bands across the active chambers, so we can shade the target zone.
   const bands = useMemo(() => {
@@ -354,10 +352,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
   // ── Hatch-history derived data ──────────────────────────────────────────────
   const withPct = useMemo(
-    () => history.map((h) => ({
-      ...h,
-      pct: calculateHatchabilityRate(h.hatchedEggs, h.fertileEggs),
-    })),
+    () => selectHatchWithPct(history),
     [history]
   );
 
@@ -371,17 +366,10 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
   const speciesOptions: string[] = ["All", ...Array.from(new Set(history.map((h) => h.modeName))).sort()];
 
-  const filteredHatch = useMemo(() => {
-    const q = hatchSearch.trim().toLowerCase();
-    return withPct.filter((h) => {
-      if (species !== "All" && h.modeName !== species) return false;
-      if (!q) return true;
-      return (
-        h.chamber.toLowerCase().includes(q) ||
-        h.modeName.toLowerCase().includes(q)
-      );
-    });
-  }, [withPct, hatchSearch, species]);
+  const filteredHatch = useMemo(() => selectFilteredHatch(withPct, {
+    search: hatchSearch,
+    species,
+  }), [withPct, hatchSearch, species]);
 
   const hatchPages = Math.max(1, Math.ceil(filteredHatch.length / hatchRowsPerPage));
   const page = Math.min(hatchPage, hatchPages);

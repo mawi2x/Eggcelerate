@@ -15,17 +15,9 @@ import { IncubatorDeviceIcon } from "./icons";
 import { useIsMobile } from "./ui/use-mobile";
 import { Account, accountInitials, resolveDisplayName } from "../data/account";
 import logoApp from "../../imports/logo-app.webp";
+import type { ScreenId } from "../routing/routes";
 
-export type ScreenId =
-  | "overview"
-  | "incubators"
-  | "candling"
-  | "detail"
-  | "trends"
-  | "alerts"
-  | "settings"
-  | "login"
-  | "onboarding";
+export type { ScreenId } from "../routing/routes";
 
 interface NavItem {
   id: ScreenId;

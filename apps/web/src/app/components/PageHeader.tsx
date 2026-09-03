@@ -1,6 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { NotificationPopover } from "./alerts/NotificationPopover";
-import { AlertEntry } from "../data/mockData";
+import type { AlertEntry } from "../domain/types";
 import { LiveDateTime } from "./LiveDateTime";
 import { useIsMobile } from "./ui/use-mobile";
 
@@ -10,8 +10,10 @@ interface Props {
   alertCount: number;
   onViewAlerts: () => void;
   alerts: AlertEntry[];
-  onMarkAllRead: () => void;
-  onDismissAlert: (id: string) => void;
+  onMarkAllRead: () => Promise<boolean>;
+  onDismissAlert: (id: string) => Promise<boolean>;
+  pendingAlertId?: string | null;
+  markingAllRead?: boolean;
   /** Sub-views (e.g. Incubator Detail) show a back link at the left of row 1. */
   onBack?: () => void;
   backLabel?: string;
@@ -43,6 +45,8 @@ export function PageHeader({
   alerts,
   onMarkAllRead,
   onDismissAlert,
+  pendingAlertId = null,
+  markingAllRead = false,
   onBack,
   backLabel = "Back",
   badges,
@@ -134,6 +138,8 @@ export function PageHeader({
                 onViewAll={onViewAlerts}
                 onMarkAllRead={onMarkAllRead}
                 onDismiss={onDismissAlert}
+                pendingAlertId={pendingAlertId}
+                markingAllRead={markingAllRead}
               />
             </div>
           </div>
@@ -164,6 +170,8 @@ export function PageHeader({
             onViewAll={onViewAlerts}
             onMarkAllRead={onMarkAllRead}
             onDismiss={onDismissAlert}
+            pendingAlertId={pendingAlertId}
+            markingAllRead={markingAllRead}
           />
         </div>
 
@@ -239,6 +247,8 @@ export function PageHeader({
           onViewAll={onViewAlerts}
           onMarkAllRead={onMarkAllRead}
           onDismiss={onDismissAlert}
+          pendingAlertId={pendingAlertId}
+          markingAllRead={markingAllRead}
         />
       </div>
 

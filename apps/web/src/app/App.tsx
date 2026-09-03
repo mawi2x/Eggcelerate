@@ -1,7 +1,7 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
-import { AppSidebar, ScreenId } from "./components/AppSidebar";
+import { AppSidebar } from "./components/AppSidebar";
 import { PageHeader } from "./components/PageHeader";
 import { OverviewScreen } from "./components/screens/OverviewScreen";
 import { IncubatorsScreen } from "./components/screens/IncubatorsScreen";
@@ -9,10 +9,11 @@ import { AlertsScreen } from "./components/screens/AlertsScreen";
 import { SettingsScreen } from "./components/screens/SettingsScreen";
 import { HelpWidget } from "./components/HelpWidget";
 import { SuspenseFallback } from "./components/SuspenseFallback";
+import { FarmDataStatus } from "./components/FarmDataStatus";
+import { Button } from "./components/ui/button";
 import { SignInScreen } from "./components/auth/SignInScreen";
 import { OnboardingStep1 } from "./components/auth/OnboardingStep1";
 import { defaultOnboarding, OnboardingState } from "./data/onboarding";
-import type { DetailTab } from "./components/detail/types";
 
 const DetailScreen = lazy(() =>
   import("./components/screens/DetailScreen").then((m) => ({ default: m.DetailScreen })),
@@ -29,261 +30,161 @@ const OnboardingStep2 = lazy(() =>
 const OnboardingStep3 = lazy(() =>
   import("./components/auth/OnboardingStep3").then((m) => ({ default: m.OnboardingStep3 })),
 );
-import {
-  initialIncubators,
-  initialModes,
-  initialAlerts,
-  AlertEntry,
-  Incubator,
-  Mode,
-  HatchRecord,
-  hatchHistory,
-  CURRENT_TRAY_CAPACITY,
-} from "./data/mockData";
-import { Account, initialAccount, resolveDisplayName } from "./data/account";
-import { deriveConditionSeverity, unitStatusFromConditionSeverity } from "./domain/cycle";
-
-function getInitialNavState(): { screen: ScreenId; selectedUnit: string | null; onboardingStep: number; detailTab: DetailTab } {
-  if (typeof window === "undefined") return { screen: "overview", selectedUnit: null, onboardingStep: 1, detailTab: "monitor" };
-  const params = new URLSearchParams(window.location.search);
-  // demo flag guard — flip to real auth is 1-line swap: if (!user)
-  if (params.get("demo") === "onboarding") {
-    const demoScreen = params.get("screen") as ScreenId | null;
-    if (demoScreen === "login") return { screen: "login", selectedUnit: null, onboardingStep: 1, detailTab: "monitor" };
-    if (demoScreen === "onboarding") {
-      const stepParam = Number(params.get("step") || "1");
-      const step = [1, 2, 3].includes(stepParam) ? stepParam : 1;
-      return { screen: "onboarding", selectedUnit: null, onboardingStep: step, detailTab: "monitor" };
-    }
-  }
-  const screenParam = params.get("screen") as ScreenId | null;
-  const unitParam = params.get("unit");
-  const validScreens: ScreenId[] = ["overview", "incubators", "candling", "detail", "trends", "alerts", "settings", "login", "onboarding"];
-  const screen = screenParam && validScreens.includes(screenParam) && screenParam !== "login" && screenParam !== "onboarding" ? screenParam : "overview";
-  const tabParam = params.get("tab");
-  const detailTab: DetailTab = screen === "detail" && (tabParam === "monitor" || tabParam === "candling" || tabParam === "settings")
-    ? tabParam
-    : "monitor";
-  return { screen, selectedUnit: unitParam, onboardingStep: 1, detailTab };
-}
+import { initialAccount, resolveDisplayName } from "./data/account";
+import { CURRENT_TRAY_CAPACITY } from "./domain/candling";
+import type { Incubator } from "./domain/types";
+import { repositoryErrorMessage } from "./features/farm/repository-query";
+import { useFarmActions, useFarmData } from "./features/farm/use-farm-data";
+import { RequireAuth, useAuth } from "./providers/auth-context";
+import type { ScreenId } from "./routing/routes";
+import { useAppRouter } from "./routing/use-app-router";
 
 export default function App() {
-  const [initialNav] = useState(getInitialNavState);
-  const [screen, setScreen] = useState<ScreenId>(initialNav.screen);
-  const [selectedUnit, setSelectedUnit] = useState<string | null>(initialNav.selectedUnit);
-  const [detailTab, setDetailTab] = useState<DetailTab>(initialNav.detailTab);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [onboardingState, setOnboardingState] = useState<OnboardingState>(defaultOnboarding);
-  const [onboardingStep, setOnboardingStep] = useState<number>(initialNav.onboardingStep);
 
-  const syncUrl = (newScreen: ScreenId, newUnit: string | null, replace = false, newDetailTab: DetailTab = "monitor") => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams();
-    const isAuthScreen = newScreen === "login" || newScreen === "onboarding";
-    // Preserve demo flag for auth screens
-    if (isAuthScreen) {
-      params.set("demo", "onboarding");
-    }
-    if (newScreen !== "overview" || newUnit || isAuthScreen) {
-      params.set("screen", newScreen);
-    }
-    if (newUnit) {
-      params.set("unit", newUnit);
-    }
-    if (newScreen === "detail" && newDetailTab !== "monitor") {
-      params.set("tab", newDetailTab);
-    }
-    if (newScreen === "onboarding" && onboardingStep) {
-      params.set("step", String(onboardingStep));
-    }
-    const queryString = params.toString();
-    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
-    if (replace) {
-      window.history.replaceState({ screen: newScreen, unit: newUnit, tab: newDetailTab }, "", newUrl);
-    } else {
-      window.history.pushState({ screen: newScreen, unit: newUnit, tab: newDetailTab }, "", newUrl);
-    }
-  };
-
-  const syncOnboardingUrl = (step: number, replace = false) => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams();
-    params.set("demo", "onboarding");
-    params.set("screen", "onboarding");
-    params.set("step", String(step));
-    const newUrl = `?${params.toString()}`;
-    if (replace) {
-      window.history.replaceState({ screen: "onboarding", unit: null }, "", newUrl);
-    } else {
-      window.history.pushState({ screen: "onboarding", unit: null }, "", newUrl);
-    }
-  };
-
-  const syncLoginUrl = (replace = false) => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams();
-    params.set("demo", "onboarding");
-    params.set("screen", "login");
-    const newUrl = `?${params.toString()}`;
-    if (replace) {
-      window.history.replaceState({ screen: "login", unit: null }, "", newUrl);
-    } else {
-      window.history.pushState({ screen: "login", unit: null }, "", newUrl);
-    }
-  };
-
-  useEffect(() => {
-    const onPopState = () => {
-      const { screen: s, selectedUnit: u, onboardingStep: step, detailTab: tab } = getInitialNavState();
-      setScreen(s);
-      setSelectedUnit(u);
-      setOnboardingStep(step);
-      setDetailTab(tab);
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
-
-  const [modes, setModes] = useState<Mode[]>(initialModes);
-  const [incubators, setIncubators] = useState<Incubator[]>(
-    initialIncubators,
-  );
-  const [account, setAccount] =
-    useState<Account>(initialAccount);
-
-  const [alerts, setAlerts] =
-    useState<AlertEntry[]>(initialAlerts);
-  const [hatchRecords, setHatchRecords] = useState<HatchRecord[]>(() => [...hatchHistory]);
-
-  const updateAccount = (patch: Partial<Account>) => {
-    setAccount((prev) => ({ ...prev, ...patch }));
-  };
-
-  const acknowledgeAlert = (id: string) => {
-    setAlerts((prev) =>
-      prev.map((a) =>
-        a.id === id ? { ...a, acknowledged: true } : a,
-      ),
-    );
-  };
-
-  const dismissAlert = (id: string) => {
-    setAlerts((prev) => prev.filter((a) => a.id !== id));
-  };
-
-  const markAllAlertsRead = () => {
-    setAlerts((prev) =>
-      prev.map((a) => ({ ...a, acknowledged: true })),
-    );
-  };
-
-  // "Clear All" only removes what's already been read, so nothing unseen is lost.
-  const clearReadAlerts = () => {
-    setAlerts((prev) => prev.filter((a) => !a.acknowledged));
-  };
-
-  const refreshHatchHistory = () => {
-    setHatchRecords([...hatchHistory]);
-  };
+  const {
+    modes,
+    incubators,
+    alerts,
+    hatchRecords,
+    settings,
+    isLoading: farmDataLoading,
+    isRefreshing: farmDataRefreshing,
+    staleError: farmDataStaleError,
+    error: farmDataError,
+    retry: retryFarmData,
+  } = useFarmData();
+  const {
+    acknowledgeAlert,
+    dismissAlert,
+    markAllAlertsRead,
+    clearReadAlerts,
+    updateIncubator,
+    addIncubator,
+    updateMode,
+    addMode,
+    deleteMode,
+    saveSettings,
+    actionState,
+  } = useFarmActions();
+  const account = settings.account;
+  const { signIn, completeOnboarding, isAuthenticated } = useAuth();
+  const {
+    screen,
+    selectedUnit,
+    detailTab,
+    onboardingStep,
+    navigateToScreen: navigate,
+    openIncubator,
+    openTrends,
+    openOnboarding,
+    openLogin,
+  } = useAppRouter(farmDataLoading ? undefined : incubators.map((unit) => unit.id));
 
   const unreadAlerts = alerts.filter(
     (a) => !a.acknowledged,
   ).length;
 
-  const openUnit = (id: string) => {
-    setSelectedUnit(id);
-    setDetailTab("monitor");
-    setScreen("detail");
-    syncUrl("detail", id);
-  };
+  const openUnit = (id: string) => openIncubator(id);
+  const openCandling = (id: string) => openIncubator(id, "candling");
+  const openTrendsForUnit = (id: string) => openTrends(id);
 
-  const openCandling = (id: string) => {
-    setSelectedUnit(id);
-    setDetailTab("candling");
-    setScreen("detail");
-    syncUrl("detail", id, false, "candling");
-  };
-
-  const openTrendsForUnit = (id: string) => {
-    setSelectedUnit(id);
-    setScreen("trends");
-    syncUrl("trends", id);
-  };
-
-  const navigate = (id: ScreenId) => {
-    setSelectedUnit(null);
-    setDetailTab("monitor");
-    setScreen(id);
-    // For auth screens, use dedicated sync to keep demo=onboarding flag
-    if (id === "login") {
-      // keep onboardingStep at 1
-      syncLoginUrl();
-      return;
-    }
-    if (id === "onboarding") {
-      setOnboardingStep(1);
-      syncOnboardingUrl(1);
-      return;
-    }
-    syncUrl(id, null);
-  };
-
-  const updateIncubator = (
-    id: string,
-    patch: Partial<Incubator>,
-  ) => {
-    setIncubators((prev) =>
-      prev.map((u) => {
-        if (u.id !== id) return u;
-        const next = { ...u, ...patch };
-        const mode = modes.find((m) => m.id === next.modeId) ?? modes[0];
-        const conditionSeverity = mode
-          ? deriveConditionSeverity({
-              paired: next.paired,
-              temp: next.temp,
-              targetTemp: mode.targetTemp,
-              humidity: next.humidity,
-              targetHumidity: mode.targetHumidity,
-              waterOk: next.waterOk,
-              batteryPct: next.batteryPct,
-              powerSource: next.powerSource,
-              nextTurn: next.nextTurn,
-            })
-          : next.conditionSeverity;
-        const connectionState = patch.connectionState
-          ?? (patch.paired !== undefined ? (next.paired ? "connected" : "offline") : next.connectionState);
-        return {
-          ...next,
-          conditionSeverity,
-          status: unitStatusFromConditionSeverity(conditionSeverity),
-          connectionState,
-        };
-      }),
+  // Mock auth routes stay available even if farm-data hydration is unavailable.
+  if (screen === "login") {
+    return (
+      <>
+        <SignInScreen
+          onSignIn={() => {
+            signIn();
+            navigate("overview");
+          }}
+          onSetup={() => openOnboarding(1)}
+        />
+        <Toaster position="top-right" richColors />
+      </>
     );
-  };
-
-  const addIncubator = (unit: Incubator) => {
-    setIncubators((prev) => [...prev, unit]);
-  };
-
-  const updateMode = (id: string, patch: Partial<Mode>) => {
-    setModes((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+  }
+  if (screen === "onboarding" && onboardingStep === 1) {
+    return (
+      <>
+        <OnboardingStep1
+          onContinue={(data) => {
+            setOnboardingState((prev) => ({ ...prev, ...data }));
+            openOnboarding(2);
+          }}
+          onHaveAccount={() => openLogin()}
+        />
+        <Toaster position="top-right" richColors />
+      </>
     );
-  };
+  }
+  if (screen === "onboarding" && onboardingStep === 2) {
+    return (
+      <Suspense fallback={<SuspenseFallback label="Loading onboarding..." />}>
+        <OnboardingStep2
+          onContinue={(data) => {
+            setOnboardingState((prev) => ({ ...prev, ...data }));
+            openOnboarding(3);
+          }}
+          onBack={() => openOnboarding(1)}
+          onHaveAccount={() => openLogin()}
+        />
+        <Toaster position="top-right" richColors />
+      </Suspense>
+    );
+  }
+  if (!isAuthenticated && screen !== "onboarding") {
+    return (
+      <RequireAuth>
+        <SuspenseFallback label="Redirecting to sign in..." />
+      </RequireAuth>
+    );
+  }
 
-  const addMode = (mode: Mode) => {
-    setModes((prev) => [...prev, mode]);
-  };
-
-  const deleteMode = (id: string): boolean => {
-    if (incubators.some((unit) => unit.modeId === id)) {
-      toast.error("This mode is still assigned to an incubator.");
-      return false;
-    }
-    setModes((prev) => prev.filter((m) => m.id !== id));
-    return true;
-  };
+  if (farmDataError) {
+    return (
+      <div
+        className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center"
+        role="alert"
+      >
+        <div>
+          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
+            Unable to load farm data
+          </h1>
+          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+            {repositoryErrorMessage(farmDataError)}
+          </p>
+        </div>
+        <Button type="button" onClick={() => void retryFarmData()}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+  if (farmDataLoading) {
+    return <SuspenseFallback label="Loading farm data..." />;
+  }
+  if (modes.length === 0 || incubators.length === 0) {
+    return (
+      <div
+        className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center"
+        role="status"
+      >
+        <div>
+          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
+            No farm data available
+          </h1>
+          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+            The current data source did not return both incubation modes and incubators.
+          </p>
+        </div>
+        <Button type="button" variant="outline" onClick={() => void retryFarmData()}>
+          Reload data
+        </Button>
+      </div>
+    );
+  }
 
   const activeUnit =
     incubators.find((u) => u.id === selectedUnit) ??
@@ -396,71 +297,12 @@ export default function App() {
     },
   };
 
-  // Auth screens render full-page without sidebar, behind demo flag
-  if (screen === "login") {
-    return (
-      <>
-        <SignInScreen
-          onSignIn={() => {
-            setScreen("overview");
-            syncUrl("overview", null);
-          }}
-          onSetup={() => {
-            setScreen("onboarding");
-            setOnboardingStep(1);
-            syncOnboardingUrl(1);
-          }}
-        />
-        <Toaster position="top-right" richColors />
-      </>
-    );
-  }
-
   if (screen === "onboarding") {
-    if (onboardingStep === 1) {
-      return (
-        <>
-          <OnboardingStep1
-            onContinue={(data) => {
-              setOnboardingState((prev) => ({ ...prev, ...data }));
-              setOnboardingStep(2);
-              syncOnboardingUrl(2);
-            }}
-            onHaveAccount={() => {
-              setScreen("login");
-              syncLoginUrl();
-            }}
-          />
-          <Toaster position="top-right" richColors />
-        </>
-      );
-    }
-    if (onboardingStep === 2) {
-      return (
-        <Suspense fallback={<SuspenseFallback label="Loading onboarding..." />}>
-          <OnboardingStep2
-            onContinue={(data) => {
-              setOnboardingState((prev) => ({ ...prev, ...data }));
-              setOnboardingStep(3);
-              syncOnboardingUrl(3);
-            }}
-            onBack={() => {
-              setOnboardingStep(1);
-              syncOnboardingUrl(1);
-            }}
-            onHaveAccount={() => {
-              setScreen("login");
-              syncLoginUrl();
-            }}
-          />
-          <Toaster position="top-right" richColors />
-        </Suspense>
-      );
-    }
     return (
       <Suspense fallback={<SuspenseFallback label="Loading onboarding..." />}>
         <OnboardingStep3
-          onEnter={(data) => {
+          modes={modes}
+          onEnter={async (data) => {
             setOnboardingState((prev) => ({ ...prev, ...data }));
             // set state then finish — use updated value directly for toast/name
             // merge data synchronously for finish
@@ -469,10 +311,6 @@ export default function App() {
             setOnboardingState(merged);
             // finish uses merged via closure? call inline to avoid stale
             // Instead duplicate finish logic with merged
-            updateAccount({
-              accountHolder: merged.name || initialAccount.accountHolder,
-              farmName: merged.farmName || initialAccount.farmName,
-            });
             const mode = modes.find((m) => m.id === merged.startingModeId) ?? modes[0];
             const newIncubator: Incubator = {
               id: `chamber-${Date.now()}`,
@@ -500,19 +338,23 @@ export default function App() {
               candled: {},
               candlingLog: [],
             };
-            addIncubator(newIncubator);
+            if (!await addIncubator(newIncubator)) return false;
+            const accountSaved = await saveSettings({
+              ...settings,
+              account: {
+                ...settings.account,
+                accountHolder: merged.name || initialAccount.accountHolder,
+                farmName: merged.farmName || initialAccount.farmName,
+              },
+            });
+            if (!accountSaved) return false;
+            completeOnboarding();
             toast.success(`Welcome to Eggcelerate, ${merged.name.split(" ")[0] || "farmer"}!`);
-            setScreen("overview");
-            syncUrl("overview", null);
+            navigate("overview");
+            return true;
           }}
-          onBack={() => {
-            setOnboardingStep(2);
-            syncOnboardingUrl(2);
-          }}
-          onHaveAccount={() => {
-            setScreen("login");
-            syncLoginUrl();
-          }}
+          onBack={() => openOnboarding(2)}
+          onHaveAccount={() => openLogin()}
         />
         <Toaster position="top-right" richColors />
       </Suspense>
@@ -520,10 +362,11 @@ export default function App() {
   }
 
   return (
-    <div
-      className="min-h-screen w-full"
-      style={{ backgroundColor: "#FAF6F0" }}
-    >
+    <RequireAuth>
+      <div
+        className="min-h-screen w-full"
+        style={{ backgroundColor: "#FAF6F0" }}
+      >
       <AppSidebar
         active={screen}
         onNavigate={navigate}
@@ -537,7 +380,7 @@ export default function App() {
         className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
       >
         <div
-          className="mx-auto max-w-6xl px-4 pb-28 sm:px-6 lg:px-8 lg:pb-20"
+          className="mx-auto max-w-6xl px-4 pb-44 sm:px-6 sm:pb-28 lg:px-8 lg:pb-20"
           style={{ paddingTop: 24 }}
         >
           {/* Rows 1 and 2 — utility bar and page title bar. */}
@@ -551,6 +394,8 @@ export default function App() {
               alerts={alerts}
               onMarkAllRead={markAllAlertsRead}
               onDismissAlert={dismissAlert}
+              pendingAlertId={actionState.pendingAlertId}
+              markingAllRead={actionState.markingAllAlertsRead}
               onBack={
                 screen === "detail"
                   ? () => navigate("incubators")
@@ -564,6 +409,12 @@ export default function App() {
               showDateTime={screen === "overview"}
             />
           </div>
+
+          <FarmDataStatus
+            isRefreshing={farmDataRefreshing}
+            staleError={farmDataStaleError}
+            onRetry={() => void retryFarmData()}
+          />
 
           {screen === "overview" && (
             <OverviewScreen
@@ -579,8 +430,7 @@ export default function App() {
               modes={modes}
               onOpenUnit={openUnit}
               onAddIncubator={addIncubator}
-              onUpdateUnit={updateIncubator}
-              onHistoryChanged={refreshHatchHistory}
+              isAddingIncubator={actionState.addingIncubator}
             />
           )}
           {screen === "candling" && (
@@ -599,8 +449,9 @@ export default function App() {
                 modes={modes}
                 initialTab={detailTab}
                 onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
-                onHistoryChanged={refreshHatchHistory}
+                onTabChange={(tab) => openIncubator(activeUnit.id, tab)}
                 onUpdate={(patch) => updateIncubator(activeUnit.id, patch)}
+                isUpdating={actionState.updatingIncubatorId === activeUnit.id}
               />
             </Suspense>
           )}
@@ -621,6 +472,9 @@ export default function App() {
               onDismiss={dismissAlert}
               onMarkAllRead={markAllAlertsRead}
               onClearRead={clearReadAlerts}
+              pendingAlertId={actionState.pendingAlertId}
+              markingAllRead={actionState.markingAllAlertsRead}
+              clearingRead={actionState.clearingReadAlerts}
               onOpenUnit={(unitName) => {
                 const target = incubators.find((u) => u.name === unitName);
                 if (target) openUnit(target.id);
@@ -633,8 +487,9 @@ export default function App() {
               onUpdateMode={updateMode}
               onAddMode={addMode}
               onDeleteMode={deleteMode}
-              account={account}
-              onUpdateAccount={updateAccount}
+              settings={settings}
+              onSaveSettings={saveSettings}
+              isSaving={actionState.savingSettings}
               units={incubators}
             />
           )}
@@ -643,6 +498,7 @@ export default function App() {
 
       <Toaster position="top-right" richColors />
       <HelpWidget />
-    </div>
+      </div>
+    </RequireAuth>
   );
 }

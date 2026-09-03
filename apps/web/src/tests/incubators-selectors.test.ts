@@ -1,0 +1,54 @@
+import { describe, expect, it } from "vitest";
+import { createIncubatorFixtures } from "../app/data/fixtures/incubators";
+import { createModeFixtures } from "../app/data/fixtures/modes";
+import { selectFilteredIncubators } from "../app/features/incubators/selectors";
+
+const modes = createModeFixtures();
+const units = createIncubatorFixtures(modes, Date.UTC(2026, 8, 3));
+
+describe("selectFilteredIncubators", () => {
+  it("returns all units when filters are open and query is blank", () => {
+    expect(
+      selectFilteredIncubators(units, modes, { search: "   ", status: "all", modeId: "all" }),
+    ).toHaveLength(units.length);
+  });
+
+  it("filters by chamber status", () => {
+    const expected = units.filter((u) => u.status === "alert").length;
+    expect(expected).toBeGreaterThan(0);
+    expect(
+      selectFilteredIncubators(units, modes, { search: "", status: "alert", modeId: "all" }),
+    ).toHaveLength(expected);
+  });
+
+  it("matches chamber name case-insensitively with trimming", () => {
+    const result = selectFilteredIncubators(units, modes, {
+      search: "  CHAMBER one ",
+      status: "all",
+      modeId: "all",
+    });
+    expect(result.map((u) => u.name)).toContain("Chamber One");
+  });
+
+  it("matches resolved mode name", () => {
+    const result = selectFilteredIncubators(units, modes, {
+      search: "duck",
+      status: "all",
+      modeId: "all",
+    });
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((u) => {
+      const mode = modes.find((m) => m.id === u.modeId) ?? modes[0];
+      return u.name.toLowerCase().includes("duck") || mode.name.toLowerCase().includes("duck");
+    })).toBe(true);
+  });
+
+  it("combines status, mode, and query", () => {
+    const result = selectFilteredIncubators(units, modes, {
+      search: "chamber",
+      status: "optimal",
+      modeId: "broiler",
+    });
+    expect(result.every((u) => u.status === "optimal" && u.modeId === "broiler")).toBe(true);
+  });
+});

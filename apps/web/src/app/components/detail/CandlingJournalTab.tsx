@@ -18,10 +18,19 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "../ui/alert-dialog";
+import { developmentCheckLabels } from "../../domain/candling";
+import { calculateFertilityRate } from "../../domain/fertility";
 import {
-  Incubator, Mode, CandlingLogEntry, CandlingCheckpoint, DevelopmentCheck, developmentCheckLabels,
-  calculateFertilityRate,
-} from "../../data/mockData";
+  formatCheckpointTiming,
+  selectPendingCheckpoint,
+} from "../../features/candling/selectors";
+import type {
+  CandlingCheckpoint,
+  CandlingLogEntry,
+  DevelopmentCheck,
+  Incubator,
+  Mode,
+} from "../../domain/types";
 import {
   CandleForm, TallyKey,
   RUST, RUST_NODE, BG, CARD, SURFACE, BORDER, TEXT, MUTED, INPUT_BORDER, RADIUS, SHADOW,
@@ -41,13 +50,14 @@ export function JournalEntryCard({
   onDeletePhoto,
 }: {
   entry: CandlingLogEntry;
-  onAddPhotos: (day: number, urls: string[]) => void;
-  onUpdateNote: (day: number, note: string) => void;
-  onDeletePhoto: (day: number, photoIndex: number) => void;
+  onAddPhotos: (day: number, urls: string[]) => Promise<boolean>;
+  onUpdateNote: (day: number, note: string) => Promise<boolean>;
+  onDeletePhoto: (day: number, photoIndex: number) => Promise<boolean>;
 }) {
   const photoRef = useRef<HTMLInputElement>(null);
   const [noteDraft, setNoteDraft] = useState(entry.note);
   const [noteEditing, setNoteEditing] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const readFiles = (files: FileList | null) => {
@@ -72,7 +82,7 @@ export function JournalEntryCard({
       reader.onload = (e) => {
         if (e.target?.result) urls.push(e.target.result as string);
         loaded++;
-        if (loaded === accepted.length) onAddPhotos(entry.day, urls);
+        if (loaded === accepted.length) void onAddPhotos(entry.day, urls);
       };
       reader.readAsDataURL(file);
     });
@@ -190,20 +200,26 @@ export function JournalEntryCard({
                     style={{ border: `1px solid ${INPUT_BORDER}`, backgroundColor: "#F2EEE5", fontSize: 13, color: TEXT }}
                   />
                   <div className="mt-2 flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { setNoteDraft(entry.note); setNoteEditing(false); }}>
+                    <Button variant="ghost" size="sm" className="rounded-full" disabled={isSavingNote} onClick={() => { setNoteDraft(entry.note); setNoteEditing(false); }}>
                       Cancel
                     </Button>
                     <Button
                       size="sm"
                       className="rounded-full"
                       style={{ backgroundColor: RUST, color: "#fff" }}
+                      disabled={isSavingNote}
+                      aria-busy={isSavingNote}
                       onClick={() => {
-                        onUpdateNote(entry.day, noteDraft);
-                        setNoteEditing(false);
-                        toast.success("Note saved");
+                        setIsSavingNote(true);
+                        void onUpdateNote(entry.day, noteDraft).then((saved) => {
+                          setIsSavingNote(false);
+                          if (!saved) return;
+                          setNoteEditing(false);
+                          toast.success("Note saved");
+                        });
                       }}
                     >
-                      Save note
+                      {isSavingNote ? "Saving…" : "Save note"}
                     </Button>
                   </div>
                 </>
@@ -361,7 +377,7 @@ export function LogModal({
   modeName: string;
   initialEntry?: CandlingLogEntry | null;
   previousEntry?: CandlingLogEntry | null;
-  onSubmit: (form: CandleForm) => void;
+  onSubmit: (form: CandleForm) => Promise<boolean>;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -409,7 +425,7 @@ function LogModalBody({
   modeName: string;
   initialEntry?: CandlingLogEntry | null;
   previousEntry?: CandlingLogEntry | null;
-  onSubmit: (form: CandleForm) => void;
+  onSubmit: (form: CandleForm) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const isEditing = !!initialEntry;
@@ -456,6 +472,7 @@ function LogModalBody({
   const [form, setForm] = useState<CandleForm>(initialForm);
   const [dragging, setDragging] = useState(false);
   const [emptyEvidenceWarningOpen, setEmptyEvidenceWarningOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [stage, setStage] = useState<LogStage>(isEditing ? 2 : 1);
   const stageHeadingRef = useRef<HTMLHeadingElement>(null);
 
@@ -487,12 +504,18 @@ function LogModalBody({
 
   const isSaveDisabled = isZeroTally || isTallyOverCapacity || customDayError || hasIncompleteLockdown;
 
+  const submit = async () => {
+    setIsSaving(true);
+    await onSubmit(form);
+    setIsSaving(false);
+  };
+
   const handleSave = () => {
     if (!hasEvidence) {
       setEmptyEvidenceWarningOpen(true);
       return;
     }
-    onSubmit(form);
+    void submit();
   };
 
   const readFiles = (files: FileList | null) => {
@@ -990,10 +1013,11 @@ function LogModalBody({
             <Button
               className="rounded-full"
               style={{ backgroundColor: RUST, color: "#fff", opacity: isSaveDisabled ? 0.5 : 1 }}
-              disabled={isSaveDisabled}
+              disabled={isSaveDisabled || isSaving}
+              aria-busy={isSaving}
               onClick={handleSave}
             >
-              <CheckCircle2 size={15} /> {isEditing ? "Update Inspection" : "Save Inspection"}
+              <CheckCircle2 size={15} /> {isSaving ? "Saving…" : isEditing ? "Update Inspection" : "Save Inspection"}
             </Button>
           )}
         </div>
@@ -1026,7 +1050,13 @@ function LogModalBody({
             <AlertDialogAction
               className="rounded-full"
               style={{ backgroundColor: RUST, color: "#FFFFFF" }}
-              onClick={() => onSubmit(form)}
+              disabled={isSaving}
+              aria-busy={isSaving}
+              onClick={(event) => {
+                event.preventDefault();
+                setEmptyEvidenceWarningOpen(false);
+                void submit();
+              }}
             >
               Save inspection
             </AlertDialogAction>
@@ -1046,7 +1076,8 @@ interface CandlingJournalTabProps {
   currentDay: number;
   totalDays: number;
   totalEggsSet: number;
-  onUpdate: (patch: Partial<Incubator>) => void;
+  onUpdate: (patch: Partial<Incubator>) => Promise<boolean>;
+  isUpdating: boolean;
 }
 
 export function CandlingJournalTab({
@@ -1058,6 +1089,7 @@ export function CandlingJournalTab({
   totalDays,
   totalEggsSet,
   onUpdate,
+  isUpdating,
 }: CandlingJournalTabProps) {
   const [showLogForm, setShowLogForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CandlingLogEntry | null>(null);
@@ -1080,18 +1112,9 @@ export function CandlingJournalTab({
   const summaryStopped = latestCandlingEntry?.stoppedDeveloping ?? 0;
   const summaryClear = latestCandlingEntry?.clear ?? 0;
   const summaryUncertain = latestCandlingEntry?.uncertain ?? 0;
-  const pendingCheckpoint =
-    candling.find((checkpoint) => checkpoint.day <= currentDay && !effectiveCandled[checkpoint.day]) ??
-    candling.find((checkpoint) => checkpoint.day > currentDay && !effectiveCandled[checkpoint.day]) ??
-    null;
+  const pendingCheckpoint = selectPendingCheckpoint(candling, effectiveCandled, currentDay);
   const checkpointDistance = pendingCheckpoint ? pendingCheckpoint.day - currentDay : null;
-  const checkpointTiming = checkpointDistance === null
-    ? "All scheduled checks completed"
-    : checkpointDistance < 0
-      ? `${Math.abs(checkpointDistance)} day${Math.abs(checkpointDistance) === 1 ? "" : "s"} overdue`
-      : checkpointDistance === 0
-        ? "Due today"
-        : `In ${checkpointDistance} day${checkpointDistance === 1 ? "" : "s"}`;
+  const checkpointTiming = formatCheckpointTiming(pendingCheckpoint, currentDay);
   const openNewInspection = () => {
     setEditingEntry(null);
     setShowLogForm(true);
@@ -1115,15 +1138,17 @@ export function CandlingJournalTab({
   });
   feedNodes.sort((a, b) => a.day - b.day);
 
-  const deleteJournalEntry = (day: number) => {
-    onUpdate({
+  const deleteJournalEntry = async (day: number) => {
+    const saved = await onUpdate({
       candled: { ...unit.candled, [day]: false },
       candlingLog: unit.candlingLog.filter((e) => e.day !== day),
     });
+    if (!saved) return false;
     toast.success(`Day ${day} journal entry deleted`);
+    return true;
   };
 
-  const submitInspection = (form: CandleForm) => {
+  const submitInspection = async (form: CandleForm) => {
     const counts = {
       fertile: Math.max(0, Math.floor(Number(form.fertile) || 0)),
       clear: Math.max(0, Math.floor(Number(form.clear) || 0)),
@@ -1138,15 +1163,15 @@ export function CandlingJournalTab({
 
     if (!Number.isInteger(form.targetDay) || form.targetDay < 1 || form.targetDay > totalDays) {
       toast.error(`Inspection day must be between Day 1 and Day ${totalDays}.`);
-      return;
+      return false;
     }
     if (inspected < 1) {
       toast.error("Enter at least one egg count before saving the inspection.");
-      return;
+      return false;
     }
     if (inspected > totalEggsSet) {
       toast.error(`The egg counts cannot exceed ${totalEggsSet} eggs loaded.`);
-      return;
+      return false;
     }
     if (form.targetDay === candling[2]?.day && (counts.uncertain > 0 || inspected < totalEggsSet)) {
       toast.error(
@@ -1154,7 +1179,7 @@ export function CandlingJournalTab({
           ? "Resolve all uncertain eggs before saving the Lockdown check."
           : `Categorize all ${totalEggsSet} eggs before saving the Lockdown check.`
       );
-      return;
+      return false;
     }
 
     const c = candling.find((cp) => cp.day === form.targetDay);
@@ -1188,13 +1213,14 @@ export function CandlingJournalTab({
         : {}),
     };
 
-    onUpdate({
+    const saved = await onUpdate({
       candled: { ...unit.candled, [form.targetDay]: true },
       fertileEggs: checkpointType === "first"
         ? counts.fertile
         : unit.fertileEggs ?? (baselineFertile || undefined),
       candlingLog: [entry, ...unit.candlingLog.filter((e) => e.day !== form.targetDay)],
     });
+    if (!saved) return false;
 
     const wasEditing = !!editingEntry;
     setShowLogForm(false);
@@ -1204,6 +1230,7 @@ export function CandlingJournalTab({
         ? `${entry.developing ?? 0} developing. ${entry.stoppedDeveloping ?? 0} stopped developing. ${entry.clear} clear.`
         : `${entry.fertile} fertile. ${entry.clear} clear. ${entry.uncertain} uncertain.`,
     });
+    return true;
   };
 
   const addPhotosToEntry = (day: number, urls: string[]) =>
@@ -1381,7 +1408,7 @@ export function CandlingJournalTab({
                 )}
               </div>
             </div>
-            <Button onClick={openNewInspection} className="w-full rounded-full sm:w-auto" style={{ ...rustBtn, fontSize: 13, fontWeight: 700 }}>
+            <Button onClick={openNewInspection} disabled={isUpdating} className="w-full rounded-full sm:w-auto" style={{ ...rustBtn, fontSize: 13, fontWeight: 700 }}>
               <Plus size={14} /> Log Inspection
             </Button>
           </div>
@@ -1609,10 +1636,13 @@ export function CandlingJournalTab({
                     Cancel
                   </Button>
                   <Button
+                    disabled={isUpdating}
+                    aria-busy={isUpdating}
                     onClick={() => {
                       if (entryToDelete) {
-                        deleteJournalEntry(entryToDelete.day);
-                        setEntryToDelete(null);
+                        void deleteJournalEntry(entryToDelete.day).then((deleted) => {
+                          if (deleted) setEntryToDelete(null);
+                        });
                       }
                     }}
                     className="rounded-xl text-white font-medium transition-colors"

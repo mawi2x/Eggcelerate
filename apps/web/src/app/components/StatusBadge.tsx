@@ -1,5 +1,6 @@
 import { CheckCircle2, AlertTriangle, AlertOctagon } from "lucide-react";
-import { UnitStatus, statusLabels } from "../data/mockData";
+import { statusLabels } from "./statusPresentation";
+import type { UnitStatus } from "../domain/types";
 
 // Semantic status palette — WCAG AA contrast on each tinted background.
 const styles: Record<UnitStatus, { bg: string; fg: string; Icon: typeof CheckCircle2 }> = {

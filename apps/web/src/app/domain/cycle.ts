@@ -37,7 +37,7 @@ export function unitStatusFromConditionSeverity(severity: ConditionSeverity): "o
   return "optimal";
 }
 
-export function deriveConditionSeverity(params: {
+export type ConditionInputs = {
   paired: boolean;
   temp: number;
   targetTemp: { min: number; max: number };
@@ -47,7 +47,9 @@ export function deriveConditionSeverity(params: {
   batteryPct: number;
   powerSource: "grid" | "battery";
   nextTurn: string;
-}): ConditionSeverity {
+};
+
+export function deriveConditionSeverity(params: ConditionInputs): ConditionSeverity {
   const temperatureCritical = params.temp < params.targetTemp.min - 0.5 || params.temp > params.targetTemp.max + 0.5;
   const humidityCritical = params.humidity < params.targetHumidity.min - 5 || params.humidity > params.targetHumidity.max + 5;
   const batteryCritical = params.powerSource === "battery" && params.batteryPct <= 15;
@@ -63,6 +65,17 @@ export function deriveConditionSeverity(params: {
 
   if (temperatureWarning || humidityWarning || batteryWarning || turningOverdue) return "warning";
   return "info";
+}
+
+export function deriveConditionState(params: ConditionInputs): {
+  conditionSeverity: ConditionSeverity;
+  status: "optimal" | "warning" | "alert";
+} {
+  const conditionSeverity = deriveConditionSeverity(params);
+  return {
+    conditionSeverity,
+    status: unitStatusFromConditionSeverity(conditionSeverity),
+  };
 }
 
 export function conditionSeverityFromLegacyStatus(

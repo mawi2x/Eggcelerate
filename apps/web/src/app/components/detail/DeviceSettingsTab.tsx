@@ -9,7 +9,7 @@ import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
 import { Progress } from "../ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Incubator, Mode, CandlingCheckpoint } from "../../data/mockData";
+import type { CandlingCheckpoint, Incubator, Mode } from "../../domain/types";
 import {
   TEXT, MUTED, BORDER, SURFACE, OK, CRIT,
   relTime,
@@ -24,9 +24,10 @@ interface DeviceSettingsTabProps {
   isReady: boolean;
   cycleEnded: boolean;
   turningStopped: boolean;
-  onUpdate: (patch: Partial<Incubator>) => void;
-  onStopCycle: () => void;
-  onTurnClick: () => void;
+  isUpdating: boolean;
+  onUpdate: (patch: Partial<Incubator>) => Promise<boolean>;
+  onStopCycle: () => Promise<boolean>;
+  onTurnClick: () => Promise<boolean>;
 }
 
 export function DeviceSettingsTab({
@@ -36,6 +37,7 @@ export function DeviceSettingsTab({
   isReady,
   cycleEnded,
   turningStopped,
+  isUpdating,
   onUpdate,
   onStopCycle,
   onTurnClick,
@@ -45,25 +47,16 @@ export function DeviceSettingsTab({
 
   const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
 
-  const changeMode = (modeId: string) => {
+  const changeMode = async (modeId: string) => {
     const m = modes.find((x) => x.id === modeId)!;
-    onUpdate({ modeId, turnInterval: m.defaultTurnInterval });
+    if (!await onUpdate({ modeId, turnInterval: m.defaultTurnInterval })) return;
     toast(`Mode changed to ${m.name}`, { description: "Turning interval reset to mode default." });
   };
 
-  const reconnectDevice = () => {
-    onUpdate({ connectionState: "connecting" });
+  const reconnectDevice = async () => {
     toast("Reconnecting to incubator...", { description: `Attempting handshake with ${unit.deviceId}` });
-    setTimeout(() => {
-      const unreachable = ["EGG-0000", "EGG-9999", "EGG-1005", "EGG-1010"].includes(unit.deviceId);
-      if (unreachable) {
-        onUpdate({ paired: false, connectionState: "connection_failed" });
-        toast.error("Connection Failed", { description: "Device unreachable on the local network." });
-      } else {
-        onUpdate({ paired: true, connectionState: "connected" });
-        toast.success("Connected", { description: `${unit.name} paired successfully.` });
-      }
-    }, 1200);
+    if (!await onUpdate({ paired: true, connectionState: "connected" })) return;
+    toast.success("Connected", { description: `${unit.name} paired successfully.` });
   };
 
   const nextTurnLabel = () => {
@@ -178,8 +171,9 @@ export function DeviceSettingsTab({
                 {isReady ? (
                   <Select
                     value={unit.modeId}
+                    disabled={isUpdating}
                     onValueChange={(val) => {
-                      if (val !== unit.modeId) changeMode(val);
+                      if (val !== unit.modeId) void changeMode(val);
                     }}
                   >
                     <SelectTrigger aria-label="Choose incubation mode" className="h-10 w-full rounded-xl sm:w-[180px]" style={{ borderColor: "#D8D0C0", backgroundColor: "#FFFFFF", fontSize: 13, fontWeight: 700 }}>
@@ -251,7 +245,7 @@ export function DeviceSettingsTab({
                   <p style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>Automatic turning</p>
                   <p style={{ color: MUTED, fontSize: 12 }}>Turn eggs on schedule automatically.</p>
                 </div>
-                <Switch checked={unit.autoTurn} disabled={turningStopped} onCheckedChange={(v) => onUpdate({ autoTurn: v })} />
+                <Switch checked={unit.autoTurn} disabled={turningStopped || isUpdating} onCheckedChange={(v) => void onUpdate({ autoTurn: v })} />
               </div>
               {turningStopped && (
                 <p style={{ fontSize: 12, color: MUTED }}>Turning is stopped during Lockdown and hatch phases.</p>
@@ -259,9 +253,9 @@ export function DeviceSettingsTab({
               <div className="flex items-center justify-between gap-2">
                 <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Turn every</span>
                 <Select
-                  disabled={turningStopped}
+                  disabled={turningStopped || isUpdating}
                   value={String(unit.turnInterval)}
-                  onValueChange={(v) => onUpdate({ turnInterval: Number(v) })}
+                  onValueChange={(v) => void onUpdate({ turnInterval: Number(v) })}
                 >
                   <SelectTrigger className="h-9 w-[110px] rounded-xl" style={{ borderColor: "rgba(120,53,15,0.20)", backgroundColor: SURFACE, fontSize: 13 }}>
                     <SelectValue />
@@ -279,8 +273,8 @@ export function DeviceSettingsTab({
                 <span className="min-w-0 truncate" style={{ fontSize: 12, color: next.overdue ? CRIT.fg : MUTED }}>
                   Next: {next.text} • Last: {relTime(unit.lastTurned)}
                 </span>
-                <Button disabled={turningStopped} onClick={onTurnClick} variant="outline" size="sm" className="shrink-0 rounded-full" style={outlineBtn}>
-                  <RotateCw size={14} /> Turn Now
+                <Button disabled={turningStopped || isUpdating} onClick={() => void onTurnClick()} aria-busy={isUpdating} variant="outline" size="sm" className="shrink-0 rounded-full" style={outlineBtn}>
+                  <RotateCw size={14} /> {isUpdating ? "Confirming…" : "Turn Now"}
                 </Button>
               </div>
             </div>
@@ -312,14 +306,15 @@ export function DeviceSettingsTab({
                       : "Connection Lost"}
                     {(!unit.paired || unit.connectionState !== "connected") && (
                       <Button
-                        onClick={reconnectDevice}
-                        disabled={unit.connectionState === "connecting"}
+                        onClick={() => void reconnectDevice()}
+                        disabled={isUpdating}
+                        aria-busy={isUpdating}
                         variant="outline"
                         size="sm"
                         className="ml-1 rounded-full"
                         style={outlineBtn}
                       >
-                        <WifiSlash size={13} weight="fill" /> {unit.connectionState === "connecting" ? "Connecting" : "Reconnect"}
+                        <WifiSlash size={13} weight="fill" /> {isUpdating ? "Connecting…" : "Reconnect"}
                       </Button>
                     )}
                   </span>
@@ -342,7 +337,7 @@ export function DeviceSettingsTab({
                 <Button
                   className="mt-3 rounded-xl"
                   variant="outline"
-                  disabled={isReady || cycleEnded || unit.cyclePhase === "stopped_early"}
+                  disabled={isReady || cycleEnded || unit.cyclePhase === "stopped_early" || isUpdating}
                   onClick={() => setStopCycleOpen(true)}
                   style={{ borderColor: "#C2410C", color: "#9A3412", backgroundColor: "#FFFFFF" }}
                 >
@@ -358,10 +353,7 @@ export function DeviceSettingsTab({
         open={stopCycleOpen}
         onOpenChange={setStopCycleOpen}
         unitName={unit.name}
-        onConfirm={() => {
-          setStopCycleOpen(false);
-          onStopCycle();
-        }}
+        onConfirm={onStopCycle}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
-import { Incubator, Mode, getUnitIssues } from "../data/mockData";
+import { getUnitIssues } from "../domain/incubator";
+import type { Incubator, Mode } from "../domain/types";
 import { ExclamationIcon } from "./icons";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
 

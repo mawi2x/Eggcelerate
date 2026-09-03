@@ -6,13 +6,11 @@ import {
   TriangleAlert,
   Check,
   ChevronRight,
+  Thermometer,
+  Droplets,
 } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
-import {
-  Incubator,
-  Mode,
-  UnitStatus,
-} from "../../data/mockData";
+import type { Incubator, Mode, UnitStatus } from "../../domain/types";
 
 interface Props {
   units: Incubator[];
@@ -298,15 +296,14 @@ function MiniCard({ unit, mode, onOpen }: { unit: Incubator; mode: Mode; onOpen:
 export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props) {
   const modeOf = (id: string) => modes.find((m) => m.id === id) ?? modes[0];
   const [carouselPage, setCarouselPage] = useState(0);
+  const [conditionTab, setConditionTab] = useState<"temp" | "humidity">("temp");
   const carouselRef = useRef<HTMLDivElement>(null);
-
   const handleCarouselScroll = () => {
     const el = carouselRef.current;
     if (!el) return;
     const page = Math.round(el.scrollLeft / el.clientWidth);
     setCarouselPage(page);
   };
-
   const stats = useMemo(() => {
     const count = (s: UnitStatus) => units.filter((u) => u.status === s).length;
     const connected = units.filter((u) => u.paired && u.connectionState === "connected").length;
@@ -406,7 +403,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
 
       {/* Section 3: chamber status grid, wrapped in one white container */}
       <section
-        className="rounded-2xl border p-4 sm:p-6"
+        className="rounded-2xl border p-3 sm:p-6"
         style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)" }}
       >
         <div className="flex items-center justify-between gap-3">
@@ -425,7 +422,7 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
             <span className="hidden sm:inline">View All Incubators</span>
           </button>
         </div>
-        <div className="my-3.5 h-px w-full sm:my-4" style={{ backgroundColor: "#EFE9DC" }} />
+        <div className="my-3 h-px w-full sm:my-4" style={{ backgroundColor: "#EFE9DC" }} />
         <div
           ref={carouselRef}
           onScroll={handleCarouselScroll}
@@ -466,9 +463,10 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
         )}
       </section>
 
-      {/* Section 4: Conditions to Check — 1 container, 2 columns inside, ranked by deviation */}
+      {/* Section 4: Conditions to Check — 1 container, 2 columns on desktop, tabs on mobile */}
       <section
-        style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: 16, padding: 24 }}
+        className="rounded-2xl border p-4 sm:p-6"
+        style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)" }}
       >
         <div style={{ marginBottom: 16 }}>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: HEADING }}>Conditions to Check</h2>
@@ -476,11 +474,71 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
             Incubators with temperature or humidity that may need attention.
           </p>
         </div>
-        <div className="mb-4 h-px w-full" style={{ backgroundColor: "#EFE9DC" }} />
+
+        {/* Mobile toggle between Temperature and Humidity */}
+        <div
+          className="mb-4 flex rounded-xl border p-1 lg:hidden"
+          style={{ backgroundColor: "var(--surface-muted)", borderColor: "var(--border-subtle)" }}
+          role="group"
+          aria-label="Condition type"
+        >
+          <button
+            type="button"
+            onClick={() => setConditionTab("temp")}
+            aria-pressed={conditionTab === "temp"}
+            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+            style={{
+              backgroundColor: conditionTab === "temp" ? "var(--surface-card)" : "transparent",
+              color: conditionTab === "temp" ? "var(--brand-primary)" : "var(--text-secondary)",
+              boxShadow: conditionTab === "temp" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+            }}
+          >
+            <Thermometer size={14} className="shrink-0" aria-hidden="true" />
+            <span>Temperature</span>
+            {offTarget.temp.length > 0 && (
+              <span
+                className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold"
+                style={{
+                  backgroundColor: conditionTab === "temp" ? "var(--brand-primary)" : "#E4DCD3",
+                  color: conditionTab === "temp" ? "#FFFFFF" : "#6E6259",
+                }}
+              >
+                {offTarget.temp.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConditionTab("humidity")}
+            aria-pressed={conditionTab === "humidity"}
+            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+            style={{
+              backgroundColor: conditionTab === "humidity" ? "var(--surface-card)" : "transparent",
+              color: conditionTab === "humidity" ? "var(--brand-primary)" : "var(--text-secondary)",
+              boxShadow: conditionTab === "humidity" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+            }}
+          >
+            <Droplets size={14} className="shrink-0" aria-hidden="true" />
+            <span>Humidity</span>
+            {offTarget.humidity.length > 0 && (
+              <span
+                className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold"
+                style={{
+                  backgroundColor: conditionTab === "humidity" ? "var(--brand-primary)" : "#E4DCD3",
+                  color: conditionTab === "humidity" ? "#FFFFFF" : "#6E6259",
+                }}
+              >
+                {offTarget.humidity.length}
+              </span>
+            )}
+          </button>
+        </div>
+        <div className="mb-4 h-px w-full hidden lg:block" style={{ backgroundColor: "#EFE9DC" }} />
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Left column: temperature */}
-          <div className="min-w-0">
-            <div className="mb-3">
+          {/* Column 1: temperature */}
+          <div className={`min-w-0 ${conditionTab === "temp" ? "block" : "hidden"} lg:block`}>
+            <div className="mb-3 hidden lg:block">
               <h3 style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: TEXT }}>
                 Temperature
               </h3>
@@ -499,12 +557,9 @@ export function OverviewScreen({ units, modes, onOpenUnit, onManageAll }: Props)
             </div>
           </div>
 
-          {/* Divider for mobile */}
-          <div className="h-px w-full lg:hidden" style={{ backgroundColor: "#F2EEE5" }} />
-
-          {/* Right column: humidity */}
-          <div className="min-w-0">
-            <div className="mb-3">
+          {/* Column 2: humidity */}
+          <div className={`min-w-0 ${conditionTab === "humidity" ? "block" : "hidden"} lg:block`}>
+            <div className="mb-3 hidden lg:block">
               <h3 style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-normal)", color: TEXT }}>
                 Humidity
               </h3>

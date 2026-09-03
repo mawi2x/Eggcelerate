@@ -1,6 +1,6 @@
-# Auth & Onboarding Guide (Prep — Mock)
+# Auth & Onboarding Guide (Routed Mock Boundary)
 
-> Mock-only prep per `docs/screens/auth-and-onboarding-plan.md:1` — 4 screens behind `?demo=onboarding`. No JWT `Task 7` yet. Flip to real auth is `App.tsx` 1-line guard swap.
+> Mock-only prep per `docs/screens/auth-and-onboarding-plan.md:1` — sign-in and onboarding use public Wouter routes at `/login` and `/onboarding/:step`. No JWT or server session exists yet.
 
 **Folder map:**
 
@@ -18,8 +18,8 @@ data/onboarding.ts # OnboardingState + PrimaryFocus + zod schemas using caps fro
 
 **Tokens:** `AuthCard` `bg-[var(--surface-page)]` `rounded-3xl` `border-[var(--border-subtle)]` `var(--brand-primary)` `var(--type-page-title)` `var(--type-body)` `var(--type-label)` `var(--weight-bold)` `var(--tracking-label)` `var(--leading-snug)` `var(--ring)` `var(--status-danger-fg)`.
 
-**Mock flag:** `?demo=onboarding` → `?screen=login` `?screen=onboarding&step=1` else `overview` default. No `POST /api/auth/login` — `onSetup` just `navigate`.
+**Mock routing:** `/login` and `/onboarding/1` through `/onboarding/3` are public. Dashboard routes are wrapped in `RequireAuth`, backed by `MockAuthProvider`, and default to an authenticated farmer to preserve the existing frontend demo. Legacy `?demo=onboarding&screen=...` links are replaced with their canonical route once at startup. No `POST /api/auth/login` exists.
 
-**When to flip:** Replace `if (params.get("demo")==="onboarding")` with `if (!user)` `ProtectedRoute` `Task 7`.
+**When to flip:** Replace the mock provider implementation with the future cookie-backed auth adapter. Keep `RequireAuth` and the screen routes; the API remains the security authority.
 
 <!-- mock-only -->

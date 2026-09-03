@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { PaginationBar } from "../ui/pagination-bar";
 import { FilterBar } from "../ui/filter-bar";
-import { AlertEntry, AlertSeverity } from "../../data/mockData";
+import type { AlertEntry, AlertSeverity } from "../../domain/types";
 import { severityStyle, timeAgo } from "../alerts/alertStyle";
 import logoApp from "../../../imports/logo-app.webp";
 
@@ -38,14 +38,27 @@ const severityRank: Record<AlertSeverity, number> = { critical: 0, warning: 1, i
 
 interface Props {
   alerts: AlertEntry[];
-  onAcknowledge: (id: string) => void;
-  onDismiss: (id: string) => void;
-  onMarkAllRead: () => void;
-  onClearRead: () => void;
+  onAcknowledge: (id: string) => Promise<boolean>;
+  onDismiss: (id: string) => Promise<boolean>;
+  onMarkAllRead: () => Promise<boolean>;
+  onClearRead: () => Promise<boolean>;
+  pendingAlertId: string | null;
+  markingAllRead: boolean;
+  clearingRead: boolean;
   onOpenUnit?: (unitName: string) => void;
 }
 
-export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, onClearRead, onOpenUnit }: Props) {
+export function AlertsScreen({
+  alerts,
+  onAcknowledge,
+  onDismiss,
+  onMarkAllRead,
+  onClearRead,
+  pendingAlertId,
+  markingAllRead,
+  clearingRead,
+  onOpenUnit,
+}: Props) {
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<SortKey>("recent");
   const [alertPage, setAlertPage] = useState(1);
@@ -111,10 +124,11 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
             size="toolbar"
             className="rounded-xl"
             style={{ backgroundColor: RUST, color: "#fff" }}
-            onClick={onMarkAllRead}
-            disabled={unreadCount === 0}
+            onClick={() => void onMarkAllRead()}
+            disabled={unreadCount === 0 || markingAllRead || clearingRead}
+            aria-busy={markingAllRead}
           >
-            <CheckCheck size={16} /> Mark All as Read
+            <CheckCheck size={16} /> {markingAllRead ? "Marking…" : "Mark All as Read"}
           </Button>
 
           <Button
@@ -122,11 +136,12 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
             variant="outline"
             className="rounded-xl"
             style={{ borderColor: BORDER }}
-            onClick={onClearRead}
-            disabled={readCount === 0}
+            onClick={() => void onClearRead()}
+            disabled={readCount === 0 || clearingRead || markingAllRead}
+            aria-busy={clearingRead}
             title="Removes every notification you've already read"
           >
-            <Eraser size={16} /> Clear All
+            <Eraser size={16} /> {clearingRead ? "Clearing…" : "Clear All"}
           </Button>
         </div>
       </div>
@@ -313,7 +328,9 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                         {!a.acknowledged && (
                           <button
                             type="button"
-                            onClick={() => onAcknowledge(a.id)}
+                            onClick={() => void onAcknowledge(a.id)}
+                            disabled={pendingAlertId === a.id}
+                            aria-busy={pendingAlertId === a.id}
                             className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                             style={{ borderColor: CARD_BORDER, color: TEXT }}
                             title="Mark as read"
@@ -324,7 +341,9 @@ export function AlertsScreen({ alerts, onAcknowledge, onDismiss, onMarkAllRead, 
                         )}
                         <button
                           type="button"
-                          onClick={() => onDismiss(a.id)}
+                          onClick={() => void onDismiss(a.id)}
+                          disabled={pendingAlertId === a.id}
+                          aria-busy={pendingAlertId === a.id}
                           className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#FEE2E2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                           style={{ borderColor: CARD_BORDER, color: "#B91C1C" }}
                           title="Dismiss"

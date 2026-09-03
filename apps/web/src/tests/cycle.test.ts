@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   cyclePhaseFromDay,
+  deriveConditionState,
   deriveConditionSeverity,
   unitStatusFromConditionSeverity,
   conditionSeverityFromLegacyStatus,
@@ -116,6 +117,13 @@ describe("deriveConditionSeverity", () => {
   it("info when all optimal", () => {
     const s = deriveConditionSeverity({ ...base });
     expect(s).toBe("info");
+  });
+
+  it("returns a synchronized status patch when mode targets change", () => {
+    expect(deriveConditionState({
+      ...base,
+      targetTemp: { min: 36, max: 36.5 },
+    })).toEqual({ conditionSeverity: "critical", status: "alert" });
   });
   it("info when temp/humidity exactly at boundaries", () => {
     const s = deriveConditionSeverity({ ...base, temp: 37.8, humidity: 65 });

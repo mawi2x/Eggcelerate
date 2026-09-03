@@ -21,18 +21,21 @@ import {
 } from "../ui/select";
 import { PaginationBar } from "../ui/pagination-bar";
 import { FilterBar } from "../ui/filter-bar";
-import {
-  Incubator, Mode, UnitStatus, rangeState, waterState, readingStateColors, daysUntilHatch,
-  CURRENT_TRAY_CAPACITY, getKnownFertileEggs, recordHarvest, resetChamberToReady,
-} from "../../data/mockData";
+import { useIsMobile } from "../ui/use-mobile";
+import { readingStateColors } from "../statusPresentation";
+import { CURRENT_TRAY_CAPACITY } from "../../domain/candling";
+import { calculateHatchabilityRate, getKnownFertileEggs, validateHarvestCounts } from "../../domain/fertility";
+import { daysUntilHatch, rangeState, waterState } from "../../domain/incubator";
+import type { Incubator, Mode, UnitStatus } from "../../domain/types";
+import { useCycleHistoryActions } from "../../features/farm/use-farm-data";
+import { selectFilteredIncubators } from "../../features/incubators/selectors";
 
 interface Props {
   units: Incubator[];
   modes: Mode[];
   onOpenUnit: (id: string) => void;
-  onAddIncubator: (unit: Incubator) => void;
-  onUpdateUnit: (id: string, patch: Partial<Incubator>) => void;
-  onHistoryChanged: () => void;
+  onAddIncubator: (unit: Incubator) => Promise<boolean>;
+  isAddingIncubator: boolean;
 }
 
 // Design tokens.
@@ -45,8 +48,11 @@ const INPUT_BORDER = "#D8D0C0";
 
 type Filter = "all" | UnitStatus;
 
-// Device IDs that exist but are simulated as offline/unreachable.
-const OFFLINE_DEVICE_IDS = ["EGG-0000", "EGG-9999"];
+const STATUS_DOT_COLORS: Record<UnitStatus, string> = {
+  alert: "var(--status-danger-fg)",
+  warning: "var(--status-warning-fg)",
+  optimal: "var(--status-success-fg)",
+};
 
 const inputStyle = { borderColor: INPUT_BORDER, backgroundColor: "#F2EEE5" };
 
@@ -82,7 +88,15 @@ function getChamberNaturalOrder(name: string): number {
   return 999;
 }
 
-export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onUpdateUnit, onHistoryChanged }: Props) {
+export function IncubatorsScreen({
+  units,
+  modes,
+  onOpenUnit,
+  onAddIncubator,
+  isAddingIncubator,
+}: Props) {
+  const isMobile = useIsMobile();
+  const { completeCycle } = useCycleHistoryActions();
   // Chamber search is local to this page's controls row.
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -95,18 +109,20 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [harvestUnit, setHarvestUnit] = useState<Incubator | null>(null);
 
-  const handleHarvestSave = (unit: Incubator, hatched: number, _unhatched: number) => {
+  const handleHarvestSave = async (unit: Incubator, hatched: number, _unhatched: number) => {
     const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
     const totalEggs = unit.totalEggsLoaded && unit.totalEggsLoaded > 0
       ? unit.totalEggsLoaded
       : CURRENT_TRAY_CAPACITY;
     const fertileEggs = getKnownFertileEggs(unit);
     const hatchedEggs = Math.floor(Number(hatched) || 0);
-    if (hatchedEggs < 0 || hatchedEggs > totalEggs) {
-      toast.error(`Hatched eggs must be between 0 and ${totalEggs}.`);
-      return;
+    const validationError = validateHarvestCounts({ totalEggs, fertileEggs, hatchedEggs });
+    if (validationError) {
+      toast.error(validationError);
+      return false;
     }
-    const rate = recordHarvest({
+    const saved = await completeCycle({
+      incubatorId: unit.id,
       chamber: unit.name,
       modeName: mode.name,
       cycleDays: Math.max(unit.dayOfIncubation, 1),
@@ -114,24 +130,21 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
       fertileEggs,
       hatchedEggs,
     });
-    onHistoryChanged();
-    onUpdateUnit(unit.id, resetChamberToReady(unit));
+    if (!saved) return false;
+    const rate = calculateHatchabilityRate(hatchedEggs, fertileEggs);
     setHarvestUnit(null);
     toast.success(`${unit.name}: harvest logged`, {
       description: rate === null
         ? "Hatchability is not available because no fertility record was saved. Incubator reset to Ready."
         : `${rate}% hatchability saved to history. Incubator reset to Ready.`,
     });
+    return true;
   };
 
   const [deviceId, setDeviceId] = useState("");
   const [name, setName] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState<null | "invalid" | "offline">(null);
-  const connectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => { if (connectTimer.current) clearTimeout(connectTimer.current); }, []);
-
   const modeOf = (id: string) => modes.find((m) => m.id === id) ?? modes[0];
 
   const counts = useMemo(() => ({
@@ -141,15 +154,11 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
     alert: units.filter((u) => u.status === "alert").length,
   }), [units]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return units.filter((u) => {
-      if (filter !== "all" && u.status !== filter) return false;
-      if (modeFilter !== "all" && u.modeId !== modeFilter) return false;
-      if (!q) return true;
-      return u.name.toLowerCase().includes(q) || modeOf(u.modeId).name.toLowerCase().includes(q);
-    });
-  }, [units, search, filter, modeFilter, modes]);
+  const filtered = useMemo(() => selectFilteredIncubators(units, modes, {
+    search,
+    status: filter,
+    modeId: modeFilter,
+  }), [units, search, filter, modeFilter, modes]);
   const sorted = useMemo(() => {
     const remaining = (u: Incubator) => {
       const m = modeOf(u.modeId);
@@ -178,11 +187,59 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, sort, sortAsc, modes]);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const filterPills: { key: Filter; label: string; count: number }[] = [
+  useEffect(() => {
+    if (typeof window === "undefined" || !isMobile || sorted.length === 0) return;
+
+    let ticking = false;
+    let frameId: number | null = null;
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      frameId = requestAnimationFrame(() => {
+        ticking = false;
+        frameId = null;
+        const cards = cardRefs.current;
+        if (!cards.length) return;
+        const targetY = window.innerHeight * 0.35;
+        let closestIdx = 0;
+        let minDistance = Infinity;
+
+        cards.forEach((card, idx) => {
+          if (!card) return;
+          const rect = card.getBoundingClientRect();
+          const dist = Math.abs(rect.top - targetY);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestIdx = idx;
+          }
+        });
+
+        setActiveCardIndex((prev) => (prev === closestIdx ? prev : closestIdx));
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (frameId !== null) cancelAnimationFrame(frameId);
+    };
+  }, [isMobile, sorted]);
+  const scrollToChamber = (index: number) => {
+    const el = cardRefs.current[index];
+    if (el) {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    }
+  };
+
+  const filterPills: { key: Filter; label: string; mobileLabel?: string; count: number }[] = [
     { key: "all", label: "ALL", count: counts.all },
     { key: "optimal", label: "OPTIMAL", count: counts.optimal },
-    { key: "warning", label: "NEEDS ATTENTION", count: counts.warning },
+    { key: "warning", label: "NEEDS ATTENTION", mobileLabel: "ATTENTION", count: counts.warning },
     { key: "alert", label: "URGENT", count: counts.alert },
   ];
 
@@ -194,7 +251,7 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
 
   const resetForm = () => { setDeviceId(""); setName(""); };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const trimmedDeviceId = deviceId.trim();
     const trimmedName = name.trim();
     if (!trimmedDeviceId || !trimmedName) {
@@ -209,24 +266,17 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
       toast.error(`Device ${trimmedDeviceId} is already paired to another chamber.`);
       return;
     }
-    // Simulated hardware handshake — 2.5s, then verify the ID is reachable.
     setConnectError(null);
     setConnecting(true);
-    connectTimer.current = setTimeout(() => {
-      const id = trimmedDeviceId.trim().toUpperCase();
-      if (OFFLINE_DEVICE_IDS.includes(id)) {
-        setConnectError("offline");
-        setConnecting(false);
-        return;
-      }
-      if (!/^EGG-\d{4}$/.test(id)) {
-        setConnectError("invalid");
-        setConnecting(false);
-        return;
-      }
-      const mode = modes[0] ?? modeOf("broiler");
-      const nowIso = new Date().toISOString();
-      onAddIncubator({
+    const id = trimmedDeviceId.trim().toUpperCase();
+    if (!/^EGG-\d{4}$/.test(id)) {
+      setConnectError("invalid");
+      setConnecting(false);
+      return;
+    }
+    const mode = modes[0] ?? modeOf("broiler");
+    const nowIso = new Date().toISOString();
+    const connected = await onAddIncubator({
         id: `chamber-${Date.now()}`,
         name: trimmedName,
         deviceId: id,
@@ -250,19 +300,22 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
         paired: true,
         candled: {},
         candlingLog: [],
-      });
-      toast.success(`Connected to Chamber ${trimmedName} successfully.`);
-      resetForm();
+    });
+    if (!connected) {
       setConnecting(false);
-      setOpen(false);
-    }, 2500);
+      return;
+    }
+    toast.success(`Connected to Chamber ${trimmedName} successfully.`);
+    resetForm();
+    setConnecting(false);
+    setOpen(false);
   };
 
   return (
     <div className="space-y-6" style={{ color: TEXT }}>
-      {/* Controls row */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[220px] flex-1">
+      {/* Row 1: Search + ViewToggle (desktop) + Add Button */}
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="relative min-w-0 flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
           <Input
             size="toolbar"
@@ -275,31 +328,39 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
             style={inputStyle}
           />
         </div>
-        <ViewToggle view={view} onChange={setView} />
+        <div className="hidden sm:block">
+          <ViewToggle view={view} onChange={setView} />
+        </div>
         <Button
           size="toolbar"
           onClick={() => { setConnectError(null); setOpen(true); }}
-          className="rounded-xl px-5 transition-colors duration-200 hover:!bg-[#8B3A1C] focus-visible:outline-none focus-visible:ring-2"
+          className="shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[#8B3A1C] focus-visible:outline-none focus-visible:ring-2 sm:px-5"
           style={{ backgroundColor: RUST, color: "#fff" }}
+          aria-label="Add incubator"
         >
-          <Plus size={18} /> Add Incubator
+          <Plus size={18} />
+          <span className="sm:hidden">Add</span>
+          <span className="hidden sm:inline">Add Incubator</span>
         </Button>
       </div>
 
-      {/* Filter pills on the left, hatch timeline sort on the right */}
-      <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginTop: 20 }}>
-      <FilterBar
-        ariaLabel="Incubator status filter"
-        value={filter}
-        onChange={(key) => { setFilter(key as typeof filter); setPage(1); }}
-        options={filterPills.map((p) => ({ key: p.key, label: p.label, count: p.count }))}
-      />
+      {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style={{ marginTop: 16 }}>
+        <div className="min-w-0 flex-1 sm:flex-initial">
+          <FilterBar
+            ariaLabel="Incubator status filter"
+            value={filter}
+            onChange={(key) => { setFilter(key as typeof filter); setPage(1); }}
+            options={filterPills.map((p) => ({ key: p.key, label: p.label, mobileLabel: p.mobileLabel, count: p.count }))}
+          />
+        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Incubation Mode Select */}
           <Select value={modeFilter} onValueChange={(v) => { setModeFilter(v); setPage(1); }}>
             <SelectTrigger
               size="toolbar"
-              className="w-auto min-w-[140px] rounded-xl"
+              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
               style={sortTriggerStyle}
               aria-label="Filter by incubation mode"
             >
@@ -311,10 +372,11 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
             </SelectContent>
           </Select>
 
+          {/* Sort Key Select */}
           <Select value={sort} onValueChange={(v) => { setSort(v as SortKey); setPage(1); }}>
             <SelectTrigger
               size="toolbar"
-              className="w-auto min-w-[140px] rounded-xl"
+              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
               style={sortTriggerStyle}
               aria-label="Sort chambers"
             >
@@ -322,15 +384,16 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
             </SelectTrigger>
             <SelectContent>
               {sortOptions.map((o) => (
-                <SelectItem key={o.key} value={o.key}>Sort: {o.label}</SelectItem>
+                <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
+          {/* Sort Direction Toggle */}
           <button
             type="button"
             onClick={() => { setSortAsc((v) => !v); setPage(1); }}
-            className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] cursor-pointer items-center justify-center rounded-xl border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2"
+            className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] shrink-0 cursor-pointer items-center justify-center rounded-xl border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2"
             style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}
             title={sortAsc ? "Sort ascending" : "Sort descending"}
             aria-label={`Sort direction: ${sortAsc ? "ascending" : "descending"}`}
@@ -356,18 +419,71 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
           )}
         </div>
       ) : view === "grid" ? (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {sorted.map((unit) => (
-            <IncubatorCard
-              key={unit.id}
-              unit={unit}
-              mode={modeOf(unit.modeId)}
-              onOpen={onOpenUnit}
-              cta="Configure"
-              onHarvest={(u) => setHarvestUnit(u)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {sorted.map((unit, idx) => (
+              <div
+                key={unit.id}
+                ref={(el) => { cardRefs.current[idx] = el; }}
+                data-chamber-idx={idx}
+              >
+                <IncubatorCard
+                  unit={unit}
+                  mode={modeOf(unit.modeId)}
+                  onOpen={onOpenUnit}
+                  cta="Configure"
+                  onHarvest={(u) => setHarvestUnit(u)}
+                  highlighted={isMobile && activeCardIndex === idx}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Empty spacer on mobile to allow scrolling the last card completely above the mascot FAB */}
+          <div className="h-16 md:hidden" aria-hidden="true" />
+
+          {/* Floating Vertical Dot Track on Mobile (shows incubator count and scroll position) */}
+          {sorted.length > 1 && (
+            <div
+              className="fixed right-1 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center rounded-full px-0.5 py-1.5 md:hidden"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.74)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid rgba(232, 226, 213, 0.72)",
+                boxShadow: "0 2px 8px rgba(45, 26, 14, 0.08)",
+              }}
+              aria-label={`Chamber list index. Showing ${sorted.length} chambers.`}
+            >
+              {sorted.map((unit, idx) => {
+                const isActive = activeCardIndex === idx;
+                const color = STATUS_DOT_COLORS[unit.status];
+                return (
+                  <button
+                    key={unit.id}
+                    type="button"
+                    onClick={() => scrollToChamber(idx)}
+                    className="flex h-[18px] w-5 cursor-pointer items-center justify-center rounded-full p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                    aria-label={`Scroll to ${unit.name} (${idx + 1} of ${sorted.length})`}
+                    aria-current={isActive ? "true" : undefined}
+                  >
+                    <span
+                      className="rounded-full transition-all duration-200 motion-reduce:transition-none"
+                      style={{
+                        width: 3,
+                        height: isActive ? 9 : 3,
+                        backgroundColor: isActive
+                          ? "var(--brand-primary)"
+                          : color,
+                        boxShadow: isActive ? "0 0 0 2px rgba(173, 58, 29, 0.12)" : "none",
+                        opacity: isActive ? 1 : 0.62,
+                      }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
       ) : (
         <div className="overflow-hidden rounded-2xl" style={{ border: `1px solid ${BORDER}`, backgroundColor: CARD }}>
           <PaginationBar
@@ -511,14 +627,15 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
           </div>
 
           <DialogFooter>
-            <Button variant="outline" className="rounded-xl" disabled={connecting} onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" className="rounded-xl" disabled={connecting || isAddingIncubator} onClick={() => setOpen(false)}>Cancel</Button>
             <Button
               className="rounded-xl"
-              disabled={connecting}
-              onClick={handleAdd}
+              disabled={connecting || isAddingIncubator}
+              aria-busy={connecting || isAddingIncubator}
+              onClick={() => void handleAdd()}
               style={{ backgroundColor: RUST, color: "#fff" }}
             >
-              {connecting ? (
+              {connecting || isAddingIncubator ? (
                 <>
                   <Loader2 size={16} className="animate-spin" /> Connecting to Incubator...
                 </>
@@ -543,9 +660,9 @@ export function IncubatorsScreen({ units, modes, onOpenUnit, onAddIncubator, onU
             : CURRENT_TRAY_CAPACITY)
           : 0}
         fertileEggs={harvestUnit ? getKnownFertileEggs(harvestUnit) : null}
-        onSave={(hatched, unhatched) => {
-          if (harvestUnit) handleHarvestSave(harvestUnit, hatched, unhatched);
-        }}
+        onSave={(hatched, unhatched) => harvestUnit
+          ? handleHarvestSave(harvestUnit, hatched, unhatched)
+          : Promise.resolve(false)}
       />
     </div>
   );

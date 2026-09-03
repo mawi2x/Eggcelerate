@@ -6,6 +6,11 @@ node_modules/
 dist/
 build/
 coverage/
+output/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
 
 # env files
 .env

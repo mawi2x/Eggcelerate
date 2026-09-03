@@ -1,4 +1,5 @@
-import { CandlingLogEntry, DevelopmentCheck, localDateString } from "../../data/mockData";
+import { localDateString } from "../../domain/date";
+import type { CandlingLogEntry, DevelopmentCheck } from "../../domain/types";
 
 export type DetailTab = "monitor" | "candling" | "settings";
 export type MarkerStatus = "logged" | "due" | "upcoming";

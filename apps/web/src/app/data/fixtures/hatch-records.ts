@@ -1,0 +1,20 @@
+import type { HatchRecord } from "../../domain/types";
+
+export const hatchRecordFixtures = [
+  { id: "h1", chamber: "Chamber One", modeName: "Broiler", startDate: "2026-06-01", endDate: "2026-06-22", totalEggs: 18, fertileEggs: 17, hatchedEggs: 16 },
+  { id: "h2", chamber: "Chamber Two", modeName: "Duck", startDate: "2026-05-10", endDate: "2026-06-07", totalEggs: 16, fertileEggs: 15, hatchedEggs: 14 },
+  { id: "h3", chamber: "Chamber Three", modeName: "Quail", startDate: "2026-06-15", endDate: "2026-07-03", totalEggs: 20, fertileEggs: 19, hatchedEggs: 17 },
+  { id: "h4", chamber: "Chamber One", modeName: "Broiler", startDate: "2026-05-01", endDate: "2026-05-22", totalEggs: 17, fertileEggs: 16, hatchedEggs: 14 },
+  { id: "h5", chamber: "Chamber Two", modeName: "Duck", startDate: "2026-06-20", endDate: "2026-07-18", totalEggs: 15, fertileEggs: 14, hatchedEggs: 13 },
+  { id: "h6", chamber: "Chamber Four", modeName: "Goose", startDate: "2026-04-12", endDate: "2026-05-12", totalEggs: 12, fertileEggs: 11, hatchedEggs: 9 },
+  { id: "h7", chamber: "Chamber Five", modeName: "Turkey", startDate: "2026-05-18", endDate: "2026-06-15", totalEggs: 18, fertileEggs: 17, hatchedEggs: 15 },
+  { id: "h8", chamber: "Chamber Nine", modeName: "Quail", startDate: "2026-06-25", endDate: "2026-07-13", totalEggs: 22, fertileEggs: 20, hatchedEggs: 18 },
+  { id: "h9", chamber: "Chamber Ten", modeName: "Duck", startDate: "2026-05-05", endDate: "2026-06-02", totalEggs: 14, fertileEggs: 13, hatchedEggs: 12 },
+  { id: "h10", chamber: "Chamber Seven", modeName: "Broiler", startDate: "2026-06-08", endDate: "2026-06-29", totalEggs: 16, fertileEggs: 15, hatchedEggs: 14 },
+  { id: "h11", chamber: "Chamber Eleven", modeName: "Swan", startDate: "2026-03-20", endDate: "2026-04-25", totalEggs: 10, fertileEggs: 9, hatchedEggs: 7 },
+  { id: "h12", chamber: "Chamber Twelve", modeName: "Quail", startDate: "2026-07-01", endDate: "2026-07-19", totalEggs: 20, fertileEggs: 19, hatchedEggs: 18 },
+] as const satisfies readonly HatchRecord[];
+
+export function createHatchRecordFixtures(): HatchRecord[] {
+  return hatchRecordFixtures.map((record) => ({ ...record }));
+}

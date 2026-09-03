@@ -1,15 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { ModeDTOSchema, type Result, resultMessage } from "../app/data/dto";
+import { ModeDTOSchema, modeToDTO, type Result, resultMessage } from "../app/data/dto";
+import { createModeFixtures } from "../app/data/fixtures/modes";
+
+const initialModes = createModeFixtures();
 
 const validBroiler = {
-  id: "broiler", name: "Broiler", builtIn: true,
-  targetTemp: { min: 37.5, max: 37.8 }, targetHumidity: { min: 55, max: 65 },
-  incubationDays: 21, defaultTurnInterval: 120, version: 1
+  id: "broiler", name: "Broiler", built_in: true,
+  target_temp_c: { min: 37.5, max: 37.8 }, target_humidity_pct: { min: 55, max: 65 },
+  incubation_days: 21, default_turn_interval_min: 240, version: 1
 };
 
 describe("ModeDTO", () => {
   it("rejects invalid incubationDays 5", () => {
-    expect(() => ModeDTOSchema.parse({ ...validBroiler, incubationDays: 5 })).toThrow();
+    expect(() => ModeDTOSchema.parse({ ...validBroiler, incubation_days: 5 })).toThrow();
   });
   it("accepts valid Broiler 21", () => {
     expect(ModeDTOSchema.parse(validBroiler)).toBeDefined();
@@ -18,6 +21,14 @@ describe("ModeDTO", () => {
     const parsed = ModeDTOSchema.parse(validBroiler);
     expect(parsed.temp_hysteresis_c).toBe(0.2);
     expect(parsed.humidity_hysteresis_pct).toBe(3);
+  });
+  it("converts domain hours to explicit wire minutes", () => {
+    expect(modeToDTO(initialModes[0]).default_turn_interval_min).toBe(240);
+  });
+  it("parses every current mode fixture through the wire mapper", () => {
+    for (const mode of initialModes) {
+      expect(ModeDTOSchema.safeParse(modeToDTO(mode)).success).toBe(true);
+    }
   });
   it("Result ok shape carries data", () => {
     const r: Result<typeof validBroiler> = { ok: true, data: validBroiler };

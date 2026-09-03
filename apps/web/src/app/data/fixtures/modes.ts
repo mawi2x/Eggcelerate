@@ -1,0 +1,22 @@
+import type { Mode } from "../../domain/types";
+
+export const modeFixtures = [
+  { id: "broiler", name: "Broiler", builtIn: true, targetTemp: { min: 37.5, max: 37.8 }, targetHumidity: { min: 55, max: 60 }, incubationDays: 21, defaultTurnInterval: 4 },
+  { id: "duck", name: "Duck", builtIn: true, targetTemp: { min: 37.4, max: 37.6 }, targetHumidity: { min: 62, max: 68 }, incubationDays: 28, defaultTurnInterval: 6 },
+  { id: "quail", name: "Quail", builtIn: true, targetTemp: { min: 37.5, max: 37.8 }, targetHumidity: { min: 55, max: 60 }, incubationDays: 18, defaultTurnInterval: 4 },
+  { id: "goose", name: "Goose", builtIn: true, targetTemp: { min: 37.3, max: 37.6 }, targetHumidity: { min: 60, max: 65 }, incubationDays: 30, defaultTurnInterval: 6 },
+  { id: "turkey", name: "Turkey", builtIn: true, targetTemp: { min: 37.5, max: 37.8 }, targetHumidity: { min: 55, max: 60 }, incubationDays: 28, defaultTurnInterval: 4 },
+  { id: "pheasant", name: "Pheasant", builtIn: true, targetTemp: { min: 37.5, max: 37.8 }, targetHumidity: { min: 55, max: 60 }, incubationDays: 24, defaultTurnInterval: 6 },
+  { id: "peafowl", name: "Peafowl", builtIn: true, targetTemp: { min: 37.2, max: 37.5 }, targetHumidity: { min: 60, max: 65 }, incubationDays: 28, defaultTurnInterval: 6 },
+  { id: "swan", name: "Swan", builtIn: true, targetTemp: { min: 37.2, max: 37.5 }, targetHumidity: { min: 65, max: 72 }, incubationDays: 36, defaultTurnInterval: 8 },
+  { id: "broiler-hh", name: "Broiler High-Humidity", builtIn: false, targetTemp: { min: 37.5, max: 37.8 }, targetHumidity: { min: 62, max: 68 }, incubationDays: 21, defaultTurnInterval: 4 },
+  { id: "rapid-quail", name: "Rapid Quail Experimental", builtIn: false, targetTemp: { min: 37.8, max: 38.2 }, targetHumidity: { min: 50, max: 55 }, incubationDays: 17, defaultTurnInterval: 3 },
+] as const satisfies readonly Mode[];
+
+export function createModeFixtures(): Mode[] {
+  return modeFixtures.map((mode) => ({
+    ...mode,
+    targetTemp: { ...mode.targetTemp },
+    targetHumidity: { ...mode.targetHumidity },
+  }));
+}

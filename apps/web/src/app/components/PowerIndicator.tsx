@@ -4,7 +4,7 @@ import {
   BatteryMedium,
   BatteryWarning,
 } from "@phosphor-icons/react";
-import { PowerSource } from "../data/mockData";
+import type { PowerSource } from "../domain/types";
 
 /**
  * Compact power pill: charging, normal battery, or critical.

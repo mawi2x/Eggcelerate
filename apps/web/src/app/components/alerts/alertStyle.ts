@@ -1,5 +1,5 @@
 import { AlertOctagon, AlertTriangle, Info } from "lucide-react";
-import { AlertSeverity } from "../../data/mockData";
+import type { AlertSeverity } from "../../domain/types";
 
 /** Icon tile treatment by severity. */
 export const severityStyle: Record<

@@ -16,7 +16,7 @@ import {
 import { WifiSlash } from "@phosphor-icons/react";
 import { GaugeDial } from "../GaugeDial";
 import { WaterDroplet } from "../WaterDroplet";
-import { Incubator, Mode, Reading, CandlingCheckpoint } from "../../data/mockData";
+import type { CandlingCheckpoint, Incubator, Mode, Reading } from "../../domain/types";
 import {
   RUST, BORDER, TEXT, MUTED,
   OK, WARN, CRIT, NEUTRAL,
