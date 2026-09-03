@@ -445,6 +445,7 @@ export function IncubatorsScreen({
           {/* Floating Vertical Dot Track on Mobile (shows incubator count and scroll position) */}
           {sorted.length > 1 && (
             <div
+              role="group"
               className="fixed right-1 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center rounded-full px-0.5 py-1.5 md:hidden"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.74)",
@@ -462,7 +463,7 @@ export function IncubatorsScreen({
                     key={unit.id}
                     type="button"
                     onClick={() => scrollToChamber(idx)}
-                    className="flex h-[18px] w-5 cursor-pointer items-center justify-center rounded-full p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                    className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                     aria-label={`Scroll to ${unit.name} (${idx + 1} of ${sorted.length})`}
                     aria-current={isActive ? "true" : undefined}
                   >

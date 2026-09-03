@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { CandlingCheckpoint } from "../app/domain/types";
 import {
   formatCheckpointTiming,
   selectPendingCheckpoint,
 } from "../app/features/candling/selectors";
-import type { CandlingCheckpoint } from "../app/domain/types";
 
 const candling: CandlingCheckpoint[] = [
   { label: "First candling", dayRange: "Day 5 to 7", day: 6 },
@@ -29,9 +29,17 @@ describe("selectPendingCheckpoint", () => {
 
 describe("formatCheckpointTiming", () => {
   it("formats overdue, due-today, upcoming, and complete", () => {
-    expect(formatCheckpointTiming({ ...candling[0], day: 6 }, 9)).toBe("3 days overdue");
-    expect(formatCheckpointTiming({ ...candling[0], day: 6 }, 6)).toBe("Due today");
-    expect(formatCheckpointTiming({ ...candling[1], day: 13 }, 9)).toBe("In 4 days");
-    expect(formatCheckpointTiming(null, 20)).toBe("All scheduled checks completed");
+    expect(formatCheckpointTiming({ ...candling[0], day: 6 }, 9)).toBe(
+      "3 days overdue",
+    );
+    expect(formatCheckpointTiming({ ...candling[0], day: 6 }, 6)).toBe(
+      "Due today",
+    );
+    expect(formatCheckpointTiming({ ...candling[1], day: 13 }, 9)).toBe(
+      "In 4 days",
+    );
+    expect(formatCheckpointTiming(null, 20)).toBe(
+      "All scheduled checks completed",
+    );
   });
 });

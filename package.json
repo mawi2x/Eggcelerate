@@ -5,11 +5,17 @@
   "scripts": {
     "dev:web": "pnpm --filter eggcelerate-ui dev",
     "build:web": "pnpm --filter eggcelerate-ui build",
-    "typecheck:web": "pnpm --filter eggcelerate-ui typecheck"
+    "typecheck:web": "pnpm --filter eggcelerate-ui typecheck",
+    "test:web": "pnpm --filter eggcelerate-ui test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
   },
   "pnpm": {
     "overrides": {
       "vite": "6.3.5"
     }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12"
   }
 }

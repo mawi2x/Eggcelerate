@@ -13,6 +13,9 @@ export function selectFilteredIncubators(
     if (opts.status !== "all" && u.status !== opts.status) return false;
     if (opts.modeId !== "all" && u.modeId !== opts.modeId) return false;
     if (!q) return true;
-    return u.name.toLowerCase().includes(q) || modeOf(u.modeId).name.toLowerCase().includes(q);
+    return (
+      u.name.toLowerCase().includes(q) ||
+      modeOf(u.modeId).name.toLowerCase().includes(q)
+    );
   });
 }

@@ -7,10 +7,12 @@ export function selectPendingCheckpoint(
 ): CandlingCheckpoint | null {
   return (
     candling.find(
-      (checkpoint) => checkpoint.day <= currentDay && !effectiveCandled[checkpoint.day],
+      (checkpoint) =>
+        checkpoint.day <= currentDay && !effectiveCandled[checkpoint.day],
     ) ??
     candling.find(
-      (checkpoint) => checkpoint.day > currentDay && !effectiveCandled[checkpoint.day],
+      (checkpoint) =>
+        checkpoint.day > currentDay && !effectiveCandled[checkpoint.day],
     ) ??
     null
   );

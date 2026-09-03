@@ -537,6 +537,7 @@ export function CandlingLogsScreen({
             {/* Floating Vertical Dot Track on Mobile (shows candling chamber count and scroll position) */}
           {rows.length > 1 && (
             <div
+              role="group"
               className="fixed right-1.5 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center gap-1 rounded-full px-1 py-2 md:hidden"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.92)",

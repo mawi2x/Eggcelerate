@@ -9,7 +9,11 @@ const units = createIncubatorFixtures(modes, Date.UTC(2026, 8, 3));
 describe("selectFilteredIncubators", () => {
   it("returns all units when filters are open and query is blank", () => {
     expect(
-      selectFilteredIncubators(units, modes, { search: "   ", status: "all", modeId: "all" }),
+      selectFilteredIncubators(units, modes, {
+        search: "   ",
+        status: "all",
+        modeId: "all",
+      }),
     ).toHaveLength(units.length);
   });
 
@@ -17,7 +21,11 @@ describe("selectFilteredIncubators", () => {
     const expected = units.filter((u) => u.status === "alert").length;
     expect(expected).toBeGreaterThan(0);
     expect(
-      selectFilteredIncubators(units, modes, { search: "", status: "alert", modeId: "all" }),
+      selectFilteredIncubators(units, modes, {
+        search: "",
+        status: "alert",
+        modeId: "all",
+      }),
     ).toHaveLength(expected);
   });
 
@@ -37,10 +45,15 @@ describe("selectFilteredIncubators", () => {
       modeId: "all",
     });
     expect(result.length).toBeGreaterThan(0);
-    expect(result.every((u) => {
-      const mode = modes.find((m) => m.id === u.modeId) ?? modes[0];
-      return u.name.toLowerCase().includes("duck") || mode.name.toLowerCase().includes("duck");
-    })).toBe(true);
+    expect(
+      result.every((u) => {
+        const mode = modes.find((m) => m.id === u.modeId) ?? modes[0];
+        return (
+          u.name.toLowerCase().includes("duck") ||
+          mode.name.toLowerCase().includes("duck")
+        );
+      }),
+    ).toBe(true);
   });
 
   it("combines status, mode, and query", () => {
@@ -49,6 +62,8 @@ describe("selectFilteredIncubators", () => {
       status: "optimal",
       modeId: "broiler",
     });
-    expect(result.every((u) => u.status === "optimal" && u.modeId === "broiler")).toBe(true);
+    expect(
+      result.every((u) => u.status === "optimal" && u.modeId === "broiler"),
+    ).toBe(true);
   });
 });

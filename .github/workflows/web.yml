@@ -1,0 +1,26 @@
+name: web
+
+on:
+  push:
+    branches: ["experiment", "main"]
+    paths: ["apps/web/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "biome.json"]
+  pull_request:
+    paths: ["apps/web/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "biome.json"]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter eggcelerate-ui typecheck
+      - run: pnpm --filter eggcelerate-ui test
+      - run: pnpm --filter eggcelerate-ui build
+      - run: git diff --check
