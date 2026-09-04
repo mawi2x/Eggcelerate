@@ -1,0 +1,180 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - button [expanded]
+        - generic:
+          - generic: Eggcelerate
+          - button [expanded]
+        - navigation:
+          - button:
+            - generic: Overview
+          - button:
+            - generic: Incubators
+          - button:
+            - generic: Candling Logs
+          - button:
+            - generic: Trends
+          - button:
+            - generic: Alerts
+            - generic: "5"
+        - generic:
+          - button:
+            - generic: Settings
+        - generic:
+          - generic: FC
+          - generic:
+            - generic: Farmer Juan
+            - generic: Sunrise Poultry
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - button:
+                    - generic: Back to Incubators
+                - button:
+                  - generic: "5"
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=1]: Chamber Twelve
+                    - generic: Day 22 of 21
+                    - generic: Normal
+                  - paragraph: Broiler High-Humidity
+          - generic:
+            - generic:
+              - generic:
+                - paragraph: Past Hatch Day
+                - paragraph: Some eggs may still be hatching. Finish the cycle when ready.
+              - button: Finish Cycle
+            - generic:
+              - generic:
+                - tablist:
+                  - tab [selected]:
+                    - generic: Live Monitor
+                  - tab:
+                    - generic: Candling & Inspection
+                  - tab:
+                    - generic: Device Settings
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Incubation Timeline
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: Today
+                            - generic: DAY 22
+                        - generic:
+                          - generic: 1st Candling
+                          - generic: DAY 6
+                        - generic:
+                          - generic: 2nd Candling
+                          - generic: DAY 13
+                        - generic:
+                          - generic: Lockdown
+                          - generic: DAY 18
+                    - generic:
+                      - generic: DAY 1
+                      - generic: DAY 21
+                  - generic:
+                    - generic:
+                      - img:
+                        - generic: 37.5°C
+                        - text: Temperature
+                      - generic:
+                        - generic: Safe range
+                        - generic: 37.5 to 37.8°C
+                    - generic:
+                      - img:
+                        - generic: 65.0%
+                        - text: Humidity
+                      - generic:
+                        - generic: Safe range
+                        - generic: 62 to 68% RH
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: Normal
+                          - generic: Water status
+                      - generic:
+                        - generic: Water status
+                        - generic: Sufficient
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Chamber status
+                      - paragraph: Live systems, power, and connectivity
+                  - generic:
+                    - generic:
+                      - generic:
+                        - paragraph: Heating element
+                        - paragraph: Heating
+                    - generic:
+                      - generic:
+                        - paragraph: Mist maker
+                        - paragraph: Misting
+                    - generic:
+                      - generic:
+                        - paragraph: Circulation fan
+                        - paragraph: Active
+                    - generic:
+                      - generic:
+                        - paragraph: Power
+                        - paragraph: Grid power
+                    - generic:
+                      - generic:
+                        - paragraph: Connection
+                        - paragraph: Connected
+                    - generic:
+                      - generic:
+                        - paragraph: Battery
+                        - paragraph: 100%
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: History & trends
+                      - paragraph: Past readings are available when you need more context
+                    - generic:
+                      - button: Full trends
+                  - group:
+                    - generic:
+                      - generic:
+                        - paragraph: Cycle exceptions
+                        - generic: Review history
+                      - paragraph:
+                        - generic: "Temperature went low: dropped to 37.5°C"
+                        - generic: Humidity stayed within target
+      - region "Notifications alt+T"
+      - generic:
+        - button:
+          - generic: "?"
+  - dialog [ref=e267]:
+    - generic [ref=e268]:
+      - heading "Finish Cycle Chamber Twelve" [level=2] [ref=e269]:
+        - generic [ref=e270]: Finish Cycle
+        - generic [ref=e271]: Chamber Twelve
+      - paragraph [ref=e272]: "Enter the final chick count for this batch. Eggs loaded: 37."
+    - generic [ref=e273]:
+      - generic [ref=e274]:
+        - generic [ref=e275]: Chicks hatched
+        - textbox "Chicks hatched" [active] [ref=e276]:
+          - /placeholder: "0"
+          - text: "0"
+      - generic [ref=e277]:
+        - generic [ref=e278]:
+          - text: Hatchability
+          - generic [ref=e279]: 0 of 31 fertile eggs hatched. 37 unhatched.
+        - generic [ref=e280]: 0%
+    - generic [ref=e281]:
+      - button "Cancel" [ref=e282] [cursor=pointer]
+      - button "Save & Reset" [ref=e283] [cursor=pointer]
+    - button "Close" [ref=e284] [cursor=pointer]

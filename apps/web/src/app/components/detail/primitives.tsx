@@ -4,6 +4,7 @@ import { InfoIcon } from "../icons/CircleInfoIcon";
 import { ExclamationIcon } from "../icons/ExclamationIcon";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { Card, CardContent } from "../ui/card";
+import { Typography } from "../ui/typography";
 import { BORDER, CRIT, MUTED, OK, SURFACE, TEXT, WARN } from "./types";
 export function StatusPill({
   tone,
@@ -66,41 +67,32 @@ export function SectionCard({
     >
       <CardContent className="p-5">
         <div
-          className={`flex flex-wrap items-center gap-3 min-h-[32px] ${divider ? "mb-3 border-b pb-3" : "mb-4"}`}
+          className={`flex items-start justify-between gap-3 min-h-[32px] ${divider ? "mb-3 border-b pb-3" : "mb-4"}`}
           style={{
             ...(centered
               ? { justifyContent: "center", textAlign: "center" }
-              : { justifyContent: "space-between" }),
+              : {}),
             ...(divider ? { borderColor: "#EFE9DC" } : {}),
           }}
         >
-          <div>
-            <h3
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--type-heading-sm)",
-                fontWeight: "var(--weight-semibold)",
-                lineHeight: "var(--leading-snug)",
-                color: "var(--text-primary)",
-              }}
+          <div className="min-w-0 flex-1">
+            <Typography
+              as="h3"
+              variant="headingSmall"
+              style={{ color: "var(--text-primary)" }}
             >
               {title}
-            </h3>
+            </Typography>
             {subtitle && (
-              <p
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-caption)",
-                  fontWeight: "var(--weight-regular)",
-                  lineHeight: "var(--leading-normal)",
-                  color: "var(--text-secondary)",
-                }}
+              <Typography
+                variant="caption"
+                style={{ color: "var(--text-secondary)" }}
               >
                 {subtitle}
-              </p>
+              </Typography>
             )}
           </div>
-          {action}
+          {action && <div className="shrink-0 pt-0.5">{action}</div>}
         </div>
         {children}
       </CardContent>

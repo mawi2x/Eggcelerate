@@ -1,4 +1,6 @@
 // Shared visual language for the Settings master-detail panels.
+import { Typography } from "../ui/typography";
+
 export const RUST = "var(--brand-primary)";
 export const SURFACE = "var(--surface-card)";
 export const BORDER = "var(--border-subtle)";
@@ -20,17 +22,9 @@ export const labelStyle = { color: "#57534E", fontSize: 13, fontWeight: 600 };
 /** Uppercase micro-heading that opens a group of rows. */
 export function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p
-      style={{
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: "0.06em",
-        textTransform: "uppercase",
-        color: MUTED,
-      }}
-    >
+    <Typography variant="label" style={{ color: MUTED }}>
       {children}
-    </p>
+    </Typography>
   );
 }
 
@@ -44,20 +38,12 @@ export function PanelHeader({
 }) {
   return (
     <div className="pb-5" style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-      <h2
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: "var(--type-panel-title)",
-          fontWeight: "var(--weight-bold)",
-          lineHeight: "var(--leading-snug)",
-          color: TEXT,
-        }}
-      >
+      <Typography as="h2" variant="panelTitle" style={{ color: TEXT }}>
         {title}
-      </h2>
-      <p className="mt-1" style={{ color: MUTED, fontSize: 13 }}>
+      </Typography>
+      <Typography variant="bodySmall" className="mt-1" style={{ color: MUTED }}>
         {description}
-      </p>
+      </Typography>
     </div>
   );
 }

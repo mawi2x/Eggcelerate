@@ -1,4 +1,4 @@
-import { Droplet } from "lucide-react";
+import { DropHalfBottom, DropSimple } from "@phosphor-icons/react";
 
 // Binary water sensor styled as a sibling to GaugeDial. The float switch only
 // gives us sufficient/low, so the two arc halves communicate state rather than
@@ -72,19 +72,27 @@ export function WaterDroplet({ ok, size = 120 }: WaterDropletProps) {
           className="pointer-events-none absolute inset-0 flex flex-col items-center"
           style={{ paddingTop: size * 0.255 }}
         >
-          <Droplet
-            aria-hidden="true"
-            size={Math.round(size * 0.17)}
-            strokeWidth={2.4}
-            color={ok ? OK : ALERT}
-            fill={ok ? "#DCFCE7" : "#FEE2E2"}
-          />
+          {ok ? (
+            <DropSimple
+              aria-hidden="true"
+              size={Math.round(size * 0.17)}
+              weight="fill"
+              color={OK}
+            />
+          ) : (
+            <DropHalfBottom
+              aria-hidden="true"
+              size={Math.round(size * 0.17)}
+              weight="fill"
+              color={ALERT}
+            />
+          )}
           <span
             style={{
               color: TEXT,
               fontFamily: "var(--font-display)",
               fontSize: Math.round(size * 0.14),
-              fontWeight: 700,
+              fontWeight: "var(--weight-bold)",
               lineHeight: 1.05,
               marginTop: 1,
             }}
@@ -95,7 +103,7 @@ export function WaterDroplet({ ok, size = 120 }: WaterDropletProps) {
             style={{
               color: MUTED,
               fontFamily: "var(--font-body)",
-              fontSize: Math.max(9, Math.round(size * 0.07)),
+              fontSize: size >= 120 ? 11 : Math.max(9, Math.round(size * 0.07)),
               fontWeight: 600,
               lineHeight: 1.1,
               marginTop: 1,
@@ -105,12 +113,20 @@ export function WaterDroplet({ ok, size = 120 }: WaterDropletProps) {
           </span>
         </div>
       </div>
-      <p
-        className="mt-1 text-center"
-        style={{ fontSize: 12, color: ok ? OK : ALERT }}
-      >
-        {ok ? "Status: Sufficient" : "Status: Refill Needed"}
-      </p>
+      <div className="mt-1 flex flex-col items-center text-center">
+        <span
+          className="text-(length:--type-label-micro) font-bold uppercase tracking-wider sm:text-(length:--type-label-compact)"
+          style={{ color: MUTED, opacity: 0.8 }}
+        >
+          Water status
+        </span>
+        <span
+          className="text-(length:--type-label-compact) font-semibold sm:text-(length:--type-caption)"
+          style={{ color: ok ? OK : ALERT }}
+        >
+          {ok ? "Sufficient" : "Refill Needed"}
+        </span>
+      </div>
     </div>
   );
 }

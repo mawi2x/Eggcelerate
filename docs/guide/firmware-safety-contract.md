@@ -49,5 +49,5 @@ against the simulator.
 
 - System Architecture Guide §8 (safety hierarchy, provisional values).
 - ADR-001 (MQTT transport), ADR-002 (FastAPI backend), ADR-005 (system
-  overview) — local-only ADRs under `docs/docs/adr/`.
+  overview) — local-only ADRs under `docs/archive/adr/`.
 - No firmware or simulator exists in the repository yet (planned).

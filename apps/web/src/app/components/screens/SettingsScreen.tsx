@@ -4,9 +4,13 @@ import { toast } from "sonner";
 import type { SettingsPreferences } from "../../data/settings";
 import type { Incubator, Mode } from "../../domain/types";
 import { FarmAccountPanel } from "../settings/FarmAccountPanel";
-import { HardwarePanel } from "../settings/HardwarePanel";
+import {
+  HardwarePanel,
+  type HardwarePanelView,
+} from "../settings/HardwarePanel";
 import { ModeLibraryPanel } from "../settings/ModeLibraryPanel";
 import {
+  type NotificationPanelView,
   NotificationsPanel,
   validateNotificationPreferences,
 } from "../settings/NotificationsPanel";
@@ -44,6 +48,10 @@ export function SettingsScreen({
   units,
 }: Props) {
   const [category, setCategory] = useState<CategoryId>("modes");
+  const [notificationView, setNotificationView] =
+    useState<NotificationPanelView>("delivery");
+  const [hardwareView, setHardwareView] =
+    useState<HardwarePanelView>("devices");
   const [draft, setDraft] = useState(settings);
   useEffect(() => setDraft(settings), [settings]);
   const isDirty = useMemo(
@@ -63,6 +71,7 @@ export function SettingsScreen({
     if (notificationError) {
       toast.error(notificationError);
       setCategory("notifications");
+      setNotificationView("delivery");
       return;
     }
     if (!(await onSaveSettings(draft))) return;
@@ -91,10 +100,11 @@ export function SettingsScreen({
                   onClick={() => setCategory(id)}
                   className={`flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${isActive ? "border-[var(--brand-primary-soft)] bg-[var(--local-nav-selected-bg)] text-[var(--local-nav-selected-fg)]" : "border-transparent bg-transparent text-[var(--text-muted)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"}`}
                   style={{
-                    height: 40,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: "0.05em",
+                    height: "var(--control-height-toolbar)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-caption)",
+                    fontWeight: "var(--weight-bold)",
+                    letterSpacing: "var(--tracking-label)",
                   }}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -133,6 +143,8 @@ export function SettingsScreen({
               onChange={(notifications) =>
                 setDraft((current) => ({ ...current, notifications }))
               }
+              view={notificationView}
+              onViewChange={setNotificationView}
             />
           )}
           {category === "account" && (
@@ -154,7 +166,13 @@ export function SettingsScreen({
               }
             />
           )}
-          {category === "hardware" && <HardwarePanel units={units} />}
+          {category === "hardware" && (
+            <HardwarePanel
+              units={units}
+              view={hardwareView}
+              onViewChange={setHardwareView}
+            />
+          )}
         </div>
 
         <div
@@ -190,7 +208,11 @@ export function SettingsScreen({
             </Button>
             <Button
               className="rounded-xl px-6"
-              style={{ backgroundColor: RUST, color: "#fff", minHeight: 40 }}
+              style={{
+                backgroundColor: RUST,
+                color: "#fff",
+                minHeight: "var(--control-height-toolbar)",
+              }}
               disabled={!isDirty || isSaving}
               aria-busy={isSaving}
               onClick={() => void save()}

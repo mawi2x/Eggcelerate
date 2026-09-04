@@ -1,19 +1,18 @@
-import { defineConfig } from 'vite'
-import path from 'path'
-import tailwindcss from '@tailwindcss/vite'
-import react from '@vitejs/plugin-react'
-
+import path from "node:path";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 function figmaAssetResolver() {
   return {
-    name: 'figma-asset-resolver',
+    name: "figma-asset-resolver",
     resolveId(id) {
-      if (id.startsWith('figma:asset/')) {
-        const filename = id.replace('figma:asset/', '')
-        return path.resolve(__dirname, 'src/assets', filename)
+      if (id.startsWith("figma:asset/")) {
+        const filename = id.replace("figma:asset/", "");
+        return path.resolve(__dirname, "src/assets", filename);
       }
     },
-  }
+  };
 }
 
 export default defineConfig({
@@ -27,30 +26,37 @@ export default defineConfig({
   resolve: {
     alias: {
       // Alias @ to the src directory
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
-  assetsInclude: ['**/*.svg', '**/*.csv'],
+  assetsInclude: ["**/*.svg", "**/*.csv"],
   server: {
-    allowedHosts: ['.trycloudflare.com'],
+    allowedHosts: [".trycloudflare.com"],
   },
   build: {
     chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom") || id.includes("node_modules/scheduler")) {
+          if (
+            id.includes("node_modules/react") ||
+            id.includes("node_modules/react-dom") ||
+            id.includes("node_modules/scheduler")
+          ) {
             return "vendor";
           }
           // Keep recharts inside TrendsScreen lazy chunk to avoid oversized 559k vendor chunk
           // motion is unused currently - keep for future but don't force empty chunk
-          if (id.includes("node_modules/motion") || id.includes("node_modules/framer-motion")) {
+          if (
+            id.includes("node_modules/motion") ||
+            id.includes("node_modules/framer-motion")
+          ) {
             return "motion";
           }
         },
       },
     },
   },
-})
+});

@@ -80,8 +80,16 @@ export function selectSortedIncubators(
     });
   };
 
+  // Action-needed chambers pin to the top regardless of sort key or
+  // direction: completed (harvest now — time-critical) first, then ready
+  // (setup needed). Everything else keeps the requested ordering.
+  const actionRank = (u: Incubator) =>
+    u.cyclePhase === "completed" ? 0 : u.cyclePhase === "ready" ? 1 : 2;
+
   // Copy first — `filtered` is derived state and must not be mutated in place.
   return [...filtered].sort((a, b) => {
+    const pin = actionRank(a) - actionRank(b);
+    if (pin !== 0) return pin;
     const dir = opts.sortAsc ? 1 : -1;
     if (opts.sort === "progress") {
       return (

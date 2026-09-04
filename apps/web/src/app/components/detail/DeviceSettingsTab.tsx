@@ -93,40 +93,48 @@ export function DeviceSettingsTab({
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
       {/* Left Sub-Nav Card */}
       <nav
-        className="w-full max-w-none shrink-0 rounded-2xl p-4 lg:sticky lg:top-6 lg:max-w-[240px]"
+        className="w-full max-w-none shrink-0 rounded-2xl p-1.5 sm:p-2 border border-[var(--border-default)] bg-[var(--surface-card)] lg:sticky lg:top-6 lg:max-w-[240px] lg:p-4"
         style={{
-          backgroundColor: "var(--surface-card)",
           borderRadius: 16,
-          padding: 16,
-          border: "1px solid var(--border-default)",
         }}
         aria-label="Device settings"
       >
-        <ul className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+        <ul className="grid grid-cols-3 gap-1 lg:flex lg:flex-col lg:gap-1">
           {[
             {
               id: "mode" as const,
               label: "Incubation mode",
+              mobileLabel: "Mode",
               Icon: IncubatingIcon,
             },
             {
               id: "turning" as const,
               label: "Turning schedule",
+              mobileLabel: "Turning",
               Icon: RotateCw,
             },
-            { id: "device" as const, label: "Device & connection", Icon: Zap },
-          ].map(({ id, label, Icon }) => {
+            {
+              id: "device" as const,
+              label: "Device & connection",
+              mobileLabel: "Device",
+              Icon: Zap,
+            },
+          ].map(({ id, label, mobileLabel, Icon }) => {
             const isActive = settingTab === id;
             return (
-              <li key={id} className="min-w-0 shrink-0 lg:shrink lg:w-full">
+              <li key={id} className="min-w-0 w-full">
                 <button
                   type="button"
                   onClick={() => setSettingTab(id)}
-                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${isActive ? "border-[var(--brand-primary-soft)] bg-[var(--local-nav-selected-bg)] text-[var(--local-nav-selected-fg)]" : "border-transparent bg-transparent text-[var(--text-primary)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"}`}
+                  className={`flex w-full cursor-pointer items-center justify-center lg:justify-start gap-1.5 sm:gap-2.5 rounded-xl border px-2 sm:px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${
+                    isActive
+                      ? "border-[var(--brand-primary-soft)] bg-[var(--local-nav-selected-bg)] text-[var(--local-nav-selected-fg)]"
+                      : "border-transparent bg-transparent text-[var(--text-primary)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"
+                  }`}
                   style={{
-                    height: 40,
-                    fontSize: 13,
-                    fontWeight: 700,
+                    height: "var(--control-height-toolbar)",
+                    fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)",
+                    fontWeight: "var(--weight-bold)",
                     whiteSpace: "nowrap",
                   }}
                   aria-current={isActive ? "page" : undefined}
@@ -141,9 +149,8 @@ export function DeviceSettingsTab({
                         : "var(--text-primary)",
                     }}
                   />
-                  <span className="min-w-0 truncate" title={label}>
-                    {label}
-                  </span>
+                  <span className="truncate lg:hidden">{mobileLabel}</span>
+                  <span className="hidden truncate lg:inline">{label}</span>
                 </button>
               </li>
             );
@@ -180,7 +187,7 @@ export function DeviceSettingsTab({
               </h2>
               <p
                 className="mt-1"
-                style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}
+                style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-regular)", color: "#6E6259" }}
               >
                 View target temperature, humidity, and candling schedule for the
                 active species preset.
@@ -208,7 +215,7 @@ export function DeviceSettingsTab({
                     />
                   </span>
                   <div className="min-w-0">
-                    <p style={{ color: MUTED, fontSize: 11, fontWeight: 700 }}>
+                    <p style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)" }}>
                       Active preset
                     </p>
                     <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
@@ -228,8 +235,8 @@ export function DeviceSettingsTab({
                       <span
                         className="shrink-0 rounded-full px-2 py-0.5"
                         style={{
-                          fontSize: 11,
-                          fontWeight: 700,
+                          fontFamily: "var(--font-body)", fontSize: "var(--type-label)",
+                          fontWeight: "var(--weight-bold)",
                           backgroundColor: "#F5EFE6",
                           color: "#8B3A1C",
                         }}
@@ -254,8 +261,8 @@ export function DeviceSettingsTab({
                       style={{
                         borderColor: "#D8D0C0",
                         backgroundColor: "#FFFFFF",
-                        fontSize: 13,
-                        fontWeight: 700,
+                        fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)",
+                        fontWeight: "var(--weight-bold)",
                       }}
                     >
                       <SelectValue />
@@ -274,8 +281,8 @@ export function DeviceSettingsTab({
                     style={{
                       backgroundColor: "#EFE9DC",
                       color: MUTED,
-                      fontSize: 12,
-                      fontWeight: 700,
+                      fontFamily: "var(--font-body)", fontSize: "var(--type-caption)",
+                      fontWeight: "var(--weight-bold)",
                     }}
                   >
                     <LockKeyhole size={14} aria-hidden="true" /> Locked during
@@ -287,7 +294,7 @@ export function DeviceSettingsTab({
               {!isReady && (
                 <p
                   className="flex items-start gap-2"
-                  style={{ fontSize: 12, color: MUTED }}
+                  style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: MUTED }}
                 >
                   <LockKeyhole
                     size={14}
@@ -316,7 +323,7 @@ export function DeviceSettingsTab({
                     value: `${mode.targetHumidity.min} to ${mode.targetHumidity.max}% RH`,
                   },
                   {
-                    label: "Turning cadence",
+                    label: "Turning schedule",
                     value: `Every ${mode.defaultTurnInterval} hours`,
                   },
                   {
@@ -332,7 +339,7 @@ export function DeviceSettingsTab({
                       borderColor: BORDER,
                     }}
                   >
-                    <dt style={{ color: MUTED, fontSize: 12 }}>{item.label}</dt>
+                    <dt style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)" }}>{item.label}</dt>
                     <dd
                       className="mt-1 tabular-nums"
                       style={{
@@ -357,7 +364,7 @@ export function DeviceSettingsTab({
                   })
                 }
                 className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg px-1 text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2"
-                style={{ fontSize: 13, fontWeight: 600 }}
+                style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)" }}
               >
                 Edit preset for future cycles{" "}
                 <ChevronRight size={14} aria-hidden="true" />
@@ -382,7 +389,7 @@ export function DeviceSettingsTab({
               </h2>
               <p
                 className="mt-1"
-                style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}
+                style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-regular)", color: "#6E6259" }}
               >
                 Configure automatic egg rotation intervals and manual turning
                 controls.
@@ -391,10 +398,10 @@ export function DeviceSettingsTab({
             <div className="pt-5 space-y-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>
+                  <p style={{ fontWeight: "var(--weight-semibold)", fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", color: TEXT }}>
                     Automatic turning
                   </p>
-                  <p style={{ color: MUTED, fontSize: 12 }}>
+                  <p style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)" }}>
                     Turn eggs on schedule automatically.
                   </p>
                 </div>
@@ -405,12 +412,12 @@ export function DeviceSettingsTab({
                 />
               </div>
               {turningStopped && (
-                <p style={{ fontSize: 12, color: MUTED }}>
+                <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: MUTED }}>
                   Turning is stopped during Lockdown and hatch phases.
                 </p>
               )}
               <div className="flex items-center justify-between gap-2">
-                <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)", color: TEXT }}>
                   Turn every
                 </span>
                 <Select
@@ -425,7 +432,7 @@ export function DeviceSettingsTab({
                     style={{
                       borderColor: "rgba(120,53,15,0.20)",
                       backgroundColor: SURFACE,
-                      fontSize: 13,
+                      fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)",
                     }}
                   >
                     <SelectValue />
@@ -443,7 +450,7 @@ export function DeviceSettingsTab({
                 <span
                   className="min-w-0 truncate"
                   style={{
-                    fontSize: 12,
+                    fontFamily: "var(--font-body)", fontSize: "var(--type-caption)",
                     color: next.overdue ? CRIT.fg : MUTED,
                   }}
                 >
@@ -482,7 +489,7 @@ export function DeviceSettingsTab({
               </h2>
               <p
                 className="mt-1"
-                style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}
+                style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-regular)", color: "#6E6259" }}
               >
                 Manage chamber hardware pairing, connectivity status, and power
                 telemetry.
@@ -530,11 +537,11 @@ export function DeviceSettingsTab({
                 }}
               >
                 <div className="flex items-center justify-between">
-                  <p style={{ fontSize: 12, color: MUTED }}>Battery</p>
+                  <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: MUTED }}>Battery</p>
                   <span
                     style={{
-                      fontSize: 13,
-                      fontWeight: 700,
+                      fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)",
+                      fontWeight: "var(--weight-bold)",
                       color: unit.batteryPct <= 25 ? CRIT.fg : TEXT,
                     }}
                   >
@@ -550,10 +557,10 @@ export function DeviceSettingsTab({
                   border: "1px solid #F2C94C",
                 }}
               >
-                <p style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>
+                <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body)", fontWeight: "var(--weight-bold)", color: TEXT }}>
                   Advanced
                 </p>
-                <p className="mt-1" style={{ fontSize: 12, color: MUTED }}>
+                <p className="mt-1" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: MUTED }}>
                   Stop the current cycle early if the batch must be removed
                   before the expected hatch period.
                 </p>

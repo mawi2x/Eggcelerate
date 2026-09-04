@@ -1,8 +1,13 @@
 import { useState } from "react";
 import type { NotificationPreferences } from "../../data/settings";
 import { Input } from "../ui/input";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "../ui/segmented-control";
 import { Switch } from "../ui/switch";
 import {
+  BORDER,
   CRIT,
   Field,
   GroupLabel,
@@ -11,6 +16,7 @@ import {
   MUTED,
   PanelHeader,
   SettingRow,
+  TEXT,
 } from "./tokens";
 
 // E.164: leading "+", country code 1-9, then 10-14 digits (max 15 total).
@@ -126,9 +132,13 @@ export function validateNotificationPreferences(
 export function NotificationsPanel({
   value,
   onChange,
+  view,
+  onViewChange,
 }: {
   value: NotificationPreferences;
   onChange: (value: NotificationPreferences) => void;
+  view: NotificationPanelView;
+  onViewChange: (view: NotificationPanelView) => void;
 }) {
   const [phoneErr, setPhoneErr] = useState<string | null>(null);
   const [emailErr, setEmailErr] = useState<string | null>(null);
@@ -170,124 +180,211 @@ export function NotificationsPanel({
         description="Choose how you're reached and which events are worth interrupting you for."
       />
 
-      <div className="pt-5">
-        <GroupLabel>Delivery Channels</GroupLabel>
-        <div className="mt-1">
-          <SettingRow
-            label="SMS"
-            hint="Text the number below for critical alerts only."
-            control={
-              <Switch
-                checked={value.sms}
-                onCheckedChange={(v) => onChange({ ...value, sms: Boolean(v) })}
-                aria-label="SMS delivery"
-              />
-            }
-          />
-          <SettingRow
-            label="Email"
-            hint="Full alert digest, including non-critical events."
-            control={
-              <Switch
-                checked={value.email}
-                onCheckedChange={(v) =>
-                  onChange({ ...value, email: Boolean(v) })
-                }
-                aria-label="Email delivery"
-              />
-            }
-          />
-        </div>
-        <p className="pt-3" style={{ color: MUTED, fontSize: 12 }}>
-          SMS and email delivery are provisional in this research demo.
-        </p>
+      <SegmentedControl
+        role="tablist"
+        aria-label="Notification settings sections"
+        className="mt-5 w-full sm:w-auto"
+      >
+        <SegmentedControlItem
+          id="notification-delivery-tab"
+          role="tab"
+          aria-selected={view === "delivery"}
+          aria-controls="notification-delivery-panel"
+          active={view === "delivery"}
+          size="toolbar"
+          className="flex-1 sm:flex-none"
+          onClick={() => onViewChange("delivery")}
+        >
+          Delivery & contacts
+        </SegmentedControlItem>
+        <SegmentedControlItem
+          id="notification-rules-tab"
+          role="tab"
+          aria-selected={view === "rules"}
+          aria-controls="notification-rules-panel"
+          active={view === "rules"}
+          size="toolbar"
+          className="flex-1 sm:flex-none"
+          onClick={() => onViewChange("rules")}
+        >
+          Alert rules
+        </SegmentedControlItem>
+      </SegmentedControl>
 
-        <div className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-2">
-          <Field label="Phone number" htmlFor="phone">
-            <Input
-              id="phone"
-              type="tel"
-              maxLength={16}
-              value={value.phone}
-              onChange={(e) => {
-                onChange({ ...value, phone: e.target.value });
-                if (phoneErr) setPhoneErr(null);
-              }}
-              onBlur={commitPhone}
-              placeholder="+1 555 000 1234"
-              className={inputClass}
-              style={{
-                ...inputStyle,
-                borderColor: phoneErr ? CRIT : inputStyle.borderColor,
-              }}
-            />
-            {phoneErr && (
-              <p
-                className="mt-1.5"
-                style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}
-              >
-                {phoneErr}
-              </p>
-            )}
-          </Field>
-          <Field label="Email address" htmlFor="email-addr">
-            <Input
-              id="email-addr"
-              type="email"
-              maxLength={254}
-              value={value.emailAddress}
-              onChange={(e) => {
-                onChange({ ...value, emailAddress: e.target.value });
-                if (emailErr) setEmailErr(null);
-              }}
-              onBlur={commitEmail}
-              placeholder="you@farm.com"
-              className={inputClass}
-              style={{
-                ...inputStyle,
-                borderColor: emailErr ? CRIT : inputStyle.borderColor,
-              }}
-            />
-            {emailErr && (
-              <p
-                className="mt-1.5"
-                style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}
-              >
-                {emailErr}
-              </p>
-            )}
-          </Field>
-        </div>
-      </div>
-
-      {triggerGroups.map((g) => (
-        <div key={g.id} className="pt-7">
-          <GroupLabel>{g.title}</GroupLabel>
-          <div className="mt-1">
-            {g.triggers.map((t) => (
-              <SettingRow
-                key={t.id}
-                label={t.label}
-                hint={t.hint || undefined}
-                control={
-                  <Switch
-                    checked={value.enabled[t.id]}
-                    onCheckedChange={(v) =>
-                      toggleNotif(t.id, t.toastLabel, Boolean(v))
-                    }
-                    aria-label={t.label}
+      {view === "delivery" ? (
+        <div
+          id="notification-delivery-panel"
+          role="tabpanel"
+          aria-labelledby="notification-delivery-tab"
+          className="pt-5"
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <section
+              className="rounded-2xl p-4"
+              style={{ border: `1px solid ${BORDER}` }}
+              aria-labelledby="sms-delivery-title"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h3
+                    id="sms-delivery-title"
+                    style={{ fontSize: 14, fontWeight: 700, color: TEXT }}
+                  >
+                    SMS alerts
+                  </h3>
+                  <p className="mt-1 text-xs" style={{ color: MUTED }}>
+                    Critical alerts only.
+                  </p>
+                </div>
+                <Switch
+                  checked={value.sms}
+                  onCheckedChange={(v) =>
+                    onChange({ ...value, sms: Boolean(v) })
+                  }
+                  aria-label="SMS delivery"
+                />
+              </div>
+              <div className="mt-5">
+                <Field label="Phone number" htmlFor="phone">
+                  <Input
+                    id="phone"
+                    type="tel"
+                    maxLength={16}
+                    value={value.phone}
+                    onChange={(e) => {
+                      onChange({ ...value, phone: e.target.value });
+                      if (phoneErr) setPhoneErr(null);
+                    }}
+                    onBlur={commitPhone}
+                    placeholder="+1 555 000 1234"
+                    className={inputClass}
+                    style={{
+                      ...inputStyle,
+                      borderColor: phoneErr ? CRIT : inputStyle.borderColor,
+                    }}
                   />
-                }
-              />
+                  {phoneErr && (
+                    <p
+                      className="mt-1.5"
+                      style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}
+                    >
+                      {phoneErr}
+                    </p>
+                  )}
+                </Field>
+              </div>
+            </section>
+
+            <section
+              className="rounded-2xl p-4"
+              style={{ border: `1px solid ${BORDER}` }}
+              aria-labelledby="email-delivery-title"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h3
+                    id="email-delivery-title"
+                    style={{ fontSize: 14, fontWeight: 700, color: TEXT }}
+                  >
+                    Email alerts
+                  </h3>
+                  <p className="mt-1 text-xs" style={{ color: MUTED }}>
+                    Full digest, including non-critical events.
+                  </p>
+                </div>
+                <Switch
+                  checked={value.email}
+                  onCheckedChange={(v) =>
+                    onChange({ ...value, email: Boolean(v) })
+                  }
+                  aria-label="Email delivery"
+                />
+              </div>
+              <div className="mt-5">
+                <Field label="Email address" htmlFor="email-addr">
+                  <Input
+                    id="email-addr"
+                    type="email"
+                    maxLength={254}
+                    value={value.emailAddress}
+                    onChange={(e) => {
+                      onChange({ ...value, emailAddress: e.target.value });
+                      if (emailErr) setEmailErr(null);
+                    }}
+                    onBlur={commitEmail}
+                    placeholder="you@farm.com"
+                    className={inputClass}
+                    style={{
+                      ...inputStyle,
+                      borderColor: emailErr ? CRIT : inputStyle.borderColor,
+                    }}
+                  />
+                  {emailErr && (
+                    <p
+                      className="mt-1.5"
+                      style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}
+                    >
+                      {emailErr}
+                    </p>
+                  )}
+                </Field>
+              </div>
+            </section>
+          </div>
+
+          <p className="pt-4" style={{ color: MUTED, fontSize: 12 }}>
+            SMS and email delivery are provisional in this research demo.
+          </p>
+        </div>
+      ) : (
+        <div
+          id="notification-rules-panel"
+          role="tabpanel"
+          aria-labelledby="notification-rules-tab"
+          className="pt-5"
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {triggerGroups.map((group) => (
+              <section
+                key={group.id}
+                className={`rounded-2xl p-4 ${group.id === "schedule" ? "md:col-span-2" : ""}`}
+                style={{ border: `1px solid ${BORDER}` }}
+              >
+                <GroupLabel>{group.title}</GroupLabel>
+                <div className="mt-1">
+                  {group.triggers.map((trigger) => (
+                    <SettingRow
+                      key={trigger.id}
+                      label={trigger.label}
+                      hint={trigger.hint || undefined}
+                      control={
+                        <Switch
+                          checked={value.enabled[trigger.id]}
+                          onCheckedChange={(enabled) =>
+                            toggleNotif(
+                              trigger.id,
+                              trigger.toastLabel,
+                              Boolean(enabled),
+                            )
+                          }
+                          aria-label={trigger.label}
+                        />
+                      }
+                    />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
-        </div>
-      ))}
 
-      <p className="pt-4" style={{ color: MUTED, fontSize: 12 }}>
-        Critical environment alerts always push to the in-app bell, regardless
-        of the channels above.
-      </p>
+          <p className="pt-4" style={{ color: MUTED, fontSize: 12 }}>
+            Critical environment alerts always push to the in-app bell,
+            regardless of the delivery methods you choose.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
+
+export type NotificationPanelView = "delivery" | "rules";

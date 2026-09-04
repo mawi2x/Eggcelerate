@@ -25,10 +25,8 @@ export type RepositoryOperation =
   | "markAllAlertsRead"
   | "clearReadAlerts"
   | "listHatchRecords"
-  | "recordHarvest"
   | "completeCycle"
   | "listAbortedCycles"
-  | "recordAbortedCycle"
   | "stopCycle"
   | "listSettings"
   | "saveSettings";
@@ -91,12 +89,8 @@ export interface EggcelerateRepository {
   markAllAlertsRead(): Promise<Result<AlertEntry[]>>;
   clearReadAlerts(): Promise<Result<AlertEntry[]>>;
   listHatchRecords(): Promise<Result<HatchRecord[]>>;
-  recordHarvest(input: HarvestInput): Promise<Result<HatchRecord>>;
   completeCycle(input: CompleteCycleInput): Promise<Result<CompletedCycle>>;
   listAbortedCycles(): Promise<Result<AbortedCycleRecord[]>>;
-  recordAbortedCycle(
-    input: AbortedCycleInput,
-  ): Promise<Result<AbortedCycleRecord>>;
   stopCycle(input: StopCycleInput): Promise<Result<StoppedCycle>>;
   listSettings(): Promise<Result<SettingsPreferences>>;
   saveSettings(

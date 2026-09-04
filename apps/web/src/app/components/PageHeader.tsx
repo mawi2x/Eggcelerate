@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import type { AlertEntry } from "../domain/types";
 import { NotificationPopover } from "./alerts/NotificationPopover";
 import { LiveDateTime } from "./LiveDateTime";
+import { Typography } from "./ui/typography";
 import { useIsMobile } from "./ui/use-mobile";
 
 interface Props {
@@ -77,76 +78,76 @@ export function PageHeader({
     );
   };
 
-  // Overview: compact Neobank-style on mobile (title+subtitle left, bell right, date inline), spacious two-row on desktop
-  if (showDateTime) {
-    if (isMobile) {
-      return (
-        <div>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              {titleNode ? (
-                titleNode
-              ) : (
-                <>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <h1
-                      className="min-w-0"
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-bold)",
-                        lineHeight: "var(--leading-snug)",
-                        color: TEXT,
-                      }}
-                      title={title}
-                    >
-                      {renderTitle()}
-                    </h1>
-                    {badges}
-                  </div>
-                  <p
+  // Mobile layout (all screens): unified compact single-row header
+  // Title + subtitle on the left, notifications bell on the right
+  if (isMobile) {
+    return (
+      <div>
+        {onBack ? (
+          <div className="mb-2">
+            <button
+              type="button"
+              onClick={onBack}
+              className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+              style={{
+                color: RUST,
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-body)",
+                fontWeight: "var(--weight-medium)",
+                minHeight: "var(--control-hit-area-icon)",
+              }}
+            >
+              <ArrowLeft size={16} className="shrink-0" />
+              <span className="min-w-0 truncate">{backLabel}</span>
+            </button>
+          </div>
+        ) : null}
+
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            {titleNode ? (
+              titleNode
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <Typography
+                    as="h1"
+                    variant="pageTitle"
                     className="min-w-0"
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-body)",
-                      fontWeight: "var(--weight-regular)",
-                      lineHeight: "var(--leading-normal)",
-                      color: MUTED,
-                      marginTop: 2,
-                    }}
+                    style={{ color: TEXT }}
+                    title={title}
                   >
-                    {subtitle}
-                  </p>
-                </>
-              )}
-              {onBack ? (
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="-ml-2 mt-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                  style={{ color: RUST, fontSize: 14, fontWeight: 500 }}
+                    {renderTitle()}
+                  </Typography>
+                  {badges}
+                </div>
+                <Typography
+                  className="min-w-0"
+                  style={{ color: MUTED, marginTop: 2 }}
                 >
-                  <ArrowLeft size={16} className="shrink-0" />
-                  <span className="min-w-0 truncate">{backLabel}</span>
-                </button>
-              ) : null}
-            </div>
-            <div className="shrink-0 pt-0.5">
-              <NotificationPopover
-                alerts={alerts}
-                unreadCount={alertCount}
-                onViewAll={onViewAlerts}
-                onMarkAllRead={onMarkAllRead}
-                onDismiss={onDismissAlert}
-                pendingAlertId={pendingAlertId}
-                markingAllRead={markingAllRead}
-              />
-            </div>
+                  {subtitle}
+                </Typography>
+              </>
+            )}
+          </div>
+          <div className="shrink-0 pt-0.5">
+            <NotificationPopover
+              alerts={alerts}
+              unreadCount={alertCount}
+              onViewAll={onViewAlerts}
+              onMarkAllRead={onMarkAllRead}
+              onDismiss={onDismissAlert}
+              pendingAlertId={pendingAlertId}
+              markingAllRead={markingAllRead}
+            />
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
+  // Desktop Overview: spacious two-row with ambient live date/time
+  if (showDateTime) {
     return (
       <div>
         {/* Row 1: utility bar — bell stays top-right alone */}
@@ -157,7 +158,13 @@ export function PageHeader({
                 type="button"
                 onClick={onBack}
                 className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                style={{ color: RUST, fontSize: 14, fontWeight: 500 }}
+                style={{
+                color: RUST,
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-body)",
+                fontWeight: "var(--weight-medium)",
+                minHeight: "var(--control-hit-area-icon)",
+              }}
               >
                 <ArrowLeft size={16} className="shrink-0" />
                 <span className="min-w-0 truncate">{backLabel}</span>
@@ -182,34 +189,23 @@ export function PageHeader({
               {titleNode ?? (
                 <>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <h1
+                    <Typography
+                      as="h1"
+                      variant="pageTitle"
                       className="min-w-0 truncate"
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-bold)",
-                        lineHeight: "var(--leading-snug)",
-                        color: TEXT,
-                      }}
+                      style={{ color: TEXT }}
                       title={title}
                     >
                       {renderTitle()}
-                    </h1>
+                    </Typography>
                     {badges}
                   </div>
-                  <p
+                  <Typography
                     className="min-w-0"
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-body)",
-                      fontWeight: "var(--weight-regular)",
-                      lineHeight: "var(--leading-normal)",
-                      color: MUTED,
-                      marginTop: 4,
-                    }}
+                    style={{ color: MUTED, marginTop: 4 }}
                   >
                     {subtitle}
-                  </p>
+                  </Typography>
                 </>
               )}
             </div>
@@ -233,7 +229,13 @@ export function PageHeader({
               type="button"
               onClick={onBack}
               className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-              style={{ color: RUST, fontSize: 14, fontWeight: 500 }}
+              style={{
+                color: RUST,
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-body)",
+                fontWeight: "var(--weight-medium)",
+                minHeight: "var(--control-hit-area-icon)",
+              }}
             >
               <ArrowLeft size={16} className="shrink-0" />
               <span className="min-w-0 truncate">{backLabel}</span>

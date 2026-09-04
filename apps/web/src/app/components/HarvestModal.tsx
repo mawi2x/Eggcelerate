@@ -9,6 +9,15 @@ import {
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import {
+  BORDER,
+  CARD,
+  MUTED,
+  RADIUS,
+  RUST,
+  SURFACE,
+  TEXT,
+} from "./detail/types";
 
 /**
  * Finish Cycle modal: log chicks hatched against the eggs loaded at cycle
@@ -71,24 +80,30 @@ export function HarvestModal({
       }}
     >
       <DialogContent
-        className="w-[90vw] max-w-[460px] bg-[var(--surface-card)] p-6 shadow-xl border border-[var(--border-subtle)] [&>[data-slot=dialog-close]]:hidden"
-        style={{ borderRadius: 16 }}
+        className="w-[90vw] max-w-[460px] max-h-[88vh] overflow-y-auto p-0 shadow-2xl [&>[data-slot=dialog-close]]:hidden"
+        style={{
+          backgroundColor: CARD,
+          border: `1px solid ${BORDER}`,
+          borderRadius: RADIUS,
+        }}
       >
-        <DialogHeader className="text-left">
+        <DialogHeader className="px-5 pt-5 text-left">
           <DialogTitle
             style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: "var(--text-primary)",
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--type-heading-md)",
+              fontWeight: "var(--weight-bold)",
+              lineHeight: "var(--leading-snug)",
+              color: TEXT,
             }}
           >
             <span className="block">Finish Cycle</span>
             <span
               className="block"
               style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: "#6E6259",
+                fontSize: 12,
+                fontWeight: 500,
+                color: TEXT,
                 marginTop: 2,
               }}
             >
@@ -97,14 +112,14 @@ export function HarvestModal({
           </DialogTitle>
           <DialogDescription
             className="mt-1.5"
-            style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}
+            style={{ fontSize: 12, color: MUTED, lineHeight: 1.5 }}
           >
             Enter the final chick count for this batch. Eggs loaded:{" "}
             {totalEggsLoaded}.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 px-5">
           <div>
             <Label
               htmlFor="harvest-hatched"
@@ -127,7 +142,7 @@ export function HarvestModal({
                 borderColor: exceedsMax
                   ? "var(--status-danger-fg)"
                   : "var(--input-border)",
-                backgroundColor: "#FFFFFF",
+                backgroundColor: SURFACE,
                 color: "var(--text-primary)",
               }}
               aria-invalid={exceedsMax}
@@ -160,8 +175,8 @@ export function HarvestModal({
           <div
             className="flex items-center justify-between rounded-xl px-3.5 py-2.5"
             style={{
-              backgroundColor: "var(--surface-subtle)",
-              border: "1px solid var(--border-default)",
+              backgroundColor: CARD,
+              border: `1px solid ${BORDER}`,
             }}
           >
             <div>
@@ -176,7 +191,7 @@ export function HarvestModal({
               </span>
               <span
                 className="block"
-                style={{ fontSize: 12, color: "#8A7F72" }}
+                style={{ fontSize: 12, color: MUTED }}
               >
                 {exceedsMax
                   ? `Cannot exceed ${totalEggsLoaded} eggs loaded.`
@@ -203,29 +218,33 @@ export function HarvestModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2.5">
-          <Button
-            variant="outline"
-            className="rounded-xl"
-            style={{
-              borderColor: "var(--border-default)",
-              color: "#44403C",
-              backgroundColor: "var(--surface-card)",
-            }}
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => void save()}
-            disabled={!valid || isSaving}
-            aria-busy={isSaving}
-            className="rounded-xl text-white"
-            style={{ backgroundColor: "#8B3A1C" }}
-          >
-            {isSaving ? "Saving…" : "Save & Reset"}
-          </Button>
+        <div
+          className="sticky bottom-0 px-5 py-4"
+          style={{ backgroundColor: CARD, borderTop: `1px solid ${BORDER}` }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              variant="ghost"
+              className="rounded-full"
+              onClick={() => onOpenChange(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void save()}
+              disabled={!valid || isSaving}
+              aria-busy={isSaving}
+              className="rounded-full px-5"
+              style={{
+                backgroundColor: RUST,
+                color: "#fff",
+                opacity: !valid || isSaving ? 0.5 : 1,
+              }}
+            >
+              {isSaving ? "Saving…" : "Save & Reset"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -222,7 +222,7 @@ export default function App() {
   const activeMode = modes.find((m) => m.id === activeUnit.modeId) ?? modes[0];
   const statusTone =
     activeUnit.status === "optimal"
-      ? { fg: "#15803D", bg: "#DCFCE7", label: "Normal" }
+      ? { fg: "#15803D", bg: "#DCFCE7", label: "All Systems Optimal" }
       : { fg: "#B45309", bg: "#FEF3C7", label: "Needs Attention" };
 
   const detailBadges = (
@@ -247,10 +247,6 @@ export default function App() {
           fontWeight: 700,
         }}
       >
-        <span
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ backgroundColor: statusTone.fg }}
-        />
         {statusTone.label}
       </span>
     </>

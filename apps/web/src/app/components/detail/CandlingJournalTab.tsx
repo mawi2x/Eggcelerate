@@ -978,17 +978,18 @@ function LogModalBody({
               selectedOption !== "custom" &&
               target &&
               target.day > currentDay && (
-                <p
-                  className="mt-1.5 rounded-lg px-2.5 py-1.5"
-                  style={{
-                    fontSize: 12,
-                    color: WARN.fg,
-                    backgroundColor: WARN.bg,
-                  }}
-                >
-                  Not yet due. This is Day {target.day}. You can still log it if
-                  candling was performed early.
-                </p>
+                <StatusCallout
+                  size="sm"
+                  tone="warning"
+                  title="Not yet due"
+                  description={
+                    <>
+                      This is <strong>Day {target.day}</strong>. You can still
+                      log it if candling was performed early.
+                    </>
+                  }
+                  className="mt-1.5"
+                />
               )}
           </div>
         )}
@@ -1480,7 +1481,10 @@ export function CandlingJournalTab({
     pendingCheckpoint,
     currentDay,
   );
+  const canLog =
+    unit.cyclePhase !== "ready" && unit.cyclePhase !== "stopped_early";
   const openNewInspection = () => {
+    if (!canLog) return;
     setEditingEntry(null);
     setShowLogForm(true);
   };
@@ -1643,6 +1647,7 @@ export function CandlingJournalTab({
           totalDays={totalDays}
           candling={candling}
           candled={effectiveCandled}
+          labelSize={9}
         />
         <div className="my-4" style={{ height: 1, backgroundColor: BORDER }} />
         {latestCandlingEntry ? (
@@ -2069,13 +2074,22 @@ export function CandlingJournalTab({
                   )}
                 </div>
               </div>
-              <Button
-                onClick={openNewInspection}
-                className="w-full rounded-full sm:w-auto"
-                style={{ ...rustBtn, fontSize: 13 }}
-              >
-                <Plus size={14} /> Log Inspection
-              </Button>
+              {canLog ? (
+                <Button
+                  onClick={openNewInspection}
+                  className="w-full rounded-full sm:w-auto"
+                  style={{ ...rustBtn, fontSize: 13 }}
+                >
+                  <Plus size={14} /> Log Inspection
+                </Button>
+              ) : (
+                <p
+                  className="w-full sm:w-auto sm:text-right"
+                  style={{ color: MUTED, fontSize: 12 }}
+                >
+                  Start an incubation cycle to log inspections.
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -2126,20 +2140,29 @@ export function CandlingJournalTab({
                 )}
               </div>
             </div>
-            <Button
-              onClick={openNewInspection}
-              disabled={isUpdating}
-              className="w-full rounded-full sm:w-auto"
-              style={{ ...rustBtn, fontSize: 13, fontWeight: 700 }}
-            >
-              <Plus size={14} /> Log Inspection
-            </Button>
+            {canLog ? (
+              <Button
+                onClick={openNewInspection}
+                disabled={isUpdating}
+                className="w-full rounded-full sm:w-auto"
+                style={{ ...rustBtn, fontSize: 13, fontWeight: 700 }}
+              >
+                <Plus size={14} /> Log Inspection
+              </Button>
+            ) : (
+              <p
+                className="w-full sm:w-auto sm:text-right"
+                style={{ color: MUTED, fontSize: 12 }}
+              >
+                Start an incubation cycle to log inspections.
+              </p>
+            )}
           </div>
         )}
       </SectionCard>
 
       <LogModal
-        open={showLogForm}
+        open={showLogForm && (canLog || editingEntry !== null)}
         onOpenChange={(open) => {
           setShowLogForm(open);
           if (!open) setEditingEntry(null);

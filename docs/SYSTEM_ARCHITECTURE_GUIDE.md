@@ -31,7 +31,7 @@ For this checkout, use the following precedence:
    - the design and accessibility guides in [docs/guide/](guide/README.md)
 4. Historical reviews are context only and must be checked against the current source.
 
-The local workspace contains the ADR set under `docs/docs/adr/`, but those local-only files are outside this frontend closure commit. Accepted stack decisions are summarized in `apps/api/README.md`; backend work must make the authoritative decision records available to every contributor before implementation begins.
+The local workspace contains the ADR set under `docs/archive/adr/`, but those local-only files are outside this frontend closure commit. Accepted stack decisions are summarized in `apps/api/README.md`; backend work must make the authoritative decision records available to every contributor before implementation begins.
 
 ## 2. Delivery strategy
 
@@ -63,10 +63,11 @@ The frontend phase is successful when the user can complete the dashboard flows 
 | Navigation | **Implemented** | Wouter 3.10 owns canonical paths, Back/Forward updates, legacy-query migration, and safe parameter redirects through the routing module. |
 | Server-state layer | **Implemented for mocks** | TanStack Query 5 and farm feature query/mutation hooks wrap the injected repository. |
 | Auth and onboarding | **Simulated with boundary** | `/login` and `/onboarding/:step` are public mock routes. `MockAuthProvider` and `RequireAuth` guard dashboard navigation; there is no server session or real authorization. |
-| API, database, and broker | **Planned** | apps/api, infrastructure, and Compose contain placeholders or web-only configuration. |
+| API contract | **B0A implemented; runtime paused** | Strict frontend transport schemas and the result/error envelope are tested. FastAPI and `ApiRepository` are not present; resume at B0B in the dashboard-first backend guide. |
+| API runtime, database, and broker | **Planned** | apps/api, infrastructure, and Compose contain placeholders or web-only configuration. |
 | Device firmware and simulator | **Planned** | No ESP32 firmware or MQTT simulator exists in the repository. |
 | Web deployment | **Implemented/configured** | Docker multi-stage build and Nginx SPA serving; Compose currently runs only web. |
-| Automated checks | **Implemented for the frontend boundary** | Typecheck, 155 Vitest tests, scoped coverage, production build, clean Biome lint, diff validation, and web CI are present. API tests, rendered component/accessibility coverage, and a reliable browser E2E workflow remain future work. |
+| Automated checks | **Implemented for the frontend boundary** | Typecheck, 159 Vitest tests, scoped coverage, production build, clean Biome lint, diff validation, and web CI are present. API tests, rendered component/accessibility coverage, and a reliable browser E2E workflow remain future work. |
 
 The current web checks are:
 
@@ -77,7 +78,7 @@ The current web checks are:
     pnpm lint
     git diff --check
 
-The current repository has 21 test files and the frontend closure gate passes 155 tests. Passing tests establish a healthy frontend baseline; they do not prove API, device, persistence, or realtime behavior.
+The current repository has 22 test files and the B0A contract checkpoint passes 159 tests. Passing tests establish a healthy frontend baseline; they do not prove API, device, persistence, or realtime behavior.
 
 ### 3.1 Current repository topology
 
@@ -506,12 +507,13 @@ Each phase must preserve behavior and keep the current checks green. Avoid combi
 ### Phase B1 — Backend handoff
 
 1. Confirm FastAPI/Pydantic, PostgreSQL/TimescaleDB, Mosquitto, and simulator decisions in architecture records.
-2. Add the runtime environment contract and .env.example when the API URL and deployment shape are known.
-3. Implement FastAPI read endpoints with in-memory data first.
-4. Add ApiRepository and run the same contract tests against the API.
-5. Add database persistence and server authentication.
-6. Add REST hydration before WebSocket patches.
-7. Add command acknowledgement, timeout, rollback, and audit persistence before real actuator writes.
+2. Follow the dashboard-first backend guide: refine broad mock-era writes into explicit service commands before exposing HTTP.
+3. Add the runtime environment contract and `.env.example` when the API URL and deployment shape are known.
+4. Implement FastAPI read and dashboard mutation endpoints with in-memory data first.
+5. Add `ApiRepository` and run the same observable-behavior tests against the API.
+6. Add PostgreSQL/TimescaleDB persistence, then REST hydration before WebSocket patches.
+7. Add MQTT simulation plus command acknowledgement, timeout, rollback, and audit persistence before real actuator writes.
+8. Defer authentication and user administration: keep a local-only disabled-auth request context, preserve `farm_id` ownership, and refuse production startup until real authorization is implemented.
 
 Do not add an empty API service, change the web host port, or extract shared packages during the frontend seam work unless a concrete deployment or second-consumer requirement appears. The device and hardware work follows the API contract and should not require rewriting React screens.
 
@@ -546,7 +548,7 @@ Resolve these before the corresponding implementation phase:
 
 - publish or commit the accepted ADRs so backend decisions are available beyond this local checkout;
 - define endpoint DTOs, pagination, structured error codes, command idempotency, and transaction boundaries;
-- define server-session authentication, authorization, CSRF/CORS behavior, and the local API origin;
+- use the documented local-only disabled-auth request context for the dashboard milestone; choose server-session authentication, authorization, and CSRF behavior before any public deployment;
 - define telemetry retention/downsampling, REST/WebSocket envelopes, reconnect/resume behavior, and cache invalidation;
 - define command IDs and the MQTT acknowledgement/rejection/timeout/audit lifecycle before actuator writes;
 - retain the implemented Wouter router unless a separate decision explicitly selects another router;
@@ -571,5 +573,6 @@ When a new architectural decision is made, update the decision record, this guid
 - [UI control-size guidelines](guide/ui-control-size-guidelines.md)
 - [Frontend restructuring guide](guide/frontend-restructuring-guide.md)
 - [Firmware safety contract](guide/firmware-safety-contract.md)
+- [Dashboard-first backend guide](guide/backend-dashboard-first-guide.md)
 
-The local ADR and product documentation outside the three versioned guides is not included in this frontend closure commit. Backend work should first publish or replace the authoritative records it depends on.
+The local ADR and product documentation outside the versioned architecture guides is not included in the frontend closure commit. Backend work should first publish or replace the authoritative records it depends on.

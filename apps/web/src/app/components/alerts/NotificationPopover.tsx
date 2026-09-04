@@ -42,8 +42,8 @@ export function NotificationPopover({
           type="button"
           className="relative flex shrink-0 cursor-pointer items-center justify-center rounded-[10px] border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           style={{
-            height: isMobile ? 40 : 52,
-            width: isMobile ? 40 : 52,
+            height: isMobile ? "var(--control-hit-area-icon)" : 52,
+            width: isMobile ? "var(--control-hit-area-icon)" : 52,
             backgroundColor: "#FFFFFF",
             borderColor: BORDER,
             color: MUTED,
@@ -63,8 +63,9 @@ export function NotificationPopover({
                 padding: "0 4px",
                 backgroundColor: "#D92B0F",
                 color: "#FFFFFF",
-                fontSize: isMobile ? 11 : 12,
-                fontWeight: 700,
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-bold)",
                 border: "2px solid #FAF6F0",
               }}
             >
@@ -91,7 +92,12 @@ export function NotificationPopover({
         >
           <span
             className="min-w-0 truncate"
-            style={{ fontSize: 15, fontWeight: 700, color: TEXT }}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-heading-sm)",
+              fontWeight: "var(--weight-bold)",
+              color: TEXT,
+            }}
           >
             Notifications
           </span>
@@ -101,7 +107,12 @@ export function NotificationPopover({
             disabled={unreadCount === 0 || markingAllRead}
             aria-busy={markingAllRead}
             className="shrink-0 cursor-pointer rounded-md px-1 transition-opacity hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline"
-            style={{ fontSize: 12, fontWeight: 600, color: RUST }}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-caption)",
+              fontWeight: "var(--weight-semibold)",
+              color: RUST,
+            }}
           >
             {markingAllRead ? "Marking…" : "Mark all as read"}
           </button>
@@ -110,10 +121,24 @@ export function NotificationPopover({
         {/* Body — five most recent */}
         {recent.length === 0 ? (
           <div className="px-4 py-10 text-center">
-            <p style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-body)",
+                fontWeight: "var(--weight-bold)",
+                color: TEXT,
+              }}
+            >
               You're all caught up
             </p>
-            <p className="mt-1" style={{ fontSize: 12, color: MUTED }}>
+            <p
+              className="mt-1"
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-caption)",
+                color: MUTED,
+              }}
+            >
               No notifications right now. 🐣
             </p>
           </div>
@@ -143,7 +168,12 @@ export function NotificationPopover({
                     <div className="flex items-center gap-1.5">
                       <span
                         className="min-w-0 truncate"
-                        style={{ fontSize: 13, fontWeight: 700, color: TEXT }}
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-body-sm)",
+                          fontWeight: "var(--weight-bold)",
+                          color: TEXT,
+                        }}
                       >
                         {a.title}
                       </span>
@@ -158,7 +188,11 @@ export function NotificationPopover({
                     </div>
                     <p
                       className="truncate"
-                      style={{ fontSize: 11, color: MUTED }}
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        color: MUTED,
+                      }}
                     >
                       {a.unit} · {timeAgo(a.timestamp)}
                     </p>
@@ -166,7 +200,8 @@ export function NotificationPopover({
                     <p
                       className="mt-1 overflow-hidden"
                       style={{
-                        fontSize: 12,
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-caption)",
                         color: "#5C4636",
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
@@ -204,7 +239,12 @@ export function NotificationPopover({
             onViewAll();
           }}
           className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-b-xl py-3 transition-colors hover:bg-[#FAF6F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset"
-          style={{ fontSize: 13, fontWeight: 600, color: RUST }}
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-body-sm)",
+            fontWeight: "var(--weight-semibold)",
+            color: RUST,
+          }}
         >
           View All Notifications <ArrowRight size={15} />
         </button>

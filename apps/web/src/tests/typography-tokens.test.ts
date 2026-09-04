@@ -17,9 +17,29 @@ describe("typography tokens", () => {
   });
   it("PageHeader uses type tokens not hardcoded 24/14", () => {
     const s = fs.readFileSync("src/app/components/PageHeader.tsx", "utf-8");
-    expect(s).toContain("var(--type-page-title)");
-    expect(s).toContain("var(--type-body)");
+    // Either direct token use or shared Typography primitive with the same roles
+    expect(s).toMatch(/var\(--type-page-title\)|variant="pageTitle"|variant='pageTitle'/);
+    expect(s).toMatch(/var\(--type-body\)|variant="body"|<Typography/);
+    expect(s).toContain("Typography");
     expect(s).not.toMatch(/fontSize:\s*24[^r]/); // no raw 24px
+  });
+  it("PanelHeader and SectionCard route through Typography", () => {
+    const panel = fs.readFileSync(
+      "src/app/components/settings/tokens.tsx",
+      "utf-8",
+    );
+    expect(panel).toContain("Typography");
+    expect(panel).toMatch(/variant="panelTitle"/);
+    expect(panel).toMatch(/variant="bodySmall"|variant="body"/);
+    expect(panel).not.toMatch(/fontSize:\s*"var\(--type-panel-title\)"|fontSize:\s*22[^r]/);
+
+    const card = fs.readFileSync(
+      "src/app/components/detail/primitives.tsx",
+      "utf-8",
+    );
+    expect(card).toContain("Typography");
+    expect(card).toMatch(/variant="headingSmall"/);
+    expect(card).toMatch(/variant="caption"/);
   });
   it("button/input/label use body token", () => {
     const btn = fs.readFileSync("src/app/components/ui/button.tsx", "utf-8");
@@ -44,5 +64,14 @@ describe("typography tokens", () => {
     expect(sb).toContain("var(--tracking-label)");
     expect(sb).toContain("var(--weight-bold)");
     expect(sb).not.toMatch(/fontFamily:\s*"Baloo 2, sans-serif"/);
+  });
+  it("type scale steps down the two largest tokens below sm", () => {
+    const css = fs.readFileSync("src/styles/theme.css", "utf-8");
+    expect(css).toMatch(
+      /@media\s*\(\s*max-width:\s*39\.9375rem\s*\)[\s\S]*?--type-page-title:\s*1\.25rem/,
+    );
+    expect(css).toMatch(
+      /@media\s*\(\s*max-width:\s*39\.9375rem\s*\)[\s\S]*?--type-panel-title:\s*1\.125rem/,
+    );
   });
 });

@@ -93,4 +93,15 @@ describe("filter-bar primitive", () => {
     expect(s).toContain("<fieldset");
     expect(s).toContain("aria-label={ariaLabel}");
   });
+
+  it("constrains the mobile scroll track to its parent width", () => {
+    const s = fs.readFileSync(
+      path.resolve("src/app/components/ui/filter-bar.tsx"),
+      "utf-8",
+    );
+
+    expect(s).toContain(
+      'className="scrollbar-none m-0 flex min-w-0 w-full max-w-full gap-2 overflow-x-auto',
+    );
+  });
 });

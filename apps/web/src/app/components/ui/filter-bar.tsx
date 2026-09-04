@@ -64,21 +64,22 @@ export function FilterBar({
     <div className={cn("relative w-full max-w-full sm:w-auto", className)}>
       {/* Left indicator button & fade — always mounted so focus is never
           destroyed when the edge state changes; hidden edges leave the tab order. */}
+      {/* Left indicator button & fade */}
       <div
         aria-hidden={!canScrollLeft}
         className={cn(
-          "absolute left-0 top-0 bottom-0 z-10 flex items-center pr-3 pl-0.5 bg-gradient-to-r from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden",
-          !canScrollLeft && "invisible",
+          "pointer-events-none absolute left-0 top-0 bottom-0 z-10 flex items-center pr-3 pl-0.5 bg-gradient-to-r from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
+          !canScrollLeft && "invisible opacity-0",
         )}
       >
         <button
           type="button"
           tabIndex={canScrollLeft ? 0 : -1}
           onClick={() => scrollBy(-140)}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] shadow-xs hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+          className="pointer-events-auto flex h-7 w-5 items-center justify-start text-[var(--text-secondary)] opacity-70 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label="Show previous filters"
         >
-          <ChevronLeft size={13} aria-hidden="true" />
+          <ChevronLeft size={16} strokeWidth={2.5} aria-hidden="true" />
         </button>
       </div>
 
@@ -87,7 +88,7 @@ export function FilterBar({
         ref={scrollRef}
         onScroll={checkScroll}
         aria-label={ariaLabel}
-        className="scrollbar-none m-0 flex gap-2 overflow-x-auto border-0 p-1 sm:flex-wrap sm:overflow-visible"
+        className="scrollbar-none m-0 flex min-w-0 w-full max-w-full gap-2 overflow-x-auto border-0 p-1 sm:flex-wrap sm:overflow-visible"
       >
         {options.map((opt) => {
           const active = value === opt.key;
@@ -133,21 +134,22 @@ export function FilterBar({
       </fieldset>
 
       {/* Right indicator button & fade — always mounted for the same reason. */}
+      {/* Right indicator button & fade */}
       <div
         aria-hidden={!canScrollRight}
         className={cn(
-          "absolute right-0 top-0 bottom-0 z-10 flex items-center pl-3 pr-0.5 bg-gradient-to-l from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden",
-          !canScrollRight && "invisible",
+          "pointer-events-none absolute right-0 top-0 bottom-0 z-10 flex items-center pl-3 pr-0.5 bg-gradient-to-l from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
+          !canScrollRight && "invisible opacity-0",
         )}
       >
         <button
           type="button"
           tabIndex={canScrollRight ? 0 : -1}
           onClick={() => scrollBy(140)}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-xs hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+          className="pointer-events-auto flex h-7 w-5 items-center justify-end text-[var(--brand-primary)] opacity-70 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label="Show more filters"
         >
-          <ChevronRight size={13} aria-hidden="true" />
+          <ChevronRight size={16} strokeWidth={2.5} aria-hidden="true" />
         </button>
       </div>
     </div>

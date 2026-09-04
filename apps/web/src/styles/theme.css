@@ -13,7 +13,15 @@
   --type-body: 0.875rem; /* 14px */
   --type-body-sm: 0.8125rem; /* 13px */
   --type-caption: 0.75rem; /* 12px */
-  --type-label: 0.6875rem; /* 11px */
+  --type-label: 0.6875rem; /* 11px — system minimum, do not go below globally */
+
+  /* Sub-label tier (opt-in, below the 11px minimum). Label-family naming
+     keeps the contract visible: labels only, never body/controls/prose.
+     10px compact is the preferred concession, 9px micro is last-resort for
+     short uppercase micro-labels with a title disclosure. rem-based so both
+     still scale with user font-size/zoom. */
+  --type-label-compact: 0.625rem; /* 10px */
+  --type-label-micro: 0.5625rem; /* 9px */
 
   --weight-regular: 400;
   --weight-medium: 500;
@@ -127,6 +135,17 @@
   --sidebar-accent-foreground: var(--text-primary);
   --sidebar-border: rgba(173, 58, 29, 0.12);
   --sidebar-ring: #cb6036;
+}
+
+/* Mobile type step-down — one scale, not a second one. Below Tailwind's
+   sm breakpoint (40rem) the two largest tokens drop one visual step so
+   24px/22px titles don't crowd 320–640px viewports. All other tokens,
+   and everything at sm and up, are unchanged. */
+@media (max-width: 39.9375rem) {
+  :root {
+    --type-page-title: 1.25rem; /* 20px */
+    --type-panel-title: 1.125rem; /* 18px */
+  }
 }
 
 .dark {

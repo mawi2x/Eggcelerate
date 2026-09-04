@@ -386,15 +386,6 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     };
   }
 
-  recordHarvest(input: HarvestInput) {
-    return this.execute("recordHarvest", () => {
-      const result = this.createHarvestRecord(input);
-      if (!result.ok) return result;
-      this.hatchRecords.push(result.data);
-      return ok(result.data);
-    });
-  }
-
   completeCycle(input: CompleteCycleInput) {
     return this.execute("completeCycle", () => {
       const index = this.incubators.findIndex(
@@ -459,15 +450,6 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         fertileEggs: input.fertileEggs,
       },
     };
-  }
-
-  recordAbortedCycle(input: AbortedCycleInput) {
-    return this.execute("recordAbortedCycle", () => {
-      const result = this.createAbortedCycleRecord(input);
-      if (!result.ok) return result;
-      this.abortedCycles.push(result.data);
-      return ok(result.data);
-    });
   }
 
   stopCycle(input: StopCycleInput) {

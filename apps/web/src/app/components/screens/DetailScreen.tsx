@@ -1,4 +1,12 @@
-import { Activity, ScanSearch, Settings2 } from "lucide-react";
+import { Egg as EggIcon, Notepad } from "@phosphor-icons/react";
+import {
+  Activity,
+  CalendarDays,
+  Droplets,
+  RefreshCw,
+  Settings2,
+  Thermometer,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CURRENT_TRAY_CAPACITY, computeCandling } from "../../domain/candling";
@@ -13,17 +21,40 @@ import { useIncubatorReadings } from "../../features/farm/use-incubator-readings
 import { CandlingJournalTab } from "../detail/CandlingJournalTab";
 import { DeviceSettingsTab } from "../detail/DeviceSettingsTab";
 import { LiveMonitorTab } from "../detail/LiveMonitorTab";
-import { SectionCard } from "../detail/primitives";
+import { statusIconBadgeGlyphSize } from "../StatusIconBadge";
+import { SectionCard, StatusCallout } from "../detail/primitives";
 import {
+  BORDER,
+  CARD,
   type DetailTab,
   INPUT_BORDER,
   MUTED,
+  RADIUS,
+  RUST,
   SURFACE,
   TEXT,
+  WARN,
 } from "../detail/types";
 import { HarvestModal } from "../HarvestModal";
 import { ExclamationIcon } from "../icons";
 import { Button } from "../ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import {
@@ -61,7 +92,7 @@ function SubTabNav({
       id: "candling",
       label: "Candling & Inspection",
       mobileLabel: "Candling",
-      icon: <ScanSearch size={15} aria-hidden="true" />,
+      icon: <Notepad size={15} aria-hidden="true" />,
     },
     {
       id: "settings",
@@ -72,7 +103,7 @@ function SubTabNav({
   ];
 
   return (
-    <div className="flex max-w-full justify-start overflow-x-auto pb-1 lg:justify-end">
+    <div className="flex max-w-full justify-start overflow-x-auto pb-1">
       <SegmentedControl
         role="tablist"
         aria-label="Incubator detail sections"
@@ -141,6 +172,8 @@ export function DetailScreen({
   useEffect(() => setTab(initialTab), [initialTab]);
   const [setupModeId, setSetupModeId] = useState("");
   const [setupEggs, setSetupEggs] = useState("");
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupConfirmOpen, setSetupConfirmOpen] = useState(false);
   const [harvestOpen, setHarvestOpen] = useState(false);
 
   const isReady = unit.cyclePhase === "ready";
@@ -153,6 +186,8 @@ export function DetailScreen({
   const effectiveCandled = unit.candled ?? {};
 
   const setupMode = modes.find((m) => m.id === setupModeId);
+  const setupEggsCount = Number(setupEggs) || 0;
+  const setupEggsValid = setupEggsCount >= 1;
 
   const environmentalReadings = useMemo(() => {
     if (readings.length === 0) return readings;
@@ -164,11 +199,8 @@ export function DetailScreen({
   }, [readings, unit.temp, unit.humidity]);
 
   const startCycle = async () => {
-    if (!setupMode) return;
-    const eggs = Math.min(
-      CURRENT_TRAY_CAPACITY,
-      Math.max(1, Number(setupEggs) || CURRENT_TRAY_CAPACITY),
-    );
+    if (!setupMode || !setupEggsValid) return;
+    const eggs = setupEggsCount;
     const saved = await onUpdate({
       modeId: setupMode.id,
       dayOfIncubation: 1,
@@ -186,12 +218,14 @@ export function DetailScreen({
     if (!saved) return false;
     setSetupEggs("");
     setSetupModeId("");
+    setSetupOpen(false);
     toast.success(
       `Started ${setupMode.name} cycle (Day 1 of ${setupMode.incubationDays})`,
       {
-        description: `${eggs} eggs loaded into installed 38-egg tray.`,
+        description: `${eggs} eggs loaded into ${unit.name}.`,
       },
     );
+    return true;
   };
 
   const stopCycle = async () => {
@@ -247,27 +281,127 @@ export function DetailScreen({
 
   return (
     <div className="space-y-5" style={{ color: TEXT }}>
-      {/* Ready Incubator — Setup Card */}
+      {/* Ready Incubator — compact setup prompt */}
       {isReady && (
-        <SectionCard
-          title="Incubation Cycle Setup"
-          subtitle="Incubator ready. Load eggs, choose a mode, and start Day 1."
+        <div
+          role="status"
+          className="flex flex-col gap-4 rounded-2xl p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+          style={{
+            backgroundColor: CARD,
+            border: `1px solid ${BORDER}`,
+          }}
         >
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+              style={{ backgroundColor: "var(--brand-primary-soft)", color: "var(--brand-primary-hover)" }}
+              aria-hidden="true"
+            >
+              <EggIcon size={22} weight="fill" />
+            </span>
+            <div className="min-w-0">
+              <p
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "var(--type-heading-sm)",
+                  fontWeight: "var(--weight-extrabold)",
+                  lineHeight: "var(--leading-snug)",
+                  color: "var(--brand-primary-hover)",
+                }}
+              >
+                Ready for a new incubation cycle
+              </p>
+              <p
+                className="mt-0.5"
+                style={{ fontSize: 13, color: MUTED, lineHeight: 1.45 }}
+              >
+                Load the tray, choose an incubation mode, and begin Day 1.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="toolbar"
+            onClick={() => setSetupOpen(true)}
+            className="w-full rounded-xl px-5 sm:w-auto"
+            style={{ backgroundColor: "var(--brand-primary-hover)", color: "var(--on-brand)" }}
+          >
+            Set up incubation
+          </Button>
+        </div>
+      )}
+
+      <Dialog
+        open={setupOpen && isReady}
+        onOpenChange={(open) => {
+          if (!isUpdating) setSetupOpen(open);
+          if (!open) setSetupConfirmOpen(false);
+        }}
+      >
+        <DialogContent
+          className="max-h-[88vh] overflow-y-auto p-0 shadow-2xl sm:max-w-[600px]"
+          style={{
+            backgroundColor: CARD,
+            border: `1px solid ${BORDER}`,
+            borderRadius: RADIUS,
+          }}
+        >
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (setupMode && setupEggsValid && !isUpdating)
+                setSetupConfirmOpen(true);
+            }}
+          >
+            <DialogHeader className="px-5 pt-5 text-left">
+              <DialogTitle
+                style={{
+                  color: TEXT,
+                  fontFamily: "var(--font-display)",
+                  fontSize: "var(--type-heading-md)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: "var(--leading-snug)",
+                }}
+              >
+                Set up incubation cycle
+              </DialogTitle>
+              <DialogDescription
+                className="space-y-0.5"
+                style={{ color: MUTED, fontSize: 12, lineHeight: 1.5 }}
+              >
+                <span className="block">
+                  Configure the new batch for {unit.name}.
+                </span>
+                <span className="block">
+                  Monitoring and the incubation timeline will begin on Day 1.
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-5 px-5 py-4">
               <div>
-                <Label style={{ fontSize: 13, color: TEXT }}>
-                  Species Mode
+                <Label
+                  htmlFor="setup-mode"
+                  style={{ fontSize: 13, color: TEXT }}
+                >
+                  Incubation mode
                 </Label>
-                <Select value={setupModeId} onValueChange={setSetupModeId}>
+                <p className="mt-0.5 text-xs" style={{ color: MUTED }}>
+                  Select the species profile for this batch.
+                </p>
+                <Select
+                  value={setupModeId}
+                  onValueChange={setSetupModeId}
+                  disabled={isUpdating}
+                >
                   <SelectTrigger
-                    className="mt-1.5 w-full rounded-xl"
+                    id="setup-mode"
+                    className="mt-2 w-full rounded-xl"
                     style={{
                       borderColor: INPUT_BORDER,
                       backgroundColor: SURFACE,
                     }}
                   >
-                    <SelectValue placeholder="Select Incubation Mode..." />
+                    <SelectValue placeholder="Select an incubation mode" />
                   </SelectTrigger>
                   <SelectContent>
                     {modes.map((m) => (
@@ -278,74 +412,231 @@ export function DetailScreen({
                   </SelectContent>
                 </Select>
               </div>
+
               <div>
-                <Label style={{ fontSize: 13, color: TEXT }}>
-                  Total eggs loaded (Max {CURRENT_TRAY_CAPACITY})
+                <Label
+                  htmlFor="setup-eggs"
+                  style={{ fontSize: 13, color: TEXT }}
+                >
+                  Eggs loaded
                 </Label>
                 <Input
+                  id="setup-eggs"
                   type="text"
                   inputMode="numeric"
                   value={setupEggs}
                   onChange={(e) =>
                     setSetupEggs(
-                      e.target.value.replace(/[^0-9]/g, "").slice(0, 2),
+                      e.target.value.replace(/[^0-9]/g, "").slice(0, 3),
                     )
                   }
-                  placeholder="38"
-                  className="mt-1.5 w-28 rounded-xl"
+                  placeholder="0"
+                  className="mt-2 rounded-xl"
                   style={{
                     borderColor: INPUT_BORDER,
                     backgroundColor: SURFACE,
                     color: TEXT,
                   }}
+                  aria-describedby="setup-eggs-help"
                   disabled={isUpdating}
                 />
+                <p
+                  id="setup-eggs-help"
+                  className="mt-1.5 text-xs"
+                  style={{
+                    color:
+                      setupEggs !== "" && !setupEggsValid
+                        ? "var(--status-danger-fg)"
+                        : MUTED,
+                    fontWeight:
+                      setupEggs !== "" && !setupEggsValid ? 600 : 400,
+                  }}
+                >
+                  {setupEggs !== "" && !setupEggsValid
+                    ? "Enter at least 1 egg to start."
+                    : "Enter the number of eggs you are loading."}
+                </p>
               </div>
-              {setupMode && (
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    {
-                      label: "Temperature",
-                      value: `${setupMode.targetTemp.min} to ${setupMode.targetTemp.max}°C`,
-                    },
-                    {
-                      label: "Humidity",
-                      value: `${setupMode.targetHumidity.min} to ${setupMode.targetHumidity.max}% RH`,
-                    },
-                    {
-                      label: "Turning cadence",
-                      value: `Every ${setupMode.defaultTurnInterval} hours`,
-                    },
-                  ].map((s) => (
+
+              {setupMode ? (
+                <div
+                  className="rounded-2xl p-4"
+                  style={{
+                    backgroundColor: "#FAF6F0",
+                    border: "1px solid #E9DED1",
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold" style={{ color: TEXT }}>
+                        {setupMode.name} profile
+                      </p>
+                      <p className="mt-0.5 text-xs" style={{ color: MUTED }}>
+                        These targets will be applied when the cycle starts.
+                      </p>
+                    </div>
                     <span
-                      key={s.label}
-                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-                      style={{
-                        backgroundColor: "#F5EFE6",
-                        color: MUTED,
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
+                      className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold"
+                      style={{ backgroundColor: "#F4E6D5", color: "#713016" }}
                     >
-                      {s.label}: {s.value}
+                      {setupMode.incubationDays} days
                     </span>
-                  ))}
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[
+                      {
+                        label: "Cycle length",
+                        value: `${setupMode.incubationDays} days`,
+                        icon: CalendarDays,
+                      },
+                      {
+                        label: "Temperature",
+                        value: `${setupMode.targetTemp.min}–${setupMode.targetTemp.max}°C`,
+                        icon: Thermometer,
+                      },
+                      {
+                        label: "Humidity",
+                        value: `${setupMode.targetHumidity.min}–${setupMode.targetHumidity.max}%`,
+                        icon: Droplets,
+                      },
+                      {
+                        label: "Egg turning",
+                        value: `Every ${setupMode.defaultTurnInterval}h`,
+                        icon: RefreshCw,
+                      },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div
+                          key={item.label}
+                          className="min-w-0 rounded-xl bg-white p-3"
+                          style={{ border: "1px solid #E9DED1" }}
+                        >
+                          <Icon
+                            size={16}
+                            style={{ color: "#8B3A1C" }}
+                            aria-hidden="true"
+                          />
+                          <p
+                            className="mt-2 text-[11px]"
+                            style={{ color: MUTED }}
+                          >
+                            {item.label}
+                          </p>
+                          <p
+                            className="mt-0.5 text-xs font-bold"
+                            style={{ color: TEXT }}
+                          >
+                            {item.value}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
+              ) : (
+                <StatusCallout
+                  size="sm"
+                  tone="info"
+                  title="No incubation mode selected"
+                  description="Choose a mode to preview the cycle length, temperature, humidity, and how often the eggs turn."
+                />
               )}
             </div>
-            <Button
-              size="toolbar"
-              onClick={startCycle}
-              disabled={!setupMode || isUpdating}
-              aria-busy={isUpdating}
-              className="rounded-full"
-              style={{ backgroundColor: "#8B3A1C", color: "#fff" }}
+
+            <div
+              className="sticky bottom-0 px-5 py-4"
+              style={{ backgroundColor: CARD, borderTop: `1px solid ${BORDER}` }}
             >
-              {isUpdating ? "Starting…" : "Start Incubation Cycle"}
-            </Button>
-          </div>
-        </SectionCard>
-      )}
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="rounded-full"
+                  disabled={isUpdating}
+                  onClick={() => setSetupOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!setupMode || !setupEggsValid || isUpdating}
+                  aria-busy={isUpdating}
+                  className="rounded-full px-5"
+                  style={{
+                    backgroundColor: RUST,
+                    color: "#fff",
+                    opacity:
+                      !setupMode || !setupEggsValid || isUpdating ? 0.5 : 1,
+                  }}
+                >
+                  {isUpdating ? "Starting…" : "Start Incubation Cycle"}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={setupConfirmOpen} onOpenChange={setSetupConfirmOpen}>
+        <AlertDialogContent
+          className="rounded-2xl border-[var(--border-default)]"
+          style={{ backgroundColor: CARD, color: TEXT }}
+        >
+          <AlertDialogHeader className="text-left">
+            <AlertDialogTitle
+              style={{ color: TEXT, fontSize: 18, fontWeight: 700 }}
+            >
+              Start incubation cycle?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="mt-2">
+                <StatusCallout
+                  size="default"
+                  tone="info"
+                  icon={
+                    <EggIcon
+                      size={statusIconBadgeGlyphSize("md")}
+                      weight="fill"
+                      color="var(--status-icon-badge-fg)"
+                    />
+                  }
+                  title="Are you sure?"
+                  description={
+                    <>
+                      Selected mode is{" "}
+                      <strong>{setupMode?.name ?? "Incubation"}</strong> with{" "}
+                      <strong>{setupEggsCount} eggs</strong> loaded into{" "}
+                      {unit.name}. Monitoring and the incubation timeline will
+                      begin on Day 1.
+                    </>
+                  }
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="rounded-full"
+              style={{ borderColor: BORDER, color: MUTED }}
+            >
+              Go back
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full"
+              style={{ backgroundColor: RUST, color: "#FFFFFF" }}
+              disabled={isUpdating}
+              aria-busy={isUpdating}
+              onClick={(event) => {
+                event.preventDefault();
+                setSetupConfirmOpen(false);
+                void startCycle();
+              }}
+            >
+              {isUpdating ? "Starting…" : "Start cycle"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Stopped Early Banner */}
       {unit.cyclePhase === "stopped_early" && (
@@ -373,14 +664,14 @@ export function DetailScreen({
       {unit.cyclePhase === "lockdown" && (
         <div
           className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4 shadow-sm"
-          style={{ backgroundColor: "#FFF8EB", border: "1px solid #FDE68A" }}
+          style={{ backgroundColor: WARN.bg, border: `1px solid ${BORDER}` }}
         >
           <div className="flex items-center gap-3">
             <span
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold"
-              style={{ backgroundColor: "#FEF3C7", color: "#B45309" }}
+              style={{ backgroundColor: WARN.bg, color: WARN.fg }}
             >
-              <ExclamationIcon size={22} color="#B45309" />
+              <ExclamationIcon size={22} />
             </span>
             <div>
               <p
@@ -389,14 +680,14 @@ export function DetailScreen({
                   fontSize: "var(--type-heading-sm)",
                   fontWeight: "var(--weight-extrabold)",
                   lineHeight: "var(--leading-snug)",
-                  color: "#92400E",
+                  color: WARN.fg,
                   whiteSpace: "normal",
                   wordBreak: "break-word",
                 }}
               >
                 Lockdown Active, Do Not Open
               </p>
-              <p style={{ fontSize: 13, color: "#B45309", marginTop: 2 }}>
+              <p style={{ fontSize: 13, color: WARN.fg, marginTop: 2 }}>
                 Turning Stopped. Keep the incubator closed while hatching
                 begins.
               </p>
@@ -409,7 +700,7 @@ export function DetailScreen({
       {cycleEnded && (
         <div
           className="flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm"
-          style={{ backgroundColor: "#FFF8EB", border: "1px solid #FDE68A" }}
+          style={{ backgroundColor: WARN.bg, border: `1px solid ${BORDER}` }}
         >
           <div>
             <p
@@ -418,14 +709,14 @@ export function DetailScreen({
                 fontSize: "var(--type-heading-sm)",
                 fontWeight: "var(--weight-extrabold)",
                 lineHeight: "var(--leading-snug)",
-                color: "#92400E",
+                color: WARN.fg,
                 whiteSpace: "normal",
                 wordBreak: "break-word",
               }}
             >
               Past Hatch Day
             </p>
-            <p style={{ fontSize: 13, color: "#B45309", marginTop: 2 }}>
+            <p style={{ fontSize: 13, color: WARN.fg, marginTop: 2 }}>
               Some eggs may still be hatching. Finish the cycle when ready.
             </p>
           </div>
@@ -433,7 +724,7 @@ export function DetailScreen({
             size="toolbar"
             onClick={() => setHarvestOpen(true)}
             className="rounded-xl px-5 font-bold shadow-sm transition-all"
-            style={{ backgroundColor: "#8B3A1C", color: "#FFFFFF" }}
+            style={{ backgroundColor: "var(--brand-primary-hover)", color: "var(--on-brand)" }}
           >
             Finish Cycle
           </Button>

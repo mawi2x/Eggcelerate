@@ -1,7 +1,6 @@
-import { WifiSlash } from "@phosphor-icons/react";
+import { BatteryPlus, WifiSlash } from "@phosphor-icons/react";
 import {
   ArrowUpRight,
-  BatteryMedium,
   ChevronDown,
   Droplets,
   Fan,
@@ -24,8 +23,8 @@ import { GaugeDial } from "../GaugeDial";
 import { WaterDroplet } from "../WaterDroplet";
 import { SectionCard } from "./primitives";
 import { Timeline } from "./Timeline";
+import { useIsMobile } from "../ui/use-mobile";
 import { BORDER, CRIT, MUTED, NEUTRAL, OK, RUST, TEXT, WARN } from "./types";
-
 type StatusTone = typeof OK;
 
 function SystemStatusTile({
@@ -41,18 +40,19 @@ function SystemStatusTile({
 }) {
   return (
     <div
-      className="flex min-h-16 items-center gap-3 rounded-xl px-3.5 py-3"
+      className="flex min-h-[50px] sm:min-h-16 items-center gap-2 sm:gap-3 rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3"
       style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
     >
       <span
         aria-hidden="true"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+        className="flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-sm sm:text-base [&>svg]:size-4 sm:[&>svg]:size-[18px]"
         style={{ backgroundColor: tone.bg, color: tone.fg }}
       >
         {icon}
       </span>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p
+          className="truncate"
           style={{
             color: MUTED,
             fontFamily: "var(--font-body)",
@@ -65,12 +65,10 @@ function SystemStatusTile({
           {label}
         </p>
         <p
-          className="tabular-nums"
+          className="tabular-nums truncate font-bold text-(length:--type-caption) sm:text-(length:--type-body-sm)"
           style={{
             color: TEXT,
             fontFamily: "var(--font-body)",
-            fontSize: "var(--type-body-sm)",
-            fontWeight: "var(--weight-bold)",
             lineHeight: "var(--leading-normal)",
           }}
         >
@@ -88,6 +86,10 @@ function readingStamp(ts: number) {
       month: "short",
       day: "numeric",
       year: "numeric",
+    }),
+    shortDate: date.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
     }),
     time: date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
   };
@@ -109,14 +111,15 @@ function ExtremumTile({
   const stamp = readingStamp(reading.ts);
   return (
     <div
-      className="rounded-xl px-3.5 py-3"
+      className="rounded-xl px-3 py-2 sm:px-3.5 sm:py-3"
       style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
     >
-      <div className="flex items-center gap-2">
-        <span aria-hidden="true" style={{ color: RUST }}>
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <span aria-hidden="true" className="shrink-0" style={{ color: RUST }}>
           {icon}
         </span>
         <span
+          className="min-w-0"
           style={{
             color: MUTED,
             fontFamily: "var(--font-body)",
@@ -131,11 +134,10 @@ function ExtremumTile({
         </span>
       </div>
       <p
-        className="mt-2 tabular-nums"
+        className="mt-1.5 tabular-nums text-(length:--type-heading-sm) sm:mt-2 sm:text-(length:--type-heading-lg)"
         style={{
           color: TEXT,
           fontFamily: "var(--font-display)",
-          fontSize: "var(--type-heading-lg)",
           fontWeight: "var(--weight-bold)",
           lineHeight: "var(--leading-tight)",
         }}
@@ -155,7 +157,7 @@ function ExtremumTile({
         </span>
       </p>
       <p
-        className="mt-1.5 truncate"
+        className="mt-1 truncate sm:mt-1.5"
         style={{
           color: MUTED,
           fontFamily: "var(--font-body)",
@@ -165,7 +167,12 @@ function ExtremumTile({
         }}
         title={`${stamp.date} at ${stamp.time}`}
       >
-        {stamp.date} at {stamp.time}
+        <span className="sm:hidden">
+          {stamp.shortDate} at {stamp.time}
+        </span>
+        <span className="hidden sm:inline">
+          {stamp.date} at {stamp.time}
+        </span>
       </p>
     </div>
   );
@@ -230,54 +237,71 @@ function EnvironmentalSummary({
           type="button"
           onClick={onViewTrends}
           className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[#F5EFE6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
-          style={{ color: RUST, fontSize: 12, fontWeight: 700 }}
+          style={{ color: RUST, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-bold)" }}
         >
           Full trends <ArrowUpRight size={14} aria-hidden="true" />
         </button>
       }
     >
       <details
-        className="group rounded-2xl"
+        className="group scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-2xl"
         style={{ border: `1px solid ${BORDER}`, backgroundColor: "#FCFAF6" }}
+        onToggle={(e) => {
+          // Expanding pushes content below the fold behind the bottom nav —
+          // glide the revealed region into view (same pattern as the
+          // chamber dot-nav). Focus stays on the summary.
+          const el = e.currentTarget;
+          if (!el.open) return;
+          const reduceMotion = window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+          ).matches;
+          requestAnimationFrame(() => {
+            el.scrollIntoView({
+              behavior: reduceMotion ? "auto" : "smooth",
+              block: "nearest",
+            });
+          });
+        }}
       >
-        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
-          <div className="min-w-0">
-            <p style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>
+        <summary className="cursor-pointer list-none rounded-2xl px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <p style={{ color: TEXT, fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)" }}>
               {hasExceptions ? "Cycle exceptions" : "Cycle stability"}
             </p>
-            <p
-              className="mt-0.5 grid gap-1 tabular-nums"
-              style={{ color: MUTED, fontSize: 12 }}
+            <span
+              className="inline-flex shrink-0 items-center gap-1.5"
+              style={{ color: RUST, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-bold)" }}
             >
-              <span className="inline-flex items-center gap-1">
-                <Thermometer size={13} aria-hidden="true" />
-                {temperatureException
-                  ? `Temperature went ${temperatureException.direction}: ${temperatureException.direction === "high" ? "peaked at" : "dropped to"} ${temperatureException.value.toFixed(1)}°C`
-                  : "Temperature stayed within target"}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Droplets size={13} aria-hidden="true" />
-                {humidityException
-                  ? `Humidity went ${humidityException.direction}: ${humidityException.direction === "high" ? "peaked at" : "dropped to"} ${humidityException.value.toFixed(1)}% RH`
-                  : "Humidity stayed within target"}
-              </span>
-            </p>
+              Review history
+              <ChevronDown
+                size={16}
+                aria-hidden="true"
+                className="transition-transform group-open:rotate-180"
+              />
+            </span>
           </div>
-          <span
-            className="inline-flex shrink-0 items-center gap-1.5"
-            style={{ color: RUST, fontSize: 12, fontWeight: 700 }}
+
+          <p
+            className="mt-1 grid gap-1 tabular-nums"
+            style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)" }}
           >
-            Review history
-            <ChevronDown
-              size={16}
-              aria-hidden="true"
-              className="transition-transform group-open:rotate-180"
-            />
-          </span>
+            <span className="inline-flex items-center gap-1">
+              <Thermometer size={13} aria-hidden="true" />
+              {temperatureException
+                ? `Temperature went ${temperatureException.direction}: ${temperatureException.direction === "high" ? "peaked at" : "dropped to"} ${temperatureException.value.toFixed(1)}°C`
+                : "Temperature stayed within target"}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Droplets size={13} aria-hidden="true" />
+              {humidityException
+                ? `Humidity went ${humidityException.direction}: ${humidityException.direction === "high" ? "peaked at" : "dropped to"} ${humidityException.value.toFixed(1)}% RH`
+                : "Humidity stayed within target"}
+            </span>
+          </p>
         </summary>
 
         <div className="border-t p-4" style={{ borderColor: BORDER }}>
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-4">
             <ExtremumTile
               label="Highest temperature"
               value={highestTemp.temp.toFixed(1)}
@@ -309,7 +333,7 @@ function EnvironmentalSummary({
           </div>
 
           <div className="mt-4 border-t pt-3" style={{ borderColor: BORDER }}>
-            <p style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>
+            <p style={{ color: TEXT, fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)" }}>
               Recent readings
             </p>
             <div className="mt-1 divide-y" style={{ borderColor: BORDER }}>
@@ -318,19 +342,19 @@ function EnvironmentalSummary({
                 return (
                   <div
                     key={reading.ts}
-                    className="flex flex-wrap items-center justify-between gap-2 py-2.5"
+                    className="flex flex-wrap items-center justify-between gap-2 py-2 sm:py-2.5"
                   >
                     <div>
                       <p
                         className="tabular-nums"
-                        style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}
+                        style={{ color: TEXT, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-bold)" }}
                       >
                         {stamp.date} at {stamp.time}
                       </p>
                     </div>
                     <div
                       className="flex items-center gap-3 tabular-nums"
-                      style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}
+                      style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-semibold)" }}
                     >
                       <span className="inline-flex items-center gap-1">
                         <Thermometer
@@ -377,6 +401,8 @@ export function LiveMonitorTab({
   environmentalReadings,
   onOpenTrends,
 }: LiveMonitorTabProps) {
+  const isMobile = useIsMobile();
+  const dialSize = isMobile ? 96 : 120;
   const heaterOn = unit.temp < mode.targetTemp.max;
   const overheating = unit.temp > mode.targetTemp.max;
   const fanOn = heaterOn || overheating;
@@ -390,12 +416,10 @@ export function LiveMonitorTab({
           totalDays={totalDays}
           candling={candling}
           candled={effectiveCandled}
+          labelSize={9}
         />
-        <div className="my-4" style={{ height: 1, backgroundColor: BORDER }} />
-        <div
-          className="grid grid-cols-1 items-start sm:grid-cols-3"
-          style={{ gap: 24 }}
-        >
+        <div className="my-2.5 sm:my-4" style={{ height: 1, backgroundColor: BORDER }} />
+        <div className="grid grid-cols-3 items-start gap-2 sm:gap-6">
           <GaugeDial
             value={unit.temp}
             min={30}
@@ -403,7 +427,7 @@ export function LiveMonitorTab({
             safe={mode.targetTemp}
             unit="°C"
             label="Temperature"
-            size={120}
+            size={dialSize}
           />
           <GaugeDial
             value={unit.humidity}
@@ -412,9 +436,9 @@ export function LiveMonitorTab({
             safe={mode.targetHumidity}
             unit="%"
             label="Humidity"
-            size={120}
+            size={dialSize}
           />
-          <WaterDroplet ok={unit.waterOk} />
+          <WaterDroplet ok={unit.waterOk} size={dialSize} />
         </div>
       </SectionCard>
 
@@ -422,7 +446,7 @@ export function LiveMonitorTab({
         title="Chamber status"
         subtitle="Live systems, power, and connectivity"
       >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
           <SystemStatusTile
             icon={<Flame size={18} />}
             label="Heating element"
@@ -462,7 +486,7 @@ export function LiveMonitorTab({
             tone={unit.paired ? OK : CRIT}
           />
           <SystemStatusTile
-            icon={<BatteryMedium size={18} />}
+            icon={<BatteryPlus size={18} />}
             label="Battery"
             value={
               unit.batteryPct <= 25

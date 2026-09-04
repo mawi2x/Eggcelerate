@@ -90,8 +90,10 @@ const sortTriggerStyle = {
   backgroundColor: "#FFFFFF",
   borderColor: "var(--border-subtle)",
   color: "var(--text-primary)",
-  fontSize: 13,
-  fontWeight: 500,
+  fontFamily: "var(--font-body)",
+  fontSize: "var(--type-body-sm)",
+  fontWeight: "var(--weight-medium)",
+  lineHeight: "var(--leading-normal)",
 };
 
 type SortKey = "progress" | "name";
@@ -116,7 +118,7 @@ export function IncubatorsScreen({
   const [view, setView] = useState<ViewMode>("grid");
   const [filter, setFilter] = useState<Filter>("all");
   const [modeFilter, setModeFilter] = useState("all");
-  const [sort, setSort] = useState<SortKey>("name");
+  const [sort, setSort] = useState<SortKey>("progress");
   const [sortAsc, setSortAsc] = useState(true);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -556,46 +558,29 @@ export function IncubatorsScreen({
           {/* Floating Vertical Dot Track on Mobile (shows incubator count and scroll position) */}
           {sorted.length > 1 && (
             <fieldset
-              className="scrollbar-none fixed right-1 top-1/2 z-30 m-0 flex max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] min-w-0 -translate-y-1/2 flex-col items-center overflow-y-auto overscroll-contain rounded-full px-0.5 py-1.5 max-[20rem]:hidden md:hidden"
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.74)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid rgba(232, 226, 213, 0.72)",
-                boxShadow: "0 2px 8px rgba(45, 26, 14, 0.08)",
-              }}
+              className="scrollbar-none pointer-events-auto fixed right-1 top-1/2 z-20 m-0 flex max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto border-0 bg-transparent p-0 max-[20rem]:hidden md:hidden"
               aria-label={`Chamber list index. Showing ${sorted.length} chambers.`}
             >
               {sorted.map((unit, idx) => {
                 const isActive = activeCardIndex === idx;
-                const color = STATUS_DOT_COLORS[unit.status];
-                const statusLabel =
-                  unit.status === "alert"
-                    ? "urgent"
-                    : unit.status === "warning"
-                      ? "needs attention"
-                      : "optimal";
                 return (
                   <button
                     key={unit.id}
                     type="button"
                     onClick={() => scrollToChamber(idx)}
-                    className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                    aria-label={`Scroll to ${unit.name}, ${statusLabel} (${idx + 1} of ${sorted.length})`}
-                    title={`${unit.name}: ${statusLabel}`}
+                    className="flex h-3 w-2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none"
+                    aria-label={`Scroll to ${unit.name} (${idx + 1} of ${sorted.length})`}
+                    title={`${unit.name} (${idx + 1} of ${sorted.length})`}
                     aria-current={isActive ? "true" : undefined}
                   >
                     <span
                       className="rounded-full transition-all duration-200 motion-reduce:transition-none"
                       style={{
-                        width: 3,
-                        height: isActive ? 9 : 3,
+                        width: isActive ? 4 : 2.5,
+                        height: isActive ? 12 : 2.5,
                         backgroundColor: isActive
                           ? "var(--brand-primary)"
-                          : color,
-                        boxShadow: isActive
-                          ? "0 0 0 2px rgba(173, 58, 29, 0.12)"
-                          : "none",
-                        opacity: isActive ? 1 : 0.62,
+                          : "rgba(138, 107, 82, 0.4)",
                       }}
                     />
                   </button>

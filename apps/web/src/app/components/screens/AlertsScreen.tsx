@@ -51,11 +51,11 @@ const severityTint: Record<
 type Filter = "all" | AlertSeverity;
 type SortKey = "recent" | "oldest" | "severity";
 
-const filters: { key: Filter; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "critical", label: "Urgent" },
-  { key: "warning", label: "Needs Attention" },
-  { key: "info", label: "Reminder" },
+const filters: { key: Filter; label: string; mobileLabel: string }[] = [
+  { key: "all", label: "All", mobileLabel: "All" },
+  { key: "critical", label: "Urgent", mobileLabel: "Urgent" },
+  { key: "warning", label: "Needs Attention", mobileLabel: "Attention" },
+  { key: "info", label: "Reminder", mobileLabel: "Reminders" },
 ];
 
 const severityRank: Record<AlertSeverity, number> = {
@@ -132,6 +132,7 @@ export function AlertsScreen({
           options={filters.map((f) => ({
             key: f.key,
             label: f.label,
+            mobileLabel: f.mobileLabel,
             count:
               f.key === "all"
                 ? alerts.length
@@ -139,7 +140,7 @@ export function AlertsScreen({
           }))}
         />
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           <Select
             value={sort}
             onValueChange={(value) => {
@@ -149,7 +150,7 @@ export function AlertsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="w-[165px] rounded-xl"
+              className="w-full rounded-xl sm:w-[165px]"
               style={{
                 borderColor: BORDER,
                 backgroundColor: "#FFFFFF",
@@ -181,7 +182,7 @@ export function AlertsScreen({
           <Button
             size="toolbar"
             variant="outline"
-            className="rounded-xl"
+            className="col-span-2 rounded-xl sm:col-span-1"
             style={{ borderColor: BORDER }}
             onClick={() => void onClearRead()}
             disabled={readCount === 0 || clearingRead || markingAllRead}
@@ -235,19 +236,6 @@ export function AlertsScreen({
           </div>
         ) : (
           <>
-            <PaginationBar
-              className="border-b border-t-0"
-              page={page}
-              pageSize={alertsPerPage}
-              totalItems={list.length}
-              itemLabel="alerts"
-              pageSizeOptions={[10, 20, 50]}
-              onPageSizeChange={(value) => {
-                setAlertsPerPage(value);
-                setAlertPage(1);
-              }}
-              onPageChange={setAlertPage}
-            />
             <ul>
               {pagedAlerts.map((a, i) => {
                 const s = severityStyle[a.severity];
@@ -255,13 +243,14 @@ export function AlertsScreen({
                 return (
                   <li
                     key={a.id}
-                    className="group flex items-start gap-3.5 transition-colors"
+                    className="group grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3.5 gap-y-2 transition-colors sm:grid-cols-[auto_minmax(0,1fr)_116px]"
                     style={{
-                      padding: "16px 20px",
+                      padding: "16px 20px 16px 16px",
                       borderBottom:
                         i === pagedAlerts.length - 1
                           ? "none"
                           : `1px solid ${DIVIDER}`,
+                      borderLeft: `4px solid ${tint.tileFg}`,
                     }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.backgroundColor = ROW_HOVER)
@@ -272,7 +261,7 @@ export function AlertsScreen({
                   >
                     {/* Column 1 — unread dot + icon tile */}
                     <div
-                      className="flex shrink-0 items-center gap-2.5"
+                      className="row-span-2 flex shrink-0 items-center gap-2.5 sm:row-span-1"
                       style={{ paddingTop: 2 }}
                     >
                       <span
@@ -292,7 +281,7 @@ export function AlertsScreen({
                         }
                       />
                       <span
-                        className="flex items-center justify-center rounded-xl"
+                        className="flex items-center justify-center rounded-full"
                         style={{
                           width: 36,
                           height: 36,
@@ -306,7 +295,7 @@ export function AlertsScreen({
 
                     {/* Column 2 — title + chamber over message */}
                     <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                      <div className="flex min-w-0 flex-col gap-x-2 gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline">
                         <span
                           className="min-w-0 truncate"
                           style={{
@@ -366,13 +355,13 @@ export function AlertsScreen({
                       </p>
                     </div>
 
-                    {/* Column 3 — compact severity pill above timestamp + quick actions */}
+                    {/* Column 3 — severity pill above timestamp + quick actions */}
                     <div
-                      className="flex shrink-0 flex-col items-end gap-1.5 sm:relative sm:h-7 sm:w-[68px]"
+                      className="col-start-2 row-start-2 flex w-full items-start justify-between gap-3 sm:col-start-3 sm:row-start-1 sm:w-[116px] sm:flex-col sm:items-end sm:gap-1.5"
                       style={{ minHeight: 44 }}
                     >
                       <span
-                        className="rounded-full px-2.5 py-0.5"
+                        className="whitespace-nowrap rounded-full px-2.5 py-0.5"
                         style={{
                           backgroundColor: tint.pill,
                           color: tint.pillFg,
@@ -387,9 +376,9 @@ export function AlertsScreen({
                         {s.label}
                       </span>
 
-                      <div className="relative flex min-h-11 items-center justify-end gap-1 sm:absolute sm:inset-0 sm:block">
+                      <div className="flex flex-col items-end gap-1 sm:relative sm:h-8 sm:w-full">
                         <span
-                          className="flex items-center justify-end whitespace-nowrap transition-opacity sm:absolute sm:inset-0 sm:group-focus-within:opacity-0 sm:group-hover:opacity-0"
+                          className="whitespace-nowrap transition-opacity sm:absolute sm:inset-0 sm:flex sm:items-center sm:justify-end sm:group-focus-within:opacity-0 sm:group-hover:opacity-0"
                           style={{
                             fontFamily: "var(--font-body)",
                             fontSize: "var(--type-label)",
@@ -437,6 +426,18 @@ export function AlertsScreen({
                 );
               })}
             </ul>
+            <PaginationBar
+              page={page}
+              pageSize={alertsPerPage}
+              totalItems={list.length}
+              itemLabel="alerts"
+              pageSizeOptions={[10, 20, 50]}
+              onPageSizeChange={(value) => {
+                setAlertsPerPage(value);
+                setAlertPage(1);
+              }}
+              onPageChange={setAlertPage}
+            />
           </>
         )}
       </div>

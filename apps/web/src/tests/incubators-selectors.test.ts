@@ -108,7 +108,15 @@ describe("selectSortedIncubators", () => {
       sort: "name",
       sortAsc: false,
     });
-    expect(desc.map((u) => u.id)).toEqual(asc.map((u) => u.id).reverse());
+    const pinned = (u: (typeof units)[number]) =>
+      u.cyclePhase === "completed" || u.cyclePhase === "ready";
+    // Action-needed chambers pin to the top in both directions; the rest
+    // reverses.
+    expect(asc.filter((u) => !pinned(u)).map((u) => u.id)).toEqual(
+      desc.filter((u) => !pinned(u)).map((u) => u.id).reverse(),
+    );
+    expect(asc.slice(0, asc.filter(pinned).length).every(pinned)).toBe(true);
+    expect(desc.slice(0, desc.filter(pinned).length).every(pinned)).toBe(true);
   });
 
   it("sorts by remaining hatch time for progress", () => {
@@ -117,5 +125,40 @@ describe("selectSortedIncubators", () => {
       sortAsc: true,
     });
     expect(result).toHaveLength(units.length);
+  });
+
+  it("pins completed then ready chambers to the top in every sort", () => {
+    const trial = [
+      {
+        ...units[1],
+        id: "mid",
+        name: "Chamber Mid",
+        cyclePhase: "incubating" as const,
+        dayOfIncubation: 10,
+      },
+      {
+        ...units[2],
+        id: "rdy",
+        name: "Chamber Ready",
+        cyclePhase: "ready" as const,
+        dayOfIncubation: 0,
+      },
+      {
+        ...units[3],
+        id: "done",
+        name: "Chamber Done",
+        cyclePhase: "completed" as const,
+        dayOfIncubation: 99,
+      },
+    ];
+    for (const sort of ["progress", "name"] as const) {
+      for (const sortAsc of [true, false]) {
+        expect(
+          selectSortedIncubators(trial, modes, { sort, sortAsc }).map(
+            (u) => u.id,
+          ),
+        ).toEqual(["done", "rdy", "mid"]);
+      }
+    }
   });
 });

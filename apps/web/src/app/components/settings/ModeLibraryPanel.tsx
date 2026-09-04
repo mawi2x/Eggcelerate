@@ -528,7 +528,7 @@ export function ModeLibraryPanel({
     <div>
       <PanelHeader
         title="Mode Library"
-        description="Incubation presets: temperature, humidity, duration, and turning cadence per species."
+        description="Incubation presets: temperature, humidity, duration, and how often eggs turn for each species."
       />
 
       {/* Toolbar */}
@@ -697,7 +697,7 @@ export function ModeLibraryPanel({
                     color: MUTED,
                   }}
                 >
-                  Candling ~ {candling.map((c) => `d${c.day}`).join(" / ")}
+                  Candling days · {candling.map((c) => c.day).join(" / ")}
                 </p>
                 <div className="mt-4">
                   <ModeActions m={m} />
@@ -746,6 +746,9 @@ export function ModeLibraryPanel({
                 return (
                   <TableRow key={m.id}>
                     <TableCell
+                      aria-label={`Candling days: ${candling
+                        .map((c) => c.day)
+                        .join(", ")}`}
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: "var(--type-body-sm)",
@@ -812,7 +815,7 @@ export function ModeLibraryPanel({
                         color: MUTED,
                       }}
                     >
-                      {candling.map((c) => `d${c.day}`).join(" / ")}
+                      {candling.map((c) => c.day).join(" / ")}
                     </TableCell>
                     <TableCell>
                       <ModeActions m={m} />

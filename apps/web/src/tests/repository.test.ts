@@ -86,27 +86,16 @@ describe("InMemoryEggcelerateRepository", () => {
     expect(chamber.ok && chamber.data.status).toBe("alert");
   });
 
-  it("records then lists a harvest without exposing mutable state", async () => {
+  it("does not expose standalone history writers", () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
-    const before = await repository.listHatchRecords();
-    const created = await repository.recordHarvest({
-      chamber: "Test Chamber",
-      modeName: "Broiler",
-      cycleDays: 21,
-      totalEggs: 12,
-      fertileEggs: 10,
-      hatchedEggs: 9,
-    });
-    const after = await repository.listHatchRecords();
-
-    expect(before.ok && before.data).toHaveLength(12);
-    expect(created.ok && created.data.endDate).toBe("2026-09-03");
-    expect(after.ok && after.data).toHaveLength(13);
+    expect(repository).not.toHaveProperty("recordHarvest");
+    expect(repository).not.toHaveProperty("recordAbortedCycle");
   });
 
   it("rejects an invalid harvest without writing history", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
-    const result = await repository.recordHarvest({
+    const result = await repository.completeCycle({
+      incubatorId: "chamber-1",
       chamber: "Test Chamber",
       modeName: "Broiler",
       cycleDays: 21,
@@ -169,20 +158,6 @@ describe("InMemoryEggcelerateRepository", () => {
     if (!result.ok) expect(result.error.code).toBe("conflict");
   });
 
-  it("records aborted cycles through the same mutable owner", async () => {
-    const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
-    const result = await repository.recordAbortedCycle({
-      incubator: "Chamber One",
-      modeName: "Broiler",
-      dayStopped: 8,
-      totalEggs: 24,
-      fertileEggs: 22,
-    });
-    const records = await repository.listAbortedCycles();
-    expect(result.ok).toBe(true);
-    expect(records.ok && records.data).toHaveLength(1);
-  });
-
   it("archives and stops a cycle as one repository command", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
     const result = await repository.stopCycle({
@@ -203,7 +178,8 @@ describe("InMemoryEggcelerateRepository", () => {
 
   it("rejects inconsistent aborted-cycle counts", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
-    const result = await repository.recordAbortedCycle({
+    const result = await repository.stopCycle({
+      incubatorId: "chamber-1",
       incubator: "Chamber One",
       modeName: "Broiler",
       dayStopped: 8,

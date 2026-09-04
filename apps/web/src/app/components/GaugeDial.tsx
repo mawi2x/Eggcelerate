@@ -53,7 +53,7 @@ export function GaugeDial({
   const r = size / 2 - stroke / 2 - 4;
   const valueFont = Math.round(size * 0.19);
   const unitFont = Math.round(size * 0.088);
-  const labelFont = Math.max(10, Math.round(size * 0.072));
+  const labelFont = size >= 120 ? 11 : Math.max(10, Math.round(size * 0.072));
 
   const START = 225; // bottom-left
   const SWEEP = 270; // clockwise, open bottom
@@ -167,14 +167,26 @@ export function GaugeDial({
           {label}
         </text>
       </svg>
-      <p className="mt-1 text-center" style={{ color: MUTED, fontSize: 12 }}>
-        {safeLabel ?? (
+      <div className="mt-1 flex flex-col items-center text-center">
+        {safeLabel ? (
+          <span className="text-(length:--type-label-compact) font-semibold sm:text-(length:--type-caption)" style={{ color: MUTED }}>
+            {safeLabel}
+          </span>
+        ) : (
           <>
-            Safe range: {safe.min} to {safe.max}
-            {unit === "%" ? "% RH" : unit}
+            <span
+              className="text-(length:--type-label-micro) font-bold uppercase tracking-wider sm:text-(length:--type-label-compact)"
+              style={{ color: MUTED, opacity: 0.8 }}
+            >
+              Safe range
+            </span>
+            <span className="text-(length:--type-label-compact) font-semibold text-[var(--text-primary)] sm:text-(length:--type-caption)">
+              {safe.min} to {safe.max}
+              {unit === "%" ? "% RH" : unit}
+            </span>
           </>
         )}
-      </p>
+      </div>
       {footer}
     </div>
   );

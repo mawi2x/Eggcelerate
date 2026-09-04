@@ -1,6 +1,7 @@
 import {
   Bird,
   CheckCircle,
+  CheckFatIcon,
   Egg,
   EggCrack,
   Lock,
@@ -99,6 +100,16 @@ function CheckFillIcon({
   return <CheckCircle size={size} color={color} weight="fill" />;
 }
 
+function ReadyCheckIcon({
+  size = 15,
+  color = "#FFFFFF",
+}: {
+  size?: number | string;
+  color?: string;
+}) {
+  return <CheckFatIcon size={size} color={color} weight="fill" />;
+}
+
 function BirdFillIcon({
   size = 15,
   color = "#FFFFFF",
@@ -175,7 +186,13 @@ function operationalStatus(unit: Incubator): {
       Icon: LockFillIcon,
     };
   if (unit.cyclePhase === "ready")
-    return { label: "Ready", bg: "#F1F3F4", fg: "#5F6368", dot: true };
+    return {
+      label: "Ready",
+      bg: "#F1F3F4",
+      fg: "#5F6368",
+      Icon: ReadyCheckIcon,
+      dot: true,
+    };
   return {
     label: "Incubating",
     bg: "#E6F4EA",
@@ -365,7 +382,7 @@ export function IncubatorCard({
   return (
     <Card
       className={cn(
-        "group cursor-pointer overflow-hidden border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        "group h-full cursor-pointer overflow-hidden border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         highlighted
           ? "border-[var(--nav-hover-border)] bg-[var(--nav-hover-bg)] shadow-md"
           : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[0_2px_12px_rgba(0,0,0,0.04)]",
@@ -492,7 +509,7 @@ export function IncubatorCard({
             </p>
           </div>
         ) : (
-          <>
+          <div className="flex-1">
             <div className="grid grid-cols-3 gap-2">
               <Reading
                 icon={<Thermometer size={15} />}
@@ -575,7 +592,7 @@ export function IncubatorCard({
                 />
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Footer — full-width status oval containing the status icon, label, and configure button. */}

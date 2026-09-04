@@ -466,7 +466,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-4">
+      <div className="flex flex-wrap items-center justify-start gap-4">
         <SegmentedControl aria-label="Trend view">
           {viewOptions.map(({ key, label, Icon }) => {
             const active = trendView === key;
