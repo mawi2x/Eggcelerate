@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 
 export type StatusIconBadgeSize = "sm" | "md" | "lg" | "banner";
-export type StatusIconBadgeTone = "success" | "warning" | "danger" | "info" | "brand";
+export type StatusIconBadgeTone =
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+  | "brand";
 
 const toneBackgrounds: Record<StatusIconBadgeTone, string> = {
   success: "var(--status-success-fg)",
@@ -11,7 +16,10 @@ const toneBackgrounds: Record<StatusIconBadgeTone, string> = {
   brand: "var(--brand-primary)",
 };
 
-const sizeTokens: Record<StatusIconBadgeSize, { circle: string; glyph: string }> = {
+const sizeTokens: Record<
+  StatusIconBadgeSize,
+  { circle: string; glyph: string }
+> = {
   sm: {
     circle: "var(--status-icon-badge-size-sm)",
     glyph: "var(--status-icon-badge-glyph-sm)",

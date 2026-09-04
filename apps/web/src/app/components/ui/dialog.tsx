@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
+import type * as React from "react";
 
 import { cn } from "./utils";
 
@@ -49,11 +49,12 @@ function DialogOverlay({
 // Default responsive width for each DialogContent size variant.
 // The `sm:` prefix is required: it lets consumers override these with a
 // same-modifier class via `cn` (tailwind-merge only dedupes within a bucket).
-const DIALOG_SIZE_CLASSES: Record<"default" | "large" | "fullscreen", string> = {
-  default: "sm:max-w-lg",
-  large: "sm:max-w-5xl",
-  fullscreen: "sm:max-w-[1600px] sm:w-[94vw]",
-};
+const DIALOG_SIZE_CLASSES: Record<"default" | "large" | "fullscreen", string> =
+  {
+    default: "sm:max-w-lg",
+    large: "sm:max-w-5xl",
+    fullscreen: "sm:max-w-[1600px] sm:w-[94vw]",
+  };
 
 function DialogContent({
   className,

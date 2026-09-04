@@ -12,7 +12,13 @@ export function UtilityHeader({ alertCount, onViewAlerts }: Props) {
       type="button"
       onClick={onViewAlerts}
       className="relative flex shrink-0 cursor-pointer items-center justify-center rounded-2xl border transition-colors hover:bg-[#F5EDD8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
-      style={{ height: 52, width: 52, backgroundColor: "var(--surface-card)", borderColor: "var(--border-default)", color: "var(--text-secondary)" }}
+      style={{
+        height: 52,
+        width: 52,
+        backgroundColor: "var(--surface-card)",
+        borderColor: "var(--border-default)",
+        color: "var(--text-secondary)",
+      }}
       title="Alerts"
       aria-label={`Alerts, ${alertCount} unread`}
     >

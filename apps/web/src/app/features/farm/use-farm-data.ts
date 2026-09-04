@@ -1,11 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { AlertEntry, HatchRecord, Incubator, Mode } from "../../domain/types";
-import type { CompleteCycleInput, StopCycleInput } from "../../data/repositories/repository";
+import type {
+  CompleteCycleInput,
+  StopCycleInput,
+} from "../../data/repositories/repository";
 import { initialSettings, type SettingsPreferences } from "../../data/settings";
+import type {
+  AlertEntry,
+  HatchRecord,
+  Incubator,
+  Mode,
+} from "../../domain/types";
 import { useRepository } from "../../providers/repository-context";
 import { farmQueryKeys } from "./query-keys";
-import { mutationErrorPresentation, requireResultData } from "./repository-query";
+import {
+  mutationErrorPresentation,
+  requireResultData,
+} from "./repository-query";
 
 async function runMutation(
   action: () => Promise<unknown>,
@@ -15,7 +26,9 @@ async function runMutation(
     await action();
     return true;
   } catch (error) {
-    const feedback = mutationErrorPresentation(error, { rolledBack: options.rolledBack });
+    const feedback = mutationErrorPresentation(error, {
+      rolledBack: options.rolledBack,
+    });
     toast.error(feedback.title, {
       description: feedback.description,
       action: { label: "Retry", onClick: options.retry },
@@ -46,9 +59,19 @@ export function useFarmData() {
     queryKey: farmQueryKeys.settings,
     queryFn: async () => requireResultData(await repository.listSettings()),
   });
-  const queries = [modesQuery, incubatorsQuery, alertsQuery, hatchRecordsQuery, settingsQuery];
-  const initialError = queries.find((query) => query.error && query.data === undefined)?.error ?? null;
-  const backgroundError = queries.find((query) => query.error && query.data !== undefined)?.error ?? null;
+  const queries = [
+    modesQuery,
+    incubatorsQuery,
+    alertsQuery,
+    hatchRecordsQuery,
+    settingsQuery,
+  ];
+  const initialError =
+    queries.find((query) => query.error && query.data === undefined)?.error ??
+    null;
+  const backgroundError =
+    queries.find((query) => query.error && query.data !== undefined)?.error ??
+    null;
 
   return {
     modes: modesQuery.data ?? [],
@@ -57,7 +80,9 @@ export function useFarmData() {
     hatchRecords: hatchRecordsQuery.data ?? [],
     settings: settingsQuery.data ?? initialSettings,
     isLoading: queries.some((query) => query.isPending),
-    isRefreshing: queries.some((query) => query.isFetching && query.data !== undefined),
+    isRefreshing: queries.some(
+      (query) => query.isFetching && query.data !== undefined,
+    ),
     staleError: backgroundError,
     error: initialError,
     retry: async () => {
@@ -71,41 +96,65 @@ export function useFarmActions() {
   const queryClient = useQueryClient();
 
   const addIncubatorMutation = useMutation({
-    mutationFn: async (unit: Incubator) => requireResultData(await repository.addIncubator(unit)),
+    mutationFn: async (unit: Incubator) =>
+      requireResultData(await repository.addIncubator(unit)),
     onSuccess: (created) => {
-      queryClient.setQueryData<Incubator[]>(farmQueryKeys.incubators, (current = []) => [
-        ...current,
-        created,
-      ]);
+      queryClient.setQueryData<Incubator[]>(
+        farmQueryKeys.incubators,
+        (current = []) => [...current, created],
+      );
     },
   });
   const updateIncubatorMutation = useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Incubator> }) =>
-      requireResultData(await repository.updateIncubator(id, patch)),
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<Incubator>;
+    }) => requireResultData(await repository.updateIncubator(id, patch)),
     onMutate: async ({ id, patch }) => {
       await queryClient.cancelQueries({ queryKey: farmQueryKeys.incubators });
       const previous = queryClient
         .getQueryData<Incubator[]>(farmQueryKeys.incubators)
         ?.find((unit) => unit.id === id);
-      queryClient.setQueryData<Incubator[]>(farmQueryKeys.incubators, (current = []) =>
-        current.map((unit) => unit.id === id ? { ...unit, ...patch, id } : unit));
+      queryClient.setQueryData<Incubator[]>(
+        farmQueryKeys.incubators,
+        (current = []) =>
+          current.map((unit) =>
+            unit.id === id ? { ...unit, ...patch, id } : unit,
+          ),
+      );
       return { previous };
     },
     onSuccess: (updated) => {
-      queryClient.setQueryData<Incubator[]>(farmQueryKeys.incubators, (current = []) =>
-        current.map((unit) => unit.id === updated.id ? updated : unit));
-      void queryClient.invalidateQueries({ queryKey: farmQueryKeys.readingsFor(updated.id) });
+      queryClient.setQueryData<Incubator[]>(
+        farmQueryKeys.incubators,
+        (current = []) =>
+          current.map((unit) => (unit.id === updated.id ? updated : unit)),
+      );
+      void queryClient.invalidateQueries({
+        queryKey: farmQueryKeys.readingsFor(updated.id),
+      });
     },
     onError: (_error, { id }, context) => {
-      if (!context?.previous) return;
-      queryClient.setQueryData<Incubator[]>(farmQueryKeys.incubators, (current = []) =>
-        current.map((unit) => unit.id === id ? context.previous! : unit));
+      const previous = context?.previous;
+      if (!previous) return;
+      queryClient.setQueryData<Incubator[]>(
+        farmQueryKeys.incubators,
+        (current = []) =>
+          current.map((unit) => (unit.id === id ? previous : unit)),
+      );
     },
   });
   const addModeMutation = useMutation({
-    mutationFn: async (mode: Mode) => requireResultData(await repository.addMode(mode)),
+    mutationFn: async (mode: Mode) =>
+      requireResultData(await repository.addMode(mode)),
     onSuccess: (created) => {
-      queryClient.setQueryData<Mode[]>(farmQueryKeys.modes, (current = []) => [...current, created]);
+      queryClient.setQueryData<Mode[]>(farmQueryKeys.modes, (current = []) => [
+        ...current,
+        created,
+      ]);
     },
   });
   const updateModeMutation = useMutation({
@@ -113,44 +162,61 @@ export function useFarmActions() {
       requireResultData(await repository.updateMode(id, patch)),
     onSuccess: (updated) => {
       queryClient.setQueryData<Mode[]>(farmQueryKeys.modes, (current = []) =>
-        current.map((mode) => mode.id === updated.id ? updated : mode));
-      void queryClient.invalidateQueries({ queryKey: farmQueryKeys.incubators });
+        current.map((mode) => (mode.id === updated.id ? updated : mode)),
+      );
+      void queryClient.invalidateQueries({
+        queryKey: farmQueryKeys.incubators,
+      });
       void queryClient.invalidateQueries({ queryKey: farmQueryKeys.readings });
     },
   });
   const deleteModeMutation = useMutation({
-    mutationFn: async (id: string) => requireResultData(await repository.deleteMode(id)),
+    mutationFn: async (id: string) =>
+      requireResultData(await repository.deleteMode(id)),
     onSuccess: ({ id }) => {
       queryClient.setQueryData<Mode[]>(farmQueryKeys.modes, (current = []) =>
-        current.filter((mode) => mode.id !== id));
+        current.filter((mode) => mode.id !== id),
+      );
     },
   });
   const acknowledgeAlertMutation = useMutation({
-    mutationFn: async (id: string) => requireResultData(await repository.acknowledgeAlert(id)),
+    mutationFn: async (id: string) =>
+      requireResultData(await repository.acknowledgeAlert(id)),
     onSuccess: (updated) => {
-      queryClient.setQueryData<AlertEntry[]>(farmQueryKeys.alerts, (current = []) =>
-        current.map((alert) => alert.id === updated.id ? updated : alert));
+      queryClient.setQueryData<AlertEntry[]>(
+        farmQueryKeys.alerts,
+        (current = []) =>
+          current.map((alert) => (alert.id === updated.id ? updated : alert)),
+      );
     },
   });
   const dismissAlertMutation = useMutation({
-    mutationFn: async (id: string) => requireResultData(await repository.dismissAlert(id)),
+    mutationFn: async (id: string) =>
+      requireResultData(await repository.dismissAlert(id)),
     onSuccess: ({ id }) => {
-      queryClient.setQueryData<AlertEntry[]>(farmQueryKeys.alerts, (current = []) =>
-        current.filter((alert) => alert.id !== id));
+      queryClient.setQueryData<AlertEntry[]>(
+        farmQueryKeys.alerts,
+        (current = []) => current.filter((alert) => alert.id !== id),
+      );
     },
   });
   const markAllAlertsReadMutation = useMutation({
-    mutationFn: async () => requireResultData(await repository.markAllAlertsRead()),
-    onSuccess: (alerts) => queryClient.setQueryData(farmQueryKeys.alerts, alerts),
+    mutationFn: async () =>
+      requireResultData(await repository.markAllAlertsRead()),
+    onSuccess: (alerts) =>
+      queryClient.setQueryData(farmQueryKeys.alerts, alerts),
   });
   const clearReadAlertsMutation = useMutation({
-    mutationFn: async () => requireResultData(await repository.clearReadAlerts()),
-    onSuccess: (alerts) => queryClient.setQueryData(farmQueryKeys.alerts, alerts),
+    mutationFn: async () =>
+      requireResultData(await repository.clearReadAlerts()),
+    onSuccess: (alerts) =>
+      queryClient.setQueryData(farmQueryKeys.alerts, alerts),
   });
   const saveSettingsMutation = useMutation({
     mutationFn: async (settings: SettingsPreferences) =>
       requireResultData(await repository.saveSettings(settings)),
-    onSuccess: (settings) => queryClient.setQueryData(farmQueryKeys.settings, settings),
+    onSuccess: (settings) =>
+      queryClient.setQueryData(farmQueryKeys.settings, settings),
   });
 
   async function addIncubator(unit: Incubator): Promise<boolean> {
@@ -158,18 +224,27 @@ export function useFarmActions() {
       retry: () => void addIncubator(unit),
     });
   }
-  async function updateIncubator(id: string, patch: Partial<Incubator>): Promise<boolean> {
-    return runMutation(() => updateIncubatorMutation.mutateAsync({ id, patch }), {
-      retry: () => void updateIncubator(id, patch),
-      rolledBack: true,
-    });
+  async function updateIncubator(
+    id: string,
+    patch: Partial<Incubator>,
+  ): Promise<boolean> {
+    return runMutation(
+      () => updateIncubatorMutation.mutateAsync({ id, patch }),
+      {
+        retry: () => void updateIncubator(id, patch),
+        rolledBack: true,
+      },
+    );
   }
   async function addMode(mode: Mode): Promise<boolean> {
     return runMutation(() => addModeMutation.mutateAsync(mode), {
       retry: () => void addMode(mode),
     });
   }
-  async function updateMode(id: string, patch: Partial<Mode>): Promise<boolean> {
+  async function updateMode(
+    id: string,
+    patch: Partial<Mode>,
+  ): Promise<boolean> {
     return runMutation(() => updateModeMutation.mutateAsync({ id, patch }), {
       retry: () => void updateMode(id, patch),
     });
@@ -219,12 +294,12 @@ export function useFarmActions() {
     actionState: {
       addingIncubator: addIncubatorMutation.isPending,
       updatingIncubatorId: updateIncubatorMutation.isPending
-        ? updateIncubatorMutation.variables?.id ?? null
+        ? (updateIncubatorMutation.variables?.id ?? null)
         : null,
       pendingAlertId: acknowledgeAlertMutation.isPending
-        ? acknowledgeAlertMutation.variables ?? null
+        ? (acknowledgeAlertMutation.variables ?? null)
         : dismissAlertMutation.isPending
-          ? dismissAlertMutation.variables ?? null
+          ? (dismissAlertMutation.variables ?? null)
           : null,
       markingAllAlertsRead: markAllAlertsReadMutation.isPending,
       clearingReadAlerts: clearReadAlertsMutation.isPending,
@@ -241,22 +316,32 @@ export function useCycleHistoryActions() {
     mutationFn: async (input: CompleteCycleInput) =>
       requireResultData(await repository.completeCycle(input)),
     onSuccess: ({ incubator, record }) => {
-      queryClient.setQueryData<HatchRecord[]>(farmQueryKeys.hatchRecords, (current = []) => [
-        ...current,
-        record,
-      ]);
-      queryClient.setQueryData<Incubator[]>(farmQueryKeys.incubators, (current = []) =>
-        current.map((unit) => unit.id === incubator.id ? incubator : unit));
-      void queryClient.invalidateQueries({ queryKey: farmQueryKeys.readingsFor(incubator.id) });
+      queryClient.setQueryData<HatchRecord[]>(
+        farmQueryKeys.hatchRecords,
+        (current = []) => [...current, record],
+      );
+      queryClient.setQueryData<Incubator[]>(
+        farmQueryKeys.incubators,
+        (current = []) =>
+          current.map((unit) => (unit.id === incubator.id ? incubator : unit)),
+      );
+      void queryClient.invalidateQueries({
+        queryKey: farmQueryKeys.readingsFor(incubator.id),
+      });
     },
   });
   const stopCycleMutation = useMutation({
     mutationFn: async (input: StopCycleInput) =>
       requireResultData(await repository.stopCycle(input)),
     onSuccess: ({ incubator }) => {
-      queryClient.setQueryData<Incubator[]>(farmQueryKeys.incubators, (current = []) =>
-        current.map((unit) => unit.id === incubator.id ? incubator : unit));
-      void queryClient.invalidateQueries({ queryKey: farmQueryKeys.abortedCycles });
+      queryClient.setQueryData<Incubator[]>(
+        farmQueryKeys.incubators,
+        (current = []) =>
+          current.map((unit) => (unit.id === incubator.id ? incubator : unit)),
+      );
+      void queryClient.invalidateQueries({
+        queryKey: farmQueryKeys.abortedCycles,
+      });
     },
   });
 

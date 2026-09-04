@@ -1,15 +1,15 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { beforeEach, describe, expect, it } from "vitest";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
-import { beforeEach, describe, expect, it } from "vitest";
 import { MockAuthProvider, RequireAuth } from "../app/providers/auth-context";
 import {
   incubatorPath,
   legacyPathFromSearch,
   parseAppPath,
-  validateRouteIncubator,
   type ScreenId,
+  validateRouteIncubator,
 } from "../app/routing/routes";
 import { useAppRouter } from "../app/routing/use-app-router";
 
@@ -49,30 +49,31 @@ describe("route contracts", () => {
     const path = incubatorPath("north room/1", "settings");
     expect(path).toBe("/incubators/north%20room%2F1/settings");
     expect(parseAppPath(path).selectedUnit).toBe("north room/1");
-    expect(parseAppPath("/incubators/chamber-1/unknown").redirectTo)
-      .toBe("/incubators/chamber-1");
+    expect(parseAppPath("/incubators/chamber-1/unknown").redirectTo).toBe(
+      "/incubators/chamber-1",
+    );
     expect(parseAppPath("/onboarding/9").redirectTo).toBe("/onboarding/1");
     expect(parseAppPath("/unknown").redirectTo).toBe("/");
   });
 
   it("redirects unknown incubator IDs without discarding valid trend routes", () => {
-    const detail = validateRouteIncubator(
-      parseAppPath("/incubators/missing"),
-      ["chamber-1"],
-    );
-    const trends = validateRouteIncubator(
-      parseAppPath("/trends/missing"),
-      ["chamber-1"],
-    );
+    const detail = validateRouteIncubator(parseAppPath("/incubators/missing"), [
+      "chamber-1",
+    ]);
+    const trends = validateRouteIncubator(parseAppPath("/trends/missing"), [
+      "chamber-1",
+    ]);
     expect(detail.redirectTo).toBe("/incubators");
     expect(trends.redirectTo).toBe("/trends");
   });
 
   it("maps legacy query-string links to canonical paths", () => {
-    expect(legacyPathFromSearch("screen=trends&unit=chamber-2"))
-      .toBe("/trends/chamber-2");
-    expect(legacyPathFromSearch("demo=onboarding&screen=onboarding&step=2"))
-      .toBe("/onboarding/2");
+    expect(legacyPathFromSearch("screen=trends&unit=chamber-2")).toBe(
+      "/trends/chamber-2",
+    );
+    expect(
+      legacyPathFromSearch("demo=onboarding&screen=onboarding&step=2"),
+    ).toBe("/onboarding/2");
     expect(legacyPathFromSearch("demo=onboarding&screen=login")).toBe("/login");
     expect(legacyPathFromSearch("screen=login")).toBeNull();
   });
@@ -85,7 +86,8 @@ describe("Wouter integration", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
     let currentScreen: ScreenId = "overview";
-    let navigateToScreen: ReturnType<typeof useAppRouter>["navigateToScreen"] = () => undefined;
+    let navigateToScreen: ReturnType<typeof useAppRouter>["navigateToScreen"] =
+      () => undefined;
 
     function Probe() {
       const router = useAppRouter(["chamber-1"]);
@@ -112,14 +114,20 @@ describe("Wouter integration", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
 
-    await act(async () => root.render(
-      <Router hook={location.hook}>
-        <MockAuthProvider initiallyAuthenticated={false}>
-          <RequireAuth><span>protected</span></RequireAuth>
-        </MockAuthProvider>
-      </Router>,
-    ));
-    await waitFor(() => location.history?.[location.history.length - 1] === "/login");
+    await act(async () =>
+      root.render(
+        <Router hook={location.hook}>
+          <MockAuthProvider initiallyAuthenticated={false}>
+            <RequireAuth>
+              <span>protected</span>
+            </RequireAuth>
+          </MockAuthProvider>
+        </Router>,
+      ),
+    );
+    await waitFor(
+      () => location.history?.[location.history.length - 1] === "/login",
+    );
     expect(location.history).toEqual(["/login"]);
 
     await act(async () => root.unmount());

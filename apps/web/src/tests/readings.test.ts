@@ -8,12 +8,26 @@ const fixedNow = () => new Date("2026-09-03T12:00:00.000Z");
 describe("repository readings", () => {
   it("returns aligned deterministic windows for comparison charts", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
-    const full = await repository.listReadings({ incubatorId: "chamber-1", window: "full" });
-    const week = await repository.listReadings({ incubatorId: "chamber-1", window: "7d" });
-    const day = await repository.listReadings({ incubatorId: "chamber-1", window: "24h" });
-    const comparison = await repository.listReadings({ incubatorId: "chamber-2", window: "24h" });
+    const full = await repository.listReadings({
+      incubatorId: "chamber-1",
+      window: "full",
+    });
+    const week = await repository.listReadings({
+      incubatorId: "chamber-1",
+      window: "7d",
+    });
+    const day = await repository.listReadings({
+      incubatorId: "chamber-1",
+      window: "24h",
+    });
+    const comparison = await repository.listReadings({
+      incubatorId: "chamber-2",
+      window: "24h",
+    });
 
-    expect(full.ok && week.ok && day.ok && full.data.length > week.data.length).toBe(true);
+    expect(
+      full.ok && week.ok && day.ok && full.data.length > week.data.length,
+    ).toBe(true);
     expect(week.ok && day.ok && week.data.length > day.data.length).toBe(true);
     expect(day.ok && day.data).toHaveLength(13);
     if (!day.ok || !comparison.ok) return;
@@ -25,7 +39,10 @@ describe("repository readings", () => {
 
   it("returns a structured error for an unknown incubator", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
-    const result = await repository.listReadings({ incubatorId: "missing", window: "24h" });
+    const result = await repository.listReadings({
+      incubatorId: "missing",
+      window: "24h",
+    });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("not_found");

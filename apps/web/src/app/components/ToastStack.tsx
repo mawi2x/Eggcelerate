@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Info } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Dark charcoal surface from the toast spec.
 const TOAST_BG = "#1A1510";
@@ -53,7 +53,13 @@ export function useToastStack() {
   return { toasts, push, dismiss };
 }
 
-export function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
+export function ToastStack({
+  toasts,
+  onDismiss,
+}: {
+  toasts: ToastItem[];
+  onDismiss: (id: number) => void;
+}) {
   return (
     <div
       className="pointer-events-none fixed bottom-[var(--mobile-bottom-nav-clearance)] right-4 z-50 flex flex-col items-end gap-2 md:bottom-6 md:right-6"
@@ -75,10 +81,19 @@ export function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismi
             }}
             aria-label={`Dismiss notification: ${t.message}`}
           >
-            <span className="flex shrink-0 items-center justify-center" style={{ color: accent }}>
-              {t.kind === "enabled" ? <Check size={17} strokeWidth={3} /> : <Info size={17} />}
+            <span
+              className="flex shrink-0 items-center justify-center"
+              style={{ color: accent }}
+            >
+              {t.kind === "enabled" ? (
+                <Check size={17} strokeWidth={3} />
+              ) : (
+                <Info size={17} />
+              )}
             </span>
-            <span style={{ color: "#F5F0E8", fontSize: 13, fontWeight: 600 }}>{t.message}</span>
+            <span style={{ color: "#F5F0E8", fontSize: 13, fontWeight: 600 }}>
+              {t.message}
+            </span>
           </button>
         );
       })}

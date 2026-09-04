@@ -1,35 +1,46 @@
-import { useState, lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
-import { Toaster } from "./components/ui/sonner";
 import { AppSidebar } from "./components/AppSidebar";
-import { PageHeader } from "./components/PageHeader";
-import { OverviewScreen } from "./components/screens/OverviewScreen";
-import { IncubatorsScreen } from "./components/screens/IncubatorsScreen";
-import { AlertsScreen } from "./components/screens/AlertsScreen";
-import { SettingsScreen } from "./components/screens/SettingsScreen";
-import { HelpWidget } from "./components/HelpWidget";
-import { SuspenseFallback } from "./components/SuspenseFallback";
-import { FarmDataStatus } from "./components/FarmDataStatus";
-import { Button } from "./components/ui/button";
-import { SignInScreen } from "./components/auth/SignInScreen";
 import { OnboardingStep1 } from "./components/auth/OnboardingStep1";
-import { defaultOnboarding, OnboardingState } from "./data/onboarding";
+import { SignInScreen } from "./components/auth/SignInScreen";
+import { FarmDataStatus } from "./components/FarmDataStatus";
+import { HelpWidget } from "./components/HelpWidget";
+import { PageHeader } from "./components/PageHeader";
+import { SuspenseFallback } from "./components/SuspenseFallback";
+import { AlertsScreen } from "./components/screens/AlertsScreen";
+import { IncubatorsScreen } from "./components/screens/IncubatorsScreen";
+import { OverviewScreen } from "./components/screens/OverviewScreen";
+import { SettingsScreen } from "./components/screens/SettingsScreen";
+import { Button } from "./components/ui/button";
+import { Toaster } from "./components/ui/sonner";
+import { defaultOnboarding, type OnboardingState } from "./data/onboarding";
 
 const DetailScreen = lazy(() =>
-  import("./components/screens/DetailScreen").then((m) => ({ default: m.DetailScreen })),
+  import("./components/screens/DetailScreen").then((m) => ({
+    default: m.DetailScreen,
+  })),
 );
 const TrendsScreen = lazy(() =>
-  import("./components/screens/TrendsScreen").then((m) => ({ default: m.TrendsScreen })),
+  import("./components/screens/TrendsScreen").then((m) => ({
+    default: m.TrendsScreen,
+  })),
 );
 const CandlingLogsScreen = lazy(() =>
-  import("./components/screens/CandlingLogsScreen").then((m) => ({ default: m.CandlingLogsScreen })),
+  import("./components/screens/CandlingLogsScreen").then((m) => ({
+    default: m.CandlingLogsScreen,
+  })),
 );
 const OnboardingStep2 = lazy(() =>
-  import("./components/auth/OnboardingStep2").then((m) => ({ default: m.OnboardingStep2 })),
+  import("./components/auth/OnboardingStep2").then((m) => ({
+    default: m.OnboardingStep2,
+  })),
 );
 const OnboardingStep3 = lazy(() =>
-  import("./components/auth/OnboardingStep3").then((m) => ({ default: m.OnboardingStep3 })),
+  import("./components/auth/OnboardingStep3").then((m) => ({
+    default: m.OnboardingStep3,
+  })),
 );
+
 import { initialAccount, resolveDisplayName } from "./data/account";
 import { CURRENT_TRAY_CAPACITY } from "./domain/candling";
 import type { Incubator } from "./domain/types";
@@ -41,7 +52,8 @@ import { useAppRouter } from "./routing/use-app-router";
 
 export default function App() {
   const [navCollapsed, setNavCollapsed] = useState(false);
-  const [onboardingState, setOnboardingState] = useState<OnboardingState>(defaultOnboarding);
+  const [onboardingState, setOnboardingState] =
+    useState<OnboardingState>(defaultOnboarding);
 
   const {
     modes,
@@ -80,11 +92,11 @@ export default function App() {
     openTrends,
     openOnboarding,
     openLogin,
-  } = useAppRouter(farmDataLoading ? undefined : incubators.map((unit) => unit.id));
+  } = useAppRouter(
+    farmDataLoading ? undefined : incubators.map((unit) => unit.id),
+  );
 
-  const unreadAlerts = alerts.filter(
-    (a) => !a.acknowledged,
-  ).length;
+  const unreadAlerts = alerts.filter((a) => !a.acknowledged).length;
 
   const openUnit = (id: string) => openIncubator(id);
   const openCandling = (id: string) => openIncubator(id, "candling");
@@ -149,10 +161,16 @@ export default function App() {
         role="alert"
       >
         <div>
-          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
+          <h1
+            className="text-xl font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
             Unable to load farm data
           </h1>
-          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+          <p
+            className="mt-2 text-sm"
+            style={{ color: "var(--text-secondary)" }}
+          >
             {repositoryErrorMessage(farmDataError)}
           </p>
         </div>
@@ -172,14 +190,25 @@ export default function App() {
         role="status"
       >
         <div>
-          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
+          <h1
+            className="text-xl font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
             No farm data available
           </h1>
-          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-            The current data source did not return both incubation modes and incubators.
+          <p
+            className="mt-2 text-sm"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            The current data source did not return both incubation modes and
+            incubators.
           </p>
         </div>
-        <Button type="button" variant="outline" onClick={() => void retryFarmData()}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void retryFarmData()}
+        >
           Reload data
         </Button>
       </div>
@@ -187,12 +216,10 @@ export default function App() {
   }
 
   const activeUnit =
-    incubators.find((u) => u.id === selectedUnit) ??
-    incubators[0];
+    incubators.find((u) => u.id === selectedUnit) ?? incubators[0];
 
   // Inline metadata pills for the Incubator Detail title row.
-  const activeMode =
-    modes.find((m) => m.id === activeUnit.modeId) ?? modes[0];
+  const activeMode = modes.find((m) => m.id === activeUnit.modeId) ?? modes[0];
   const statusTone =
     activeUnit.status === "optimal"
       ? { fg: "#15803D", bg: "#DCFCE7", label: "Normal" }
@@ -209,8 +236,7 @@ export default function App() {
           fontWeight: 700,
         }}
       >
-        Day {activeUnit.dayOfIncubation} of{" "}
-        {activeMode.incubationDays}
+        Day {activeUnit.dayOfIncubation} of {activeMode.incubationDays}
       </span>
       <span
         className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1"
@@ -235,14 +261,27 @@ export default function App() {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1
           className="min-w-0 truncate"
-          style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.25 }}
+          style={{
+            fontSize: 24,
+            fontWeight: 700,
+            color: "var(--text-primary)",
+            lineHeight: 1.25,
+          }}
           title={activeUnit.name}
         >
           {activeUnit.name}
         </h1>
         {detailBadges}
       </div>
-      <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.4, marginTop: 4 }}>
+      <p
+        style={{
+          fontSize: 16,
+          fontWeight: 600,
+          color: "var(--text-primary)",
+          lineHeight: 1.4,
+          marginTop: 4,
+        }}
+      >
         {activeMode.name}
       </p>
     </div>
@@ -250,10 +289,7 @@ export default function App() {
 
   // One header copy deck, so every screen reads the same way.
   const overviewName = resolveDisplayName(account) || "farmer";
-  const headerCopy: Record<
-    ScreenId,
-    { title: string; subtitle: string }
-  > = {
+  const headerCopy: Record<ScreenId, { title: string; subtitle: string }> = {
     overview: {
       title: `Good day, ${overviewName}!`,
       subtitle:
@@ -275,8 +311,7 @@ export default function App() {
     },
     trends: {
       title: "Historical Trends",
-      subtitle:
-        "Track environmental history and past hatch performance.",
+      subtitle: "Track environmental history and past hatch performance.",
     },
     alerts: {
       title: "Alerts & Notifications",
@@ -284,8 +319,7 @@ export default function App() {
     },
     settings: {
       title: "Settings",
-      subtitle:
-        "App settings: modes, notifications, and account.",
+      subtitle: "App settings: modes, notifications, and account.",
     },
     login: {
       title: "Sign in",
@@ -311,7 +345,8 @@ export default function App() {
             setOnboardingState(merged);
             // finish uses merged via closure? call inline to avoid stale
             // Instead duplicate finish logic with merged
-            const mode = modes.find((m) => m.id === merged.startingModeId) ?? modes[0];
+            const mode =
+              modes.find((m) => m.id === merged.startingModeId) ?? modes[0];
             const newIncubator: Incubator = {
               id: `chamber-${Date.now()}`,
               name: merged.chamberName,
@@ -328,7 +363,9 @@ export default function App() {
               batteryPct: 100,
               status: "optimal",
               lastTurned: new Date().toISOString(),
-              nextTurn: new Date(Date.now() + (mode.defaultTurnInterval ?? 4) * 3600000).toISOString(),
+              nextTurn: new Date(
+                Date.now() + (mode.defaultTurnInterval ?? 4) * 3600000,
+              ).toISOString(),
               turnInterval: mode.defaultTurnInterval ?? 4,
               autoTurn: true,
               paired: true,
@@ -338,7 +375,7 @@ export default function App() {
               candled: {},
               candlingLog: [],
             };
-            if (!await addIncubator(newIncubator)) return false;
+            if (!(await addIncubator(newIncubator))) return false;
             const accountSaved = await saveSettings({
               ...settings,
               account: {
@@ -349,7 +386,9 @@ export default function App() {
             });
             if (!accountSaved) return false;
             completeOnboarding();
-            toast.success(`Welcome to Eggcelerate, ${merged.name.split(" ")[0] || "farmer"}!`);
+            toast.success(
+              `Welcome to Eggcelerate, ${merged.name.split(" ")[0] || "farmer"}!`,
+            );
             navigate("overview");
             return true;
           }}
@@ -367,137 +406,141 @@ export default function App() {
         className="min-h-screen w-full"
         style={{ backgroundColor: "#FAF6F0" }}
       >
-      <AppSidebar
-        active={screen}
-        onNavigate={navigate}
-        alertCount={unreadAlerts}
-        account={account}
-        collapsed={navCollapsed}
-        onToggleCollapsed={() => setNavCollapsed((v) => !v)}
-      />
+        <AppSidebar
+          active={screen}
+          onNavigate={navigate}
+          alertCount={unreadAlerts}
+          account={account}
+          collapsed={navCollapsed}
+          onToggleCollapsed={() => setNavCollapsed((v) => !v)}
+        />
 
-      <main
-        className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
-      >
-        <div
-          className="mx-auto max-w-6xl px-4 pb-44 sm:px-6 sm:pb-28 lg:px-8 lg:pb-20"
-          style={{ paddingTop: 24 }}
+        <main
+          className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
         >
-          {/* Rows 1 and 2 — utility bar and page title bar. */}
-          <div style={{ marginBottom: 20 }}>
-            <PageHeader
-              title={headerCopy[screen].title}
-              subtitle={headerCopy[screen].subtitle}
-              titleHighlight={screen === "overview" ? `${overviewName}!` : undefined}
-              alertCount={unreadAlerts}
-              onViewAlerts={() => navigate("alerts")}
-              alerts={alerts}
-              onMarkAllRead={markAllAlertsRead}
-              onDismissAlert={dismissAlert}
-              pendingAlertId={actionState.pendingAlertId}
-              markingAllRead={actionState.markingAllAlertsRead}
-              onBack={
-                screen === "detail"
-                  ? () => navigate("incubators")
-                  : undefined
-              }
-              backLabel="Back to Incubators"
-              badges={
-                screen === "detail" ? detailBadges : undefined
-              }
-              titleNode={screen === "detail" ? detailHeader : undefined}
-              showDateTime={screen === "overview"}
+          <div
+            className="mx-auto max-w-6xl px-4 pb-44 sm:px-6 sm:pb-28 lg:px-8 lg:pb-20"
+            style={{ paddingTop: 24 }}
+          >
+            {/* Rows 1 and 2 — utility bar and page title bar. */}
+            <div style={{ marginBottom: 20 }}>
+              <PageHeader
+                title={headerCopy[screen].title}
+                subtitle={headerCopy[screen].subtitle}
+                titleHighlight={
+                  screen === "overview" ? `${overviewName}!` : undefined
+                }
+                alertCount={unreadAlerts}
+                onViewAlerts={() => navigate("alerts")}
+                alerts={alerts}
+                onMarkAllRead={markAllAlertsRead}
+                onDismissAlert={dismissAlert}
+                pendingAlertId={actionState.pendingAlertId}
+                markingAllRead={actionState.markingAllAlertsRead}
+                onBack={
+                  screen === "detail" ? () => navigate("incubators") : undefined
+                }
+                backLabel="Back to Incubators"
+                badges={screen === "detail" ? detailBadges : undefined}
+                titleNode={screen === "detail" ? detailHeader : undefined}
+                showDateTime={screen === "overview"}
+              />
+            </div>
+
+            <FarmDataStatus
+              isRefreshing={farmDataRefreshing}
+              staleError={farmDataStaleError}
+              onRetry={() => void retryFarmData()}
             />
+
+            {screen === "overview" && (
+              <OverviewScreen
+                units={incubators}
+                modes={modes}
+                onOpenUnit={openUnit}
+                onManageAll={() => navigate("incubators")}
+              />
+            )}
+            {screen === "incubators" && (
+              <IncubatorsScreen
+                units={incubators}
+                modes={modes}
+                onOpenUnit={openUnit}
+                onAddIncubator={addIncubator}
+                isAddingIncubator={actionState.addingIncubator}
+              />
+            )}
+            {screen === "candling" && (
+              <Suspense
+                fallback={<SuspenseFallback label="Loading candling logs..." />}
+              >
+                <CandlingLogsScreen
+                  units={incubators}
+                  modes={modes}
+                  onOpenCandling={openCandling}
+                />
+              </Suspense>
+            )}
+            {screen === "detail" && (
+              <Suspense
+                fallback={<SuspenseFallback label="Loading incubator..." />}
+              >
+                <DetailScreen
+                  unit={activeUnit}
+                  modes={modes}
+                  initialTab={detailTab}
+                  onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
+                  onTabChange={(tab) => openIncubator(activeUnit.id, tab)}
+                  onUpdate={(patch) => updateIncubator(activeUnit.id, patch)}
+                  isUpdating={actionState.updatingIncubatorId === activeUnit.id}
+                />
+              </Suspense>
+            )}
+            {screen === "trends" && (
+              <Suspense
+                fallback={<SuspenseFallback label="Loading trends..." />}
+              >
+                <TrendsScreen
+                  units={incubators}
+                  modes={modes}
+                  history={hatchRecords}
+                  initialUnitId={selectedUnit ?? undefined}
+                />
+              </Suspense>
+            )}
+            {screen === "alerts" && (
+              <AlertsScreen
+                alerts={alerts}
+                onAcknowledge={acknowledgeAlert}
+                onDismiss={dismissAlert}
+                onMarkAllRead={markAllAlertsRead}
+                onClearRead={clearReadAlerts}
+                pendingAlertId={actionState.pendingAlertId}
+                markingAllRead={actionState.markingAllAlertsRead}
+                clearingRead={actionState.clearingReadAlerts}
+                onOpenUnit={(unitName) => {
+                  const target = incubators.find((u) => u.name === unitName);
+                  if (target) openUnit(target.id);
+                }}
+              />
+            )}
+            {screen === "settings" && (
+              <SettingsScreen
+                modes={modes}
+                onUpdateMode={updateMode}
+                onAddMode={addMode}
+                onDeleteMode={deleteMode}
+                settings={settings}
+                onSaveSettings={saveSettings}
+                isSaving={actionState.savingSettings}
+                units={incubators}
+              />
+            )}
           </div>
+        </main>
 
-          <FarmDataStatus
-            isRefreshing={farmDataRefreshing}
-            staleError={farmDataStaleError}
-            onRetry={() => void retryFarmData()}
-          />
-
-          {screen === "overview" && (
-            <OverviewScreen
-              units={incubators}
-              modes={modes}
-              onOpenUnit={openUnit}
-              onManageAll={() => navigate("incubators")}
-            />
-          )}
-          {screen === "incubators" && (
-            <IncubatorsScreen
-              units={incubators}
-              modes={modes}
-              onOpenUnit={openUnit}
-              onAddIncubator={addIncubator}
-              isAddingIncubator={actionState.addingIncubator}
-            />
-          )}
-          {screen === "candling" && (
-            <Suspense fallback={<SuspenseFallback label="Loading candling logs..." />}>
-              <CandlingLogsScreen
-                units={incubators}
-                modes={modes}
-                onOpenCandling={openCandling}
-              />
-            </Suspense>
-          )}
-          {screen === "detail" && (
-            <Suspense fallback={<SuspenseFallback label="Loading incubator..." />}>
-              <DetailScreen
-                unit={activeUnit}
-                modes={modes}
-                initialTab={detailTab}
-                onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
-                onTabChange={(tab) => openIncubator(activeUnit.id, tab)}
-                onUpdate={(patch) => updateIncubator(activeUnit.id, patch)}
-                isUpdating={actionState.updatingIncubatorId === activeUnit.id}
-              />
-            </Suspense>
-          )}
-          {screen === "trends" && (
-            <Suspense fallback={<SuspenseFallback label="Loading trends..." />}>
-              <TrendsScreen
-                units={incubators}
-                modes={modes}
-                history={hatchRecords}
-                initialUnitId={selectedUnit ?? undefined}
-              />
-            </Suspense>
-          )}
-          {screen === "alerts" && (
-            <AlertsScreen
-              alerts={alerts}
-              onAcknowledge={acknowledgeAlert}
-              onDismiss={dismissAlert}
-              onMarkAllRead={markAllAlertsRead}
-              onClearRead={clearReadAlerts}
-              pendingAlertId={actionState.pendingAlertId}
-              markingAllRead={actionState.markingAllAlertsRead}
-              clearingRead={actionState.clearingReadAlerts}
-              onOpenUnit={(unitName) => {
-                const target = incubators.find((u) => u.name === unitName);
-                if (target) openUnit(target.id);
-              }}
-            />
-          )}
-          {screen === "settings" && (
-            <SettingsScreen
-              modes={modes}
-              onUpdateMode={updateMode}
-              onAddMode={addMode}
-              onDeleteMode={deleteMode}
-              settings={settings}
-              onSaveSettings={saveSettings}
-              isSaving={actionState.savingSettings}
-              units={incubators}
-            />
-          )}
-        </div>
-      </main>
-
-      <Toaster position="top-right" richColors />
-      <HelpWidget />
+        <Toaster position="top-right" richColors />
+        <HelpWidget />
       </div>
     </RequireAuth>
   );

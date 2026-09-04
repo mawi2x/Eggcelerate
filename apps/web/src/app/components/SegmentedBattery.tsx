@@ -8,7 +8,14 @@ const TRACK = "#E3DCCC";
  */
 function Bolt({ color }: { color: string }) {
   return (
-    <svg width="10" height="14" viewBox="0 0 10 14" fill="none" aria-hidden focusable="false">
+    <svg
+      width="10"
+      height="14"
+      viewBox="0 0 10 14"
+      fill="none"
+      aria-hidden
+      focusable="false"
+    >
       <path d="M6.1 0L0 8.05h3.4L2.9 14 10 5.6H6.2L6.1 0z" fill={color} />
     </svg>
   );
@@ -53,7 +60,11 @@ export function SegmentedBattery({
       : `Battery ${battery}%`;
 
   return (
-    <span className="inline-flex shrink-0 items-center" style={{ gap: 6 }} title={description}>
+    <span
+      className="inline-flex shrink-0 items-center"
+      style={{ gap: 6 }}
+      title={description}
+    >
       {/* Level text first… */}
       {showLabel && (
         <span
@@ -69,7 +80,12 @@ export function SegmentedBattery({
         </span>
       )}
       {/* …then the bars, sitting on the far right edge. */}
-      <span className="inline-flex items-end" style={{ gap: 2 }} role="img" aria-label={description}>
+      <span
+        className="inline-flex items-end"
+        style={{ gap: 2 }}
+        role="img"
+        aria-label={description}
+      >
         {[0, 1, 2, 3].map((i) => (
           <span
             key={i}

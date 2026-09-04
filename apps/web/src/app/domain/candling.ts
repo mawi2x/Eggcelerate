@@ -11,7 +11,9 @@ export function computeCandling(durationDays: number): CandlingCheckpoint[] {
   return CANDLE_PROPORTIONS.map((proportion, index) => {
     const day = Math.max(1, Math.round(proportion * durationDays));
     const isLast = index === CANDLE_PROPORTIONS.length - 1;
-    const dayRange = isLast ? `Day ${day}` : `Day ${Math.max(1, day - 1)} to ${day + 1}`;
+    const dayRange = isLast
+      ? `Day ${day}`
+      : `Day ${Math.max(1, day - 1)} to ${day + 1}`;
     return { label: CANDLE_LABELS[index], dayRange, day };
   });
 }

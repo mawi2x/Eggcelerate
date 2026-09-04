@@ -1,4 +1,4 @@
-import * as React from "react";
+import type * as React from "react";
 
 export function FormInput({
   label,
@@ -10,7 +10,11 @@ export function FormInput({
 }: {
   label: string;
   id: string;
-  icon?: React.ComponentType<{ size?: number | string; className?: string; style?: React.CSSProperties }>;
+  icon?: React.ComponentType<{
+    size?: number | string;
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
   trailing?: React.ReactNode;
   error?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {

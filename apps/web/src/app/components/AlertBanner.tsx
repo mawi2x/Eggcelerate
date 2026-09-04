@@ -36,15 +36,35 @@ export function AlertBanner({ criticalUnits, modes, onView }: Props) {
       type="button"
       onClick={onView}
       className="w-full cursor-pointer text-left rounded-3xl px-5 py-4 flex items-center gap-4 transition-opacity hover:opacity-95 active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
-      style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)" }}
+      style={{
+        backgroundColor: "var(--brand-primary)",
+        color: "var(--on-brand)",
+      }}
     >
       <StatusIconBadge
         size="banner"
         backgroundColor="rgba(255,255,255,0.18)"
-        icon={<ExclamationIcon size={statusIconBadgeGlyphSize("banner")} color="var(--status-icon-badge-fg)" />}
+        icon={
+          <ExclamationIcon
+            size={statusIconBadgeGlyphSize("banner")}
+            color="var(--status-icon-badge-fg)"
+          />
+        }
       />
       <div className="flex-1">
-        <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: "var(--on-brand)", whiteSpace: "normal", wordBreak: "break-word" }}>{headline}</p>
+        <p
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--type-heading-sm)",
+            fontWeight: "var(--weight-semibold)",
+            lineHeight: "var(--leading-snug)",
+            color: "var(--on-brand)",
+            whiteSpace: "normal",
+            wordBreak: "break-word",
+          }}
+        >
+          {headline}
+        </p>
         <p style={{ opacity: 0.9 }}>{detail}</p>
       </div>
       <ChevronRight size={22} className="shrink-0" />

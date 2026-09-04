@@ -19,7 +19,12 @@ export interface CandleForm {
   checks: DevelopmentCheck[];
 }
 
-export type TallyKey = "fertile" | "clear" | "uncertain" | "developing" | "stoppedDeveloping";
+export type TallyKey =
+  | "fertile"
+  | "clear"
+  | "uncertain"
+  | "developing"
+  | "stoppedDeveloping";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 export const RUST = "var(--brand-primary)";
@@ -35,23 +40,44 @@ export const RADIUS = 16;
 export const SHADOW = "0 2px 12px rgba(0,0,0,0.04)";
 
 // Semantic status tokens use verified WCAG AA foreground/background pairs.
-export const OK = { fg: "var(--status-success-fg)", bg: "var(--status-success-bg)", ring: "var(--status-success-fg)" };
-export const WARN = { fg: "var(--status-warning-fg)", bg: "var(--status-warning-bg)", ring: "var(--status-warning-fg)" };
-export const CRIT = { fg: "var(--status-danger-fg)", bg: "var(--status-danger-bg)", ring: "var(--status-danger-fg)" };
+export const OK = {
+  fg: "var(--status-success-fg)",
+  bg: "var(--status-success-bg)",
+  ring: "var(--status-success-fg)",
+};
+export const WARN = {
+  fg: "var(--status-warning-fg)",
+  bg: "var(--status-warning-bg)",
+  ring: "var(--status-warning-fg)",
+};
+export const CRIT = {
+  fg: "var(--status-danger-fg)",
+  bg: "var(--status-danger-bg)",
+  ring: "var(--status-danger-fg)",
+};
 export const NEUTRAL = { fg: MUTED, bg: "#EFE9DC", ring: "#C9BEA8" };
 
 export const CANDLE_SHORT_LABELS = ["1st Candling", "2nd Candling", "Lockdown"];
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const NOTES_MAX = 500;
-export const UNREACHABLE_DEVICE_IDS = new Set(["EGG-0000", "EGG-9999", "EGG-1005", "EGG-1010"]);
+export const UNREACHABLE_DEVICE_IDS = new Set([
+  "EGG-0000",
+  "EGG-9999",
+  "EGG-1005",
+  "EGG-1010",
+]);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 export const todayStr = () => localDateString();
-export const formatNodeDay = (day: number) => String(day > 99 ? 99 : day).slice(0, 3);
+export const formatNodeDay = (day: number) =>
+  String(day > 99 ? 99 : day).slice(0, 3);
 
 export const emptyForm = (
   day: number,
-  previous?: Pick<CandlingLogEntry, "fertile" | "clear" | "uncertain" | "developing" | "stoppedDeveloping">
+  previous?: Pick<
+    CandlingLogEntry,
+    "fertile" | "clear" | "uncertain" | "developing" | "stoppedDeveloping"
+  >,
 ): CandleForm => ({
   targetDay: day,
   date: todayStr(),
@@ -66,7 +92,11 @@ export const emptyForm = (
   checks: [],
 });
 
-export function markerStatus(day: number, currentDay: number, logged: boolean): MarkerStatus {
+export function markerStatus(
+  day: number,
+  currentDay: number,
+  logged: boolean,
+): MarkerStatus {
   if (logged) return "logged";
   if (day <= currentDay) return "due";
   return "upcoming";
@@ -85,7 +115,11 @@ export function relTime(iso: string) {
 }
 
 export function fmtDate(d: string) {
-  return new Date(d + "T00:00:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  return new Date(`${d}T00:00:00`).toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export function pseudoTime(d: string) {

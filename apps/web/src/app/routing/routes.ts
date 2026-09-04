@@ -53,36 +53,60 @@ export function onboardingPath(step: number): string {
 
 export function screenPath(screen: ScreenId): string {
   switch (screen) {
-    case "overview": return "/";
-    case "incubators": return "/incubators";
-    case "candling": return "/candling";
-    case "trends": return "/trends";
-    case "alerts": return "/alerts";
-    case "settings": return "/settings";
-    case "login": return "/login";
-    case "onboarding": return onboardingPath(1);
-    case "detail": return "/incubators";
+    case "overview":
+      return "/";
+    case "incubators":
+      return "/incubators";
+    case "candling":
+      return "/candling";
+    case "trends":
+      return "/trends";
+    case "alerts":
+      return "/alerts";
+    case "settings":
+      return "/settings";
+    case "login":
+      return "/login";
+    case "onboarding":
+      return onboardingPath(1);
+    case "detail":
+      return "/incubators";
   }
 }
 
 export function parseAppPath(pathname: string): AppRouteState {
   const normalized = pathname.replace(/\/+$/, "") || "/";
   if (normalized === "/") return defaultRoute();
-  if (normalized === "/incubators") return { ...defaultRoute(), screen: "incubators" };
-  if (normalized === "/candling") return { ...defaultRoute(), screen: "candling" };
+  if (normalized === "/incubators")
+    return { ...defaultRoute(), screen: "incubators" };
+  if (normalized === "/candling")
+    return { ...defaultRoute(), screen: "candling" };
   if (normalized === "/trends") return { ...defaultRoute(), screen: "trends" };
   if (normalized === "/alerts") return { ...defaultRoute(), screen: "alerts" };
-  if (normalized === "/settings") return { ...defaultRoute(), screen: "settings" };
+  if (normalized === "/settings")
+    return { ...defaultRoute(), screen: "settings" };
   if (normalized === "/login") return { ...defaultRoute(), screen: "login" };
   if (normalized === "/onboarding") {
-    return { ...defaultRoute(), screen: "onboarding", redirectTo: onboardingPath(1) };
+    return {
+      ...defaultRoute(),
+      screen: "onboarding",
+      redirectTo: onboardingPath(1),
+    };
   }
 
   const segments = normalized.split("/").slice(1);
-  if (segments[0] === "incubators" && (segments.length === 2 || segments.length === 3)) {
+  if (
+    segments[0] === "incubators" &&
+    (segments.length === 2 || segments.length === 3)
+  ) {
     const selectedUnit = decodePathSegment(segments[1]);
     const detailTab = (segments[2] ?? "monitor") as DetailTab;
-    if (!selectedUnit) return { ...defaultRoute(), screen: "incubators", redirectTo: "/incubators" };
+    if (!selectedUnit)
+      return {
+        ...defaultRoute(),
+        screen: "incubators",
+        redirectTo: "/incubators",
+      };
     if (!validDetailTabs.has(detailTab)) {
       return {
         ...defaultRoute(),
@@ -95,7 +119,8 @@ export function parseAppPath(pathname: string): AppRouteState {
   }
   if (segments[0] === "trends" && segments.length === 2) {
     const selectedUnit = decodePathSegment(segments[1]);
-    if (!selectedUnit) return { ...defaultRoute(), screen: "trends", redirectTo: "/trends" };
+    if (!selectedUnit)
+      return { ...defaultRoute(), screen: "trends", redirectTo: "/trends" };
     return { ...defaultRoute(), screen: "trends", selectedUnit };
   }
   if (segments[0] === "onboarding" && segments.length === 2) {
@@ -103,7 +128,11 @@ export function parseAppPath(pathname: string): AppRouteState {
     if (step === 1 || step === 2 || step === 3) {
       return { ...defaultRoute(), screen: "onboarding", onboardingStep: step };
     }
-    return { ...defaultRoute(), screen: "onboarding", redirectTo: onboardingPath(1) };
+    return {
+      ...defaultRoute(),
+      screen: "onboarding",
+      redirectTo: onboardingPath(1),
+    };
   }
 
   return { ...defaultRoute(), redirectTo: "/" };
@@ -122,10 +151,16 @@ export function legacyPathFromSearch(search: string): string | null {
     return demoAuth ? onboardingPath(Number(params.get("step") ?? 1)) : null;
   }
   if (screen === "detail") {
-    return unit ? incubatorPath(unit, tab && validDetailTabs.has(tab) ? tab : "monitor") : "/incubators";
+    return unit
+      ? incubatorPath(unit, tab && validDetailTabs.has(tab) ? tab : "monitor")
+      : "/incubators";
   }
   if (screen === "trends") return trendsPath(unit);
-  if (["overview", "incubators", "candling", "alerts", "settings"].includes(screen)) {
+  if (
+    ["overview", "incubators", "candling", "alerts", "settings"].includes(
+      screen,
+    )
+  ) {
     return screenPath(screen);
   }
   return null;
@@ -135,7 +170,8 @@ export function validateRouteIncubator(
   route: AppRouteState,
   validIncubatorIds: readonly string[],
 ): AppRouteState {
-  if (!route.selectedUnit || validIncubatorIds.includes(route.selectedUnit)) return route;
+  if (!route.selectedUnit || validIncubatorIds.includes(route.selectedUnit))
+    return route;
   if (route.screen === "trends") {
     return { ...route, selectedUnit: null, redirectTo: "/trends" };
   }

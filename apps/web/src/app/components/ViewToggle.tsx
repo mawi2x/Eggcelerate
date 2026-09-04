@@ -15,7 +15,10 @@ export function ViewToggle({ view, onChange }: Props) {
   ];
 
   return (
-    <div className="flex items-center gap-1 rounded-full p-1" style={{ backgroundColor: "#F5EDD8" }}>
+    <div
+      className="flex items-center gap-1 rounded-full p-1"
+      style={{ backgroundColor: "#F5EDD8" }}
+    >
       {options.map(({ key, Icon, label }) => {
         const active = view === key;
         return (

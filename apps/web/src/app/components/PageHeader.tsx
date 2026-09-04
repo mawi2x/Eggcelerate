@@ -1,6 +1,6 @@
 import { ArrowLeft } from "lucide-react";
-import { NotificationPopover } from "./alerts/NotificationPopover";
 import type { AlertEntry } from "../domain/types";
+import { NotificationPopover } from "./alerts/NotificationPopover";
 import { LiveDateTime } from "./LiveDateTime";
 import { useIsMobile } from "./ui/use-mobile";
 

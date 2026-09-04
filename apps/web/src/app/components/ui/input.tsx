@@ -1,4 +1,4 @@
-import * as React from "react";
+import type * as React from "react";
 
 import { cn } from "./utils";
 
@@ -6,12 +6,19 @@ type InputProps = Omit<React.ComponentProps<"input">, "size"> & {
   size?: "compact" | "default" | "toolbar";
 };
 
-function Input({ className, type, style, size = "default", ...props }: InputProps) {
-  const heightClass = size === "toolbar"
-    ? "h-[var(--control-height-toolbar)]"
-    : size === "compact"
-      ? "h-[var(--control-height-compact)]"
-      : "h-[var(--control-height-default)]";
+function Input({
+  className,
+  type,
+  style,
+  size = "default",
+  ...props
+}: InputProps) {
+  const heightClass =
+    size === "toolbar"
+      ? "h-[var(--control-height-toolbar)]"
+      : size === "compact"
+        ? "h-[var(--control-height-compact)]"
+        : "h-[var(--control-height-default)]";
 
   return (
     <input

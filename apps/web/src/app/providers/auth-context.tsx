@@ -1,4 +1,10 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import { Redirect } from "wouter";
 
 export interface MockAuthUser {
@@ -26,13 +32,16 @@ export function MockAuthProvider({
   const [user, setUser] = useState<MockAuthUser | null>(
     initiallyAuthenticated ? { id: "mock-farmer", role: "farmer" } : null,
   );
-  const value = useMemo<AuthContextValue>(() => ({
-    user,
-    isAuthenticated: user !== null,
-    signIn: () => setUser({ id: "mock-farmer", role: "farmer" }),
-    completeOnboarding: () => setUser({ id: "mock-farmer", role: "farmer" }),
-    signOut: () => setUser(null),
-  }), [user]);
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      isAuthenticated: user !== null,
+      signIn: () => setUser({ id: "mock-farmer", role: "farmer" }),
+      completeOnboarding: () => setUser({ id: "mock-farmer", role: "farmer" }),
+      signOut: () => setUser(null),
+    }),
+    [user],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

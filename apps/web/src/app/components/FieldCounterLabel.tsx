@@ -24,10 +24,17 @@ export function FieldCounterLabel({
   const atLimit = value.length >= max;
   return (
     <div className="flex items-baseline justify-between gap-2">
-      <Label htmlFor={htmlFor} style={labelStyle}>{label}</Label>
+      <Label htmlFor={htmlFor} style={labelStyle}>
+        {label}
+      </Label>
       <span
         aria-live="polite"
-        style={{ color: atLimit ? CRIT : MUTED, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}
+        style={{
+          color: atLimit ? CRIT : MUTED,
+          fontSize: 12,
+          fontWeight: 600,
+          whiteSpace: "nowrap",
+        }}
       >
         {value.length} / {max}
       </span>

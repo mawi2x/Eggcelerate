@@ -1,4 +1,4 @@
-import { initialAccount, type Account } from "./account";
+import { type Account, initialAccount } from "./account";
 
 export type NotificationPreferences = {
   enabled: Record<string, boolean>;
@@ -19,8 +19,16 @@ export const initialSettings: SettingsPreferences = {
   account: initialAccount,
   notifications: {
     enabled: {
-      temp: true, humidity: true, water: true, offline: true, batteryLow: true,
-      batteryFull: false, power: true, candling: false, turning: true, hatch: true,
+      temp: true,
+      humidity: true,
+      water: true,
+      offline: true,
+      batteryLow: true,
+      batteryFull: false,
+      power: true,
+      candling: false,
+      turning: true,
+      hatch: true,
     },
     sms: true,
     email: true,

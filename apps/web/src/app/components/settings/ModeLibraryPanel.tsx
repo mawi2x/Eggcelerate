@@ -1,22 +1,22 @@
+import {
+  CalendarDays,
+  Copy,
+  Download,
+  Droplets,
+  Pencil,
+  Plus,
+  RotateCw,
+  Search,
+  Share2,
+  Thermometer,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  Plus,
-  Pencil,
-  Copy,
-  Share2,
-  Trash2,
-  Download,
-  Upload,
-  Search,
-  Thermometer,
-  Droplets,
-  CalendarDays,
-  RotateCw,
-} from "lucide-react";
+import { computeCandling } from "../../domain/candling";
+import type { Mode } from "../../domain/types";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import {
   Dialog,
   DialogContent,
@@ -25,13 +25,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "../ui/table";
-import { ViewToggle, ViewMode } from "../ViewToggle";
-import { computeCandling } from "../../domain/candling";
-import type { Mode } from "../../domain/types";
-import { PanelHeader, RUST, BORDER, MUTED, TEXT, CRIT, CRIT_BG, inputClass, inputStyle } from "./tokens";
+import { type ViewMode, ViewToggle } from "../ViewToggle";
+import {
+  BORDER,
+  CRIT,
+  CRIT_BG,
+  inputClass,
+  inputStyle,
+  MUTED,
+  PanelHeader,
+  RUST,
+  TEXT,
+} from "./tokens";
 
 interface Props {
   modes: Mode[];
@@ -73,27 +88,55 @@ function modeToDraft(m: Mode): ModeDraft {
 }
 
 // Validate an unknown object parsed from an imported file into a Mode shape.
-function coerceMode(raw: any, idSuffix: string): Mode | null {
-  if (!raw || typeof raw.name !== "string") return null;
-  const t = raw.targetTemp ?? {};
-  const h = raw.targetHumidity ?? {};
-  const nums = [t.min, t.max, h.min, h.max, raw.incubationDays, raw.defaultTurnInterval];
+function coerceMode(raw: unknown, idSuffix: string): Mode | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as Record<string, unknown>;
+  const name = record.name;
+  if (typeof name !== "string") return null;
+  const t = (record.targetTemp ?? {}) as Record<string, unknown>;
+  const h = (record.targetHumidity ?? {}) as Record<string, unknown>;
+  const nums = [
+    t.min,
+    t.max,
+    h.min,
+    h.max,
+    record.incubationDays,
+    record.defaultTurnInterval,
+  ];
   if (nums.some((n) => typeof n !== "number" || Number.isNaN(n))) return null;
-  const tempMin = t.min, tempMax = t.max, humMin = h.min, humMax = h.max;
-  const days = raw.incubationDays, interval = raw.defaultTurnInterval;
+  const tempMin = t.min as number,
+    tempMax = t.max as number,
+    humMin = h.min as number,
+    humMax = h.max as number;
+  const days = record.incubationDays as number,
+    interval = record.defaultTurnInterval as number;
   // Same biological bounds as the custom-mode form; anything else is rejected.
-  if (tempMin < 30 || tempMin > 42 || tempMax < 30 || tempMax > 42 || tempMin > tempMax) return null;
-  if (humMin < 30 || humMin > 90 || humMax < 30 || humMax > 90 || humMin > humMax) return null;
+  if (
+    tempMin < 30 ||
+    tempMin > 42 ||
+    tempMax < 30 ||
+    tempMax > 42 ||
+    tempMin > tempMax
+  )
+    return null;
+  if (
+    humMin < 30 ||
+    humMin > 90 ||
+    humMax < 30 ||
+    humMax > 90 ||
+    humMin > humMax
+  )
+    return null;
   if (!Number.isInteger(days) || days < 7 || days > 45) return null;
   if (!Number.isInteger(interval) || interval < 1 || interval > 24) return null;
   return {
     id: `mode-${Date.now()}-${idSuffix}`,
-    name: raw.name.trim().slice(0, 30),
+    name: name.trim().slice(0, 30),
     builtIn: false, // imported modes are always custom
-    targetTemp: { min: t.min, max: t.max },
-    targetHumidity: { min: h.min, max: h.max },
-    incubationDays: raw.incubationDays,
-    defaultTurnInterval: raw.defaultTurnInterval,
+    targetTemp: { min: tempMin, max: tempMax },
+    targetHumidity: { min: humMin, max: humMax },
+    incubationDays: days,
+    defaultTurnInterval: interval,
   };
 }
 
@@ -103,7 +146,12 @@ interface Conflict {
   resolution: "overwrite" | "rename";
 }
 
-export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode }: Props) {
+export function ModeLibraryPanel({
+  modes,
+  onUpdateMode,
+  onAddMode,
+  onDeleteMode,
+}: Props) {
   const [view, setView] = useState<ViewMode>("list");
   const [modeSearch, setModeSearch] = useState("");
 
@@ -160,7 +208,9 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
   // Download a single mode as its own .json file.
   const exportSingle = (m: Mode) => {
     const { id: _omit, builtIn: _b, ...payload } = m;
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -187,8 +237,16 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       toast.error("Please name your Mode.");
       return;
     }
-    const { tempMin, tempMax, humMin, humMax, incubationDays, defaultTurnInterval } = draft;
-    const inRange = (v: number, lo: number, hi: number) => Number.isFinite(v) && v >= lo && v <= hi;
+    const {
+      tempMin,
+      tempMax,
+      humMin,
+      humMax,
+      incubationDays,
+      defaultTurnInterval,
+    } = draft;
+    const inRange = (v: number, lo: number, hi: number) =>
+      Number.isFinite(v) && v >= lo && v <= hi;
     if (!inRange(tempMin, 30, 42) || !inRange(tempMax, 30, 42)) {
       toast.error("Temperature must be between 30.0°C and 42.0°C.");
       return;
@@ -205,12 +263,22 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       toast.error("Humidity min cannot be above max.");
       return;
     }
-    if (!Number.isInteger(incubationDays) || incubationDays < 7 || incubationDays > 45) {
+    if (
+      !Number.isInteger(incubationDays) ||
+      incubationDays < 7 ||
+      incubationDays > 45
+    ) {
       toast.error("Duration must be a whole number between 7 and 45 days.");
       return;
     }
-    if (!Number.isInteger(defaultTurnInterval) || defaultTurnInterval < 1 || defaultTurnInterval > 24) {
-      toast.error("Turn interval must be a whole number between 1 and 24 hours.");
+    if (
+      !Number.isInteger(defaultTurnInterval) ||
+      defaultTurnInterval < 1 ||
+      defaultTurnInterval > 24
+    ) {
+      toast.error(
+        "Turn interval must be a whole number between 1 and 24 hours.",
+      );
       return;
     }
     const payload = {
@@ -221,17 +289,28 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       defaultTurnInterval,
     };
     setIsMutating(true);
-    const saved = modalKind === "edit" && modalId
-      ? await onUpdateMode(modalId, payload)
-      : await onAddMode({ id: `mode-${Date.now()}`, builtIn: false, ...payload });
+    const saved =
+      modalKind === "edit" && modalId
+        ? await onUpdateMode(modalId, payload)
+        : await onAddMode({
+            id: `mode-${Date.now()}`,
+            builtIn: false,
+            ...payload,
+          });
     setIsMutating(false);
     if (!saved) return;
-    toast.success(modalKind === "edit" ? `${payload.name} mode updated` : `Custom mode "${payload.name}" added`);
+    toast.success(
+      modalKind === "edit"
+        ? `${payload.name} mode updated`
+        : `Custom mode "${payload.name}" added`,
+    );
     setModalOpen(false);
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify({ modes }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ modes }, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -244,18 +323,21 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
   };
 
   const handleImportFile = async (file: File) => {
-    let parsed: any;
+    let parsed: unknown;
     try {
-      parsed = JSON.parse(await file.text());
+      parsed = JSON.parse(await file.text()) as unknown;
     } catch {
       toast.error("Could not read that file. The JSON is invalid.");
       return;
     }
-    const rawModes: any[] = Array.isArray(parsed) ? parsed : parsed?.modes;
-    if (!Array.isArray(rawModes)) {
+    const candidate: unknown = Array.isArray(parsed)
+      ? parsed
+      : (parsed as { modes?: unknown } | null | undefined)?.modes;
+    if (!Array.isArray(candidate)) {
       toast.error("No modes found in that file.");
       return;
     }
+    const rawModes: unknown[] = candidate;
 
     const clean: Mode[] = [];
     const found: Conflict[] = [];
@@ -263,9 +345,15 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       const m = coerceMode(raw, String(i));
       if (!m) return;
       // Built-in names always import as a separate custom copy (never overwrite a built-in).
-      const existingCustom = modes.find((x) => !x.builtIn && x.name.toLowerCase() === m.name.toLowerCase());
+      const existingCustom = modes.find(
+        (x) => !x.builtIn && x.name.toLowerCase() === m.name.toLowerCase(),
+      );
       if (existingCustom) {
-        found.push({ incoming: m, existingId: existingCustom.id, resolution: "overwrite" });
+        found.push({
+          incoming: m,
+          existingId: existingCustom.id,
+          resolution: "overwrite",
+        });
       } else {
         clean.push(m);
       }
@@ -285,7 +373,10 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       const results = await Promise.all(clean.map(onAddMode));
       setIsMutating(false);
       const savedCount = results.filter(Boolean).length;
-      if (savedCount > 0) toast.success(`Imported ${savedCount} mode${savedCount === 1 ? "" : "s"}`);
+      if (savedCount > 0)
+        toast.success(
+          `Imported ${savedCount} mode${savedCount === 1 ? "" : "s"}`,
+        );
     }
   };
 
@@ -294,15 +385,19 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
     const actions: Promise<boolean>[] = pendingClean.map(onAddMode);
     conflicts.forEach((c) => {
       if (c.resolution === "overwrite") {
-        actions.push(onUpdateMode(c.existingId, {
-          name: c.incoming.name,
-          targetTemp: c.incoming.targetTemp,
-          targetHumidity: c.incoming.targetHumidity,
-          incubationDays: c.incoming.incubationDays,
-          defaultTurnInterval: c.incoming.defaultTurnInterval,
-        }));
+        actions.push(
+          onUpdateMode(c.existingId, {
+            name: c.incoming.name,
+            targetTemp: c.incoming.targetTemp,
+            targetHumidity: c.incoming.targetHumidity,
+            incubationDays: c.incoming.incubationDays,
+            defaultTurnInterval: c.incoming.defaultTurnInterval,
+          }),
+        );
       } else {
-        actions.push(onAddMode({ ...c.incoming, name: `${c.incoming.name} (imported)` }));
+        actions.push(
+          onAddMode({ ...c.incoming, name: `${c.incoming.name} (imported)` }),
+        );
       }
     });
     const results = await Promise.all(actions);
@@ -357,7 +452,11 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
             type="button"
             onClick={() => setDeleteTarget(m)}
             className={iconBtn}
-            style={{ borderColor: CRIT_BG, color: CRIT, backgroundColor: CRIT_BG }}
+            style={{
+              borderColor: CRIT_BG,
+              color: CRIT,
+              backgroundColor: CRIT_BG,
+            }}
             title="Delete"
             aria-label="Delete mode"
           >
@@ -368,7 +467,12 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
     );
   };
 
-  const draftField = (label: string, value: number, onChange: (n: number) => void, opts: { step?: number; min?: number; max?: number } = {}) => (
+  const draftField = (
+    label: string,
+    value: number,
+    onChange: (n: number) => void,
+    opts: { step?: number; min?: number; max?: number } = {},
+  ) => (
     <div>
       <Label>{label}</Label>
       <Input
@@ -430,7 +534,11 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 py-4">
         <div className="relative min-w-0 flex-1" style={{ minWidth: 200 }}>
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2"
+            style={{ color: MUTED }}
+          />
           <Input
             value={modeSearch}
             onChange={(e) => setModeSearch(e.target.value)}
@@ -461,10 +569,19 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
         >
           <Upload size={16} /> Import
         </Button>
-        <Button variant="outline" className="rounded-xl" style={{ borderColor: BORDER }} onClick={handleExport}>
+        <Button
+          variant="outline"
+          className="rounded-xl"
+          style={{ borderColor: BORDER }}
+          onClick={handleExport}
+        >
           <Download size={16} /> Export All
         </Button>
-        <Button className="rounded-xl" style={{ backgroundColor: RUST, color: "#fff" }} onClick={openAdd}>
+        <Button
+          className="rounded-xl"
+          style={{ backgroundColor: RUST, color: "#fff" }}
+          onClick={openAdd}
+        >
           <Plus size={17} /> Add Custom Mode
         </Button>
       </div>
@@ -503,7 +620,11 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
           {filteredModes.map((m) => {
             const candling = computeCandling(m.incubationDays);
             return (
-              <div key={m.id} className="rounded-2xl p-4" style={{ border: `1px solid ${BORDER}` }}>
+              <div
+                key={m.id}
+                className="rounded-2xl p-4"
+                style={{ border: `1px solid ${BORDER}` }}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <p
                     className="min-w-0 truncate"
@@ -530,25 +651,37 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                   }}
                 >
                   <span className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5" style={{ color: MUTED }}>
+                    <span
+                      className="flex items-center gap-1.5"
+                      style={{ color: MUTED }}
+                    >
                       <Thermometer size={14} /> Temp
                     </span>
                     {m.targetTemp.min} to {m.targetTemp.max}°C
                   </span>
                   <span className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5" style={{ color: MUTED }}>
+                    <span
+                      className="flex items-center gap-1.5"
+                      style={{ color: MUTED }}
+                    >
                       <Droplets size={14} /> Humidity
                     </span>
                     {m.targetHumidity.min} to {m.targetHumidity.max}%
                   </span>
                   <span className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5" style={{ color: MUTED }}>
+                    <span
+                      className="flex items-center gap-1.5"
+                      style={{ color: MUTED }}
+                    >
                       <CalendarDays size={14} /> Duration
                     </span>
                     {m.incubationDays} days
                   </span>
                   <span className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5" style={{ color: MUTED }}>
+                    <span
+                      className="flex items-center gap-1.5"
+                      style={{ color: MUTED }}
+                    >
                       <RotateCw size={14} /> Turn every
                     </span>
                     {m.defaultTurnInterval}h
@@ -574,11 +707,22 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
           })}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border" style={{ borderColor: BORDER }}>
+        <div
+          className="overflow-hidden rounded-2xl border"
+          style={{ borderColor: BORDER }}
+        >
           <Table>
             <TableHeader style={{ backgroundColor: "#F2EEE5" }}>
               <TableRow>
-                {["MODE NAME", "TEMP RANGE", "HUMIDITY RANGE", "DURATION", "TURN EVERY", "CANDLING DAYS", "ACTIONS"].map((h) => (
+                {[
+                  "MODE NAME",
+                  "TEMP RANGE",
+                  "HUMIDITY RANGE",
+                  "DURATION",
+                  "TURN EVERY",
+                  "CANDLING DAYS",
+                  "ACTIONS",
+                ].map((h) => (
                   <TableHead
                     key={h}
                     style={{
@@ -670,7 +814,9 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                     >
                       {candling.map((c) => `d${c.day}`).join(" / ")}
                     </TableCell>
-                    <TableCell><ModeActions m={m} /></TableCell>
+                    <TableCell>
+                      <ModeActions m={m} />
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -680,7 +826,10 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
       )}
 
       {/* Delete confirmation */}
-      <Dialog open={deleteTarget !== null} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+      >
         <DialogContent className="rounded-3xl sm:max-w-sm">
           <DialogHeader>
             <DialogTitle
@@ -694,14 +843,26 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
               Delete mode?
             </DialogTitle>
             <DialogDescription>
-              "{deleteTarget?.name}" will be permanently removed from your Mode library. This can't be undone.
+              "{deleteTarget?.name}" will be permanently removed from your Mode
+              library. This can't be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" className="rounded-xl" disabled={isMutating} onClick={() => setDeleteTarget(null)}>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              disabled={isMutating}
+              onClick={() => setDeleteTarget(null)}
+            >
               Cancel
             </Button>
-            <Button className="rounded-xl" style={{ backgroundColor: CRIT, color: "#fff" }} disabled={isMutating} aria-busy={isMutating} onClick={() => void confirmDelete()}>
+            <Button
+              className="rounded-xl"
+              style={{ backgroundColor: CRIT, color: "#fff" }}
+              disabled={isMutating}
+              aria-busy={isMutating}
+              onClick={() => void confirmDelete()}
+            >
               <Trash2 size={15} /> {isMutating ? "Deleting…" : "Delete"}
             </Button>
           </DialogFooter>
@@ -722,7 +883,9 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
             >
               {modalKind === "edit" ? "Edit Mode" : "Add custom Mode"}
             </DialogTitle>
-            <DialogDescription>Candling checkpoints are auto-calculated from the duration.</DialogDescription>
+            <DialogDescription>
+              Candling checkpoints are auto-calculated from the duration.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div>
@@ -737,21 +900,60 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {draftField("Temp min °C", draft.tempMin, (n) => setDraft({ ...draft, tempMin: n }), { step: 0.1, min: 30, max: 42 })}
-              {draftField("Temp max °C", draft.tempMax, (n) => setDraft({ ...draft, tempMax: n }), { step: 0.1, min: 30, max: 42 })}
-              {draftField("Hum min %", draft.humMin, (n) => setDraft({ ...draft, humMin: n }), { min: 30, max: 90 })}
-              {draftField("Hum max %", draft.humMax, (n) => setDraft({ ...draft, humMax: n }), { min: 30, max: 90 })}
-              {draftField("Duration (days)", draft.incubationDays, (n) => setDraft({ ...draft, incubationDays: n }), { min: 7, max: 45 })}
-              {draftField("Turn every (h)", draft.defaultTurnInterval, (n) =>
-                setDraft({ ...draft, defaultTurnInterval: n }),
-                { min: 1, max: 24 })}
+              {draftField(
+                "Temp min °C",
+                draft.tempMin,
+                (n) => setDraft({ ...draft, tempMin: n }),
+                { step: 0.1, min: 30, max: 42 },
+              )}
+              {draftField(
+                "Temp max °C",
+                draft.tempMax,
+                (n) => setDraft({ ...draft, tempMax: n }),
+                { step: 0.1, min: 30, max: 42 },
+              )}
+              {draftField(
+                "Hum min %",
+                draft.humMin,
+                (n) => setDraft({ ...draft, humMin: n }),
+                { min: 30, max: 90 },
+              )}
+              {draftField(
+                "Hum max %",
+                draft.humMax,
+                (n) => setDraft({ ...draft, humMax: n }),
+                { min: 30, max: 90 },
+              )}
+              {draftField(
+                "Duration (days)",
+                draft.incubationDays,
+                (n) => setDraft({ ...draft, incubationDays: n }),
+                { min: 7, max: 45 },
+              )}
+              {draftField(
+                "Turn every (h)",
+                draft.defaultTurnInterval,
+                (n) => setDraft({ ...draft, defaultTurnInterval: n }),
+                { min: 1, max: 24 },
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="rounded-xl" disabled={isMutating} onClick={() => setModalOpen(false)}>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              disabled={isMutating}
+              onClick={() => setModalOpen(false)}
+            >
               Cancel
             </Button>
-            <Button className="rounded-xl" style={{ backgroundColor: RUST, color: "#fff" }} disabled={isMutating} aria-busy={isMutating} onClick={() => void saveModal()}>
+            <Button
+              className="rounded-xl"
+              style={{ backgroundColor: RUST, color: "#fff" }}
+              disabled={isMutating}
+              aria-busy={isMutating}
+              onClick={() => void saveModal()}
+            >
               {isMutating ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
@@ -773,7 +975,8 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
               Resolve name conflicts
             </DialogTitle>
             <DialogDescription>
-              These imported modes share a name with an existing custom mode. Choose what to do with each.
+              These imported modes share a name with an existing custom mode.
+              Choose what to do with each.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -787,12 +990,17 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                   color: MUTED,
                 }}
               >
-                {pendingClean.length} other mode{pendingClean.length === 1 ? "" : "s"} will be imported without
+                {pendingClean.length} other mode
+                {pendingClean.length === 1 ? "" : "s"} will be imported without
                 conflict.
               </p>
             )}
             {conflicts.map((c, idx) => (
-              <div key={idx} className="rounded-2xl p-3" style={{ backgroundColor: "#FBF6E7" }}>
+              <div
+                key={c.incoming.id}
+                className="rounded-2xl p-3"
+                style={{ backgroundColor: "#FBF6E7" }}
+              >
                 <p
                   style={{
                     fontFamily: "var(--font-body)",
@@ -812,7 +1020,11 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                         key={r}
                         type="button"
                         onClick={() =>
-                          setConflicts((prev) => prev.map((x, i) => (i === idx ? { ...x, resolution: r } : x)))
+                          setConflicts((prev) =>
+                            prev.map((x, i) =>
+                              i === idx ? { ...x, resolution: r } : x,
+                            ),
+                          )
                         }
                         className="cursor-pointer rounded-full px-3 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                         style={{
@@ -825,7 +1037,9 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
                           lineHeight: "var(--leading-normal)",
                         }}
                       >
-                        {r === "overwrite" ? "Overwrite existing" : "Keep both (rename)"}
+                        {r === "overwrite"
+                          ? "Overwrite existing"
+                          : "Keep both (rename)"}
                       </button>
                     );
                   })}
@@ -834,10 +1048,21 @@ export function ModeLibraryPanel({ modes, onUpdateMode, onAddMode, onDeleteMode 
             ))}
           </div>
           <DialogFooter>
-            <Button variant="outline" className="rounded-xl" disabled={isMutating} onClick={() => setConflictOpen(false)}>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              disabled={isMutating}
+              onClick={() => setConflictOpen(false)}
+            >
               Cancel
             </Button>
-            <Button className="rounded-xl" style={{ backgroundColor: RUST, color: "#fff" }} disabled={isMutating} aria-busy={isMutating} onClick={() => void applyImport()}>
+            <Button
+              className="rounded-xl"
+              style={{ backgroundColor: RUST, color: "#fff" }}
+              disabled={isMutating}
+              aria-busy={isMutating}
+              onClick={() => void applyImport()}
+            >
               {isMutating ? "Importing…" : "Import"}
             </Button>
           </DialogFooter>

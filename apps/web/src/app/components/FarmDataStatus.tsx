@@ -1,7 +1,7 @@
-import { useSyncExternalStore } from "react";
 import { AlertTriangle, RefreshCw, WifiOff } from "lucide-react";
-import { Button } from "./ui/button";
+import { useSyncExternalStore } from "react";
 import { repositoryErrorMessage } from "../features/farm/repository-query";
+import { Button } from "./ui/button";
 
 function subscribeToConnectivity(onStoreChange: () => void) {
   window.addEventListener("online", onStoreChange);
@@ -45,7 +45,8 @@ export function FarmDataStatus({
       >
         <WifiOff size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
         <p className="text-sm">
-          <strong>Offline.</strong> Showing the last loaded farm data. Changes may not be confirmed until you reconnect.
+          <strong>Offline.</strong> Showing the last loaded farm data. Changes
+          may not be confirmed until you reconnect.
         </p>
       </div>
     );
@@ -63,9 +64,14 @@ export function FarmDataStatus({
         role="alert"
       >
         <div className="flex min-w-0 items-start gap-2">
-          <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+          <AlertTriangle
+            size={16}
+            className="mt-0.5 shrink-0"
+            aria-hidden="true"
+          />
           <p className="min-w-0 text-sm">
-            <strong>Data may be stale.</strong> {repositoryErrorMessage(staleError)}
+            <strong>Data may be stale.</strong>{" "}
+            {repositoryErrorMessage(staleError)}
           </p>
         </div>
         <Button type="button" size="sm" variant="outline" onClick={onRetry}>
@@ -78,8 +84,15 @@ export function FarmDataStatus({
   if (!isRefreshing) return null;
 
   return (
-    <div className="mb-3 flex items-center gap-2 text-sm text-[var(--text-secondary)]" role="status">
-      <RefreshCw size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+    <div
+      className="mb-3 flex items-center gap-2 text-sm text-[var(--text-secondary)]"
+      role="status"
+    >
+      <RefreshCw
+        size={14}
+        className="animate-spin motion-reduce:animate-none"
+        aria-hidden="true"
+      />
       Refreshing farm data…
     </div>
   );

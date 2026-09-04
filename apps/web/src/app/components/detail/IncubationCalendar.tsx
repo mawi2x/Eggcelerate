@@ -1,17 +1,27 @@
-import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import type { CandlingCheckpoint } from "../../domain/types";
-import { TEXT } from "./types";
 import { SectionCard } from "./primitives";
+import { TEXT } from "./types";
 
 // Design anchor: cycle Day 1 = Aug 5, 2026, so Day 6 = Aug 10, Day 13 = Aug 17,
 // Day 18 = Aug 22, Day 21 = Aug 25 — all within the August 2026 default view.
 const CYCLE_START = new Date(2026, 7, 5);
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
-const WEEKDAY_HEADS = ["S", "M", "T", "W", "T", "F", "S"];
+const WEEKDAY_HEADS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 interface IncubationCalendarProps {
   currentDay: number;
@@ -19,7 +29,11 @@ interface IncubationCalendarProps {
   candling: CandlingCheckpoint[];
 }
 
-export function IncubationCalendar({ currentDay, totalDays, candling }: IncubationCalendarProps) {
+export function IncubationCalendar({
+  currentDay,
+  totalDays,
+  candling,
+}: IncubationCalendarProps) {
   const [view, setView] = useState(() => {
     const today = new Date(CYCLE_START);
     today.setDate(today.getDate() + Math.max(0, currentDay - 1));
@@ -39,7 +53,8 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
   const cycleEndDate = dayOffset(totalDays);
   const lockdownDate = dayOffset(lockdownDay);
 
-  const isInIncubationPeriod = (d: Date) => d >= cycleStartDate && d <= cycleEndDate;
+  const isInIncubationPeriod = (d: Date) =>
+    d >= cycleStartDate && d <= cycleEndDate;
   const isInLockdownPhase = (d: Date) => d >= lockdownDate && d <= cycleEndDate;
 
   const first = new Date(view.y, view.m, 1);
@@ -53,10 +68,14 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
       return { kind: "today", label: `Day ${currentDay} · Today` };
     }
     const candlingCheckpoint = candlingDays.find(
-      (checkpoint) => d.toDateString() === dayOffset(checkpoint.day).toDateString()
+      (checkpoint) =>
+        d.toDateString() === dayOffset(checkpoint.day).toDateString(),
     );
     if (candlingCheckpoint) {
-      return { kind: "candling", label: `Day ${candlingCheckpoint.day} · ${candlingCheckpoint.label}` };
+      return {
+        kind: "candling",
+        label: `Day ${candlingCheckpoint.day} · ${candlingCheckpoint.label}`,
+      };
     }
     if (d.toDateString() === dayOffset(lockdownDay).toDateString()) {
       return { kind: "lockdown", label: `Day ${lockdownDay} · Lockdown` };
@@ -99,7 +118,10 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
         >
           <ChevronLeft size={15} />
         </button>
-        <span className="text-center" style={{ minWidth: 118, fontSize: 14, fontWeight: 600, color: TEXT }}>
+        <span
+          className="text-center"
+          style={{ minWidth: 118, fontSize: 14, fontWeight: 600, color: TEXT }}
+        >
           {MONTH_NAMES[view.m]} {view.y}
         </span>
         <button
@@ -114,9 +136,9 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
 
       {/* Weekday header */}
       <div className="grid grid-cols-7 gap-1">
-        {WEEKDAY_HEADS.map((w, i) => (
+        {WEEKDAY_HEADS.map((w) => (
           <div
-            key={i}
+            key={w}
             className="text-center"
             style={{
               fontFamily: "var(--font-body)",
@@ -126,7 +148,7 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
               color: "#A8A29E",
             }}
           >
-            {w}
+            {w[0]}
           </div>
         ))}
       </div>
@@ -134,54 +156,83 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
       {/* Day grid — fixed 6 rows, trailing days muted */}
       <div className="mt-1 grid grid-cols-7 gap-y-1">
         {cells.map((c, i) => {
-          if (c === null) return <div key={i} />;
+          if (c === null) {
+            const placeholderDate = new Date(view.y, view.m, i - lead);
+            return <div key={placeholderDate.toISOString()} />;
+          }
           const m = c.trailing ? null : milestoneFor(c.date);
           const inCycle = isInIncubationPeriod(c.date);
           const inLockdownPhase = isInLockdownPhase(c.date);
           const previous = cells[i - 1];
           const nextCell = cells[i + 1];
-          const phaseKey = inLockdownPhase ? "lockdown" : inCycle ? "incubation" : "outside";
+          const phaseKey = inLockdownPhase
+            ? "lockdown"
+            : inCycle
+              ? "incubation"
+              : "outside";
           const previousPhaseKey =
             previous && previous !== null
               ? isInLockdownPhase(previous.date)
                 ? "lockdown"
                 : isInIncubationPeriod(previous.date)
-                ? "incubation"
-                : "outside"
+                  ? "incubation"
+                  : "outside"
               : "outside";
           const nextPhaseKey =
             nextCell && nextCell !== null
               ? isInLockdownPhase(nextCell.date)
                 ? "lockdown"
                 : isInIncubationPeriod(nextCell.date)
-                ? "incubation"
-                : "outside"
+                  ? "incubation"
+                  : "outside"
               : "outside";
-          const startsPhaseBand = inCycle && (i % 7 === 0 || phaseKey !== previousPhaseKey);
-          const endsPhaseBand = inCycle && (i % 7 === 6 || phaseKey !== nextPhaseKey);
-          const phaseTransitionBefore = startsPhaseBand && previousPhaseKey !== "outside";
+          const startsPhaseBand =
+            inCycle && (i % 7 === 0 || phaseKey !== previousPhaseKey);
+          const endsPhaseBand =
+            inCycle && (i % 7 === 6 || phaseKey !== nextPhaseKey);
+          const phaseTransitionBefore =
+            startsPhaseBand && previousPhaseKey !== "outside";
           const cycleDay = inCycle
-            ? Math.round((c.date.getTime() - cycleStartDate.getTime()) / 86_400_000) + 1
+            ? Math.round(
+                (c.date.getTime() - cycleStartDate.getTime()) / 86_400_000,
+              ) + 1
             : null;
 
           return (
             <div
-              key={i}
+              key={c.date.toISOString()}
               className="flex flex-col items-center justify-center"
               style={{
                 position: "relative",
                 height: 38,
                 boxSizing: "border-box",
                 marginLeft: phaseTransitionBefore ? 9 : undefined,
-                backgroundColor: inCycle ? (inLockdownPhase ? "#FCE4D6" : "#FFF0D6") : "transparent",
-                borderTop: inCycle ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}` : undefined,
-                borderBottom: inCycle ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}` : undefined,
-                borderLeft: startsPhaseBand ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}` : undefined,
-                borderRight: endsPhaseBand ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}` : undefined,
+                backgroundColor: inCycle
+                  ? inLockdownPhase
+                    ? "#FCE4D6"
+                    : "#FFF0D6"
+                  : "transparent",
+                borderTop: inCycle
+                  ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}`
+                  : undefined,
+                borderBottom: inCycle
+                  ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}`
+                  : undefined,
+                borderLeft: startsPhaseBand
+                  ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}`
+                  : undefined,
+                borderRight: endsPhaseBand
+                  ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}`
+                  : undefined,
                 borderRadius: `${startsPhaseBand ? 10 : 0}px ${endsPhaseBand ? 10 : 0}px ${endsPhaseBand ? 10 : 0}px ${startsPhaseBand ? 10 : 0}px`,
                 zIndex: m?.kind === "today" ? 2 : undefined,
               }}
-              title={m?.label ?? (cycleDay ? `Incubation Day ${cycleDay} of ${totalDays}` : undefined)}
+              title={
+                m?.label ??
+                (cycleDay
+                  ? `Incubation Day ${cycleDay} of ${totalDays}`
+                  : undefined)
+              }
             >
               {m?.kind === "today" ? (
                 <span
@@ -232,20 +283,20 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
                       m?.kind === "candling"
                         ? "#F2C94C"
                         : m?.kind === "lockdown"
-                        ? "var(--status-warning-fg)"
-                        : m?.kind === "hatch"
-                        ? "var(--status-success-fg)"
-                        : "transparent",
+                          ? "var(--status-warning-fg)"
+                          : m?.kind === "hatch"
+                            ? "var(--status-success-fg)"
+                            : "transparent",
                     color:
                       m?.kind === "lockdown"
                         ? "#FFFFFF"
                         : m?.kind === "hatch"
-                        ? "#FFFFFF"
-                        : m?.kind === "candling"
-                        ? "#713F12"
-                        : m
-                        ? TEXT
-                        : "var(--text-muted)",
+                          ? "#FFFFFF"
+                          : m?.kind === "candling"
+                            ? "#713F12"
+                            : m
+                              ? TEXT
+                              : "var(--text-muted)",
                     ...(c.trailing ? { color: "#D1C7BD", opacity: 0.4 } : {}),
                   }}
                 >
@@ -263,10 +314,42 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
         style={{ borderColor: "#EFE9DC" }}
       >
         {[
-          { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#8B3A1C" }} />, label: "Today" },
-          { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#F2C94C" }} />, label: "Candling" },
-          { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#D97706" }} />, label: "Lockdown" },
-          { swatch: <span className="rounded-sm" style={{ width: 11, height: 11, backgroundColor: "#16A34A" }} />, label: "Hatch" },
+          {
+            swatch: (
+              <span
+                className="rounded-sm"
+                style={{ width: 11, height: 11, backgroundColor: "#8B3A1C" }}
+              />
+            ),
+            label: "Today",
+          },
+          {
+            swatch: (
+              <span
+                className="rounded-sm"
+                style={{ width: 11, height: 11, backgroundColor: "#F2C94C" }}
+              />
+            ),
+            label: "Candling",
+          },
+          {
+            swatch: (
+              <span
+                className="rounded-sm"
+                style={{ width: 11, height: 11, backgroundColor: "#D97706" }}
+              />
+            ),
+            label: "Lockdown",
+          },
+          {
+            swatch: (
+              <span
+                className="rounded-sm"
+                style={{ width: 11, height: 11, backgroundColor: "#16A34A" }}
+              />
+            ),
+            label: "Hatch",
+          },
         ].map((l) => (
           <span
             key={l.label}
@@ -319,15 +402,35 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
               fontWeight: "var(--weight-bold)",
               letterSpacing: "var(--tracking-label)",
               lineHeight: "var(--leading-snug)",
-              backgroundColor: currentDay >= totalDays ? "#DCFCE7" : currentDay >= lockdownDay ? "#FCE4D6" : "#F4ECE1",
-              color: currentDay >= totalDays ? "var(--status-success-fg)" : currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
+              backgroundColor:
+                currentDay >= totalDays
+                  ? "#DCFCE7"
+                  : currentDay >= lockdownDay
+                    ? "#FCE4D6"
+                    : "#F4ECE1",
+              color:
+                currentDay >= totalDays
+                  ? "var(--status-success-fg)"
+                  : currentDay >= lockdownDay
+                    ? "#8A4B08"
+                    : "var(--text-muted)",
             }}
           >
-            {currentDay >= totalDays ? "Hatch Day" : currentDay >= lockdownDay ? "Lockdown" : `Day ${currentDay} of ${totalDays}`}
+            {currentDay >= totalDays
+              ? "Hatch Day"
+              : currentDay >= lockdownDay
+                ? "Lockdown"
+                : `Day ${currentDay} of ${totalDays}`}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl p-2" style={{ backgroundColor: "#FCFAF6", border: "1px solid var(--border-subtle)" }}>
+          <div
+            className="rounded-xl p-2"
+            style={{
+              backgroundColor: "#FCFAF6",
+              border: "1px solid var(--border-subtle)",
+            }}
+          >
             <span
               style={{
                 color: "var(--text-muted)",
@@ -351,7 +454,10 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
                 marginTop: 1,
               }}
             >
-              {cycleStartDate.toLocaleDateString([], { month: "short", day: "numeric" })}
+              {cycleStartDate.toLocaleDateString([], {
+                month: "short",
+                day: "numeric",
+              })}
             </p>
             <p
               style={{
@@ -368,13 +474,15 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
           <div
             className="rounded-xl p-2"
             style={{
-              backgroundColor: currentDay >= lockdownDay ? "#FFF4D6" : "#FCFAF6",
+              backgroundColor:
+                currentDay >= lockdownDay ? "#FFF4D6" : "#FCFAF6",
               border: `1px solid ${currentDay >= lockdownDay ? "#F2C94C" : "var(--border-subtle)"}`,
             }}
           >
             <span
               style={{
-                color: currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
+                color:
+                  currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-bold)",
@@ -395,11 +503,15 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
                 marginTop: 1,
               }}
             >
-              {lockdownDate.toLocaleDateString([], { month: "short", day: "numeric" })}
+              {lockdownDate.toLocaleDateString([], {
+                month: "short",
+                day: "numeric",
+              })}
             </p>
             <p
               style={{
-                color: currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
+                color:
+                  currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-regular)",
@@ -409,7 +521,13 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
               Day {lockdownDay} · Stop Turn
             </p>
           </div>
-          <div className="rounded-xl p-2" style={{ backgroundColor: "#FCFAF6", border: "1px solid var(--border-subtle)" }}>
+          <div
+            className="rounded-xl p-2"
+            style={{
+              backgroundColor: "#FCFAF6",
+              border: "1px solid var(--border-subtle)",
+            }}
+          >
             <span
               style={{
                 color: "var(--text-muted)",
@@ -433,7 +551,10 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
                 marginTop: 1,
               }}
             >
-              {dayOffset(candlingDays[0]?.day ?? 6).toLocaleDateString([], { month: "short", day: "numeric" })}
+              {dayOffset(candlingDays[0]?.day ?? 6).toLocaleDateString([], {
+                month: "short",
+                day: "numeric",
+              })}
             </p>
             <p
               style={{
@@ -456,7 +577,10 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
           >
             <span
               style={{
-                color: currentDay >= totalDays ? "var(--status-success-fg)" : "var(--text-muted)",
+                color:
+                  currentDay >= totalDays
+                    ? "var(--status-success-fg)"
+                    : "var(--text-muted)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-bold)",
@@ -477,11 +601,17 @@ export function IncubationCalendar({ currentDay, totalDays, candling }: Incubati
                 marginTop: 1,
               }}
             >
-              {cycleEndDate.toLocaleDateString([], { month: "short", day: "numeric" })}
+              {cycleEndDate.toLocaleDateString([], {
+                month: "short",
+                day: "numeric",
+              })}
             </p>
             <p
               style={{
-                color: currentDay >= totalDays ? "var(--status-success-fg)" : "var(--text-muted)",
+                color:
+                  currentDay >= totalDays
+                    ? "var(--status-success-fg)"
+                    : "var(--text-muted)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-regular)",

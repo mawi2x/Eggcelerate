@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createAlertFixtures } from "../app/data/fixtures/alerts";
-import { createHatchRecordFixtures, hatchRecordFixtures } from "../app/data/fixtures/hatch-records";
+import {
+  createHatchRecordFixtures,
+  hatchRecordFixtures,
+} from "../app/data/fixtures/hatch-records";
 import { createIncubatorFixtures } from "../app/data/fixtures/incubators";
 import { createModeFixtures, modeFixtures } from "../app/data/fixtures/modes";
 
@@ -8,7 +11,9 @@ describe("fixture factories", () => {
   it("preserves the current fixture counts", () => {
     const modes = createModeFixtures();
     expect(modes).toHaveLength(10);
-    expect(createIncubatorFixtures(modes, Date.UTC(2026, 8, 3))).toHaveLength(12);
+    expect(createIncubatorFixtures(modes, Date.UTC(2026, 8, 3))).toHaveLength(
+      12,
+    );
     expect(createAlertFixtures(Date.UTC(2026, 8, 3))).toHaveLength(12);
     expect(createHatchRecordFixtures()).toHaveLength(12);
   });

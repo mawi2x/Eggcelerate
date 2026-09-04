@@ -1,34 +1,63 @@
+import {
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  Cpu,
+  Loader2,
+  Plus,
+  Search,
+  TriangleAlert,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Cpu, Search, ArrowUpNarrowWide, ArrowDownWideNarrow, Loader2, TriangleAlert } from "lucide-react";
-import { IncubatorCard } from "../IncubatorCard";
-import { HarvestModal } from "../HarvestModal";
-import { StatusBadge } from "../StatusBadge";
-import { ViewToggle, ViewMode } from "../ViewToggle";
-import { FieldCounterLabel } from "../FieldCounterLabel";
 import { CHAMBER_NAME_MAX } from "../../data/account";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "../ui/table";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "../ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "../ui/select";
-import { PaginationBar } from "../ui/pagination-bar";
-import { FilterBar } from "../ui/filter-bar";
-import { useIsMobile } from "../ui/use-mobile";
-import { readingStateColors } from "../statusPresentation";
 import { CURRENT_TRAY_CAPACITY } from "../../domain/candling";
-import { calculateHatchabilityRate, getKnownFertileEggs, validateHarvestCounts } from "../../domain/fertility";
-import { daysUntilHatch, rangeState, waterState } from "../../domain/incubator";
+import {
+  calculateHatchabilityRate,
+  getKnownFertileEggs,
+  validateHarvestCounts,
+} from "../../domain/fertility";
+import { rangeState, waterState } from "../../domain/incubator";
 import type { Incubator, Mode, UnitStatus } from "../../domain/types";
 import { useCycleHistoryActions } from "../../features/farm/use-farm-data";
-import { selectFilteredIncubators } from "../../features/incubators/selectors";
+import {
+  selectFilteredIncubators,
+  selectSortedIncubators,
+} from "../../features/incubators/selectors";
+import { FieldCounterLabel } from "../FieldCounterLabel";
+import { HarvestModal } from "../HarvestModal";
+import { IncubatorCard } from "../IncubatorCard";
+import { StatusBadge } from "../StatusBadge";
+import { readingStateColors } from "../statusPresentation";
+import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
+import { FilterBar } from "../ui/filter-bar";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { PaginationBar } from "../ui/pagination-bar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import { useIsMobile } from "../ui/use-mobile";
+import { type ViewMode, ViewToggle } from "../ViewToggle";
 
 interface Props {
   units: Incubator[];
@@ -72,22 +101,6 @@ const sortOptions: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
 ];
 
-const WORD_TO_NUM: Record<string, number> = {
-  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6,
-  seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
-  thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
-};
-
-function getChamberNaturalOrder(name: string): number {
-  const lower = name.toLowerCase().trim();
-  const digitMatch = lower.match(/\d+/);
-  if (digitMatch) return parseInt(digitMatch[0], 10);
-  for (const [word, num] of Object.entries(WORD_TO_NUM)) {
-    if (new RegExp(`\\b${word}\\b`, "i").test(lower)) return num;
-  }
-  return 999;
-}
-
 export function IncubatorsScreen({
   units,
   modes,
@@ -109,14 +122,23 @@ export function IncubatorsScreen({
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [harvestUnit, setHarvestUnit] = useState<Incubator | null>(null);
 
-  const handleHarvestSave = async (unit: Incubator, hatched: number, _unhatched: number) => {
+  const handleHarvestSave = async (
+    unit: Incubator,
+    hatched: number,
+    _unhatched: number,
+  ) => {
     const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
-    const totalEggs = unit.totalEggsLoaded && unit.totalEggsLoaded > 0
-      ? unit.totalEggsLoaded
-      : CURRENT_TRAY_CAPACITY;
+    const totalEggs =
+      unit.totalEggsLoaded && unit.totalEggsLoaded > 0
+        ? unit.totalEggsLoaded
+        : CURRENT_TRAY_CAPACITY;
     const fertileEggs = getKnownFertileEggs(unit);
     const hatchedEggs = Math.floor(Number(hatched) || 0);
-    const validationError = validateHarvestCounts({ totalEggs, fertileEggs, hatchedEggs });
+    const validationError = validateHarvestCounts({
+      totalEggs,
+      fertileEggs,
+      hatchedEggs,
+    });
     if (validationError) {
       toast.error(validationError);
       return false;
@@ -134,9 +156,10 @@ export function IncubatorsScreen({
     const rate = calculateHatchabilityRate(hatchedEggs, fertileEggs);
     setHarvestUnit(null);
     toast.success(`${unit.name}: harvest logged`, {
-      description: rate === null
-        ? "Hatchability is not available because no fertility record was saved. Incubator reset to Ready."
-        : `${rate}% hatchability saved to history. Incubator reset to Ready.`,
+      description:
+        rate === null
+          ? "Hatchability is not available because no fertility record was saved. Incubator reset to Ready."
+          : `${rate}% hatchability saved to history. Incubator reset to Ready.`,
     });
     return true;
   };
@@ -144,54 +167,44 @@ export function IncubatorsScreen({
   const [deviceId, setDeviceId] = useState("");
   const [name, setName] = useState("");
   const [connecting, setConnecting] = useState(false);
-  const [connectError, setConnectError] = useState<null | "invalid" | "offline">(null);
+  const [connectError, setConnectError] = useState<
+    null | "invalid" | "offline"
+  >(null);
   const modeOf = (id: string) => modes.find((m) => m.id === id) ?? modes[0];
 
-  const counts = useMemo(() => ({
-    all: units.length,
-    optimal: units.filter((u) => u.status === "optimal").length,
-    warning: units.filter((u) => u.status === "warning").length,
-    alert: units.filter((u) => u.status === "alert").length,
-  }), [units]);
+  const counts = useMemo(
+    () => ({
+      all: units.length,
+      optimal: units.filter((u) => u.status === "optimal").length,
+      warning: units.filter((u) => u.status === "warning").length,
+      alert: units.filter((u) => u.status === "alert").length,
+    }),
+    [units],
+  );
 
-  const filtered = useMemo(() => selectFilteredIncubators(units, modes, {
-    search,
-    status: filter,
-    modeId: modeFilter,
-  }), [units, search, filter, modeFilter, modes]);
-  const sorted = useMemo(() => {
-    const remaining = (u: Incubator) => {
-      const m = modeOf(u.modeId);
-      return daysUntilHatch(u.dayOfIncubation, m.incubationDays);
-    };
-    const pct = (u: Incubator) => {
-      const days = modeOf(u.modeId).incubationDays;
-      return days > 0 ? Math.min(1, Math.max(0, u.dayOfIncubation / days)) : 0;
-    };
-    const byName = (a: Incubator, b: Incubator) => {
-      const numA = getChamberNaturalOrder(a.name);
-      const numB = getChamberNaturalOrder(b.name);
-      if (numA !== numB) return numA - numB;
-      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
-    };
-
-    // Copy first — `filtered` is derived state and must not be mutated in place.
-    return [...filtered].sort((a, b) => {
-      const dir = sortAsc ? 1 : -1;
-      switch (sort) {
-        case "progress":
-          return dir * (remaining(a) - remaining(b) || pct(b) - pct(a)) || byName(a, b);
-        case "name":
-          return dir * byName(a, b);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, sort, sortAsc, modes]);
+  const filtered = useMemo(
+    () =>
+      selectFilteredIncubators(units, modes, {
+        search,
+        status: filter,
+        modeId: modeFilter,
+      }),
+    [units, search, filter, modeFilter, modes],
+  );
+  const sorted = useMemo(
+    () =>
+      selectSortedIncubators(filtered, modes, {
+        sort,
+        sortAsc,
+      }),
+    [filtered, sort, sortAsc, modes],
+  );
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !isMobile || sorted.length === 0) return;
+    if (typeof window === "undefined" || !isMobile || sorted.length === 0)
+      return;
 
     let ticking = false;
     let frameId: number | null = null;
@@ -231,15 +244,34 @@ export function IncubatorsScreen({
   const scrollToChamber = (index: number) => {
     const el = cardRefs.current[index];
     if (el) {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      el.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
+      el.querySelector<HTMLElement>('[role="button"]')?.focus({
+        preventScroll: true,
+      });
+      setActiveCardIndex(index);
     }
   };
 
-  const filterPills: { key: Filter; label: string; mobileLabel?: string; count: number }[] = [
+  const filterPills: {
+    key: Filter;
+    label: string;
+    mobileLabel?: string;
+    count: number;
+  }[] = [
     { key: "all", label: "ALL", count: counts.all },
     { key: "optimal", label: "OPTIMAL", count: counts.optimal },
-    { key: "warning", label: "NEEDS ATTENTION", mobileLabel: "ATTENTION", count: counts.warning },
+    {
+      key: "warning",
+      label: "NEEDS ATTENTION",
+      mobileLabel: "ATTENTION",
+      count: counts.warning,
+    },
     { key: "alert", label: "URGENT", count: counts.alert },
   ];
 
@@ -249,7 +281,10 @@ export function IncubatorsScreen({
   const start = (clampedPage - 1) * rowsPerPage;
   const paged = sorted.slice(start, start + rowsPerPage);
 
-  const resetForm = () => { setDeviceId(""); setName(""); };
+  const resetForm = () => {
+    setDeviceId("");
+    setName("");
+  };
 
   const handleAdd = async () => {
     const trimmedDeviceId = deviceId.trim();
@@ -259,11 +294,19 @@ export function IncubatorsScreen({
       return;
     }
     if (!/^[A-Za-z0-9-]{3,20}$/.test(trimmedDeviceId)) {
-      toast.error("Device ID must be 3 to 20 characters using letters, numbers, or dashes. Example: EGG-1015.");
+      toast.error(
+        "Device ID must be 3 to 20 characters using letters, numbers, or dashes. Example: EGG-1015.",
+      );
       return;
     }
-    if (units.some((u) => u.deviceId.toLowerCase() === trimmedDeviceId.toLowerCase())) {
-      toast.error(`Device ${trimmedDeviceId} is already paired to another chamber.`);
+    if (
+      units.some(
+        (u) => u.deviceId.toLowerCase() === trimmedDeviceId.toLowerCase(),
+      )
+    ) {
+      toast.error(
+        `Device ${trimmedDeviceId} is already paired to another chamber.`,
+      );
       return;
     }
     setConnectError(null);
@@ -277,29 +320,33 @@ export function IncubatorsScreen({
     const mode = modes[0] ?? modeOf("broiler");
     const nowIso = new Date().toISOString();
     const connected = await onAddIncubator({
-        id: `chamber-${Date.now()}`,
-        name: trimmedName,
-        deviceId: id,
-        modeId: mode.id,
-        dayOfIncubation: 0,
-        temp: (mode.targetTemp.min + mode.targetTemp.max) / 2,
-        humidity: Math.round((mode.targetHumidity.min + mode.targetHumidity.max) / 2),
-        waterOk: true,
-        tempTrend: 0,
-        humidityTrend: 0,
-        powerSource: "grid",
-        batteryPct: 100,
-        status: "optimal",
-        cyclePhase: "ready",
-        conditionSeverity: "info",
-        connectionState: "connected",
-        lastTurned: nowIso,
-        nextTurn: new Date(Date.now() + mode.defaultTurnInterval * 3_600_000).toISOString(),
-        turnInterval: mode.defaultTurnInterval,
-        autoTurn: true,
-        paired: true,
-        candled: {},
-        candlingLog: [],
+      id: `chamber-${Date.now()}`,
+      name: trimmedName,
+      deviceId: id,
+      modeId: mode.id,
+      dayOfIncubation: 0,
+      temp: (mode.targetTemp.min + mode.targetTemp.max) / 2,
+      humidity: Math.round(
+        (mode.targetHumidity.min + mode.targetHumidity.max) / 2,
+      ),
+      waterOk: true,
+      tempTrend: 0,
+      humidityTrend: 0,
+      powerSource: "grid",
+      batteryPct: 100,
+      status: "optimal",
+      cyclePhase: "ready",
+      conditionSeverity: "info",
+      connectionState: "connected",
+      lastTurned: nowIso,
+      nextTurn: new Date(
+        Date.now() + mode.defaultTurnInterval * 3_600_000,
+      ).toISOString(),
+      turnInterval: mode.defaultTurnInterval,
+      autoTurn: true,
+      paired: true,
+      candled: {},
+      candlingLog: [],
     });
     if (!connected) {
       setConnecting(false);
@@ -316,11 +363,18 @@ export function IncubatorsScreen({
       {/* Row 1: Search + ViewToggle (desktop) + Add Button */}
       <div className="flex items-center gap-2.5 sm:gap-3">
         <div className="relative min-w-0 flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2"
+            style={{ color: MUTED }}
+          />
           <Input
             size="toolbar"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             maxLength={50}
             placeholder="Search incubators..."
             aria-label="Search incubators"
@@ -333,7 +387,10 @@ export function IncubatorsScreen({
         </div>
         <Button
           size="toolbar"
-          onClick={() => { setConnectError(null); setOpen(true); }}
+          onClick={() => {
+            setConnectError(null);
+            setOpen(true);
+          }}
           className="shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[#8B3A1C] focus-visible:outline-none focus-visible:ring-2 sm:px-5"
           style={{ backgroundColor: RUST, color: "#fff" }}
           aria-label="Add incubator"
@@ -345,19 +402,36 @@ export function IncubatorsScreen({
       </div>
 
       {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style={{ marginTop: 16 }}>
+      <div
+        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        style={{ marginTop: 16 }}
+      >
         <div className="min-w-0 flex-1 sm:flex-initial">
           <FilterBar
             ariaLabel="Incubator status filter"
             value={filter}
-            onChange={(key) => { setFilter(key as typeof filter); setPage(1); }}
-            options={filterPills.map((p) => ({ key: p.key, label: p.label, mobileLabel: p.mobileLabel, count: p.count }))}
+            onChange={(key) => {
+              setFilter(key as typeof filter);
+              setPage(1);
+            }}
+            options={filterPills.map((p) => ({
+              key: p.key,
+              label: p.label,
+              mobileLabel: p.mobileLabel,
+              count: p.count,
+            }))}
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* Incubation Mode Select */}
-          <Select value={modeFilter} onValueChange={(v) => { setModeFilter(v); setPage(1); }}>
+          <Select
+            value={modeFilter}
+            onValueChange={(v) => {
+              setModeFilter(v);
+              setPage(1);
+            }}
+          >
             <SelectTrigger
               size="toolbar"
               className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
@@ -368,12 +442,22 @@ export function IncubatorsScreen({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All modes</SelectItem>
-              {modes.map((mode) => <SelectItem key={mode.id} value={mode.id}>{mode.name}</SelectItem>)}
+              {modes.map((mode) => (
+                <SelectItem key={mode.id} value={mode.id}>
+                  {mode.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
           {/* Sort Key Select */}
-          <Select value={sort} onValueChange={(v) => { setSort(v as SortKey); setPage(1); }}>
+          <Select
+            value={sort}
+            onValueChange={(v) => {
+              setSort(v as SortKey);
+              setPage(1);
+            }}
+          >
             <SelectTrigger
               size="toolbar"
               className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
@@ -384,7 +468,9 @@ export function IncubatorsScreen({
             </SelectTrigger>
             <SelectContent>
               {sortOptions.map((o) => (
-                <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
+                <SelectItem key={o.key} value={o.key}>
+                  {o.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -392,25 +478,47 @@ export function IncubatorsScreen({
           {/* Sort Direction Toggle */}
           <button
             type="button"
-            onClick={() => { setSortAsc((v) => !v); setPage(1); }}
+            onClick={() => {
+              setSortAsc((v) => !v);
+              setPage(1);
+            }}
             className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] shrink-0 cursor-pointer items-center justify-center rounded-xl border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2"
-            style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}
+            style={{
+              backgroundColor: "var(--surface-card)",
+              borderColor: "var(--border-subtle)",
+              color: "var(--text-secondary)",
+            }}
             title={sortAsc ? "Sort ascending" : "Sort descending"}
             aria-label={`Sort direction: ${sortAsc ? "ascending" : "descending"}`}
           >
-            {sortAsc ? <ArrowUpNarrowWide size={16} /> : <ArrowDownWideNarrow size={16} />}
+            {sortAsc ? (
+              <ArrowUpNarrowWide size={16} />
+            ) : (
+              <ArrowDownWideNarrow size={16} />
+            )}
           </button>
         </div>
       </div>
 
       {sorted.length === 0 ? (
-        <div className="rounded-2xl px-5 py-12 text-center" style={{ backgroundColor: CARD, border: `1px dashed ${BORDER}` }}>
-          <p style={{ fontWeight: 700, color: TEXT }}>No chambers match your filters</p>
-          <p style={{ color: MUTED, fontSize: 13, marginTop: 4 }}>Try a different search term or filter.</p>
+        <div
+          className="rounded-2xl px-5 py-12 text-center"
+          style={{ backgroundColor: CARD, border: `1px dashed ${BORDER}` }}
+        >
+          <p style={{ fontWeight: 700, color: TEXT }}>
+            No chambers match your filters
+          </p>
+          <p style={{ color: MUTED, fontSize: 13, marginTop: 4 }}>
+            Try a different search term or filter.
+          </p>
           {(search || filter !== "all" || modeFilter !== "all") && (
             <button
               type="button"
-              onClick={() => { setSearch(""); setFilter("all"); setModeFilter("all"); }}
+              onClick={() => {
+                setSearch("");
+                setFilter("all");
+                setModeFilter("all");
+              }}
               className="mt-3 cursor-pointer rounded-xl px-3 py-1.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
               style={{ color: RUST, fontWeight: 600, fontSize: 13 }}
             >
@@ -424,8 +532,11 @@ export function IncubatorsScreen({
             {sorted.map((unit, idx) => (
               <div
                 key={unit.id}
-                ref={(el) => { cardRefs.current[idx] = el; }}
+                ref={(el) => {
+                  cardRefs.current[idx] = el;
+                }}
                 data-chamber-idx={idx}
+                className="scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-2xl"
               >
                 <IncubatorCard
                   unit={unit}
@@ -444,9 +555,8 @@ export function IncubatorsScreen({
 
           {/* Floating Vertical Dot Track on Mobile (shows incubator count and scroll position) */}
           {sorted.length > 1 && (
-            <div
-              role="group"
-              className="fixed right-1 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center rounded-full px-0.5 py-1.5 md:hidden"
+            <fieldset
+              className="scrollbar-none fixed right-1 top-1/2 z-30 m-0 flex max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] min-w-0 -translate-y-1/2 flex-col items-center overflow-y-auto overscroll-contain rounded-full px-0.5 py-1.5 max-[20rem]:hidden md:hidden"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.74)",
                 backdropFilter: "blur(8px)",
@@ -458,13 +568,20 @@ export function IncubatorsScreen({
               {sorted.map((unit, idx) => {
                 const isActive = activeCardIndex === idx;
                 const color = STATUS_DOT_COLORS[unit.status];
+                const statusLabel =
+                  unit.status === "alert"
+                    ? "urgent"
+                    : unit.status === "warning"
+                      ? "needs attention"
+                      : "optimal";
                 return (
                   <button
                     key={unit.id}
                     type="button"
                     onClick={() => scrollToChamber(idx)}
-                    className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                    aria-label={`Scroll to ${unit.name} (${idx + 1} of ${sorted.length})`}
+                    className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                    aria-label={`Scroll to ${unit.name}, ${statusLabel} (${idx + 1} of ${sorted.length})`}
+                    title={`${unit.name}: ${statusLabel}`}
                     aria-current={isActive ? "true" : undefined}
                   >
                     <span
@@ -475,18 +592,23 @@ export function IncubatorsScreen({
                         backgroundColor: isActive
                           ? "var(--brand-primary)"
                           : color,
-                        boxShadow: isActive ? "0 0 0 2px rgba(173, 58, 29, 0.12)" : "none",
+                        boxShadow: isActive
+                          ? "0 0 0 2px rgba(173, 58, 29, 0.12)"
+                          : "none",
                         opacity: isActive ? 1 : 0.62,
                       }}
                     />
                   </button>
                 );
               })}
-            </div>
+            </fieldset>
           )}
         </>
       ) : (
-        <div className="overflow-hidden rounded-2xl" style={{ border: `1px solid ${BORDER}`, backgroundColor: CARD }}>
+        <div
+          className="overflow-hidden rounded-2xl"
+          style={{ border: `1px solid ${BORDER}`, backgroundColor: CARD }}
+        >
           <PaginationBar
             className="border-b border-t-0"
             page={clampedPage}
@@ -505,13 +627,55 @@ export function IncubatorsScreen({
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {["CHAMBER", "MODE", "DAY"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>{h}</TableHead>
+                    <TableHead
+                      key={h}
+                      className="sticky top-0 z-10"
+                      style={{
+                        backgroundColor: CARD,
+                        borderBottom: `1px solid ${BORDER}`,
+                        color: "var(--text-muted)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {h}
+                    </TableHead>
                   ))}
                   {["TEMP", "HUMIDITY", "WATER"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10 text-right" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>{h}</TableHead>
+                    <TableHead
+                      key={h}
+                      className="sticky top-0 z-10 text-right"
+                      style={{
+                        backgroundColor: CARD,
+                        borderBottom: `1px solid ${BORDER}`,
+                        color: "var(--text-muted)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {h}
+                    </TableHead>
                   ))}
                   {["STATUS", "ACTIONS"].map((h) => (
-                    <TableHead key={h} className="sticky top-0 z-10" style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>{h}</TableHead>
+                    <TableHead
+                      key={h}
+                      className="sticky top-0 z-10"
+                      style={{
+                        backgroundColor: CARD,
+                        borderBottom: `1px solid ${BORDER}`,
+                        color: "var(--text-muted)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {h}
+                    </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -536,22 +700,65 @@ export function IncubatorsScreen({
                       }}
                       className="group cursor-pointer transition-colors duration-200 hover:bg-[#FFF7ED] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                     >
-                      <TableCell style={{ fontWeight: 700, color: TEXT }}>{unit.name}</TableCell>
+                      <TableCell style={{ fontWeight: 700, color: TEXT }}>
+                        {unit.name}
+                      </TableCell>
                       <TableCell>
-                        <span className="rounded-full px-2 py-0.5" style={{ backgroundColor: "rgba(173,58,29,0.12)", color: RUST, fontWeight: 700, fontSize: 12 }}>
+                        <span
+                          className="rounded-full px-2 py-0.5"
+                          style={{
+                            backgroundColor: "rgba(173,58,29,0.12)",
+                            color: RUST,
+                            fontWeight: 700,
+                            fontSize: 12,
+                          }}
+                        >
                           {mode.name}
                         </span>
                       </TableCell>
-                      <TableCell style={{ color: MUTED }}>{unit.dayOfIncubation} of {mode.incubationDays}</TableCell>
-                      <TableCell className="text-right" style={{ color: readingStateColors[tempSt], fontWeight: 700 }}>{unit.temp}°C</TableCell>
-                      <TableCell className="text-right" style={{ color: readingStateColors[humSt], fontWeight: 700 }}>{unit.humidity}%</TableCell>
-                      <TableCell className="text-right" style={{ color: readingStateColors[waterSt], fontWeight: 700 }}>{unit.waterOk ? "Normal" : "Low"}</TableCell>
-                      <TableCell><StatusBadge status={unit.status} /></TableCell>
+                      <TableCell style={{ color: MUTED }}>
+                        {unit.dayOfIncubation} of {mode.incubationDays}
+                      </TableCell>
+                      <TableCell
+                        className="text-right"
+                        style={{
+                          color: readingStateColors[tempSt],
+                          fontWeight: 700,
+                        }}
+                      >
+                        {unit.temp}°C
+                      </TableCell>
+                      <TableCell
+                        className="text-right"
+                        style={{
+                          color: readingStateColors[humSt],
+                          fontWeight: 700,
+                        }}
+                      >
+                        {unit.humidity}%
+                      </TableCell>
+                      <TableCell
+                        className="text-right"
+                        style={{
+                          color: readingStateColors[waterSt],
+                          fontWeight: 700,
+                        }}
+                      >
+                        {unit.waterOk ? "Normal" : "Low"}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={unit.status} />
+                      </TableCell>
                       <TableCell>
                         <Button
-                          size="sm" variant="outline" className="rounded-xl"
+                          size="sm"
+                          variant="outline"
+                          className="rounded-xl"
                           style={{ borderColor: BORDER, color: RUST }}
-                          onClick={(e) => { e.stopPropagation(); onOpenUnit(unit.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenUnit(unit.id);
+                          }}
                         >
                           Configure
                         </Button>
@@ -562,29 +769,66 @@ export function IncubatorsScreen({
               </TableBody>
             </Table>
           </div>
-
         </div>
       )}
 
       {/* Add incubator dialog */}
-      <Dialog open={open} onOpenChange={(o) => { if (!connecting) { setOpen(o); if (!o) setConnectError(null); } }}>
+      <Dialog
+        open={open}
+        onOpenChange={(o) => {
+          if (!connecting) {
+            setOpen(o);
+            if (!o) setConnectError(null);
+          }
+        }}
+      >
         <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)" }}>Add Incubator</DialogTitle>
-            <DialogDescription>Enter the Device ID generated on your physical incubator screen and name this chamber.</DialogDescription>
+            <DialogTitle
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-heading-md)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
+              Add Incubator
+            </DialogTitle>
+            <DialogDescription>
+              Enter the Device ID generated on your physical incubator screen
+              and name this chamber.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             {connectError && (
               <div
                 className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
-                style={{ backgroundColor: "#FEE2E2", border: "1px solid #FECACA" }}
+                style={{
+                  backgroundColor: "#FEE2E2",
+                  border: "1px solid #FECACA",
+                }}
                 role="alert"
               >
-                <TriangleAlert size={16} color="var(--status-danger-fg)" className="mt-0.5 shrink-0" />
+                <TriangleAlert
+                  size={16}
+                  color="var(--status-danger-fg)"
+                  className="mt-0.5 shrink-0"
+                />
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#B91C1C" }}>Connection Failed</p>
-                  <p style={{ fontSize: 12, color: "#B91C1C", lineHeight: 1.45, marginTop: 2 }}>
+                  <p
+                    style={{ fontSize: 13, fontWeight: 700, color: "#B91C1C" }}
+                  >
+                    Connection Failed
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: "#B91C1C",
+                      lineHeight: 1.45,
+                      marginTop: 2,
+                    }}
+                  >
                     {connectError === "invalid"
                       ? `Could not find an incubator with Device ID '${deviceId.trim()}'. Please check the display screen on your incubator and try again.`
                       : `Device '${deviceId.trim()}' is offline. Please make sure your incubator is powered on and connected to WiFi.`}
@@ -595,25 +839,50 @@ export function IncubatorsScreen({
             <div>
               <Label htmlFor="deviceId">Device ID</Label>
               <div className="relative mt-1.5">
-                <Cpu size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
-                <Input id="deviceId" value={deviceId}
-                  onChange={(e) => { setDeviceId(e.target.value.replace(/[^A-Za-z0-9-]/g, "").slice(0, 20)); if (connectError) setConnectError(null); }}
+                <Cpu
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2"
+                  style={{ color: MUTED }}
+                />
+                <Input
+                  id="deviceId"
+                  value={deviceId}
+                  onChange={(e) => {
+                    setDeviceId(
+                      e.target.value.replace(/[^A-Za-z0-9-]/g, "").slice(0, 20),
+                    );
+                    if (connectError) setConnectError(null);
+                  }}
                   maxLength={20}
                   disabled={connecting}
                   placeholder="EGG-1015"
                   className="rounded-xl pl-9"
-                  style={{ ...inputStyle, borderColor: connectError ? "var(--status-danger-fg)" : inputStyle.borderColor }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: connectError
+                      ? "var(--status-danger-fg)"
+                      : inputStyle.borderColor,
+                  }}
                   aria-invalid={!!connectError}
                 />
               </div>
               {connecting && (
-                <p className="mt-2 flex items-center gap-1.5" style={{ fontSize: 12, color: "#8B3A1C", fontWeight: 600 }}>
-                  <Loader2 size={13} className="animate-spin" /> Verifying hardware ID and establishing connection...
+                <p
+                  className="mt-2 flex items-center gap-1.5"
+                  style={{ fontSize: 12, color: "#8B3A1C", fontWeight: 600 }}
+                >
+                  <Loader2 size={13} className="animate-spin" /> Verifying
+                  hardware ID and establishing connection...
                 </p>
               )}
             </div>
             <div>
-              <FieldCounterLabel htmlFor="name" label="Chamber Name" value={name} max={CHAMBER_NAME_MAX} />
+              <FieldCounterLabel
+                htmlFor="name"
+                label="Chamber Name"
+                value={name}
+                max={CHAMBER_NAME_MAX}
+              />
               <Input
                 id="name"
                 value={name}
@@ -628,7 +897,14 @@ export function IncubatorsScreen({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" className="rounded-xl" disabled={connecting || isAddingIncubator} onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              disabled={connecting || isAddingIncubator}
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button
               className="rounded-xl"
               disabled={connecting || isAddingIncubator}
@@ -638,7 +914,8 @@ export function IncubatorsScreen({
             >
               {connecting || isAddingIncubator ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Connecting to Incubator...
+                  <Loader2 size={16} className="animate-spin" /> Connecting to
+                  Incubator...
                 </>
               ) : connectError ? (
                 "Retry Connection"
@@ -653,17 +930,23 @@ export function IncubatorsScreen({
       {/* Final harvest & reset modal */}
       <HarvestModal
         open={harvestUnit !== null}
-        onOpenChange={(o) => { if (!o) setHarvestUnit(null); }}
+        onOpenChange={(o) => {
+          if (!o) setHarvestUnit(null);
+        }}
         chamberName={harvestUnit?.name ?? ""}
-        totalEggsLoaded={harvestUnit
-          ? (harvestUnit.totalEggsLoaded && harvestUnit.totalEggsLoaded > 0
-            ? harvestUnit.totalEggsLoaded
-            : CURRENT_TRAY_CAPACITY)
-          : 0}
+        totalEggsLoaded={
+          harvestUnit
+            ? harvestUnit.totalEggsLoaded && harvestUnit.totalEggsLoaded > 0
+              ? harvestUnit.totalEggsLoaded
+              : CURRENT_TRAY_CAPACITY
+            : 0
+        }
         fertileEggs={harvestUnit ? getKnownFertileEggs(harvestUnit) : null}
-        onSave={(hatched, unhatched) => harvestUnit
-          ? handleHarvestSave(harvestUnit, hatched, unhatched)
-          : Promise.resolve(false)}
+        onSave={(hatched, unhatched) =>
+          harvestUnit
+            ? handleHarvestSave(harvestUnit, hatched, unhatched)
+            : Promise.resolve(false)
+        }
       />
     </div>
   );

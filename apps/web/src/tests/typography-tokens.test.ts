@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import fs from "fs";
+import fs from "node:fs";
+import { describe, expect, it } from "vitest";
+
 describe("typography tokens", () => {
   it("theme.css defines type tokens", () => {
     const css = fs.readFileSync("src/styles/theme.css", "utf-8");

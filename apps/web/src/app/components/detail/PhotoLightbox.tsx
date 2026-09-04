@@ -1,11 +1,25 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { toast } from "sonner";
 import {
-  X, Camera, ChevronLeft, ChevronRight, Download, Trash2,
-  Minimize2, Maximize2, ZoomIn, ZoomOut, Maximize,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Maximize,
+  Maximize2,
+  Minimize2,
+  Trash2,
+  X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../ui/dialog";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "../ui/dialog";
 import { cn } from "../ui/utils";
 
 const ZOOM_MIN = 25;
@@ -14,14 +28,17 @@ const ZOOM_STEP = 25;
 
 const VIEWER_SHELL_CLASS =
   "border-none p-0 overflow-hidden shadow-2xl bg-[#141210]/95 backdrop-blur-xl text-white transition-all duration-300";
-const VIEWER_SHELL_FULLSCREEN = "h-[88vh] grid-rows-[auto_1fr] gap-0 rounded-2xl";
+const VIEWER_SHELL_FULLSCREEN =
+  "h-[88vh] grid-rows-[auto_1fr] gap-0 rounded-2xl";
 const VIEWER_SHELL_NORMAL = "w-[92vw] rounded-3xl";
 const VIEWER_VIEWPORT_CLASS =
   "relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden transition-all select-none";
 const VIEWER_VIEWPORT_FULLSCREEN = "h-full w-full";
-const VIEWER_VIEWPORT_NORMAL = "h-auto w-full min-h-[400px] max-h-[82vh] p-4 sm:p-6 bg-black/40";
+const VIEWER_VIEWPORT_NORMAL =
+  "h-auto w-full min-h-[400px] max-h-[82vh] p-4 sm:p-6 bg-black/40";
 const VIEWER_IMAGE_FULLSCREEN = "absolute left-1/2 top-1/2 block";
-const VIEWER_IMAGE_NORMAL = "mx-auto block h-auto w-auto max-h-[65vh] max-w-full rounded-2xl shadow-2xl";
+const VIEWER_IMAGE_NORMAL =
+  "mx-auto block h-auto w-auto max-h-[65vh] max-w-full rounded-2xl shadow-2xl";
 
 interface PhotoLightboxModalProps {
   open: boolean;
@@ -40,9 +57,12 @@ export function PhotoLightboxModal({
   onClose,
   onDelete,
 }: PhotoLightboxModalProps) {
-  const safePhotos = (photos || []).filter((p) => typeof p === "string" && p.trim().length > 0);
+  const safePhotos = (photos || []).filter(
+    (p) => typeof p === "string" && p.trim().length > 0,
+  );
   const total = safePhotos.length;
-  const safeInitial = total > 0 ? Math.min(Math.max(0, initialIndex), total - 1) : 0;
+  const safeInitial =
+    total > 0 ? Math.min(Math.max(0, initialIndex), total - 1) : 0;
   const [currentIndex, setCurrentIndex] = useState(safeInitial);
   const [fullscreen, setFullscreen] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -56,6 +76,7 @@ export function PhotoLightboxModal({
   const [viewSize, setViewSize] = useState({ w: 0, h: 0 });
   const [natural, setNatural] = useState({ w: 0, h: 0 });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: open intentionally resets viewer when dialog opens/closes
   useEffect(() => {
     const s = total > 0 ? Math.min(Math.max(0, initialIndex), total - 1) : 0;
     setCurrentIndex(s);
@@ -66,10 +87,12 @@ export function PhotoLightboxModal({
     setNatural({ w: 0, h: 0 });
   }, [initialIndex, open, total]);
 
-  const safeIndex = total > 0 ? Math.min(Math.max(0, currentIndex), total - 1) : 0;
+  const safeIndex =
+    total > 0 ? Math.min(Math.max(0, currentIndex), total - 1) : 0;
   const currentPhoto = safePhotos[safeIndex];
 
   // Keep the usable viewer size measured so the fit scale stays accurate.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fullscreen intentionally re-measures when layout changes
   useEffect(() => {
     const el = displayRef.current;
     if (!el || !open) return;
@@ -83,6 +106,7 @@ export function PhotoLightboxModal({
     return () => ro.disconnect();
   }, [open, fullscreen]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset intentionally runs when displayed photo changes
   useEffect(() => {
     setImgError(false);
     setZoom(0);
@@ -92,33 +116,45 @@ export function PhotoLightboxModal({
 
   // Scale that fits the whole photo inside the viewer, preserving aspect ratio.
   const fitScale = useMemo(() => {
-    if (viewSize.w <= 0 || viewSize.h <= 0 || natural.w <= 0 || natural.h <= 0) return 1;
+    if (viewSize.w <= 0 || viewSize.h <= 0 || natural.w <= 0 || natural.h <= 0)
+      return 1;
     return Math.min(viewSize.w / natural.w, viewSize.h / natural.h);
   }, [viewSize, natural]);
 
   const scale = zoom === 0 ? fitScale : zoom / 100;
-  const canPan = scale * natural.w > viewSize.w + 1 || scale * natural.h > viewSize.h + 1;
+  const canPan =
+    scale * natural.w > viewSize.w + 1 || scale * natural.h > viewSize.h + 1;
 
-  const clampPan = useCallback((x: number, y: number) => {
-    const ox = Math.max(0, (scale * natural.w - viewSize.w) / 2);
-    const oy = Math.max(0, (scale * natural.h - viewSize.h) / 2);
-    return { x: Math.min(ox, Math.max(-ox, x)), y: Math.min(oy, Math.max(-oy, y)) };
-  }, [scale, natural, viewSize]);
+  const clampPan = useCallback(
+    (x: number, y: number) => {
+      const ox = Math.max(0, (scale * natural.w - viewSize.w) / 2);
+      const oy = Math.max(0, (scale * natural.h - viewSize.h) / 2);
+      return {
+        x: Math.min(ox, Math.max(-ox, x)),
+        y: Math.min(oy, Math.max(-oy, y)),
+      };
+    },
+    [scale, natural, viewSize],
+  );
 
   // Keep the pan inside bounds whenever the zoom level changes.
   useEffect(() => {
     setPan((p) => clampPan(p.x, p.y));
   }, [clampPan]);
 
-  const fromFit = (z: number) => (z === 0 ? Math.round((fitScale * 100) / ZOOM_STEP) * ZOOM_STEP : z);
+  const fromFit = useCallback(
+    (z: number) =>
+      z === 0 ? Math.round((fitScale * 100) / ZOOM_STEP) * ZOOM_STEP : z,
+    [fitScale],
+  );
 
   const zoomIn = useCallback(() => {
     setZoom((z) => Math.min(ZOOM_MAX, fromFit(z) + ZOOM_STEP));
-  }, [fitScale]);
+  }, [fromFit]);
 
   const zoomOut = useCallback(() => {
     setZoom((z) => Math.max(ZOOM_MIN, fromFit(z) - ZOOM_STEP));
-  }, [fitScale]);
+  }, [fromFit]);
 
   const resetView = useCallback(() => {
     setZoom(0);
@@ -213,7 +249,16 @@ export function PhotoLightboxModal({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, fullscreen, handlePrev, handleNext, zoomIn, zoomOut, resetView, onClose]);
+  }, [
+    open,
+    fullscreen,
+    handlePrev,
+    handleNext,
+    zoomIn,
+    zoomOut,
+    resetView,
+    onClose,
+  ]);
 
   if (!open || total === 0 || !currentPhoto) return null;
 
@@ -222,7 +267,10 @@ export function PhotoLightboxModal({
       <DialogContent
         hideClose
         size={fullscreen ? "fullscreen" : "large"}
-        className={cn(VIEWER_SHELL_CLASS, fullscreen ? VIEWER_SHELL_FULLSCREEN : VIEWER_SHELL_NORMAL)}
+        className={cn(
+          VIEWER_SHELL_CLASS,
+          fullscreen ? VIEWER_SHELL_FULLSCREEN : VIEWER_SHELL_NORMAL,
+        )}
         style={{ border: "1px solid rgba(255,255,255,0.12)" }}
       >
         <DialogTitle className="sr-only">Candling Photo Viewer</DialogTitle>
@@ -241,11 +289,15 @@ export function PhotoLightboxModal({
               variant="ghost"
               className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-stone-200 hover:bg-white/10 hover:text-white sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
               onClick={toggleFullscreen}
-              title={fullscreen ? "Exit Fullscreen (Esc)" : "Enlarge / Fullscreen"}
+              title={
+                fullscreen ? "Exit Fullscreen (Esc)" : "Enlarge / Fullscreen"
+              }
               aria-label={fullscreen ? "Exit fullscreen" : "Enlarge photo"}
             >
               {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-              <span className="hidden sm:inline">{fullscreen ? "Exit Fullscreen" : "Enlarge"}</span>
+              <span className="hidden sm:inline">
+                {fullscreen ? "Exit Fullscreen" : "Enlarge"}
+              </span>
             </Button>
             <Button
               size="sm"
@@ -286,7 +338,7 @@ export function PhotoLightboxModal({
           ref={displayRef}
           className={cn(
             VIEWER_VIEWPORT_CLASS,
-            fullscreen ? VIEWER_VIEWPORT_FULLSCREEN : VIEWER_VIEWPORT_NORMAL
+            fullscreen ? VIEWER_VIEWPORT_FULLSCREEN : VIEWER_VIEWPORT_NORMAL,
           )}
         >
           {total > 1 && (
@@ -308,21 +360,34 @@ export function PhotoLightboxModal({
           {!imgError && currentPhoto ? (
             <img
               src={currentPhoto}
-              alt={`Candling inspection photo ${safeIndex + 1}`}
+              alt={`Candling inspection ${safeIndex + 1}`}
               draggable={false}
-              onLoad={(e) => setNatural({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+              onLoad={(e) =>
+                setNatural({
+                  w: e.currentTarget.naturalWidth,
+                  h: e.currentTarget.naturalHeight,
+                })
+              }
               onError={() => setImgError(true)}
               onPointerDown={fullscreen ? onPointerDown : undefined}
               onPointerMove={fullscreen ? onPointerMove : undefined}
               onPointerUp={onPointerEnd}
               onPointerCancel={onPointerEnd}
-              className={cn(fullscreen ? VIEWER_IMAGE_FULLSCREEN : VIEWER_IMAGE_NORMAL)}
+              className={cn(
+                fullscreen ? VIEWER_IMAGE_FULLSCREEN : VIEWER_IMAGE_NORMAL,
+              )}
               style={
                 fullscreen
                   ? {
                       transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-                      cursor: dragging ? "grabbing" : canPan ? "grab" : "default",
-                      transition: dragging ? "none" : "transform 0.15s ease-out",
+                      cursor: dragging
+                        ? "grabbing"
+                        : canPan
+                          ? "grab"
+                          : "default",
+                      transition: dragging
+                        ? "none"
+                        : "transform 0.15s ease-out",
                       touchAction: "none",
                     }
                   : undefined
@@ -331,8 +396,12 @@ export function PhotoLightboxModal({
           ) : (
             <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-white/5 border border-white/10 text-stone-300">
               <Camera size={48} className="mb-3 text-stone-400 opacity-70" />
-              <p className="text-base font-semibold text-stone-200">Image could not be loaded</p>
-              <p className="text-xs text-stone-400 mt-1">The photo format or source is unavailable</p>
+              <p className="text-base font-semibold text-stone-200">
+                Image could not be loaded
+              </p>
+              <p className="text-xs text-stone-400 mt-1">
+                The photo format or source is unavailable
+              </p>
             </div>
           )}
 

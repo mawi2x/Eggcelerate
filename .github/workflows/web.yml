@@ -20,7 +20,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
       - run: pnpm --filter eggcelerate-ui typecheck
       - run: pnpm --filter eggcelerate-ui test
+      - run: pnpm --filter eggcelerate-ui coverage
       - run: pnpm --filter eggcelerate-ui build
       - run: git diff --check

@@ -9,10 +9,15 @@
       "!**/coverage",
       "!**/output",
       "!**/node_modules",
-      "!**/pnpm-lock.yaml"
+      "!**/pnpm-lock.yaml",
+      "!**/.agents",
+      "!**/*.svg",
+      "!apps/web/postcss.config.mjs",
+      "!apps/web/vite.config.ts"
     ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2 },
   "linter": { "enabled": true, "rules": { "preset": "recommended" } },
-  "javascript": { "formatter": { "quoteStyle": "double" } }
+  "javascript": { "formatter": { "quoteStyle": "double" } },
+  "css": { "parser": { "tailwindDirectives": true } }
 }

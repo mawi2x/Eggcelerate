@@ -1,39 +1,37 @@
-import { useMemo, useState } from "react";
 import {
+  ChevronDown,
+  Download,
+  Egg,
+  Layers,
+  LineChart,
+  Percent,
+  Search,
+  TableProperties,
+  TrendingUp,
+} from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import {
+  CartesianGrid,
   ComposedChart,
   Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
   ReferenceArea,
   ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 import { toast } from "sonner";
+import type { ReadingWindow } from "../../data/repositories/repository";
+import type { HatchRecord, Incubator, Mode } from "../../domain/types";
+import { useIncubatorReadingMap } from "../../features/farm/use-incubator-readings";
 import {
-  LineChart,
-  Egg,
-  TableProperties,
-  Download,
-  ChevronDown,
-  Search,
-  TrendingUp,
-  Percent,
-  Layers,
-} from "lucide-react";
-import { Switch } from "../ui/switch";
-import { Card, CardContent } from "../ui/card";
+  selectFilteredHatch,
+  selectHatchKpis,
+  selectHatchWithPct,
+} from "../../features/trends/selectors";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { Card, CardContent } from "../ui/card";
 import { Checkbox } from "../ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +39,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { FilterBar } from "../ui/filter-bar";
+import { Input } from "../ui/input";
+import { PaginationBar } from "../ui/pagination-bar";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "../ui/segmented-control";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Switch } from "../ui/switch";
 import {
   Table,
   TableBody,
@@ -49,14 +63,6 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { PaginationBar } from "../ui/pagination-bar";
-import { FilterBar } from "../ui/filter-bar";
-import { SegmentedControl, SegmentedControlItem } from "../ui/segmented-control";
-import type { ReadingWindow } from "../../data/repositories/repository";
-import { calculateHatchabilityRate } from "../../domain/fertility";
-import type { HatchRecord, Incubator, Mode } from "../../domain/types";
-import { useIncubatorReadingMap } from "../../features/farm/use-incubator-readings";
-import { selectFilteredHatch, selectHatchWithPct } from "../../features/trends/selectors";
 
 // ── Design tokens ───────────────────────────────────────────────────────────
 const RUST = "var(--brand-primary)";
@@ -108,7 +114,10 @@ const CHAMBER_COLORS = [
   "#77906F",
 ];
 
-const metricInfo: Record<Metric, { label: string; unit: string; domain: [number, number] }> = {
+const metricInfo: Record<
+  Metric,
+  { label: string; unit: string; domain: [number, number] }
+> = {
   temp: { label: "Temperature", unit: "°C", domain: [35, 40] },
   humidity: { label: "Humidity", unit: "%", domain: [40, 80] },
 };
@@ -139,7 +148,10 @@ function formatAxisTime(timestamp: number, range: RangeKey) {
 function formatTooltipTime(timestamp: number) {
   const date = new Date(timestamp);
   const day = date.toLocaleDateString([], { month: "short", day: "numeric" });
-  const time = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const time = date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
   return `${day} · ${time}`;
 }
 
@@ -155,21 +167,42 @@ function ChartTooltip({
   unit,
   meta,
   highlightedId,
-}: any) {
+}: {
+  active?: boolean;
+  payload?: {
+    value?: unknown;
+    dataKey?: string | number;
+    color?: string;
+    name?: string;
+    payload?: { ts?: unknown };
+  }[];
+  unit: string;
+  meta?: Record<string, TooltipMeta>;
+  highlightedId?: string | null;
+}) {
   if (!active || !payload?.length) return null;
 
-  const validPayload = payload.filter((item: any) => typeof item.value === "number");
+  const validPayload = payload.filter(
+    (item): item is typeof item & { value: number } =>
+      typeof item.value === "number",
+  );
   const reading =
-    validPayload.find((item: any) => item.dataKey === highlightedId) ?? validPayload[0];
+    validPayload.find((item) => item.dataKey === highlightedId) ??
+    validPayload[0];
   if (!reading) return null;
 
-  const info: TooltipMeta | undefined = meta?.[reading.dataKey];
+  const info: TooltipMeta | undefined =
+    typeof reading.dataKey === "string" ? meta?.[reading.dataKey] : undefined;
   const timestamp = reading.payload?.ts;
 
   return (
     <div
       className="min-w-[196px] rounded-xl border bg-white p-3.5 shadow-lg"
-      style={{ borderColor: BORDER, color: TEXT, fontFamily: "var(--font-body)" }}
+      style={{
+        borderColor: BORDER,
+        color: TEXT,
+        fontFamily: "var(--font-body)",
+      }}
     >
       <div className="flex items-center gap-2">
         <span
@@ -184,9 +217,14 @@ function ChartTooltip({
           {formatTooltipTime(timestamp)}
         </p>
       )}
-      <div className="mt-3 space-y-1.5 border-t pt-2.5" style={{ borderColor: BORDER }}>
+      <div
+        className="mt-3 space-y-1.5 border-t pt-2.5"
+        style={{ borderColor: BORDER }}
+      >
         <div className="flex items-baseline justify-between gap-5">
-          <span style={{ color: MUTED, fontSize: 12 }}>{info?.metricLabel ?? "Reading"}</span>
+          <span style={{ color: MUTED, fontSize: 12 }}>
+            {info?.metricLabel ?? "Reading"}
+          </span>
           <span style={{ fontSize: 14, fontWeight: 700 }}>
             {formatMeasurement(reading.value, unit)}
           </span>
@@ -195,7 +233,8 @@ function ChartTooltip({
           <div className="flex items-baseline justify-between gap-5">
             <span style={{ color: MUTED, fontSize: 12 }}>Target</span>
             <span style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
-              {info.band.min} to {info.band.max}{unit}
+              {info.band.min} to {info.band.max}
+              {unit}
             </span>
           </div>
         )}
@@ -205,8 +244,14 @@ function ChartTooltip({
 }
 
 function formatDate(iso: string) {
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T00:00:00`) : new Date(iso);
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(iso)
+    ? new Date(`${iso}T00:00:00`)
+    : new Date(iso);
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
@@ -217,9 +262,13 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
   // Compare mode state.
   const [compare, setCompare] = useState(false);
-  const [compareIds, setCompareIds] = useState<string[]>(units.slice(0, 2).map((u) => u.id));
+  const [compareIds, setCompareIds] = useState<string[]>(
+    units.slice(0, 2).map((u) => u.id),
+  );
   const [metric, setMetric] = useState<Metric>("temp");
-  const [highlightedUnitId, setHighlightedUnitId] = useState<string | null>(null);
+  const [highlightedUnitId, setHighlightedUnitId] = useState<string | null>(
+    null,
+  );
 
   // Hatch history state.
   const [hatchSearch, setHatchSearch] = useState("");
@@ -228,7 +277,10 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   const [hatchRowsPerPage, setHatchRowsPerPage] = useState(HATCH_ROWS);
 
   const unit = units.find((u) => u.id === unitId) ?? units[0];
-  const modeOf = (u: Incubator) => modes.find((m) => m.id === u.modeId) ?? modes[0];
+  const modeOf = useCallback(
+    (u: Incubator) => modes.find((m) => m.id === u.modeId) ?? modes[0],
+    [modes],
+  );
 
   // The active set of chambers to chart (single selection, or the compare set).
   const activeUnits = useMemo<Incubator[]>(() => {
@@ -237,18 +289,26 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       .map((id) => units.find((u) => u.id === id))
       .filter(Boolean) as Incubator[];
   }, [compare, compareIds, unit, units]);
-  const activeHighlightedUnitId = activeUnits.some((u) => u.id === highlightedUnitId)
+  const activeHighlightedUnitId = activeUnits.some(
+    (u) => u.id === highlightedUnitId,
+  )
     ? highlightedUnitId
     : null;
   const readingUnitIds = useMemo(
-    () => Array.from(new Set([...activeUnits.map((activeUnit) => activeUnit.id), unit.id])),
+    () =>
+      Array.from(
+        new Set([...activeUnits.map((activeUnit) => activeUnit.id), unit.id]),
+      ),
     [activeUnits, unit.id],
   );
   const { readingsByIncubator } = useIncubatorReadingMap(readingUnitIds, range);
 
   // Merge each active chamber's readings for the chosen metric onto a shared axis.
   const chartData = useMemo(() => {
-    const rows = new Map<number, any>();
+    const rows = new Map<
+      number,
+      { ts: number; time: string; [seriesId: string]: number | string }
+    >();
     activeUnits.forEach((u) => {
       (readingsByIncubator[u.id] ?? []).forEach((p) => {
         let row = rows.get(p.ts);
@@ -269,11 +329,12 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   const bands = useMemo(() => {
     const seen = new Map<string, { min: number; max: number }>();
     activeUnits.forEach((u) => {
-      const band = metric === "temp" ? modeOf(u).targetTemp : modeOf(u).targetHumidity;
+      const band =
+        metric === "temp" ? modeOf(u).targetTemp : modeOf(u).targetHumidity;
       seen.set(`${band.min}-${band.max}`, band);
     });
     return Array.from(seen.values());
-  }, [activeUnits, metric]);
+  }, [activeUnits, metric, modeOf]);
 
   // Auto-scale the y-axis to fit all active values plus each safe band.
   const domain = useMemo<[number, number]>(() => {
@@ -292,13 +353,19 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       if (b.min < min) min = b.min;
       if (b.max > max) max = b.max;
     });
-    if (!isFinite(min) || !isFinite(max)) return metricInfo[metric].domain;
+    if (!Number.isFinite(min) || !Number.isFinite(max))
+      return metricInfo[metric].domain;
     const pad = metric === "temp" ? 0.5 : 3;
-    return [Math.floor((min - pad) * 10) / 10, Math.ceil((max + pad) * 10) / 10];
+    return [
+      Math.floor((min - pad) * 10) / 10,
+      Math.ceil((max + pad) * 10) / 10,
+    ];
   }, [chartData, activeUnits, bands, metric]);
 
   const colorFor = (id: string) =>
-    compare ? CHAMBER_COLORS[compareIds.indexOf(id) % CHAMBER_COLORS.length] : RUST;
+    compare
+      ? CHAMBER_COLORS[compareIds.indexOf(id) % CHAMBER_COLORS.length]
+      : RUST;
 
   // Mode + safe band per series, consumed by the hover tooltip.
   const tooltipMeta = useMemo(() => {
@@ -311,7 +378,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       };
     });
     return map;
-  }, [activeUnits, metric]);
+  }, [activeUnits, metric, modeOf]);
 
   // One target-range label when every active chamber shares a band, otherwise a hint.
   const targetRangeLabel =
@@ -337,7 +404,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
   const exportCsv = () => {
     const header = "Timestamp,Temperature (C),Humidity (%)";
-    const rows = singleReadings.map((p) => `${new Date(p.ts).toISOString()},${p.temp},${p.humidity}`);
+    const rows = singleReadings.map(
+      (p) => `${new Date(p.ts).toISOString()},${p.temp},${p.humidity}`,
+    );
     const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -351,34 +420,39 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   };
 
   // ── Hatch-history derived data ──────────────────────────────────────────────
-  const withPct = useMemo(
-    () => selectHatchWithPct(history),
-    [history]
+  const withPct = useMemo(() => selectHatchWithPct(history), [history]);
+
+  const kpis = useMemo(() => selectHatchKpis(withPct), [withPct]);
+
+  const speciesOptions: string[] = [
+    "All",
+    ...Array.from(new Set(history.map((h) => h.modeName))).sort(),
+  ];
+
+  const filteredHatch = useMemo(
+    () =>
+      selectFilteredHatch(withPct, {
+        search: hatchSearch,
+        species,
+      }),
+    [withPct, hatchSearch, species],
   );
 
-  const kpis = useMemo(() => {
-    const cycles = withPct.length;
-    const hatched = withPct.reduce((s, h) => s + h.hatchedEggs, 0);
-    const fertileEggs = withPct.reduce((s, h) => s + (h.fertileEggs ?? 0), 0);
-    const avgRate = calculateHatchabilityRate(hatched, fertileEggs > 0 ? fertileEggs : null);
-    return { cycles, hatched, avgRate };
-  }, [withPct]);
-
-  const speciesOptions: string[] = ["All", ...Array.from(new Set(history.map((h) => h.modeName))).sort()];
-
-  const filteredHatch = useMemo(() => selectFilteredHatch(withPct, {
-    search: hatchSearch,
-    species,
-  }), [withPct, hatchSearch, species]);
-
-  const hatchPages = Math.max(1, Math.ceil(filteredHatch.length / hatchRowsPerPage));
+  const hatchPages = Math.max(
+    1,
+    Math.ceil(filteredHatch.length / hatchRowsPerPage),
+  );
   const page = Math.min(hatchPage, hatchPages);
   const pagedHatch = filteredHatch.slice(
     (page - 1) * hatchRowsPerPage,
     page * hatchRowsPerPage,
   );
 
-  const viewOptions: { key: TrendView; label: string; Icon: typeof LineChart }[] = [
+  const viewOptions: {
+    key: TrendView;
+    label: string;
+    Icon: typeof LineChart;
+  }[] = [
     { key: "environmental", label: "Environmental Trends", Icon: LineChart },
     { key: "hatch", label: "Hatch History", Icon: Egg },
   ];
@@ -415,7 +489,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
           {/* Unified 2-row toolbar: chamber + metric controls, then time horizon. */}
           <div
             className="rounded-2xl border p-4"
-            style={{ borderColor: BORDER, backgroundColor: CARD, ...CONTROL_FONT }}
+            style={{
+              borderColor: BORDER,
+              backgroundColor: CARD,
+              ...CONTROL_FONT,
+            }}
           >
             {/* ROW 1 — chamber selection and metric. */}
             <div className="flex flex-wrap items-center gap-3">
@@ -424,13 +502,21 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   <SelectTrigger
                     size="toolbar"
                     className="w-full rounded-xl sm:w-[240px]"
-                    style={{ ...toolbarInputStyle, ...CONTROL_FONT, color: TEXT }}
+                    style={{
+                      ...toolbarInputStyle,
+                      ...CONTROL_FONT,
+                      color: TEXT,
+                    }}
                   >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent style={CONTROL_FONT}>
                     {units.map((u) => (
-                      <SelectItem key={u.id} value={u.id} style={{ ...CONTROL_FONT, color: TEXT }}>
+                      <SelectItem
+                        key={u.id}
+                        value={u.id}
+                        style={{ ...CONTROL_FONT, color: TEXT }}
+                      >
                         {u.name}
                       </SelectItem>
                     ))}
@@ -454,10 +540,21 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       <ChevronDown size={16} style={{ color: MUTED }} />
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-64 p-0" align="start" style={CONTROL_FONT}>
-                    <div className="px-3 py-2" style={{ borderBottom: `1px solid ${BORDER}` }}>
-                      <span style={{ ...CONTROL_FONT, color: TEXT }}>Select chambers</span>
-                      <p style={{ ...CONTROL_FONT, color: MUTED }}>Keep at least two selected.</p>
+                  <PopoverContent
+                    className="w-64 p-0"
+                    align="start"
+                    style={CONTROL_FONT}
+                  >
+                    <div
+                      className="px-3 py-2"
+                      style={{ borderBottom: `1px solid ${BORDER}` }}
+                    >
+                      <span style={{ ...CONTROL_FONT, color: TEXT }}>
+                        Select chambers
+                      </span>
+                      <p style={{ ...CONTROL_FONT, color: MUTED }}>
+                        Keep at least two selected.
+                      </p>
                     </div>
                     <div className="max-h-64 overflow-y-auto py-1">
                       {units.map((u) => {
@@ -465,23 +562,32 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         // The last two selections lock so the chart can never go blank.
                         const locked = checked && compareIds.length <= 2;
                         return (
-                          <label
+                          <div
                             key={u.id}
                             className={`flex items-center gap-3 px-3 py-2 ${
-                              locked ? "cursor-default opacity-70" : "cursor-pointer hover:bg-amber-50/60"
+                              locked
+                                ? "cursor-default opacity-70"
+                                : "cursor-pointer hover:bg-amber-50/60"
                             }`}
                           >
                             <Checkbox
                               checked={checked}
                               disabled={locked}
                               onCheckedChange={() => toggleCompareId(u.id)}
+                              aria-label={u.name}
                             />
                             <span
                               className="h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: checked ? colorFor(u.id) : BORDER }}
+                              style={{
+                                backgroundColor: checked
+                                  ? colorFor(u.id)
+                                  : BORDER,
+                              }}
                             />
-                            <span style={{ ...CONTROL_FONT, color: TEXT }}>{u.name}</span>
-                          </label>
+                            <span style={{ ...CONTROL_FONT, color: TEXT }}>
+                              {u.name}
+                            </span>
+                          </div>
                         );
                       })}
                     </div>
@@ -489,13 +595,17 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 </Popover>
               )}
 
-              <label
+              <div
                 className="flex cursor-pointer items-center gap-2"
                 style={{ ...CONTROL_FONT, color: compare ? TEXT : MUTED }}
               >
-                <Switch checked={compare} onCheckedChange={handleCompareChange} />
+                <Switch
+                  checked={compare}
+                  onCheckedChange={handleCompareChange}
+                  aria-label="Compare Chambers"
+                />
                 Compare Chambers
-              </label>
+              </div>
 
               {/* Metric segmented toggle. */}
               <SegmentedControl className="ml-auto" aria-label="Metric">
@@ -517,7 +627,10 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               </SegmentedControl>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+            <div
+              className="mt-4 flex flex-wrap items-center gap-2 pt-4"
+              style={{ borderTop: `1px solid ${BORDER}` }}
+            >
               <FilterBar
                 ariaLabel="Time horizon"
                 value={range}
@@ -536,7 +649,8 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     fontWeight: "var(--weight-bold)",
                   }}
                 >
-                  <TableProperties size={16} aria-hidden="true" /> See all readings
+                  <TableProperties size={16} aria-hidden="true" /> See all
+                  readings
                 </button>
               )}
             </div>
@@ -572,9 +686,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   </p>
                 </div>
 
-                <div
+                <fieldset
                   aria-label="Chart legend"
-                  className="flex max-h-[44px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 overflow-y-auto pr-1 lg:max-w-[76%] lg:justify-end"
+                  className="m-0 flex max-h-[44px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 overflow-y-auto border-0 p-0 pr-1 lg:max-w-[76%] lg:justify-end"
                   style={{
                     color: TEXT,
                     fontFamily: "var(--font-body)",
@@ -600,7 +714,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         fontWeight: "var(--weight-semibold)",
                         letterSpacing: "var(--tracking-label)",
                         lineHeight: "var(--leading-snug)",
-                        opacity: activeHighlightedUnitId && activeHighlightedUnitId !== u.id ? 0.48 : 1,
+                        opacity:
+                          activeHighlightedUnitId &&
+                          activeHighlightedUnitId !== u.id
+                            ? 0.48
+                            : 1,
                       }}
                     >
                       <span
@@ -611,7 +729,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       {u.name}
                     </button>
                   ))}
-                </div>
+                </fieldset>
               </div>
 
               <div
@@ -622,10 +740,17 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 aria-label={`${metricInfo[metric].label} readings for ${activeUnits.map((u) => u.name).join(", ")}`}
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} margin={{ top: 8, right: 18, left: 22, bottom: 12 }}>
+                  <ComposedChart
+                    data={chartData}
+                    margin={{ top: 8, right: 18, left: 22, bottom: 12 }}
+                  >
                     {/* Every chart child carries an explicit key: recharts clones children
                         and reuses their keys, so unkeyed siblings collide. */}
-                    <CartesianGrid key="grid" stroke="#ECE9E2" strokeWidth={1} />
+                    <CartesianGrid
+                      key="grid"
+                      stroke="#ECE9E2"
+                      strokeWidth={1}
+                    />
                     <XAxis
                       key="x-axis"
                       dataKey="ts"
@@ -638,7 +763,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         fontSize: "var(--type-label)",
                         fontWeight: "var(--weight-medium)",
                       }}
-                      tickFormatter={(value) => formatAxisTime(Number(value), range)}
+                      tickFormatter={(value) =>
+                        formatAxisTime(Number(value), range)
+                      }
                       axisLine={{ stroke: "#D8D0C0" }}
                       tickLine={false}
                       tickMargin={10}
@@ -674,13 +801,13 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       key="tooltip"
                       cursor={{ stroke: "#D8D0C0", strokeWidth: 1 }}
                       wrapperStyle={{ outline: "none" }}
-                      content={(
+                      content={
                         <ChartTooltip
                           unit={metricInfo[metric].unit}
                           meta={tooltipMeta}
                           highlightedId={activeHighlightedUnitId}
                         />
-                      )}
+                      }
                     />
                     {bands.map((b) => (
                       <ReferenceArea
@@ -688,13 +815,19 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         y1={b.min}
                         y2={b.max}
                         fill={TARGET_BAND_COLOR}
-                        fillOpacity={bands.length > 1 ? TARGET_BAND_OPACITY / 2 : TARGET_BAND_OPACITY}
+                        fillOpacity={
+                          bands.length > 1
+                            ? TARGET_BAND_OPACITY / 2
+                            : TARGET_BAND_OPACITY
+                        }
                         strokeOpacity={0}
                       />
                     ))}
                     {activeUnits.map((u) => {
                       const highlighted = activeHighlightedUnitId === u.id;
-                      const faded = Boolean(activeHighlightedUnitId && !highlighted);
+                      const faded = Boolean(
+                        activeHighlightedUnitId && !highlighted,
+                      );
                       return (
                         <Line
                           key={`line-${u.id}`}
@@ -710,7 +843,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                           activeDot={
                             faded || (activeUnits.length > 4 && !highlighted)
                               ? false
-                              : { r: highlighted ? 4 : 3, strokeWidth: 1.5, fill: SURFACE }
+                              : {
+                                  r: highlighted ? 4 : 3,
+                                  strokeWidth: 1.5,
+                                  fill: SURFACE,
+                                }
                           }
                           connectNulls
                           isAnimationActive={false}
@@ -739,7 +876,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             <KpiCard
               Icon={Percent}
               label="Average Hatchability"
-              value={kpis.avgRate === null ? "Not available" : `${kpis.avgRate}%`}
+              value={
+                kpis.avgRate === null ? "Not available" : `${kpis.avgRate}%`
+              }
               accent={OK}
               cardStyle={cardStyle}
             />
@@ -754,7 +893,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
           {/* Control bar: search + species filter dropdown */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1" style={{ minWidth: 220 }}>
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2"
+                style={{ color: MUTED }}
+              />
               <Input
                 size="toolbar"
                 value={hatchSearch}
@@ -790,8 +933,14 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         ? withPct.length
                         : withPct.filter((h) => h.modeName === s).length;
                     return (
-                      <SelectItem key={s} value={s} style={{ ...CONTROL_FONT, color: TEXT }}>
-                        {s === "All" ? `All Species (${count})` : `${s} (${count})`}
+                      <SelectItem
+                        key={s}
+                        value={s}
+                        style={{ ...CONTROL_FONT, color: TEXT }}
+                      >
+                        {s === "All"
+                          ? `All Species (${count})`
+                          : `${s} (${count})`}
                       </SelectItem>
                     );
                   })}
@@ -820,7 +969,10 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 style={{ borderColor: BORDER }}
               >
                 <Table>
-                  <TableHeader className="sticky top-0 z-10" style={{ backgroundColor: "#F2EEE5" }}>
+                  <TableHeader
+                    className="sticky top-0 z-10"
+                    style={{ backgroundColor: "#F2EEE5" }}
+                  >
                     <TableRow>
                       {["CHAMBER", "MODE", "DATES"].map((h) => (
                         <TableHead
@@ -862,11 +1014,18 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       const good = h.pct !== null && h.pct >= 80;
                       return (
                         <TableRow key={h.id} className="hover:bg-amber-50/60">
-                          <TableCell style={{ fontWeight: 700, color: TEXT }}>{h.chamber}</TableCell>
+                          <TableCell style={{ fontWeight: 700, color: TEXT }}>
+                            {h.chamber}
+                          </TableCell>
                           <TableCell>
                             <span
                               className="rounded-full px-2 py-0.5"
-                              style={{ backgroundColor: "rgba(173,58,29,0.12)", color: RUST, fontWeight: 600, fontSize: 13 }}
+                              style={{
+                                backgroundColor: "rgba(173,58,29,0.12)",
+                                color: RUST,
+                                fontWeight: 600,
+                                fontSize: 13,
+                              }}
                             >
                               {h.modeName}
                             </span>
@@ -874,8 +1033,12 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                           <TableCell style={{ color: MUTED }}>
                             {formatDate(h.startDate)} to {formatDate(h.endDate)}
                           </TableCell>
-                          <TableCell className="text-right">{h.totalEggs}</TableCell>
-                          <TableCell className="text-right">{h.hatchedEggs}</TableCell>
+                          <TableCell className="text-right">
+                            {h.totalEggs}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {h.hatchedEggs}
+                          </TableCell>
                           <TableCell className="text-right">
                             <span
                               className="inline-block rounded-full px-2.5 py-0.5"
@@ -894,7 +1057,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     })}
                     {pagedHatch.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-8 text-center" style={{ color: MUTED }}>
+                        <TableCell
+                          colSpan={6}
+                          className="py-8 text-center"
+                          style={{ color: MUTED }}
+                        >
                           No cycles match your filters.
                         </TableCell>
                       </TableRow>
@@ -902,7 +1069,6 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   </TableBody>
                 </Table>
               </div>
-
             </CardContent>
           </Card>
         </>
@@ -912,21 +1078,39 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       <Dialog open={readingsOpen} onOpenChange={setReadingsOpen}>
         <DialogContent className="rounded-2xl sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-md)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)" }}>
+            <DialogTitle
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-heading-md)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
               Raw readings: {unit.name}
             </DialogTitle>
             <DialogDescription>
-              {singleReadings.length} data points for {ranges.find((r) => r.key === range)!.label.toLowerCase()}.
+              {singleReadings.length} data points for{" "}
+              {ranges.find((r) => r.key === range)?.label.toLowerCase() ?? ""}.
             </DialogDescription>
           </DialogHeader>
           <div className="mb-3 flex justify-end">
-            <Button className="rounded-xl" style={{ backgroundColor: RUST }} onClick={exportCsv}>
+            <Button
+              className="rounded-xl"
+              style={{ backgroundColor: RUST }}
+              onClick={exportCsv}
+            >
               <Download size={16} /> Export as CSV
             </Button>
           </div>
-          <div className="max-h-[50vh] overflow-y-auto rounded-2xl border" style={{ borderColor: BORDER }}>
+          <div
+            className="max-h-[50vh] overflow-y-auto rounded-2xl border"
+            style={{ borderColor: BORDER }}
+          >
             <Table>
-              <TableHeader className="sticky top-0 z-10" style={{ backgroundColor: "#F2EEE5" }}>
+              <TableHeader
+                className="sticky top-0 z-10"
+                style={{ backgroundColor: "#F2EEE5" }}
+              >
                 <TableRow>
                   <TableHead>Timestamp</TableHead>
                   <TableHead className="text-right">Temperature</TableHead>
@@ -936,7 +1120,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               <TableBody>
                 {singleReadings.map((p) => (
                   <TableRow key={p.ts}>
-                    <TableCell style={{ color: MUTED }}>{new Date(p.ts).toLocaleString()}</TableCell>
+                    <TableCell style={{ color: MUTED }}>
+                      {new Date(p.ts).toLocaleString()}
+                    </TableCell>
                     <TableCell className="text-right">{p.temp}°C</TableCell>
                     <TableCell className="text-right">{p.humidity}%</TableCell>
                   </TableRow>
@@ -966,12 +1152,23 @@ function KpiCard({
   return (
     <Card style={cardStyle}>
       <CardContent className="p-5">
-        <div className="flex items-center gap-2" style={{ color: MUTED, fontSize: 13, fontWeight: 600 }}>
+        <div
+          className="flex items-center gap-2"
+          style={{ color: MUTED, fontSize: 13, fontWeight: 600 }}
+        >
           <Icon size={16} /> {label}
         </div>
         <div
           className="mt-2 tracking-tight"
-          style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-panel-title)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-tight)", color: accent ?? TEXT, whiteSpace: "normal", wordBreak: "break-word" }}
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--type-panel-title)",
+            fontWeight: "var(--weight-extrabold)",
+            lineHeight: "var(--leading-tight)",
+            color: accent ?? TEXT,
+            whiteSpace: "normal",
+            wordBreak: "break-word",
+          }}
         >
           {value}
         </div>

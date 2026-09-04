@@ -1,21 +1,25 @@
-import { useEffect, useRef, useState } from "react";
+import { Notepad } from "@phosphor-icons/react";
 import {
-  LayoutGrid,
-  LineChart,
   Bell,
-  Settings,
-  PanelLeftClose,
-  PanelLeftOpen,
   ChevronLeft,
   ChevronRight,
+  LayoutGrid,
+  LineChart,
   MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
 } from "lucide-react";
-import { Notepad } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import logoApp from "../../imports/logo-app.webp";
+import {
+  type Account,
+  accountInitials,
+  resolveDisplayName,
+} from "../data/account";
+import type { ScreenId } from "../routing/routes";
 import { IncubatorDeviceIcon } from "./icons";
 import { useIsMobile } from "./ui/use-mobile";
-import { Account, accountInitials, resolveDisplayName } from "../data/account";
-import logoApp from "../../imports/logo-app.webp";
-import type { ScreenId } from "../routing/routes";
 
 export type { ScreenId } from "../routing/routes";
 
@@ -23,13 +27,23 @@ interface NavItem {
   id: ScreenId;
   label: string;
   mobileLabel?: string;
-  Icon: React.ComponentType<{ size?: number | string; color?: string; className?: string; strokeWidth?: number | string }>;
+  Icon: React.ComponentType<{
+    size?: number | string;
+    color?: string;
+    className?: string;
+    strokeWidth?: number | string;
+  }>;
 }
 
 const items: NavItem[] = [
   { id: "overview", label: "Overview", Icon: LayoutGrid },
   { id: "incubators", label: "Incubators", Icon: IncubatorDeviceIcon },
-  { id: "candling", label: "Candling Logs", mobileLabel: "Candling", Icon: Notepad },
+  {
+    id: "candling",
+    label: "Candling Logs",
+    mobileLabel: "Candling",
+    Icon: Notepad,
+  },
   { id: "trends", label: "Trends", mobileLabel: "Analytics", Icon: LineChart },
   { id: "alerts", label: "Alerts", Icon: Bell },
   { id: "settings", label: "Settings", Icon: Settings },
@@ -44,7 +58,14 @@ interface Props {
   onToggleCollapsed: () => void;
 }
 
-export function AppSidebar({ active, onNavigate, alertCount, account, collapsed, onToggleCollapsed }: Props) {
+export function AppSidebar({
+  active,
+  onNavigate,
+  alertCount,
+  account,
+  collapsed,
+  onToggleCollapsed,
+}: Props) {
   const isMobile = useIsMobile();
   const [hoverToggle, setHoverToggle] = useState(false);
   const [hoverEdge, setHoverEdge] = useState(false);
@@ -64,7 +85,12 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
     };
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
-      if (!target || mobileMoreMenuRef.current?.contains(target) || mobileMoreTriggerRef.current?.contains(target)) return;
+      if (
+        !target ||
+        mobileMoreMenuRef.current?.contains(target) ||
+        mobileMoreTriggerRef.current?.contains(target)
+      )
+        return;
       closeMenu();
     };
 
@@ -82,8 +108,12 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
   if (isMobile) {
     // Keep the bottom navigation to five targets. Less-frequent destinations
     // remain one tap away in the More menu instead of becoming tiny targets.
-    const mobileItems = items.filter(({ id }) => ["overview", "incubators", "candling", "trends"].includes(id));
-    const moreItems = items.filter(({ id }) => ["alerts", "settings"].includes(id));
+    const mobileItems = items.filter(({ id }) =>
+      ["overview", "incubators", "candling", "trends"].includes(id),
+    );
+    const moreItems = items.filter(({ id }) =>
+      ["alerts", "settings"].includes(id),
+    );
     const moreActive = moreItems.some(({ id }) => activeTab === id);
 
     return (
@@ -91,7 +121,10 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         <nav
           aria-label="Primary navigation"
           className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch justify-around border-t px-2 pb-[env(safe-area-inset-bottom)]"
-          style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)" }}
+          style={{
+            backgroundColor: "var(--surface-card)",
+            borderColor: "var(--border-subtle)",
+          }}
         >
           {mobileItems.map(({ id, label, mobileLabel, Icon }) => {
             const isActive = activeTab === id;
@@ -105,7 +138,11 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
                   onNavigate(id);
                 }}
                 className="relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                style={{ color: isActive ? "var(--brand-primary)" : "var(--text-secondary)" }}
+                style={{
+                  color: isActive
+                    ? "var(--brand-primary)"
+                    : "var(--text-secondary)",
+                }}
                 aria-label={label}
                 aria-current={isActive ? "page" : undefined}
               >
@@ -145,13 +182,21 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
             ref={mobileMoreTriggerRef}
             onClick={() => setMobileMoreOpen((open) => !open)}
             className="relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-            style={{ color: moreActive || mobileMoreOpen ? "var(--brand-primary)" : "var(--text-secondary)" }}
+            style={{
+              color:
+                moreActive || mobileMoreOpen
+                  ? "var(--brand-primary)"
+                  : "var(--text-secondary)",
+            }}
             aria-label="More navigation options"
             aria-haspopup="menu"
             aria-expanded={mobileMoreOpen}
             aria-controls="mobile-more-menu"
           >
-            <MoreHorizontal size={22} strokeWidth={moreActive || mobileMoreOpen ? 2.6 : 2} />
+            <MoreHorizontal
+              size={22}
+              strokeWidth={moreActive || mobileMoreOpen ? 2.6 : 2}
+            />
             <span
               style={{
                 fontFamily: "var(--font-body)",
@@ -207,8 +252,12 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
                   }}
                   className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                   style={{
-                    backgroundColor: isActive ? "var(--local-nav-selected-bg)" : "transparent",
-                    color: isActive ? "var(--local-nav-selected-fg)" : "var(--text-secondary)",
+                    backgroundColor: isActive
+                      ? "var(--local-nav-selected-bg)"
+                      : "transparent",
+                    color: isActive
+                      ? "var(--local-nav-selected-fg)"
+                      : "var(--text-secondary)",
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-body)",
                     fontWeight: "var(--weight-semibold)",
@@ -261,7 +310,9 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
         top: "50%",
         right: -14,
         transform: "translateY(-50%)",
-        backgroundColor: hoverEdge ? "var(--brand-primary)" : "var(--surface-card)",
+        backgroundColor: hoverEdge
+          ? "var(--brand-primary)"
+          : "var(--surface-card)",
         border: `1px solid ${hoverEdge ? "var(--brand-primary)" : "var(--border-subtle)"}`,
         color: hoverEdge ? "var(--on-brand)" : "var(--text-secondary)",
         boxShadow: "0 2px 6px rgba(45,36,30,0.12)",
@@ -270,13 +321,21 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
       aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       aria-expanded={!collapsed}
     >
-      {collapsed ? <ChevronRight size={16} strokeWidth={2.4} /> : <ChevronLeft size={16} strokeWidth={2.4} />}
+      {collapsed ? (
+        <ChevronRight size={16} strokeWidth={2.4} />
+      ) : (
+        <ChevronLeft size={16} strokeWidth={2.4} />
+      )}
     </button>
   );
 
-
   // Expanded-state row renderer.
-  const expandedNavButton = (id: ScreenId, label: string, Icon: NavItem["Icon"], badge?: number) => {
+  const expandedNavButton = (
+    id: ScreenId,
+    label: string,
+    Icon: NavItem["Icon"],
+    badge?: number,
+  ) => {
     const isActive = activeTab === id;
     return (
       <button
@@ -301,7 +360,9 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
           <span
             className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5"
             style={{
-              backgroundColor: isActive ? "var(--surface-card)" : "var(--brand-primary)",
+              backgroundColor: isActive
+                ? "var(--surface-card)"
+                : "var(--brand-primary)",
               color: isActive ? "var(--brand-primary)" : "var(--on-brand)",
               fontFamily: "var(--font-body)",
               fontSize: "var(--type-label)",
@@ -321,7 +382,11 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
     return (
       <aside
         className="fixed left-0 top-0 z-40 flex h-full flex-col transition-all duration-200"
-        style={{ width: RAIL_W, backgroundColor: "var(--surface-card)", borderRight: "1px solid var(--border-subtle)" }}
+        style={{
+          width: RAIL_W,
+          backgroundColor: "var(--surface-card)",
+          borderRight: "1px solid var(--border-subtle)",
+        }}
       >
         <EdgeToggle />
 
@@ -338,7 +403,9 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
             style={{
               width: 36,
               height: 36,
-              backgroundColor: hoverToggle ? "var(--surface-muted)" : "transparent",
+              backgroundColor: hoverToggle
+                ? "var(--surface-muted)"
+                : "transparent",
             }}
             title="Expand sidebar"
             aria-label="Expand sidebar"
@@ -361,7 +428,10 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
               size={20}
               strokeWidth={2.2}
               className="absolute transition-opacity duration-150"
-              style={{ color: "var(--brand-primary)", opacity: hoverToggle ? 1 : 0 }}
+              style={{
+                color: "var(--brand-primary)",
+                opacity: hoverToggle ? 1 : 0,
+              }}
             />
           </button>
         </div>
@@ -379,8 +449,12 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
                 style={{
                   width: 40,
                   height: 40,
-                  backgroundColor: isActive ? "var(--global-nav-selected-bg)" : "transparent",
-                  color: isActive ? "var(--global-nav-selected-fg)" : "var(--text-muted)",
+                  backgroundColor: isActive
+                    ? "var(--global-nav-selected-bg)"
+                    : "transparent",
+                  color: isActive
+                    ? "var(--global-nav-selected-fg)"
+                    : "var(--text-muted)",
                 }}
                 title={label}
                 aria-label={label}
@@ -390,7 +464,14 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
                 {id === "alerts" && alertCount > 0 && (
                   <span
                     className="absolute rounded-full"
-                    style={{ top: 7, right: 7, width: 8, height: 8, backgroundColor: "var(--status-danger-fg)", border: "1.5px solid var(--surface-card)" }}
+                    style={{
+                      top: 7,
+                      right: 7,
+                      width: 8,
+                      height: 8,
+                      backgroundColor: "var(--status-danger-fg)",
+                      border: "1.5px solid var(--surface-card)",
+                    }}
                   />
                 )}
               </button>
@@ -408,14 +489,23 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
             style={{
               width: 40,
               height: 40,
-              backgroundColor: activeTab === "settings" ? "var(--global-nav-selected-bg)" : "transparent",
-              color: activeTab === "settings" ? "var(--global-nav-selected-fg)" : "var(--text-muted)",
+              backgroundColor:
+                activeTab === "settings"
+                  ? "var(--global-nav-selected-bg)"
+                  : "transparent",
+              color:
+                activeTab === "settings"
+                  ? "var(--global-nav-selected-fg)"
+                  : "var(--text-muted)",
             }}
             title="Settings"
             aria-label="Settings"
             aria-current={activeTab === "settings" ? "page" : undefined}
           >
-            <Settings size={20} strokeWidth={activeTab === "settings" ? 2.6 : 2} />
+            <Settings
+              size={20}
+              strokeWidth={activeTab === "settings" ? 2.6 : 2}
+            />
           </button>
 
           {/* Profile avatar */}
@@ -445,7 +535,11 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
   return (
     <aside
       className="fixed left-0 top-0 z-40 flex h-full flex-col border-r transition-all duration-200"
-      style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)", width: PANEL_W }}
+      style={{
+        backgroundColor: "var(--surface-card)",
+        borderColor: "var(--border-subtle)",
+        width: PANEL_W,
+      }}
     >
       <EdgeToggle />
 
@@ -486,7 +580,12 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
       {/* Primary navigation */}
       <nav className="mt-6 flex flex-col gap-1.5 px-3">
         {mainItems.map(({ id, label, Icon }) =>
-          expandedNavButton(id, label, Icon, id === "alerts" ? alertCount : undefined),
+          expandedNavButton(
+            id,
+            label,
+            Icon,
+            id === "alerts" ? alertCount : undefined,
+          ),
         )}
       </nav>
 
@@ -498,7 +597,11 @@ export function AppSidebar({ active, onNavigate, alertCount, account, collapsed,
       {/* Profile row */}
       <div
         className="flex w-full items-center gap-2.5 border-t"
-        style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-subtle)", padding: 16 }}
+        style={{
+          backgroundColor: "var(--surface-card)",
+          borderColor: "var(--border-subtle)",
+          padding: 16,
+        }}
       >
         <span
           className="flex shrink-0 items-center justify-center rounded-full"

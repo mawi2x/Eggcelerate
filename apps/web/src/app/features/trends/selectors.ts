@@ -24,3 +24,18 @@ export function selectFilteredHatch(
     );
   });
 }
+
+export function selectHatchKpis(withPct: HatchWithPct[]): {
+  cycles: number;
+  hatched: number;
+  avgRate: number | null;
+} {
+  const cycles = withPct.length;
+  const hatched = withPct.reduce((s, h) => s + h.hatchedEggs, 0);
+  const fertileEggs = withPct.reduce((s, h) => s + (h.fertileEggs ?? 0), 0);
+  const avgRate = calculateHatchabilityRate(
+    hatched,
+    fertileEggs > 0 ? fertileEggs : null,
+  );
+  return { cycles, hatched, avgRate };
+}

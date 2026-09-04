@@ -34,18 +34,51 @@ export function Mascot({ size = 120, className }: MascotProps) {
         strokeLinecap="round"
       />
       {/* Chick head */}
-      <circle cx="60" cy="42" r="24" fill="#E0C068" stroke="#A84323" strokeWidth="3" />
+      <circle
+        cx="60"
+        cy="42"
+        r="24"
+        fill="#E0C068"
+        stroke="#A84323"
+        strokeWidth="3"
+      />
       {/* Beak */}
-      <path d="M60 44l-9 5 9 5 9-5-9-5z" fill="#C8623A" stroke="#A84323" strokeWidth="2" strokeLinejoin="round" />
+      <path
+        d="M60 44l-9 5 9 5 9-5-9-5z"
+        fill="#C8623A"
+        stroke="#A84323"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
       {/* Goggle eyes */}
-      <circle cx="51" cy="38" r="7" fill="#FFFFFF" stroke="#A84323" strokeWidth="2.5" />
-      <circle cx="69" cy="38" r="7" fill="#FFFFFF" stroke="#A84323" strokeWidth="2.5" />
+      <circle
+        cx="51"
+        cy="38"
+        r="7"
+        fill="#FFFFFF"
+        stroke="#A84323"
+        strokeWidth="2.5"
+      />
+      <circle
+        cx="69"
+        cy="38"
+        r="7"
+        fill="#FFFFFF"
+        stroke="#A84323"
+        strokeWidth="2.5"
+      />
       <circle cx="52.5" cy="39.5" r="2.6" fill="#2D1A0E" />
       <circle cx="70.5" cy="39.5" r="2.6" fill="#2D1A0E" />
       <circle cx="54" cy="37" r="0.9" fill="#FFFFFF" />
       <circle cx="72" cy="37" r="0.9" fill="#FFFFFF" />
       {/* Little tuft */}
-      <path d="M60 18c-2-6 2-10 2-10s4 5 1 10" fill="#C8623A" stroke="#A84323" strokeWidth="2" strokeLinejoin="round" />
+      <path
+        d="M60 18c-2-6 2-10 2-10s4 5 1 10"
+        fill="#C8623A"
+        stroke="#A84323"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

@@ -31,7 +31,9 @@ export const conditionDisplayLabels: Record<ConditionSeverity, string> = {
   info: "Reminder",
 };
 
-export function unitStatusFromConditionSeverity(severity: ConditionSeverity): "optimal" | "warning" | "alert" {
+export function unitStatusFromConditionSeverity(
+  severity: ConditionSeverity,
+): "optimal" | "warning" | "alert" {
   if (severity === "critical") return "alert";
   if (severity === "warning") return "warning";
   return "optimal";
@@ -49,21 +51,39 @@ export type ConditionInputs = {
   nextTurn: string;
 };
 
-export function deriveConditionSeverity(params: ConditionInputs): ConditionSeverity {
-  const temperatureCritical = params.temp < params.targetTemp.min - 0.5 || params.temp > params.targetTemp.max + 0.5;
-  const humidityCritical = params.humidity < params.targetHumidity.min - 5 || params.humidity > params.targetHumidity.max + 5;
-  const batteryCritical = params.powerSource === "battery" && params.batteryPct <= 15;
+export function deriveConditionSeverity(
+  params: ConditionInputs,
+): ConditionSeverity {
+  const temperatureCritical =
+    params.temp < params.targetTemp.min - 0.5 ||
+    params.temp > params.targetTemp.max + 0.5;
+  const humidityCritical =
+    params.humidity < params.targetHumidity.min - 5 ||
+    params.humidity > params.targetHumidity.max + 5;
+  const batteryCritical =
+    params.powerSource === "battery" && params.batteryPct <= 15;
   const turningOverdue = new Date(params.nextTurn).getTime() < Date.now();
 
-  if (!params.paired || !params.waterOk || temperatureCritical || humidityCritical || batteryCritical) {
+  if (
+    !params.paired ||
+    !params.waterOk ||
+    temperatureCritical ||
+    humidityCritical ||
+    batteryCritical
+  ) {
     return "critical";
   }
 
-  const temperatureWarning = params.temp < params.targetTemp.min || params.temp > params.targetTemp.max;
-  const humidityWarning = params.humidity < params.targetHumidity.min || params.humidity > params.targetHumidity.max;
-  const batteryWarning = params.powerSource === "battery" && params.batteryPct <= 25;
+  const temperatureWarning =
+    params.temp < params.targetTemp.min || params.temp > params.targetTemp.max;
+  const humidityWarning =
+    params.humidity < params.targetHumidity.min ||
+    params.humidity > params.targetHumidity.max;
+  const batteryWarning =
+    params.powerSource === "battery" && params.batteryPct <= 25;
 
-  if (temperatureWarning || humidityWarning || batteryWarning || turningOverdue) return "warning";
+  if (temperatureWarning || humidityWarning || batteryWarning || turningOverdue)
+    return "warning";
   return "info";
 }
 

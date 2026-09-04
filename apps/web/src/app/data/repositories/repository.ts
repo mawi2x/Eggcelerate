@@ -76,7 +76,10 @@ export interface EggcelerateRepository {
   listIncubators(): Promise<Result<Incubator[]>>;
   getIncubator(id: string): Promise<Result<Incubator>>;
   addIncubator(unit: Incubator): Promise<Result<Incubator>>;
-  updateIncubator(id: string, patch: Partial<Incubator>): Promise<Result<Incubator>>;
+  updateIncubator(
+    id: string,
+    patch: Partial<Incubator>,
+  ): Promise<Result<Incubator>>;
   listReadings(query: ReadingQuery): Promise<Result<Reading[]>>;
   listModes(): Promise<Result<Mode[]>>;
   addMode(mode: Mode): Promise<Result<Mode>>;
@@ -91,8 +94,12 @@ export interface EggcelerateRepository {
   recordHarvest(input: HarvestInput): Promise<Result<HatchRecord>>;
   completeCycle(input: CompleteCycleInput): Promise<Result<CompletedCycle>>;
   listAbortedCycles(): Promise<Result<AbortedCycleRecord[]>>;
-  recordAbortedCycle(input: AbortedCycleInput): Promise<Result<AbortedCycleRecord>>;
+  recordAbortedCycle(
+    input: AbortedCycleInput,
+  ): Promise<Result<AbortedCycleRecord>>;
   stopCycle(input: StopCycleInput): Promise<Result<StoppedCycle>>;
   listSettings(): Promise<Result<SettingsPreferences>>;
-  saveSettings(settings: SettingsPreferences): Promise<Result<SettingsPreferences>>;
+  saveSettings(
+    settings: SettingsPreferences,
+  ): Promise<Result<SettingsPreferences>>;
 }

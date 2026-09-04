@@ -1,6 +1,9 @@
 import type { ReadingState, UnitStatus } from "../domain/types";
 
-export function getWaterStatusInfo(ok: boolean): { label: string; color: string } {
+export function getWaterStatusInfo(ok: boolean): {
+  label: string;
+  color: string;
+} {
   return ok
     ? { label: "Normal", color: "var(--status-success-fg)" }
     : { label: "Low", color: "var(--status-danger-fg)" };

@@ -1,4 +1,4 @@
-import { IconSvg, type CustomIconProps } from "./IconBase";
+import { type CustomIconProps, IconSvg } from "./IconBase";
 import { OFFLINE_GLYPH_PATH } from "./iconPaths";
 
 type MonochromeIconProps = Omit<CustomIconProps, "foregroundColor">;

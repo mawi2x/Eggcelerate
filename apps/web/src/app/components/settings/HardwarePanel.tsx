@@ -1,11 +1,28 @@
-import { useState } from "react";
-import { Wifi, Plug, BatteryMedium } from "lucide-react";
 import { WifiSlash } from "@phosphor-icons/react";
-import { Switch } from "../ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Input } from "../ui/input";
+import { BatteryMedium, Plug, Wifi } from "lucide-react";
+import { useState } from "react";
 import type { Incubator } from "../../domain/types";
-import { PanelHeader, GroupLabel, SettingRow, DIVIDER, BORDER, MUTED, TEXT, RUST, inputClass, inputStyle } from "./tokens";
+import { Input } from "../ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Switch } from "../ui/switch";
+import {
+  BORDER,
+  DIVIDER,
+  GroupLabel,
+  inputClass,
+  inputStyle,
+  MUTED,
+  PanelHeader,
+  RUST,
+  SettingRow,
+  TEXT,
+} from "./tokens";
 
 interface Props {
   units: Incubator[];
@@ -41,22 +58,41 @@ export function HardwarePanel({ units }: Props) {
                   style={{
                     width: 36,
                     height: 36,
-                    backgroundColor: online ? "rgba(200,90,50,0.10)" : "#F5F5F4",
+                    backgroundColor: online
+                      ? "rgba(200,90,50,0.10)"
+                      : "#F5F5F4",
                     color: online ? RUST : MUTED,
                   }}
                 >
-                  {online ? <Wifi size={17} /> : <WifiSlash size={17} weight="fill" />}
+                  {online ? (
+                    <Wifi size={17} />
+                  ) : (
+                    <WifiSlash size={17} weight="fill" />
+                  )}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate" style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>
+                  <p
+                    className="truncate"
+                    style={{ fontSize: 14, fontWeight: 600, color: TEXT }}
+                  >
                     {u.name}
                   </p>
-                  <p className="truncate" style={{ fontSize: 12, color: MUTED }}>
+                  <p
+                    className="truncate"
+                    style={{ fontSize: 12, color: MUTED }}
+                  >
                     {u.deviceId}
                   </p>
                 </div>
-                <span className="hidden shrink-0 items-center gap-1.5 sm:flex" style={{ fontSize: 12, color: MUTED }}>
-                  {u.powerSource === "battery" ? <BatteryMedium size={15} /> : <Plug size={15} />}
+                <span
+                  className="hidden shrink-0 items-center gap-1.5 sm:flex"
+                  style={{ fontSize: 12, color: MUTED }}
+                >
+                  {u.powerSource === "battery" ? (
+                    <BatteryMedium size={15} />
+                  ) : (
+                    <Plug size={15} />
+                  )}
                   {u.powerSource === "battery" ? `${u.batteryPct}%` : "Mains"}
                 </span>
                 <span
@@ -68,7 +104,11 @@ export function HardwarePanel({ units }: Props) {
                     fontWeight: 700,
                   }}
                 >
-                  {u.connectionState === "connecting" ? "Connecting" : online ? "Online" : "Offline"}
+                  {u.connectionState === "connecting"
+                    ? "Connecting"
+                    : online
+                      ? "Online"
+                      : "Offline"}
                 </span>
               </div>
             );
@@ -76,9 +116,14 @@ export function HardwarePanel({ units }: Props) {
           {units.length === 0 && (
             <div
               className="rounded-2xl px-5 py-10 text-center"
-              style={{ backgroundColor: "#FAF6F0", border: `1px dashed ${BORDER}` }}
+              style={{
+                backgroundColor: "#FAF6F0",
+                border: `1px dashed ${BORDER}`,
+              }}
             >
-              <p style={{ fontWeight: 700, color: TEXT }}>No devices paired yet</p>
+              <p style={{ fontWeight: 700, color: TEXT }}>
+                No devices paired yet
+              </p>
             </div>
           )}
         </div>
@@ -92,7 +137,10 @@ export function HardwarePanel({ units }: Props) {
             hint="How often each controller reports temperature and humidity."
             control={
               <Select value={pollInterval} onValueChange={setPollInterval}>
-                <SelectTrigger className={`${inputClass} w-[150px]`} style={inputStyle}>
+                <SelectTrigger
+                  className={`${inputClass} w-[150px]`}
+                  style={inputStyle}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -107,7 +155,11 @@ export function HardwarePanel({ units }: Props) {
           <SettingRow
             label="Research Logging Interval"
             hint="Stored research records use a fixed five minute interval."
-            control={<span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Every 5 minutes</span>}
+            control={
+              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
+                Every 5 minutes
+              </span>
+            }
           />
           <SettingRow
             label="Battery saver mode"
@@ -125,8 +177,12 @@ export function HardwarePanel({ units }: Props) {
 
       <div className="pt-7">
         <GroupLabel>Advanced and Calibration</GroupLabel>
-        <p className="mt-2" style={{ color: MUTED, fontSize: 12, lineHeight: 1.5 }}>
-          Calibration changes every temperature record. Use a trusted reference thermometer before saving an offset.
+        <p
+          className="mt-2"
+          style={{ color: MUTED, fontSize: 12, lineHeight: 1.5 }}
+        >
+          Calibration changes every temperature record. Use a trusted reference
+          thermometer before saving an offset.
         </p>
         <div className="mt-2">
           <SettingRow
@@ -142,7 +198,10 @@ export function HardwarePanel({ units }: Props) {
                   min={-10}
                   max={10}
                   value={calibration}
-                  onChange={(e) => { setCalibration(e.target.value); setCalibrationSaved(false); }}
+                  onChange={(e) => {
+                    setCalibration(e.target.value);
+                    setCalibrationSaved(false);
+                  }}
                   className={`${inputClass} w-[110px]`}
                   style={inputStyle}
                 />
@@ -150,7 +209,12 @@ export function HardwarePanel({ units }: Props) {
                   type="button"
                   onClick={() => setCalibrationSaved(true)}
                   className="cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                  style={{ backgroundColor: calibrationSaved ? "#DCFCE7" : "#F2EEE5", color: calibrationSaved ? "#166534" : RUST, fontSize: 12, fontWeight: 700 }}
+                  style={{
+                    backgroundColor: calibrationSaved ? "#DCFCE7" : "#F2EEE5",
+                    color: calibrationSaved ? "#166534" : RUST,
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
                 >
                   {calibrationSaved ? "Saved" : "Save"}
                 </button>

@@ -1,4 +1,4 @@
-import * as React from "react";
+import type * as React from "react";
 
 import { cn } from "./utils";
 
@@ -20,7 +20,10 @@ export function SegmentedControl({
   return (
     <div
       role={role}
-      className={cn("inline-flex items-center gap-1 rounded-full p-1", className)}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full p-1",
+        className,
+      )}
       style={{ backgroundColor: "var(--surface-muted)", ...style }}
       {...props}
     >

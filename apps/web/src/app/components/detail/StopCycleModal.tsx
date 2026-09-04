@@ -26,16 +26,25 @@ export function StopCycleModal({
   const [isStopping, setIsStopping] = useState(false);
 
   return (
-    <AlertDialog open={open} onOpenChange={(next) => { if (!isStopping) onOpenChange(next); }}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!isStopping) onOpenChange(next);
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Stop this cycle?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will stop {unitName} before the expected hatch period and archive the record as Stopped Early. It will not be counted as a completed hatch.
+            This will stop {unitName} before the expected hatch period and
+            archive the record as Stopped Early. It will not be counted as a
+            completed hatch.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isStopping}>Keep Cycle</AlertDialogCancel>
+          <AlertDialogCancel disabled={isStopping}>
+            Keep Cycle
+          </AlertDialogCancel>
           <AlertDialogAction
             disabled={isStopping}
             aria-busy={isStopping}

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Result } from "../domain/result";
+
 export type { Result, ResultError } from "../domain/result";
 export { resultMessage } from "../domain/result";
 
@@ -8,13 +9,28 @@ export function toResult<T>(fn: () => T): Result<T> {
     return { ok: true, data: fn() };
   } catch (e) {
     if (e instanceof z.ZodError) {
-      return { ok: false, error: { code: "validation_error", message: e.issues[0]?.message ?? "Validation failed", details: e.issues } };
+      return {
+        ok: false,
+        error: {
+          code: "validation_error",
+          message: e.issues[0]?.message ?? "Validation failed",
+          details: e.issues,
+        },
+      };
     }
-    return { ok: false, error: { code: "unknown", message: e instanceof Error ? e.message : String(e) } };
+    return {
+      ok: false,
+      error: {
+        code: "unknown",
+        message: e instanceof Error ? e.message : String(e),
+      },
+    };
   }
 }
 
-export const RangeSchema = z.object({ min: z.number(), max: z.number() }).refine((r) => r.min < r.max, { message: "min must be < max" });
+export const RangeSchema = z
+  .object({ min: z.number(), max: z.number() })
+  .refine((r) => r.min < r.max, { message: "min must be < max" });
 
 export const ModeDTOSchema = z.object({
   id: z.string().min(1),

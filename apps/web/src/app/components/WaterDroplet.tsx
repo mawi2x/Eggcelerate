@@ -50,8 +50,20 @@ export function WaterDroplet({ ok, size = 120 }: WaterDropletProps) {
           {/* Two physically separated, fixed-size segments. The visible gap
               makes this a binary status mark instead of a partial percentage
               gauge. */}
-          <path d={arc(start, leftEnd)} stroke={ok ? OK : ALERT} strokeWidth={stroke} fill="none" strokeLinecap="round" />
-          <path d={arc(rightStart, start + sweep)} stroke={ok ? OK : TRACK} strokeWidth={stroke} fill="none" strokeLinecap="round" />
+          <path
+            d={arc(start, leftEnd)}
+            stroke={ok ? OK : ALERT}
+            strokeWidth={stroke}
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            d={arc(rightStart, start + sweep)}
+            stroke={ok ? OK : TRACK}
+            strokeWidth={stroke}
+            fill="none"
+            strokeLinecap="round"
+          />
         </svg>
 
         {/* A compact status lockup keeps the binary state readable without
@@ -93,7 +105,10 @@ export function WaterDroplet({ ok, size = 120 }: WaterDropletProps) {
           </span>
         </div>
       </div>
-      <p className="mt-1 text-center" style={{ fontSize: 12, color: ok ? OK : ALERT }}>
+      <p
+        className="mt-1 text-center"
+        style={{ fontSize: 12, color: ok ? OK : ALERT }}
+      >
         {ok ? "Status: Sufficient" : "Status: Refill Needed"}
       </p>
     </div>

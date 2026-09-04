@@ -1,18 +1,30 @@
-import { describe, it, expect } from "vitest";
-import { ModeDTOSchema, modeToDTO, type Result, resultMessage } from "../app/data/dto";
+import { describe, expect, it } from "vitest";
+import {
+  ModeDTOSchema,
+  modeToDTO,
+  type Result,
+  resultMessage,
+} from "../app/data/dto";
 import { createModeFixtures } from "../app/data/fixtures/modes";
 
 const initialModes = createModeFixtures();
 
 const validBroiler = {
-  id: "broiler", name: "Broiler", built_in: true,
-  target_temp_c: { min: 37.5, max: 37.8 }, target_humidity_pct: { min: 55, max: 65 },
-  incubation_days: 21, default_turn_interval_min: 240, version: 1
+  id: "broiler",
+  name: "Broiler",
+  built_in: true,
+  target_temp_c: { min: 37.5, max: 37.8 },
+  target_humidity_pct: { min: 55, max: 65 },
+  incubation_days: 21,
+  default_turn_interval_min: 240,
+  version: 1,
 };
 
 describe("ModeDTO", () => {
   it("rejects invalid incubationDays 5", () => {
-    expect(() => ModeDTOSchema.parse({ ...validBroiler, incubation_days: 5 })).toThrow();
+    expect(() =>
+      ModeDTOSchema.parse({ ...validBroiler, incubation_days: 5 }),
+    ).toThrow();
   });
   it("accepts valid Broiler 21", () => {
     expect(ModeDTOSchema.parse(validBroiler)).toBeDefined();
@@ -36,7 +48,13 @@ describe("ModeDTO", () => {
     if (r.ok) expect(r.data.id).toBe("broiler");
   });
   it("Result err structured has code/message + helper", () => {
-    const r: Result<never> = { ok: false, error: { code: "validation_error", message: "incubationDays must be 17-36" } };
+    const r: Result<never> = {
+      ok: false,
+      error: {
+        code: "validation_error",
+        message: "incubationDays must be 17-36",
+      },
+    };
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error.code).toBe("validation_error");

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import { ChevronRight, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import logoApp from "../../imports/logo-app.webp";
 
 const FAQS = [
@@ -32,7 +32,10 @@ export function HelpWidget() {
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Dragging state
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [position, setPosition] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
   const dragRef = useRef<{
     isDragging: boolean;
     startX: number;
@@ -92,6 +95,11 @@ export function HelpWidget() {
     }
   };
 
+  const closePanel = useCallback(() => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }, []);
+
   useEffect(() => {
     if (!open) return;
 
@@ -104,7 +112,10 @@ export function HelpWidget() {
     const handleOutsidePointer = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
-      if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) {
+      if (
+        panelRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      ) {
         return;
       }
       closePanel();
@@ -116,12 +127,7 @@ export function HelpWidget() {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("pointerdown", handleOutsidePointer);
     };
-  }, [open]);
-
-  const closePanel = () => {
-    setOpen(false);
-    triggerRef.current?.focus();
-  };
+  }, [open, closePanel]);
 
   return (
     <div
@@ -136,14 +142,41 @@ export function HelpWidget() {
           role="dialog"
           aria-label="Eggcelerate help"
           className="touch-auto select-auto absolute bottom-[68px] right-0 flex max-h-[min(520px,70vh)] w-[min(360px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl"
-          style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8DED1", boxShadow: "0 18px 45px rgba(45,26,14,0.18)" }}
+          style={{
+            backgroundColor: "#FFFFFF",
+            border: "1px solid #E8DED1",
+            boxShadow: "0 18px 45px rgba(45,26,14,0.18)",
+          }}
         >
-          <div className="flex items-center justify-between gap-3 px-4 py-3.5" style={{ backgroundColor: "#FFF8F1", borderBottom: "1px solid #EFE7DC" }}>
+          <div
+            className="flex items-center justify-between gap-3 px-4 py-3.5"
+            style={{
+              backgroundColor: "#FFF8F1",
+              borderBottom: "1px solid #EFE7DC",
+            }}
+          >
             <div className="flex min-w-0 items-center gap-2.5">
-              <img src={logoApp} alt="" aria-hidden="true" className="h-9 w-9 rounded-xl object-cover" />
+              <img
+                src={logoApp}
+                alt=""
+                aria-hidden="true"
+                className="h-9 w-9 rounded-xl object-cover"
+              />
               <div className="min-w-0">
-                <p style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)", fontSize: "var(--type-body)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)" }}>Eggcelerate Help</p>
-                <p style={{ color: "var(--text-muted)", fontSize: 11 }}>Quick answers for your incubator</p>
+                <p
+                  style={{
+                    color: "var(--text-primary)",
+                    fontFamily: "var(--font-display)",
+                    fontSize: "var(--type-body)",
+                    fontWeight: "var(--weight-extrabold)",
+                    lineHeight: "var(--leading-snug)",
+                  }}
+                >
+                  Eggcelerate Help
+                </p>
+                <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                  Quick answers for your incubator
+                </p>
               </div>
             </div>
             <button
@@ -158,25 +191,58 @@ export function HelpWidget() {
           </div>
 
           <div className="overflow-y-auto p-4">
-            <div className="rounded-2xl rounded-tl-md px-3.5 py-3" style={{ backgroundColor: "#F5EFE6", color: "var(--text-secondary)" }}>
+            <div
+              className="rounded-2xl rounded-tl-md px-3.5 py-3"
+              style={{
+                backgroundColor: "#F5EFE6",
+                color: "var(--text-secondary)",
+              }}
+            >
               <p style={{ fontSize: 13, lineHeight: 1.45 }}>
-                Hi, Farmer! Choose a question below and I’ll help you find the answer.
+                Hi, Farmer! Choose a question below and I’ll help you find the
+                answer.
               </p>
             </div>
 
             {selectedIndex !== null && (
               <div className="mt-3 space-y-2.5" aria-live="polite">
-                <div className="ml-8 rounded-2xl rounded-tr-md px-3.5 py-3" style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)" }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>{FAQS[selectedIndex].question}</p>
+                <div
+                  className="ml-8 rounded-2xl rounded-tr-md px-3.5 py-3"
+                  style={{
+                    backgroundColor: "var(--brand-primary)",
+                    color: "var(--on-brand)",
+                  }}
+                >
+                  <p style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>
+                    {FAQS[selectedIndex].question}
+                  </p>
                 </div>
-                <div className="mr-5 rounded-2xl rounded-tl-md px-3.5 py-3" style={{ backgroundColor: "#F5EFE6", color: "var(--text-secondary)" }}>
-                  <p style={{ fontSize: 12, lineHeight: 1.5 }}>{FAQS[selectedIndex].answer}</p>
+                <div
+                  className="mr-5 rounded-2xl rounded-tl-md px-3.5 py-3"
+                  style={{
+                    backgroundColor: "#F5EFE6",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  <p style={{ fontSize: 12, lineHeight: 1.5 }}>
+                    {FAQS[selectedIndex].answer}
+                  </p>
                 </div>
               </div>
             )}
 
             <div className="mt-4">
-              <p style={{ color: "#8A6B52", fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", letterSpacing: "var(--tracking-label)", lineHeight: "var(--leading-snug)", textTransform: "uppercase" }}>
+              <p
+                style={{
+                  color: "#8A6B52",
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-extrabold)",
+                  letterSpacing: "var(--tracking-label)",
+                  lineHeight: "var(--leading-snug)",
+                  textTransform: "uppercase",
+                }}
+              >
                 Frequently asked
               </p>
               <div className="mt-2 space-y-2">
@@ -189,8 +255,20 @@ export function HelpWidget() {
                     style={{ border: "1px solid #EAE2D8", color: "#3F342C" }}
                     aria-pressed={selectedIndex === index}
                   >
-                    <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.35 }}>{faq.question}</span>
-                    <ChevronRight size={15} className="shrink-0" style={{ color: "var(--brand-primary)" }} />
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {faq.question}
+                    </span>
+                    <ChevronRight
+                      size={15}
+                      className="shrink-0"
+                      style={{ color: "var(--brand-primary)" }}
+                    />
                   </button>
                 ))}
               </div>
@@ -205,16 +283,36 @@ export function HelpWidget() {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerCancel={() => { dragRef.current.isDragging = false; }}
+        onPointerCancel={() => {
+          dragRef.current.isDragging = false;
+        }}
         className="relative flex h-14 w-14 cursor-grab items-center justify-center rounded-2xl transition-transform hover:-translate-y-0.5 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-        style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8DED1", boxShadow: "0 8px 24px rgba(45,26,14,0.18)" }}
+        style={{
+          backgroundColor: "#FFFFFF",
+          border: "1px solid #E8DED1",
+          boxShadow: "0 8px 24px rgba(45,26,14,0.18)",
+        }}
         aria-label={open ? "Close Eggcelerate help" : "Open Eggcelerate help"}
         aria-expanded={open}
       >
-        <img src={logoApp} alt="" aria-hidden="true" className="pointer-events-none h-11 w-11 rounded-xl object-cover" />
+        <img
+          src={logoApp}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none h-11 w-11 rounded-xl object-cover"
+        />
         <span
           className="pointer-events-none absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1"
-          style={{ backgroundColor: "var(--brand-primary)", color: "var(--on-brand)", border: "2px solid var(--surface-card)", fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", letterSpacing: "var(--tracking-label)" }}
+          style={{
+            backgroundColor: "var(--brand-primary)",
+            color: "var(--on-brand)",
+            border: "2px solid var(--surface-card)",
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-label)",
+            fontWeight: "var(--weight-extrabold)",
+            lineHeight: "var(--leading-snug)",
+            letterSpacing: "var(--tracking-label)",
+          }}
           aria-hidden="true"
         >
           ?

@@ -6,7 +6,8 @@ export const farmQueryKeys = {
   hatchRecords: ["farm", "hatch-records"] as const,
   abortedCycles: ["farm", "aborted-cycles"] as const,
   readings: ["farm", "readings"] as const,
-  readingsFor: (incubatorId: string) => ["farm", "readings", incubatorId] as const,
+  readingsFor: (incubatorId: string) =>
+    ["farm", "readings", incubatorId] as const,
   settings: ["farm", "settings"] as const,
   readingWindow: (incubatorId: string, window: string) =>
     ["farm", "readings", incubatorId, window] as const,

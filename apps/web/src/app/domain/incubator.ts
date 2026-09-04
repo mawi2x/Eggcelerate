@@ -16,21 +16,32 @@ export function getUnitIssues(unit: Incubator, mode: Mode): string[] {
   if (unit.humidity > mode.targetHumidity.max) issues.push("humidity high");
   else if (unit.humidity < mode.targetHumidity.min) issues.push("humidity low");
   if (waterState(unit.waterOk) !== "ok") issues.push("water reservoir low");
-  if (unit.powerSource === "battery" && unit.batteryPct <= 25) issues.push("battery low");
-  if (new Date(unit.nextTurn).getTime() < Date.now()) issues.push("turning overdue");
+  if (unit.powerSource === "battery" && unit.batteryPct <= 25)
+    issues.push("battery low");
+  if (new Date(unit.nextTurn).getTime() < Date.now())
+    issues.push("turning overdue");
   if (!unit.paired) issues.push("device disconnected");
   return issues;
 }
 
-export function daysUntilHatch(dayOfIncubation: number, incubationDays: number): number {
+export function daysUntilHatch(
+  dayOfIncubation: number,
+  incubationDays: number,
+): number {
   return Math.max(0, incubationDays - dayOfIncubation);
 }
 
-export function isHatchingSoon(dayOfIncubation: number, incubationDays: number): boolean {
+export function isHatchingSoon(
+  dayOfIncubation: number,
+  incubationDays: number,
+): boolean {
   return daysUntilHatch(dayOfIncubation, incubationDays) <= 2;
 }
 
-export function resetChamberToReady(unit: Incubator, now = new Date()): Partial<Incubator> {
+export function resetChamberToReady(
+  unit: Incubator,
+  now = new Date(),
+): Partial<Incubator> {
   const nowIso = now.toISOString();
   return {
     dayOfIncubation: 0,

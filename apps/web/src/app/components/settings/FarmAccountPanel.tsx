@@ -1,15 +1,32 @@
-import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { FieldCounterLabel } from "../FieldCounterLabel";
 import {
-  Account,
   ACCOUNT_HOLDER_MAX,
+  type Account,
+  accountInitials,
   DISPLAY_NAME_MAX,
   FARM_NAME_MAX,
-  accountInitials,
   resolveDisplayName,
 } from "../../data/account";
-import { PanelHeader, GroupLabel, Field, inputClass, inputStyle, labelStyle, RUST, BORDER, MUTED, TEXT } from "./tokens";
+import { FieldCounterLabel } from "../FieldCounterLabel";
+import { Input } from "../ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import {
+  BORDER,
+  Field,
+  GroupLabel,
+  inputClass,
+  inputStyle,
+  labelStyle,
+  MUTED,
+  PanelHeader,
+  RUST,
+  TEXT,
+} from "./tokens";
 
 interface Props {
   account: Account;
@@ -20,21 +37,44 @@ interface Props {
   onTimeZoneChange: (value: "gmt8" | "gmt0" | "est" | "pst") => void;
 }
 
-export function FarmAccountPanel({ account, onUpdateAccount, temperatureUnit, timeZone, onTemperatureUnitChange, onTimeZoneChange }: Props) {
+export function FarmAccountPanel({
+  account,
+  onUpdateAccount,
+  temperatureUnit,
+  timeZone,
+  onTemperatureUnitChange,
+  onTimeZoneChange,
+}: Props) {
   return (
     <div>
-      <PanelHeader title="Farm & Account" description="Who you are, what your farm is called, and how units read." />
+      <PanelHeader
+        title="Farm & Account"
+        description="Who you are, what your farm is called, and how units read."
+      />
 
       {/* Identity strip */}
-      <div className="flex items-center gap-3.5 py-5" style={{ borderBottom: `1px solid ${BORDER}` }}>
+      <div
+        className="flex items-center gap-3.5 py-5"
+        style={{ borderBottom: `1px solid ${BORDER}` }}
+      >
         <span
           className="flex shrink-0 items-center justify-center rounded-full"
-          style={{ width: 56, height: 56, backgroundColor: RUST, color: "#FFFFFF", fontSize: 20, fontWeight: 700 }}
+          style={{
+            width: 56,
+            height: 56,
+            backgroundColor: RUST,
+            color: "#FFFFFF",
+            fontSize: 20,
+            fontWeight: 700,
+          }}
         >
           {accountInitials(account)}
         </span>
         <div className="min-w-0">
-          <p className="truncate" style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>
+          <p
+            className="truncate"
+            style={{ fontSize: 16, fontWeight: 700, color: TEXT }}
+          >
             {resolveDisplayName(account)}
           </p>
           <p className="truncate" style={{ fontSize: 13, color: MUTED }}>
@@ -81,7 +121,9 @@ export function FarmAccountPanel({ account, onUpdateAccount, temperatureUnit, ti
             <Input
               id="owner"
               value={account.accountHolder}
-              onChange={(e) => onUpdateAccount({ accountHolder: e.target.value })}
+              onChange={(e) =>
+                onUpdateAccount({ accountHolder: e.target.value })
+              }
               maxLength={ACCOUNT_HOLDER_MAX}
               placeholder="Farmer Juan Dela Cruz"
               className={inputClass}
@@ -118,8 +160,17 @@ export function FarmAccountPanel({ account, onUpdateAccount, temperatureUnit, ti
         <GroupLabel>Regional</GroupLabel>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Temperature Units" htmlFor="units">
-            <Select value={temperatureUnit} onValueChange={(value) => onTemperatureUnitChange(value as "c" | "f")}>
-              <SelectTrigger id="units" className={inputClass} style={inputStyle}>
+            <Select
+              value={temperatureUnit}
+              onValueChange={(value) =>
+                onTemperatureUnitChange(value as "c" | "f")
+              }
+            >
+              <SelectTrigger
+                id="units"
+                className={inputClass}
+                style={inputStyle}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -130,7 +181,12 @@ export function FarmAccountPanel({ account, onUpdateAccount, temperatureUnit, ti
           </Field>
 
           <Field label="Time Zone" htmlFor="tz">
-            <Select value={timeZone} onValueChange={(value) => onTimeZoneChange(value as Props["timeZone"])}>
+            <Select
+              value={timeZone}
+              onValueChange={(value) =>
+                onTimeZoneChange(value as Props["timeZone"])
+              }
+            >
               <SelectTrigger id="tz" className={inputClass} style={inputStyle}>
                 <SelectValue />
               </SelectTrigger>

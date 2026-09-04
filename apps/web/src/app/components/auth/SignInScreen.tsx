@@ -1,8 +1,8 @@
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { SignInSchema } from "../../data/onboarding";
 import { AuthCard } from "./AuthCard";
 import { FormInput } from "./FormInput";
-import { SignInSchema } from "../../data/onboarding";
 
 export function SignInScreen({
   onSignIn,
@@ -17,7 +17,11 @@ export function SignInScreen({
   const [err, setErr] = useState<string | undefined>();
 
   const submit = () => {
-    const r = SignInSchema.safeParse({ email, password: pw, rememberMe: false });
+    const r = SignInSchema.safeParse({
+      email,
+      password: pw,
+      rememberMe: false,
+    });
     if (!r.success) {
       setErr(r.error.issues[0].message);
       return;
@@ -61,7 +65,8 @@ export function SignInScreen({
             color: "var(--text-secondary)",
           }}
         >
-          Sign in to monitor temperature, humidity and hatch progress across every chamber.
+          Sign in to monitor temperature, humidity and hatch progress across
+          every chamber.
         </p>
       </div>
       <div className="mt-4 flex flex-col gap-4">
@@ -97,8 +102,18 @@ export function SignInScreen({
         />
       </div>
       <div className="mt-3 flex items-center justify-between">
-        <label className="flex cursor-pointer items-center gap-2 text-sm" style={{ fontFamily: "var(--font-body)", color: "var(--text-secondary)" }}>
-          <input type="checkbox" className="cursor-pointer rounded border-[var(--border-default)]" /> Keep me signed in
+        <label
+          className="flex cursor-pointer items-center gap-2 text-sm"
+          style={{
+            fontFamily: "var(--font-body)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <input
+            type="checkbox"
+            className="cursor-pointer rounded border-[var(--border-default)]"
+          />{" "}
+          Keep me signed in
         </label>
         <button
           type="button"
@@ -118,7 +133,15 @@ export function SignInScreen({
       </button>
       <div className="my-4 flex items-center gap-3">
         <div className="h-px flex-1 bg-[var(--border-default)]" />
-        <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: "var(--text-muted)" }}>or</span>
+        <span
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-caption)",
+            color: "var(--text-muted)",
+          }}
+        >
+          or
+        </span>
         <div className="h-px flex-1 bg-[var(--border-default)]" />
       </div>
       <button

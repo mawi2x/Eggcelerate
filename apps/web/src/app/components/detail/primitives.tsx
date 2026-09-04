@@ -1,10 +1,10 @@
-import React from "react";
-import { Card, CardContent } from "../ui/card";
-import { ExclamationIcon } from "../icons/ExclamationIcon";
+import type React from "react";
 import { CheckIcon } from "../icons/CheckIcon";
 import { InfoIcon } from "../icons/CircleInfoIcon";
+import { ExclamationIcon } from "../icons/ExclamationIcon";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
-import { OK, WARN, CRIT, MUTED, SURFACE, BORDER, TEXT } from "./types";
+import { Card, CardContent } from "../ui/card";
+import { BORDER, CRIT, MUTED, OK, SURFACE, TEXT, WARN } from "./types";
 export function StatusPill({
   tone,
   children,
@@ -19,7 +19,12 @@ export function StatusPill({
   return (
     <span
       className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1"
-      style={{ backgroundColor: tone.bg, color: tone.fg, fontSize: 12, fontWeight: 700 }}
+      style={{
+        backgroundColor: tone.bg,
+        color: tone.fg,
+        fontSize: 12,
+        fontWeight: 700,
+      }}
     >
       {dot && (
         <span
@@ -51,12 +56,21 @@ export function SectionCard({
 }) {
   void titleSize;
   return (
-    <Card style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+    <Card
+      style={{
+        backgroundColor: "var(--surface-card)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: 16,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+      }}
+    >
       <CardContent className="p-5">
         <div
           className={`flex flex-wrap items-center gap-3 min-h-[32px] ${divider ? "mb-3 border-b pb-3" : "mb-4"}`}
           style={{
-            ...(centered ? { justifyContent: "center", textAlign: "center" } : { justifyContent: "space-between" }),
+            ...(centered
+              ? { justifyContent: "center", textAlign: "center" }
+              : { justifyContent: "space-between" }),
             ...(divider ? { borderColor: "#EFE9DC" } : {}),
           }}
         >
@@ -94,7 +108,13 @@ export function SectionCard({
   );
 }
 
-export function InnerTile({ children, tone }: { children: React.ReactNode; tone?: string }) {
+export function InnerTile({
+  children,
+  tone,
+}: {
+  children: React.ReactNode;
+  tone?: string;
+}) {
   return (
     <div
       className="rounded-2xl p-4"
@@ -108,11 +128,24 @@ export function InnerTile({ children, tone }: { children: React.ReactNode; tone?
   );
 }
 
-export function KeyValue({ label, value, accent }: { label: string; value: React.ReactNode; accent?: string }) {
+export function KeyValue({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: React.ReactNode;
+  accent?: string;
+}) {
   return (
-    <div className="rounded-xl p-3.5" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
+    <div
+      className="rounded-xl p-3.5"
+      style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
+    >
       <p style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>{label}</p>
-      <p style={{ fontSize: 14, fontWeight: 700, color: accent ?? TEXT }}>{value}</p>
+      <p style={{ fontSize: 14, fontWeight: 700, color: accent ?? TEXT }}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -138,32 +171,41 @@ export function StatusCallout({
   className?: string;
   role?: string;
 }) {
-  const badgeSize: "sm" | "md" | "lg" = size === "lg" ? "lg" : size === "sm" ? "sm" : "md";
+  const badgeSize: "sm" | "md" | "lg" =
+    size === "lg" ? "lg" : size === "sm" ? "sm" : "md";
   const iconSize = statusIconBadgeGlyphSize(badgeSize);
   const toneMap = {
     success: {
       bg: OK.bg,
       fg: OK.fg,
       border: `${OK.fg}33`,
-      defaultIcon: <CheckIcon size={iconSize} color="var(--status-icon-badge-fg)" />,
+      defaultIcon: (
+        <CheckIcon size={iconSize} color="var(--status-icon-badge-fg)" />
+      ),
     },
     danger: {
       bg: CRIT.bg,
       fg: CRIT.fg,
       border: `${CRIT.fg}33`,
-      defaultIcon: <ExclamationIcon size={iconSize} color="var(--status-icon-badge-fg)" />,
+      defaultIcon: (
+        <ExclamationIcon size={iconSize} color="var(--status-icon-badge-fg)" />
+      ),
     },
     warning: {
       bg: WARN.bg,
       fg: WARN.fg,
       border: `${WARN.fg}33`,
-      defaultIcon: <ExclamationIcon size={iconSize} color="var(--status-icon-badge-fg)" />,
+      defaultIcon: (
+        <ExclamationIcon size={iconSize} color="var(--status-icon-badge-fg)" />
+      ),
     },
     info: {
       bg: "var(--status-info-bg)",
       fg: "var(--status-info-fg)",
       border: "var(--status-info-fg)33",
-      defaultIcon: <InfoIcon size={iconSize} color="var(--status-icon-badge-fg)" />,
+      defaultIcon: (
+        <InfoIcon size={iconSize} color="var(--status-icon-badge-fg)" />
+      ),
     },
   }[tone];
 
@@ -195,7 +237,12 @@ export function StatusCallout({
           style={{
             color: toneMap.fg,
             fontFamily: "var(--font-display)",
-            fontSize: size === "lg" ? "var(--type-heading-md)" : size === "sm" ? 13 : "var(--type-heading-sm)",
+            fontSize:
+              size === "lg"
+                ? "var(--type-heading-md)"
+                : size === "sm"
+                  ? 13
+                  : "var(--type-heading-sm)",
             fontWeight: "var(--weight-bold)",
             lineHeight: "var(--leading-snug)",
           }}
@@ -208,14 +255,17 @@ export function StatusCallout({
             style={{
               color: MUTED,
               fontFamily: "var(--font-body)",
-              fontSize: size === "lg" ? 15 : size === "sm" ? 12 : "var(--type-body)",
+              fontSize:
+                size === "lg" ? 15 : size === "sm" ? 12 : "var(--type-body)",
               lineHeight: size === "sm" ? 1.35 : "var(--leading-relaxed)",
             }}
           >
             {description}
           </p>
         )}
-        {action && <div className={size === "sm" ? "mt-2" : "mt-3"}>{action}</div>}
+        {action && (
+          <div className={size === "sm" ? "mt-2" : "mt-3"}>{action}</div>
+        )}
       </div>
     </div>
   );

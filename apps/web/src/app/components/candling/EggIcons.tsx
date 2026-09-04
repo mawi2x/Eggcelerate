@@ -1,17 +1,34 @@
 // Domain-specific candling icons: an egg silhouette whose interior communicates
 // the candling result (vascular network / hollow / unresolved).
 
-const EGG_PATH = "M12 2.5C8.6 2.5 5.2 8.2 5.2 13.4a6.8 6.8 0 0 0 13.6 0C18.8 8.2 15.4 2.5 12 2.5Z";
+const EGG_PATH =
+  "M12 2.5C8.6 2.5 5.2 8.2 5.2 13.4a6.8 6.8 0 0 0 13.6 0C18.8 8.2 15.4 2.5 12 2.5Z";
 
 interface IconProps {
   size?: number;
   color?: string;
 }
 
-function EggFrame({ size = 15, color = "currentColor", children }: IconProps & { children?: React.ReactNode }) {
+function EggFrame({
+  size = 15,
+  color = "currentColor",
+  children,
+}: IconProps & { children?: React.ReactNode }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden focusable="false">
-      <path d={EGG_PATH} stroke={color} strokeWidth={1.7} strokeLinejoin="round" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      focusable="false"
+    >
+      <path
+        d={EGG_PATH}
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
       {children}
     </svg>
   );
@@ -36,7 +53,13 @@ export function EggClearIcon({ size, color }: IconProps) {
   return (
     <EggFrame size={size} color={color}>
       {/* Faint shell highlight so it reads as an empty shell, not a missing icon. */}
-      <path d="M8.6 12.4c0-2.6 1-5 2.3-6.6" stroke={color} strokeWidth={1.1} strokeLinecap="round" opacity={0.5} />
+      <path
+        d="M8.6 12.4c0-2.6 1-5 2.3-6.6"
+        stroke={color}
+        strokeWidth={1.1}
+        strokeLinecap="round"
+        opacity={0.5}
+      />
     </EggFrame>
   );
 }
@@ -61,10 +84,23 @@ export function EggUncertainIcon({ size, color }: IconProps) {
 export type Fertility = "fertile" | "clear" | "uncertain";
 
 // Each pairing is >= 4.5:1 against its own pill and against the cream card.
-export const fertilityTones: Record<Fertility, { bg: string; text: string; icon: string; label: string }> = {
-  fertile:   { bg: "#DCFCE7", text: "#166534", icon: "#16A34A", label: "Fertile" },
-  clear:     { bg: "#F2EEE5", text: "#334155", icon: "#475569", label: "Clear" },
-  uncertain: { bg: "#FEF3C7", text: "#92400E", icon: "#D97706", label: "Uncertain" },
+export const fertilityTones: Record<
+  Fertility,
+  { bg: string; text: string; icon: string; label: string }
+> = {
+  fertile: {
+    bg: "#DCFCE7",
+    text: "#166534",
+    icon: "#16A34A",
+    label: "Fertile",
+  },
+  clear: { bg: "#F2EEE5", text: "#334155", icon: "#475569", label: "Clear" },
+  uncertain: {
+    bg: "#FEF3C7",
+    text: "#92400E",
+    icon: "#D97706",
+    label: "Uncertain",
+  },
 };
 
 const icons: Record<Fertility, (p: IconProps) => React.ReactElement> = {
@@ -73,18 +109,35 @@ const icons: Record<Fertility, (p: IconProps) => React.ReactElement> = {
   uncertain: EggUncertainIcon,
 };
 
-export function FertilityIcon({ kind, size, color }: { kind: Fertility } & IconProps) {
+export function FertilityIcon({
+  kind,
+  size,
+  color,
+}: { kind: Fertility } & IconProps) {
   const Icon = icons[kind];
   return <Icon size={size} color={color ?? fertilityTones[kind].icon} />;
 }
 
 /** Pill chip, e.g. "23 Fertile (95.8%)". */
-export function FertilityPill({ kind, value, suffix }: { kind: Fertility; value: number; suffix?: string }) {
+export function FertilityPill({
+  kind,
+  value,
+  suffix,
+}: {
+  kind: Fertility;
+  value: number;
+  suffix?: string;
+}) {
   const tone = fertilityTones[kind];
   return (
     <span
       className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1"
-      style={{ backgroundColor: tone.bg, color: tone.text, fontSize: 12, fontWeight: 700 }}
+      style={{
+        backgroundColor: tone.bg,
+        color: tone.text,
+        fontSize: 12,
+        fontWeight: 700,
+      }}
     >
       <FertilityIcon kind={kind} size={14} />
       {value} {tone.label}

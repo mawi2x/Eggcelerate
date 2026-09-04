@@ -1,9 +1,9 @@
+import { Egg, Feather, FlaskConical, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { Egg, Feather, Sparkles, FlaskConical } from "lucide-react";
-import { AuthCard } from "./AuthCard";
-import { StepperBar } from "./StepperBar";
 import type { PrimaryFocus } from "../../data/onboarding";
 import { OnboardingStep2Schema } from "../../data/onboarding";
+import { AuthCard } from "./AuthCard";
+import { StepperBar } from "./StepperBar";
 
 type FocusOption = {
   id: PrimaryFocus;
@@ -18,7 +18,14 @@ const FOCUS_OPTIONS: FocusOption[] = [
   { id: "research", label: "Research / education", icon: FlaskConical },
 ];
 
-const SPECIES_OPTIONS = ["chicken", "duck", "quail", "turkey", "goose", "guinea_fowl"] as const;
+const SPECIES_OPTIONS = [
+  "chicken",
+  "duck",
+  "quail",
+  "turkey",
+  "goose",
+  "guinea_fowl",
+] as const;
 const SPECIES_LABELS: Record<(typeof SPECIES_OPTIONS)[number], string> = {
   chicken: "Chicken",
   duck: "Duck",
@@ -42,7 +49,9 @@ export function OnboardingStep2({
   const [error, setError] = useState<string | undefined>();
 
   const toggleSpecies = (s: string) => {
-    setSpecies((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+    setSpecies((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
+    );
   };
 
   const submit = () => {
@@ -105,7 +114,9 @@ export function OnboardingStep2({
                 style={{
                   backgroundColor: selected ? "#FFF8F5" : "#FFFFFF",
                   borderColor: selected ? "var(--brand-primary)" : "#E8E2D5",
-                  color: selected ? "var(--brand-primary)" : "var(--text-primary)",
+                  color: selected
+                    ? "var(--brand-primary)"
+                    : "var(--text-primary)",
                 }}
               >
                 <Icon size={18} className="shrink-0" />
@@ -149,9 +160,13 @@ export function OnboardingStep2({
                 onClick={() => toggleSpecies(s)}
                 className="cursor-pointer rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
                 style={{
-                  backgroundColor: selected ? "var(--brand-primary)" : "var(--surface-card)",
+                  backgroundColor: selected
+                    ? "var(--brand-primary)"
+                    : "var(--surface-card)",
                   color: selected ? "var(--on-brand)" : "var(--text-primary)",
-                  borderColor: selected ? "var(--brand-primary)" : "var(--border-default)",
+                  borderColor: selected
+                    ? "var(--brand-primary)"
+                    : "var(--border-default)",
                 }}
               >
                 {selected ? "✓ " : ""}
@@ -161,7 +176,11 @@ export function OnboardingStep2({
           })}
         </div>
         {error && (
-          <p className="mt-2 text-xs" style={{ color: "var(--status-danger-fg)" }} role="alert">
+          <p
+            className="mt-2 text-xs"
+            style={{ color: "var(--status-danger-fg)" }}
+            role="alert"
+          >
             {error}
           </p>
         )}
@@ -172,7 +191,10 @@ export function OnboardingStep2({
           type="button"
           onClick={onBack}
           className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl border bg-white font-semibold transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
-          style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}
+          style={{
+            borderColor: "var(--border-default)",
+            color: "var(--text-primary)",
+          }}
         >
           ← Back
         </button>

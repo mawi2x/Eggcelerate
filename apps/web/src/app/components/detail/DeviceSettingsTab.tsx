@@ -1,21 +1,22 @@
+import { Egg, WifiSlash } from "@phosphor-icons/react";
+import { ChevronRight, LockKeyhole, RotateCw, Wifi, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  RotateCw, Zap, Wifi, ChevronRight, LockKeyhole,
-} from "lucide-react";
-import { IncubatingIcon } from "../icons";
-import { Egg, WifiSlash } from "@phosphor-icons/react";
-import { Button } from "../ui/button";
-import { Switch } from "../ui/switch";
-import { Progress } from "../ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import type { CandlingCheckpoint, Incubator, Mode } from "../../domain/types";
+import { IncubatingIcon } from "../icons";
+import { Button } from "../ui/button";
+import { Progress } from "../ui/progress";
 import {
-  TEXT, MUTED, BORDER, SURFACE, OK, CRIT,
-  relTime,
-} from "./types";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Switch } from "../ui/switch";
 import { KeyValue } from "./primitives";
 import { StopCycleModal } from "./StopCycleModal";
+import { BORDER, CRIT, MUTED, OK, relTime, SURFACE, TEXT } from "./types";
 
 interface DeviceSettingsTabProps {
   unit: Incubator;
@@ -42,26 +43,40 @@ export function DeviceSettingsTab({
   onStopCycle,
   onTurnClick,
 }: DeviceSettingsTabProps) {
-  const [settingTab, setSettingTab] = useState<"mode" | "turning" | "device">("mode");
+  const [settingTab, setSettingTab] = useState<"mode" | "turning" | "device">(
+    "mode",
+  );
   const [stopCycleOpen, setStopCycleOpen] = useState(false);
 
   const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
 
   const changeMode = async (modeId: string) => {
-    const m = modes.find((x) => x.id === modeId)!;
-    if (!await onUpdate({ modeId, turnInterval: m.defaultTurnInterval })) return;
-    toast(`Mode changed to ${m.name}`, { description: "Turning interval reset to mode default." });
+    const m = modes.find((x) => x.id === modeId);
+    if (!m) return;
+    if (!(await onUpdate({ modeId, turnInterval: m.defaultTurnInterval })))
+      return;
+    toast(`Mode changed to ${m.name}`, {
+      description: "Turning interval reset to mode default.",
+    });
   };
 
   const reconnectDevice = async () => {
-    toast("Reconnecting to incubator...", { description: `Attempting handshake with ${unit.deviceId}` });
-    if (!await onUpdate({ paired: true, connectionState: "connected" })) return;
-    toast.success("Connected", { description: `${unit.name} paired successfully.` });
+    toast("Reconnecting to incubator...", {
+      description: `Attempting handshake with ${unit.deviceId}`,
+    });
+    if (!(await onUpdate({ paired: true, connectionState: "connected" })))
+      return;
+    toast.success("Connected", {
+      description: `${unit.name} paired successfully.`,
+    });
   };
 
   const nextTurnLabel = () => {
-    const diffMin = Math.round((new Date(unit.nextTurn).getTime() - Date.now()) / 60000);
-    if (diffMin < 0) return { text: `Overdue by ${Math.abs(diffMin)} min`, overdue: true };
+    const diffMin = Math.round(
+      (new Date(unit.nextTurn).getTime() - Date.now()) / 60000,
+    );
+    if (diffMin < 0)
+      return { text: `Overdue by ${Math.abs(diffMin)} min`, overdue: true };
     const h = Math.floor(diffMin / 60);
     const m = diffMin % 60;
     return { text: `in ${h > 0 ? `${h}h ` : ""}${m}m`, overdue: false };
@@ -89,8 +104,16 @@ export function DeviceSettingsTab({
       >
         <ul className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
           {[
-            { id: "mode" as const, label: "Incubation mode", Icon: IncubatingIcon },
-            { id: "turning" as const, label: "Turning schedule", Icon: RotateCw },
+            {
+              id: "mode" as const,
+              label: "Incubation mode",
+              Icon: IncubatingIcon,
+            },
+            {
+              id: "turning" as const,
+              label: "Turning schedule",
+              Icon: RotateCw,
+            },
             { id: "device" as const, label: "Device & connection", Icon: Zap },
           ].map(({ id, label, Icon }) => {
             const isActive = settingTab === id;
@@ -112,7 +135,11 @@ export function DeviceSettingsTab({
                     size={16}
                     strokeWidth={isActive ? 2.5 : 2}
                     className="shrink-0"
-                    style={{ color: isActive ? "var(--local-nav-selected-fg)" : "var(--text-primary)" }}
+                    style={{
+                      color: isActive
+                        ? "var(--local-nav-selected-fg)"
+                        : "var(--text-primary)",
+                    }}
                   />
                   <span className="min-w-0 truncate" title={label}>
                     {label}
@@ -136,18 +163,36 @@ export function DeviceSettingsTab({
       >
         {settingTab === "mode" && (
           <>
-            <div className="pb-5" style={{ borderBottom: "1px solid var(--border-default)" }}>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-lg)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
+            <div
+              className="pb-5"
+              style={{ borderBottom: "1px solid var(--border-default)" }}
+            >
+              <h2
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "var(--type-heading-lg)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: "var(--leading-snug)",
+                  color: "var(--text-primary)",
+                }}
+              >
                 Incubation Mode
               </h2>
-              <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
-                View target temperature, humidity, and candling schedule for the active species preset.
+              <p
+                className="mt-1"
+                style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}
+              >
+                View target temperature, humidity, and candling schedule for the
+                active species preset.
               </p>
             </div>
             <div className="pt-5 space-y-4">
               <div
                 className="flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between"
-                style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
+                style={{
+                  backgroundColor: "#FCFAF6",
+                  border: `1px solid ${BORDER}`,
+                }}
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <span
@@ -155,13 +200,40 @@ export function DeviceSettingsTab({
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                     style={{ backgroundColor: "#F4ECE1", color: "#8B3A1C" }}
                   >
-                    <Egg size={20} color="#8B3A1C" weight="fill" aria-hidden="true" />
+                    <Egg
+                      size={20}
+                      color="#8B3A1C"
+                      weight="fill"
+                      aria-hidden="true"
+                    />
                   </span>
                   <div className="min-w-0">
-                    <p style={{ color: MUTED, fontSize: 11, fontWeight: 700 }}>Active preset</p>
+                    <p style={{ color: MUTED, fontSize: 11, fontWeight: 700 }}>
+                      Active preset
+                    </p>
                     <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
-                      <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-snug)", color: TEXT, whiteSpace: "normal", wordBreak: "break-word" }}>{mode.name}</p>
-                      <span className="shrink-0 rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 700, backgroundColor: "#F5EFE6", color: "#8B3A1C" }}>
+                      <p
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: "var(--type-heading-sm)",
+                          fontWeight: "var(--weight-extrabold)",
+                          lineHeight: "var(--leading-snug)",
+                          color: TEXT,
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {mode.name}
+                      </p>
+                      <span
+                        className="shrink-0 rounded-full px-2 py-0.5"
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          backgroundColor: "#F5EFE6",
+                          color: "#8B3A1C",
+                        }}
+                      >
                         {mode.builtIn ? "Built-in" : "Custom"}
                       </span>
                     </div>
@@ -176,33 +248,81 @@ export function DeviceSettingsTab({
                       if (val !== unit.modeId) void changeMode(val);
                     }}
                   >
-                    <SelectTrigger aria-label="Choose incubation mode" className="h-10 w-full rounded-xl sm:w-[180px]" style={{ borderColor: "#D8D0C0", backgroundColor: "#FFFFFF", fontSize: 13, fontWeight: 700 }}>
+                    <SelectTrigger
+                      aria-label="Choose incubation mode"
+                      className="h-10 w-full rounded-xl sm:w-[180px]"
+                      style={{
+                        borderColor: "#D8D0C0",
+                        backgroundColor: "#FFFFFF",
+                        fontSize: 13,
+                        fontWeight: 700,
+                      }}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {modes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                      {modes.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 ) : (
-                  <span className="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-full px-3 sm:self-auto" style={{ backgroundColor: "#EFE9DC", color: MUTED, fontSize: 12, fontWeight: 700 }}>
-                    <LockKeyhole size={14} aria-hidden="true" /> Locked during cycle
+                  <span
+                    className="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-full px-3 sm:self-auto"
+                    style={{
+                      backgroundColor: "#EFE9DC",
+                      color: MUTED,
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    <LockKeyhole size={14} aria-hidden="true" /> Locked during
+                    cycle
                   </span>
                 )}
               </div>
 
               {!isReady && (
-                <p className="flex items-start gap-2" style={{ fontSize: 12, color: MUTED }}>
-                  <LockKeyhole size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-                  The active preset cannot change until this cycle is stopped or finished.
+                <p
+                  className="flex items-start gap-2"
+                  style={{ fontSize: 12, color: MUTED }}
+                >
+                  <LockKeyhole
+                    size={14}
+                    className="mt-0.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  The active preset cannot change until this cycle is stopped or
+                  finished.
                 </p>
               )}
 
-              <dl className="grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-2" style={{ border: `1px solid ${BORDER}`, backgroundColor: "#FFFFFF" }}>
+              <dl
+                className="grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-2"
+                style={{
+                  border: `1px solid ${BORDER}`,
+                  backgroundColor: "#FFFFFF",
+                }}
+              >
                 {[
-                  { label: "Target temperature", value: `${mode.targetTemp.min} to ${mode.targetTemp.max}°C` },
-                  { label: "Target humidity", value: `${mode.targetHumidity.min} to ${mode.targetHumidity.max}% RH` },
-                  { label: "Turning cadence", value: `Every ${mode.defaultTurnInterval} hours` },
-                  { label: "Scheduled candling", value: candling.map((c) => `Day ${c.day}`).join(", ") },
+                  {
+                    label: "Target temperature",
+                    value: `${mode.targetTemp.min} to ${mode.targetTemp.max}°C`,
+                  },
+                  {
+                    label: "Target humidity",
+                    value: `${mode.targetHumidity.min} to ${mode.targetHumidity.max}% RH`,
+                  },
+                  {
+                    label: "Turning cadence",
+                    value: `Every ${mode.defaultTurnInterval} hours`,
+                  },
+                  {
+                    label: "Scheduled candling",
+                    value: candling.map((c) => `Day ${c.day}`).join(", "),
+                  },
                 ].map((item, index) => (
                   <div
                     key={item.label}
@@ -213,17 +333,34 @@ export function DeviceSettingsTab({
                     }}
                   >
                     <dt style={{ color: MUTED, fontSize: 12 }}>{item.label}</dt>
-                    <dd className="mt-1 tabular-nums" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-body)", fontWeight: "var(--weight-extrabold)", lineHeight: "var(--leading-normal)", color: TEXT }}>{item.value}</dd>
+                    <dd
+                      className="mt-1 tabular-nums"
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "var(--type-body)",
+                        fontWeight: "var(--weight-extrabold)",
+                        lineHeight: "var(--leading-normal)",
+                        color: TEXT,
+                      }}
+                    >
+                      {item.value}
+                    </dd>
                   </div>
                 ))}
               </dl>
               <button
                 type="button"
-                onClick={() => toast("Mode Library", { description: "Edit this preset under Settings → Mode Library." })}
+                onClick={() =>
+                  toast("Mode Library", {
+                    description:
+                      "Edit this preset under Settings → Mode Library.",
+                  })
+                }
                 className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg px-1 text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2"
                 style={{ fontSize: 13, fontWeight: 600 }}
               >
-                Edit preset for future cycles <ChevronRight size={14} aria-hidden="true" />
+                Edit preset for future cycles{" "}
+                <ChevronRight size={14} aria-hidden="true" />
               </button>
             </div>
           </>
@@ -232,32 +369,65 @@ export function DeviceSettingsTab({
         {settingTab === "turning" && (
           <>
             <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-lg)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
+              <h2
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "var(--type-heading-lg)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: "var(--leading-snug)",
+                  color: "var(--text-primary)",
+                }}
+              >
                 Turning Schedule
               </h2>
-              <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
-                Configure automatic egg rotation intervals and manual turning controls.
+              <p
+                className="mt-1"
+                style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}
+              >
+                Configure automatic egg rotation intervals and manual turning
+                controls.
               </p>
             </div>
             <div className="pt-5 space-y-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>Automatic turning</p>
-                  <p style={{ color: MUTED, fontSize: 12 }}>Turn eggs on schedule automatically.</p>
+                  <p style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>
+                    Automatic turning
+                  </p>
+                  <p style={{ color: MUTED, fontSize: 12 }}>
+                    Turn eggs on schedule automatically.
+                  </p>
                 </div>
-                <Switch checked={unit.autoTurn} disabled={turningStopped || isUpdating} onCheckedChange={(v) => void onUpdate({ autoTurn: v })} />
+                <Switch
+                  checked={unit.autoTurn}
+                  disabled={turningStopped || isUpdating}
+                  onCheckedChange={(v) => void onUpdate({ autoTurn: v })}
+                />
               </div>
               {turningStopped && (
-                <p style={{ fontSize: 12, color: MUTED }}>Turning is stopped during Lockdown and hatch phases.</p>
+                <p style={{ fontSize: 12, color: MUTED }}>
+                  Turning is stopped during Lockdown and hatch phases.
+                </p>
               )}
               <div className="flex items-center justify-between gap-2">
-                <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Turn every</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>
+                  Turn every
+                </span>
                 <Select
                   disabled={turningStopped || isUpdating}
                   value={String(unit.turnInterval)}
-                  onValueChange={(v) => void onUpdate({ turnInterval: Number(v) })}
+                  onValueChange={(v) =>
+                    void onUpdate({ turnInterval: Number(v) })
+                  }
                 >
-                  <SelectTrigger className="h-9 w-[110px] rounded-xl" style={{ borderColor: "rgba(120,53,15,0.20)", backgroundColor: SURFACE, fontSize: 13 }}>
+                  <SelectTrigger
+                    className="h-9 w-[110px] rounded-xl"
+                    style={{
+                      borderColor: "rgba(120,53,15,0.20)",
+                      backgroundColor: SURFACE,
+                      fontSize: 13,
+                    }}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,11 +440,26 @@ export function DeviceSettingsTab({
                 </Select>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span className="min-w-0 truncate" style={{ fontSize: 12, color: next.overdue ? CRIT.fg : MUTED }}>
+                <span
+                  className="min-w-0 truncate"
+                  style={{
+                    fontSize: 12,
+                    color: next.overdue ? CRIT.fg : MUTED,
+                  }}
+                >
                   Next: {next.text} • Last: {relTime(unit.lastTurned)}
                 </span>
-                <Button disabled={turningStopped || isUpdating} onClick={() => void onTurnClick()} aria-busy={isUpdating} variant="outline" size="sm" className="shrink-0 rounded-full" style={outlineBtn}>
-                  <RotateCw size={14} /> {isUpdating ? "Confirming…" : "Turn Now"}
+                <Button
+                  disabled={turningStopped || isUpdating}
+                  onClick={() => void onTurnClick()}
+                  aria-busy={isUpdating}
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 rounded-full"
+                  style={outlineBtn}
+                >
+                  <RotateCw size={14} />{" "}
+                  {isUpdating ? "Confirming…" : "Turn Now"}
                 </Button>
               </div>
             </div>
@@ -284,11 +469,23 @@ export function DeviceSettingsTab({
         {settingTab === "device" && (
           <>
             <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-lg)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)", color: "var(--text-primary)" }}>
+              <h2
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "var(--type-heading-lg)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: "var(--leading-snug)",
+                  color: "var(--text-primary)",
+                }}
+              >
                 Device & Connection
               </h2>
-              <p className="mt-1" style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}>
-                Manage chamber hardware pairing, connectivity status, and power telemetry.
+              <p
+                className="mt-1"
+                style={{ fontSize: 13, fontWeight: 400, color: "#6E6259" }}
+              >
+                Manage chamber hardware pairing, connectivity status, and power
+                telemetry.
               </p>
             </div>
             <div className="pt-5 space-y-4">
@@ -298,12 +495,16 @@ export function DeviceSettingsTab({
                 accent={unit.paired ? OK.fg : CRIT.fg}
                 value={
                   <span className="flex items-center gap-1.5">
-                    {unit.paired ? <Wifi size={15} /> : <WifiSlash size={15} weight="fill" />}
+                    {unit.paired ? (
+                      <Wifi size={15} />
+                    ) : (
+                      <WifiSlash size={15} weight="fill" />
+                    )}
                     {unit.connectionState === "connecting"
                       ? "Connecting"
                       : unit.paired && unit.connectionState === "connected"
-                      ? "Connected and Paired"
-                      : "Connection Lost"}
+                        ? "Connected and Paired"
+                        : "Connection Lost"}
                     {(!unit.paired || unit.connectionState !== "connected") && (
                       <Button
                         onClick={() => void reconnectDevice()}
@@ -314,32 +515,63 @@ export function DeviceSettingsTab({
                         className="ml-1 rounded-full"
                         style={outlineBtn}
                       >
-                        <WifiSlash size={13} weight="fill" /> {isUpdating ? "Connecting…" : "Reconnect"}
+                        <WifiSlash size={13} weight="fill" />{" "}
+                        {isUpdating ? "Connecting…" : "Reconnect"}
                       </Button>
                     )}
                   </span>
                 }
               />
-              <div className="rounded-xl p-3.5" style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
+              <div
+                className="rounded-xl p-3.5"
+                style={{
+                  backgroundColor: SURFACE,
+                  border: `1px solid ${BORDER}`,
+                }}
+              >
                 <div className="flex items-center justify-between">
                   <p style={{ fontSize: 12, color: MUTED }}>Battery</p>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: unit.batteryPct <= 25 ? CRIT.fg : TEXT }}>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: unit.batteryPct <= 25 ? CRIT.fg : TEXT,
+                    }}
+                  >
                     {unit.batteryPct}%
                   </span>
                 </div>
                 <Progress value={unit.batteryPct} className="mt-1.5 h-2" />
               </div>
-              <div className="rounded-xl p-4" style={{ backgroundColor: "#FFF8E7", border: "1px solid #F2C94C" }}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Advanced</p>
+              <div
+                className="rounded-xl p-4"
+                style={{
+                  backgroundColor: "#FFF8E7",
+                  border: "1px solid #F2C94C",
+                }}
+              >
+                <p style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>
+                  Advanced
+                </p>
                 <p className="mt-1" style={{ fontSize: 12, color: MUTED }}>
-                  Stop the current cycle early if the batch must be removed before the expected hatch period.
+                  Stop the current cycle early if the batch must be removed
+                  before the expected hatch period.
                 </p>
                 <Button
                   className="mt-3 rounded-xl"
                   variant="outline"
-                  disabled={isReady || cycleEnded || unit.cyclePhase === "stopped_early" || isUpdating}
+                  disabled={
+                    isReady ||
+                    cycleEnded ||
+                    unit.cyclePhase === "stopped_early" ||
+                    isUpdating
+                  }
                   onClick={() => setStopCycleOpen(true)}
-                  style={{ borderColor: "#C2410C", color: "#9A3412", backgroundColor: "#FFFFFF" }}
+                  style={{
+                    borderColor: "#C2410C",
+                    color: "#9A3412",
+                    backgroundColor: "#FFFFFF",
+                  }}
                 >
                   Stop Cycle
                 </Button>

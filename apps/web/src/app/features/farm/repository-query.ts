@@ -22,7 +22,9 @@ export function requireResultData<T>(result: Result<T>): T {
 }
 
 export function repositoryErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "The farm data operation failed.";
+  return error instanceof Error
+    ? error.message
+    : "The farm data operation failed.";
 }
 
 export type MutationErrorPresentation = {
@@ -34,13 +36,17 @@ export function mutationErrorPresentation(
   error: unknown,
   options: { rolledBack?: boolean } = {},
 ): MutationErrorPresentation {
-  const code = error instanceof RepositoryQueryError ? error.code : "unknown_error";
+  const code =
+    error instanceof RepositoryQueryError ? error.code : "unknown_error";
   const recovery = options.rolledBack
     ? " The previous values were restored."
     : " Your unsaved changes are still available.";
 
   if (code === "offline") {
-    return { title: "You're offline", description: `Reconnect, then try again.${recovery}` };
+    return {
+      title: "You're offline",
+      description: `Reconnect, then try again.${recovery}`,
+    };
   }
   if (code === "timeout") {
     return {
@@ -48,7 +54,11 @@ export function mutationErrorPresentation(
       description: `The change was not confirmed. Try again.${recovery}`,
     };
   }
-  if (code === "rejected" || code === "validation_error" || code === "conflict") {
+  if (
+    code === "rejected" ||
+    code === "validation_error" ||
+    code === "conflict"
+  ) {
     return {
       title: "Change rejected",
       description: `${repositoryErrorMessage(error)}${recovery}`,

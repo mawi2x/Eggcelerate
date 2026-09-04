@@ -22,7 +22,11 @@ describe("InMemoryEggcelerateRepository", () => {
     const result = await repository.getIncubator("missing");
     expect(result).toEqual({
       ok: false,
-      error: { code: "not_found", message: "Incubator missing was not found.", details: undefined },
+      error: {
+        code: "not_found",
+        message: "Incubator missing was not found.",
+        details: undefined,
+      },
     });
   });
 

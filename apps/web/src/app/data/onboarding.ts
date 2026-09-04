@@ -1,11 +1,23 @@
 import { z } from "zod";
-import { FARM_NAME_MAX, ACCOUNT_HOLDER_MAX, CHAMBER_NAME_MAX } from "./account";
+import { ACCOUNT_HOLDER_MAX, CHAMBER_NAME_MAX, FARM_NAME_MAX } from "./account";
 
 export type PrimaryFocus = "commercial" | "heritage" | "backyard" | "research";
 
-export const PrimaryFocusSchema = z.enum(["commercial", "heritage", "backyard", "research"]);
+export const PrimaryFocusSchema = z.enum([
+  "commercial",
+  "heritage",
+  "backyard",
+  "research",
+]);
 
-export const SpeciesSchema = z.enum(["chicken", "duck", "quail", "turkey", "goose", "guinea_fowl"]);
+export const SpeciesSchema = z.enum([
+  "chicken",
+  "duck",
+  "quail",
+  "turkey",
+  "goose",
+  "guinea_fowl",
+]);
 
 export interface OnboardingState {
   name: string;

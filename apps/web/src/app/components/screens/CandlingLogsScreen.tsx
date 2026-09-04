@@ -1,17 +1,37 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Bell,
+  CalendarDots,
+  CheckCircle,
+  Clock,
+  Notepad,
+} from "@phosphor-icons/react";
 import {
   ArrowDownWideNarrow,
   ArrowRight,
   ArrowUpNarrowWide,
   Search,
 } from "lucide-react";
-import { CheckCircle, Clock, Bell, CalendarDots, Notepad } from "@phosphor-icons/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { computeCandling } from "../../domain/candling";
+import type {
+  CandlingCheckpoint,
+  CandlingLogEntry,
+  Incubator,
+  Mode,
+} from "../../domain/types";
 import { ExclamationIcon } from "../icons";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { Button } from "../ui/button";
 import { FilterBar } from "../ui/filter-bar";
 import { Input } from "../ui/input";
-import { cn } from "../ui/utils";
+import { PaginationBar } from "../ui/pagination-bar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import {
   Table,
   TableBody,
@@ -21,12 +41,9 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { PaginationBar } from "../ui/pagination-bar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { ViewToggle, ViewMode } from "../ViewToggle";
 import { useIsMobile } from "../ui/use-mobile";
-import { computeCandling } from "../../domain/candling";
-import type { CandlingCheckpoint, CandlingLogEntry, Incubator, Mode } from "../../domain/types";
+import { cn } from "../ui/utils";
+import { type ViewMode, ViewToggle } from "../ViewToggle";
 
 const RUST = "var(--brand-primary)";
 const TEXT = "var(--text-primary)";
@@ -48,7 +65,13 @@ const TILE = "#F2EEE5";
 const INPUT_BORDER = "#D8D0C0";
 const inputStyle = { borderColor: INPUT_BORDER, backgroundColor: "#F2EEE5" };
 
-export type InspectionStatus = "overdue" | "due" | "upcoming" | "complete" | "not-started" | "ended";
+export type InspectionStatus =
+  | "overdue"
+  | "due"
+  | "upcoming"
+  | "complete"
+  | "not-started"
+  | "ended";
 
 export interface CandlingSummary {
   unit: Incubator;
@@ -60,13 +83,20 @@ export interface CandlingSummary {
   status: InspectionStatus;
 }
 
-const statusMeta: Record<InspectionStatus, {
-  label: string;
-  description: string;
-  fg: string;
-  bg: string;
-  Icon: React.ComponentType<{ size?: number | string; color?: string; className?: string }>;
-}> = {
+const statusMeta: Record<
+  InspectionStatus,
+  {
+    label: string;
+    description: string;
+    fg: string;
+    bg: string;
+    Icon: React.ComponentType<{
+      size?: number | string;
+      color?: string;
+      className?: string;
+    }>;
+  }
+> = {
   overdue: {
     label: "Overdue",
     description: "Needs an inspection",
@@ -115,12 +145,18 @@ type RowFilter = "all" | "action" | "upcoming" | "complete";
 type SortKey = "attention" | "name" | "recent";
 
 function latestLogFor(unit: Incubator): CandlingLogEntry | null {
-  return [...unit.candlingLog]
-    .sort((a, b) => b.day - a.day || b.date.localeCompare(a.date))[0] ?? null;
+  return (
+    [...unit.candlingLog].sort(
+      (a, b) => b.day - a.day || b.date.localeCompare(a.date),
+    )[0] ?? null
+  );
 }
 
 /** Derives the global inspection status from the mode checkpoints and unit progress. */
-export function getCandlingSummary(unit: Incubator, mode: Mode): CandlingSummary {
+export function getCandlingSummary(
+  unit: Incubator,
+  mode: Mode,
+): CandlingSummary {
   const checkpoints = computeCandling(mode.incubationDays);
   const completedDays = new Set<number>([
     ...Object.entries(unit.candled ?? {})
@@ -128,8 +164,11 @@ export function getCandlingSummary(unit: Incubator, mode: Mode): CandlingSummary
       .map(([day]) => Number(day)),
     ...unit.candlingLog.map((entry) => entry.day),
   ]);
-  const completedCheckpoints = checkpoints.filter(({ day }) => completedDays.has(day)).length;
-  const nextCheckpoint = checkpoints.find(({ day }) => !completedDays.has(day)) ?? null;
+  const completedCheckpoints = checkpoints.filter(({ day }) =>
+    completedDays.has(day),
+  ).length;
+  const nextCheckpoint =
+    checkpoints.find(({ day }) => !completedDays.has(day)) ?? null;
 
   let status: InspectionStatus;
   if (unit.cyclePhase === "stopped_early") {
@@ -160,7 +199,11 @@ export function getCandlingSummary(unit: Incubator, mode: Mode): CandlingSummary
 function formatLogDate(value: string): string {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return "Unknown date";
-  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function StatusTag({ status }: { status: InspectionStatus }) {
@@ -169,7 +212,12 @@ function StatusTag({ status }: { status: InspectionStatus }) {
   return (
     <span
       className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1"
-      style={{ backgroundColor: meta.bg, color: meta.fg, fontSize: 12, fontWeight: 700 }}
+      style={{
+        backgroundColor: meta.bg,
+        color: meta.fg,
+        fontSize: 12,
+        fontWeight: 700,
+      }}
     >
       <Icon size={14} color={meta.fg} aria-hidden="true" />
       {meta.label}
@@ -177,9 +225,17 @@ function StatusTag({ status }: { status: InspectionStatus }) {
   );
 }
 
-
-function JournalCard({ row, onOpen, highlighted = false }: { row: CandlingSummary; onOpen: (id: string) => void; highlighted?: boolean }) {
-  const latestNote = row.latestLog?.note.trim() || "No note recorded for this inspection.";
+function JournalCard({
+  row,
+  onOpen,
+  highlighted = false,
+}: {
+  row: CandlingSummary;
+  onOpen: (id: string) => void;
+  highlighted?: boolean;
+}) {
+  const latestNote =
+    row.latestLog?.note.trim() || "No note recorded for this inspection.";
 
   return (
     <article
@@ -195,12 +251,26 @@ function JournalCard({ row, onOpen, highlighted = false }: { row: CandlingSummar
           <div className="min-w-0">
             <h3
               className="truncate"
-              style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-snug)", color: TEXT }}
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-heading-sm)",
+                fontWeight: "var(--weight-semibold)",
+                lineHeight: "var(--leading-snug)",
+                color: TEXT,
+              }}
               title={row.unit.name}
             >
               {row.unit.name}
             </h3>
-            <p className="mt-0.5 truncate" style={{ color: MUTED, fontSize: "var(--type-body-sm)", lineHeight: "var(--leading-normal)" }} title={row.mode.name}>
+            <p
+              className="mt-0.5 truncate"
+              style={{
+                color: MUTED,
+                fontSize: "var(--type-body-sm)",
+                lineHeight: "var(--leading-normal)",
+              }}
+              title={row.mode.name}
+            >
               {row.mode.name}
             </p>
           </div>
@@ -212,18 +282,40 @@ function JournalCard({ row, onOpen, highlighted = false }: { row: CandlingSummar
           style={{
             backgroundColor: TILE,
             borderColor: BORDER,
-            backgroundImage: "repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(232,226,213,0.85) 28px)",
+            backgroundImage:
+              "repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(232,226,213,0.85) 28px)",
           }}
         >
           <div>
-            <p style={{ color: TEXT, fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>
+            <p
+              style={{
+                color: TEXT,
+                fontSize: "var(--type-label)",
+                fontWeight: "var(--weight-bold)",
+                letterSpacing: "var(--tracking-label)",
+                textTransform: "uppercase",
+              }}
+            >
               Latest journal entry
             </p>
-            <p className="mt-1 truncate" style={{ color: MUTED, fontSize: "var(--type-caption)" }} title={row.latestLog?.label ?? undefined}>
-              {row.latestLog ? `${formatLogDate(row.latestLog.date)} · ${row.latestLog.label}` : "No inspection recorded yet"}
+            <p
+              className="mt-1 truncate"
+              style={{ color: MUTED, fontSize: "var(--type-caption)" }}
+              title={row.latestLog?.label ?? undefined}
+            >
+              {row.latestLog
+                ? `${formatLogDate(row.latestLog.date)} · ${row.latestLog.label}`
+                : "No inspection recorded yet"}
             </p>
           </div>
-          <p className="mt-2 min-h-[40px] line-clamp-2" style={{ color: MUTED, fontSize: "var(--type-body-sm)", lineHeight: "var(--leading-relaxed)" }}>
+          <p
+            className="mt-2 min-h-[40px] line-clamp-2"
+            style={{
+              color: MUTED,
+              fontSize: "var(--type-body-sm)",
+              lineHeight: "var(--leading-relaxed)",
+            }}
+          >
             {latestNote}
           </p>
         </div>
@@ -239,12 +331,24 @@ function JournalCard({ row, onOpen, highlighted = false }: { row: CandlingSummar
         <div className="flex min-w-0 items-center gap-2 pl-1.5">
           <StatusIconBadge
             size="sm"
-            backgroundColor={row.completedCheckpoints === row.checkpoints.length ? "var(--status-success-fg)" : RUST}
+            backgroundColor={
+              row.completedCheckpoints === row.checkpoints.length
+                ? "var(--status-success-fg)"
+                : RUST
+            }
             icon={
               row.completedCheckpoints === row.checkpoints.length ? (
-                <CheckCircle size={statusIconBadgeGlyphSize("sm")} color="var(--status-icon-badge-fg)" weight="fill" />
+                <CheckCircle
+                  size={statusIconBadgeGlyphSize("sm")}
+                  color="var(--status-icon-badge-fg)"
+                  weight="fill"
+                />
               ) : (
-                <Notepad size={statusIconBadgeGlyphSize("sm")} color="var(--status-icon-badge-fg)" weight="fill" />
+                <Notepad
+                  size={statusIconBadgeGlyphSize("sm")}
+                  color="var(--status-icon-badge-fg)"
+                  weight="fill"
+                />
               )
             }
           />
@@ -263,7 +367,10 @@ function JournalCard({ row, onOpen, highlighted = false }: { row: CandlingSummar
 
         <Button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onOpen(row.unit.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen(row.unit.id);
+          }}
           className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[#FFF5F2]"
           aria-label={`Open candling log for ${row.unit.name}`}
           style={{
@@ -305,38 +412,49 @@ export function CandlingLogsScreen({
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: page reset intentionally runs when filters change
   useEffect(() => {
     setPage(1);
   }, [filter, modeFilter, search, sort, sortAsc]);
 
   const summaries = useMemo(
-    () => units.map((unit) => {
-      const mode = modes.find((candidate) => candidate.id === unit.modeId) ?? modes[0];
-      return getCandlingSummary(unit, mode);
-    }),
+    () =>
+      units.map((unit) => {
+        const mode =
+          modes.find((candidate) => candidate.id === unit.modeId) ?? modes[0];
+        return getCandlingSummary(unit, mode);
+      }),
     [modes, units],
   );
 
-  const counts = useMemo(() => ({
-    action: summaries.filter((row) => row.status === "overdue" || row.status === "due").length,
-    due: summaries.filter((row) => row.status === "due").length,
+  const counts = useMemo(
+    () => ({
+      action: summaries.filter(
+        (row) => row.status === "overdue" || row.status === "due",
+      ).length,
+      due: summaries.filter((row) => row.status === "due").length,
 
-    upcoming: summaries.filter((row) => row.status === "upcoming").length,
-    complete: summaries.filter((row) => row.status === "complete").length,
-  }), [summaries]);
+      upcoming: summaries.filter((row) => row.status === "upcoming").length,
+      complete: summaries.filter((row) => row.status === "complete").length,
+    }),
+    [summaries],
+  );
 
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
     const filtered = summaries.filter((row) => {
-      const matchesFilter = filter === "all"
-        || (filter === "action" && (row.status === "overdue" || row.status === "due"))
-        || (filter === "upcoming" && row.status === "upcoming")
-        || (filter === "complete" && row.status === "complete");
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "action" &&
+          (row.status === "overdue" || row.status === "due")) ||
+        (filter === "upcoming" && row.status === "upcoming") ||
+        (filter === "complete" && row.status === "complete");
       const matchesMode = modeFilter === "all" || row.mode.id === modeFilter;
-      const matchesSearch = !query
-        || row.unit.name.toLowerCase().includes(query)
-        || row.unit.deviceId.toLowerCase().includes(query)
-        || row.mode.name.toLowerCase().includes(query);
+      const matchesSearch =
+        !query ||
+        row.unit.name.toLowerCase().includes(query) ||
+        row.unit.deviceId.toLowerCase().includes(query) ||
+        row.mode.name.toLowerCase().includes(query);
       return matchesFilter && matchesMode && matchesSearch;
     });
 
@@ -358,16 +476,21 @@ export function CandlingLogsScreen({
         const bDate = b.latestLog ? new Date(b.latestLog.date).getTime() : 0;
         cmp = bDate - aDate || a.unit.name.localeCompare(b.unit.name);
       } else {
-        cmp = statusRank[a.status] - statusRank[b.status]
-          || (a.nextCheckpoint?.day ?? Number.POSITIVE_INFINITY) - (b.nextCheckpoint?.day ?? Number.POSITIVE_INFINITY)
-          || a.unit.name.localeCompare(b.unit.name);
+        cmp =
+          statusRank[a.status] - statusRank[b.status] ||
+          (a.nextCheckpoint?.day ?? Number.POSITIVE_INFINITY) -
+            (b.nextCheckpoint?.day ?? Number.POSITIVE_INFINITY) ||
+          a.unit.name.localeCompare(b.unit.name);
       }
       return sortAsc ? -cmp : cmp;
     });
   }, [filter, modeFilter, search, sort, sortAsc, summaries]);
   const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
   const safePage = Math.min(page, totalPages);
-  const pagedRows = rows.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage);
+  const pagedRows = rows.slice(
+    (safePage - 1) * rowsPerPage,
+    safePage * rowsPerPage,
+  );
 
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -413,8 +536,15 @@ export function CandlingLogsScreen({
   const scrollToCandling = (index: number) => {
     const el = cardRefs.current[index];
     if (el) {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      el.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
+      el.querySelector<HTMLElement>("button")?.focus({ preventScroll: true });
+      setActiveCardIndex(index);
     }
   };
 
@@ -423,11 +553,18 @@ export function CandlingLogsScreen({
       {/* Row 1: Search + ViewToggle (desktop only) */}
       <div className="flex items-center gap-2.5 sm:gap-3">
         <div className="relative min-w-0 flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: MUTED }} />
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2"
+            style={{ color: MUTED }}
+          />
           <Input
             size="toolbar"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             maxLength={50}
             placeholder="Search incubators..."
             aria-label="Search candling logs"
@@ -441,7 +578,10 @@ export function CandlingLogsScreen({
       </div>
 
       {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style={{ marginTop: 16 }}>
+      <div
+        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        style={{ marginTop: 16 }}
+      >
         <div className="min-w-0 flex-1 sm:flex-initial">
           <FilterBar
             ariaLabel="Candling log filter"
@@ -461,22 +601,39 @@ export function CandlingLogsScreen({
             <SelectTrigger
               size="toolbar"
               className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
-              style={{ backgroundColor: SURFACE, borderColor: CARD_BORDER, color: TEXT, fontWeight: 500 }}
+              style={{
+                backgroundColor: SURFACE,
+                borderColor: CARD_BORDER,
+                color: TEXT,
+                fontWeight: 500,
+              }}
               aria-label="Filter by incubation mode"
             >
               <SelectValue placeholder="All modes" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All modes</SelectItem>
-              {modes.map((mode) => <SelectItem key={mode.id} value={mode.id}>{mode.name}</SelectItem>)}
+              {modes.map((mode) => (
+                <SelectItem key={mode.id} value={mode.id}>
+                  {mode.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
-          <Select value={sort} onValueChange={(value) => setSort(value as SortKey)}>
+          <Select
+            value={sort}
+            onValueChange={(value) => setSort(value as SortKey)}
+          >
             <SelectTrigger
               size="toolbar"
               className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
-              style={{ backgroundColor: SURFACE, borderColor: CARD_BORDER, color: TEXT, fontWeight: 500 }}
+              style={{
+                backgroundColor: SURFACE,
+                borderColor: CARD_BORDER,
+                color: TEXT,
+                fontWeight: 500,
+              }}
               aria-label="Sort candling logs"
             >
               <SelectValue />
@@ -492,26 +649,52 @@ export function CandlingLogsScreen({
             type="button"
             onClick={() => setSortAsc(!sortAsc)}
             className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] shrink-0 cursor-pointer items-center justify-center rounded-xl border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2"
-            style={{ backgroundColor: SURFACE, borderColor: CARD_BORDER, color: MUTED }}
+            style={{
+              backgroundColor: SURFACE,
+              borderColor: CARD_BORDER,
+              color: MUTED,
+            }}
             title={sortAsc ? "Sort ascending" : "Sort descending"}
             aria-label={sortAsc ? "Sort ascending" : "Sort descending"}
           >
-            {sortAsc ? <ArrowUpNarrowWide size={16} /> : <ArrowDownWideNarrow size={16} />}
+            {sortAsc ? (
+              <ArrowUpNarrowWide size={16} />
+            ) : (
+              <ArrowDownWideNarrow size={16} />
+            )}
           </button>
         </div>
       </div>
       <section aria-label="Candling journal list">
         {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed px-5 py-12 text-center" style={{ backgroundColor: SUBTLE, borderColor: BORDER }}>
-            <p style={{ color: TEXT, fontWeight: "var(--weight-bold)" }}>No candling logs match these filters</p>
-            <p className="mt-1" style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}>Try a different chamber, mode, or status.</p>
+          <div
+            className="rounded-2xl border border-dashed px-5 py-12 text-center"
+            style={{ backgroundColor: SUBTLE, borderColor: BORDER }}
+          >
+            <p style={{ color: TEXT, fontWeight: "var(--weight-bold)" }}>
+              No candling logs match these filters
+            </p>
+            <p
+              className="mt-1"
+              style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}
+            >
+              Try a different chamber, mode, or status.
+            </p>
             {(search || filter !== "all" || modeFilter !== "all") && (
               <Button
                 type="button"
                 variant="outline"
                 className="mt-4 rounded-xl"
-                onClick={() => { setSearch(""); setFilter("all"); setModeFilter("all"); }}
-                style={{ borderColor: BORDER, color: RUST, backgroundColor: SURFACE }}
+                onClick={() => {
+                  setSearch("");
+                  setFilter("all");
+                  setModeFilter("all");
+                }}
+                style={{
+                  borderColor: BORDER,
+                  color: RUST,
+                  backgroundColor: SURFACE,
+                }}
               >
                 Clear filters
               </Button>
@@ -523,10 +706,17 @@ export function CandlingLogsScreen({
               {rows.map((row, idx) => (
                 <div
                   key={row.unit.id}
-                  ref={(el) => { cardRefs.current[idx] = el; }}
+                  ref={(el) => {
+                    cardRefs.current[idx] = el;
+                  }}
                   data-candling-idx={idx}
+                  className="scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-2xl"
                 >
-                  <JournalCard row={row} onOpen={onOpenCandling} highlighted={isMobile && activeCardIndex === idx} />
+                  <JournalCard
+                    row={row}
+                    onOpen={onOpenCandling}
+                    highlighted={isMobile && activeCardIndex === idx}
+                  />
                 </div>
               ))}
             </div>
@@ -535,53 +725,62 @@ export function CandlingLogsScreen({
             <div className="h-16 md:hidden" aria-hidden="true" />
 
             {/* Floating Vertical Dot Track on Mobile (shows candling chamber count and scroll position) */}
-          {rows.length > 1 && (
-            <div
-              role="group"
-              className="fixed right-1.5 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center gap-1 rounded-full px-1 py-2 md:hidden"
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.92)",
-                backdropFilter: "blur(12px)",
-                border: "1px solid rgba(232, 226, 213, 0.95)",
-                boxShadow: "0 4px 14px rgba(45, 26, 14, 0.12)",
-              }}
-              aria-label={`Candling chamber index. Showing ${rows.length} chambers.`}
-            >
-              {rows.map((row, idx) => {
-                const isActive = activeCardIndex === idx;
-                const color = CANDLING_STATUS_COLORS[row.status] ?? "#8A6B52";
-                return (
-                  <button
-                    key={row.unit.id}
-                    type="button"
-                    onClick={() => scrollToCandling(idx)}
-                    className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                    aria-label={`Scroll to ${row.unit.name} (${row.status}, ${idx + 1} of ${rows.length})`}
-                    aria-current={isActive ? "true" : undefined}
-                  >
-                    <span
-                      className="rounded-full transition-all duration-200 motion-reduce:transition-none"
-                      style={{
-                        width: 5,
-                        height: isActive ? 15 : 5,
-                        backgroundColor: isActive
-                          ? "var(--brand-primary)"
-                          : color,
-                        boxShadow: isActive ? "0 0 6px rgba(173, 58, 29, 0.4)" : "none",
-                      }}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="overflow-hidden rounded-2xl" style={{ backgroundColor: SUBTLE, borderColor: BORDER, border: `1px solid ${BORDER}` }}>
-          <PaginationBar
-            className="border-b border-t-0"
-            page={safePage}
-            pageSize={rowsPerPage}
+            {rows.length > 1 && (
+              <fieldset
+                className="scrollbar-none fixed right-1.5 top-1/2 z-30 m-0 flex max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto overscroll-contain rounded-full px-1 py-2 max-[20rem]:hidden md:hidden"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.92)",
+                  backdropFilter: "blur(12px)",
+                  border: "1px solid rgba(232, 226, 213, 0.95)",
+                  boxShadow: "0 4px 14px rgba(45, 26, 14, 0.12)",
+                }}
+                aria-label={`Candling chamber index. Showing ${rows.length} chambers.`}
+              >
+                {rows.map((row, idx) => {
+                  const isActive = activeCardIndex === idx;
+                  const color = CANDLING_STATUS_COLORS[row.status] ?? "#8A6B52";
+                  return (
+                    <button
+                      key={row.unit.id}
+                      type="button"
+                      onClick={() => scrollToCandling(idx)}
+                      className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                      aria-label={`Scroll to ${row.unit.name} (${row.status}, ${idx + 1} of ${rows.length})`}
+                      title={`${row.unit.name}: ${statusMeta[row.status].label}`}
+                      aria-current={isActive ? "true" : undefined}
+                    >
+                      <span
+                        className="rounded-full transition-all duration-200 motion-reduce:transition-none"
+                        style={{
+                          width: 5,
+                          height: isActive ? 15 : 5,
+                          backgroundColor: isActive
+                            ? "var(--brand-primary)"
+                            : color,
+                          boxShadow: isActive
+                            ? "0 0 6px rgba(173, 58, 29, 0.4)"
+                            : "none",
+                        }}
+                      />
+                    </button>
+                  );
+                })}
+              </fieldset>
+            )}
+          </>
+        ) : (
+          <div
+            className="overflow-hidden rounded-2xl"
+            style={{
+              backgroundColor: SUBTLE,
+              borderColor: BORDER,
+              border: `1px solid ${BORDER}`,
+            }}
+          >
+            <PaginationBar
+              className="border-b border-t-0"
+              page={safePage}
+              pageSize={rowsPerPage}
               totalItems={rows.length}
               itemLabel="chambers"
               pageSizeOptions={[10, 20, 50]}
@@ -594,58 +793,191 @@ export function CandlingLogsScreen({
 
             <div className="h-[560px] overflow-auto">
               <Table>
-                <TableCaption className="sr-only">Candling inspection status by incubator chamber</TableCaption>
+                <TableCaption className="sr-only">
+                  Candling inspection status by incubator chamber
+                </TableCaption>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="sticky top-0 z-10" style={{ backgroundColor: SUBTLE, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>CHAMBER</TableHead>
-                    <TableHead className="sticky top-0 z-10" style={{ backgroundColor: SUBTLE, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>NEXT CHECK</TableHead>
-                    <TableHead className="sticky top-0 z-10" style={{ backgroundColor: SUBTLE, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>LAST LOGGED</TableHead>
-                    <TableHead className="sticky top-0 z-10" style={{ backgroundColor: SUBTLE, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>STATUS</TableHead>
-                    <TableHead className="sticky top-0 z-10 text-right" style={{ backgroundColor: SUBTLE, borderBottom: `1px solid ${BORDER}`, color: "var(--text-muted)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase" }}>ACTIONS</TableHead>
+                    <TableHead
+                      className="sticky top-0 z-10"
+                      style={{
+                        backgroundColor: SUBTLE,
+                        borderBottom: `1px solid ${BORDER}`,
+                        color: "var(--text-muted)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      CHAMBER
+                    </TableHead>
+                    <TableHead
+                      className="sticky top-0 z-10"
+                      style={{
+                        backgroundColor: SUBTLE,
+                        borderBottom: `1px solid ${BORDER}`,
+                        color: "var(--text-muted)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      NEXT CHECK
+                    </TableHead>
+                    <TableHead
+                      className="sticky top-0 z-10"
+                      style={{
+                        backgroundColor: SUBTLE,
+                        borderBottom: `1px solid ${BORDER}`,
+                        color: "var(--text-muted)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      LAST LOGGED
+                    </TableHead>
+                    <TableHead
+                      className="sticky top-0 z-10"
+                      style={{
+                        backgroundColor: SUBTLE,
+                        borderBottom: `1px solid ${BORDER}`,
+                        color: "var(--text-muted)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      STATUS
+                    </TableHead>
+                    <TableHead
+                      className="sticky top-0 z-10 text-right"
+                      style={{
+                        backgroundColor: SUBTLE,
+                        borderBottom: `1px solid ${BORDER}`,
+                        color: "var(--text-muted)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      ACTIONS
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pagedRows.map((row) => {
                     const meta = statusMeta[row.status];
                     return (
-                      <TableRow key={row.unit.id} className="hover:bg-[var(--nav-hover-bg)]">
-                        <TableCell style={{ color: TEXT, whiteSpace: "normal" }}>
+                      <TableRow
+                        key={row.unit.id}
+                        className="hover:bg-[var(--nav-hover-bg)]"
+                      >
+                        <TableCell
+                          style={{ color: TEXT, whiteSpace: "normal" }}
+                        >
                           <div className="min-w-[190px]">
-                            <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-bold)" }}>
+                            <p
+                              style={{
+                                fontFamily: "var(--font-display)",
+                                fontSize: "var(--type-heading-sm)",
+                                fontWeight: "var(--weight-bold)",
+                              }}
+                            >
                               {row.unit.name}
                             </p>
-                            <p className="mt-0.5" style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
+                            <p
+                              className="mt-0.5"
+                              style={{
+                                color: MUTED,
+                                fontSize: "var(--type-caption)",
+                              }}
+                            >
                               {row.mode.name}
                             </p>
-                            <p className="mt-1" style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
-                              {row.unit.candlingLog.length} {row.unit.candlingLog.length === 1 ? "inspection" : "inspections"} logged
+                            <p
+                              className="mt-1"
+                              style={{
+                                color: MUTED,
+                                fontSize: "var(--type-caption)",
+                              }}
+                            >
+                              {row.unit.candlingLog.length}{" "}
+                              {row.unit.candlingLog.length === 1
+                                ? "inspection"
+                                : "inspections"}{" "}
+                              logged
                             </p>
                           </div>
                         </TableCell>
 
                         <TableCell style={{ whiteSpace: "normal" }}>
                           <div className="min-w-[155px]">
-                            <p style={{ color: TEXT, fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)" }}>
-                              {row.nextCheckpoint?.label ?? (row.status === "ended" ? "Cycle ended" : "All checkpoints logged")}
+                            <p
+                              style={{
+                                color: TEXT,
+                                fontSize: "var(--type-body-sm)",
+                                fontWeight: "var(--weight-semibold)",
+                              }}
+                            >
+                              {row.nextCheckpoint?.label ??
+                                (row.status === "ended"
+                                  ? "Cycle ended"
+                                  : "All checkpoints logged")}
                             </p>
-                            <p className="mt-0.5" style={{ color: row.status === "overdue" ? meta.fg : MUTED, fontSize: "var(--type-caption)", fontWeight: row.status === "overdue" ? "var(--weight-bold)" : "var(--weight-regular)" }}>
-                              {row.nextCheckpoint ? `Day ${row.nextCheckpoint.day} · ${row.nextCheckpoint.dayRange}` : meta.description}
+                            <p
+                              className="mt-0.5"
+                              style={{
+                                color:
+                                  row.status === "overdue" ? meta.fg : MUTED,
+                                fontSize: "var(--type-caption)",
+                                fontWeight:
+                                  row.status === "overdue"
+                                    ? "var(--weight-bold)"
+                                    : "var(--weight-regular)",
+                              }}
+                            >
+                              {row.nextCheckpoint
+                                ? `Day ${row.nextCheckpoint.day} · ${row.nextCheckpoint.dayRange}`
+                                : meta.description}
                             </p>
                           </div>
                         </TableCell>
 
                         <TableCell style={{ whiteSpace: "normal" }}>
                           <div className="min-w-[155px]">
-                            <p style={{ color: TEXT, fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)" }}>
-                              {row.latestLog ? formatLogDate(row.latestLog.date) : "No inspection yet"}
+                            <p
+                              style={{
+                                color: TEXT,
+                                fontSize: "var(--type-body-sm)",
+                                fontWeight: "var(--weight-semibold)",
+                              }}
+                            >
+                              {row.latestLog
+                                ? formatLogDate(row.latestLog.date)
+                                : "No inspection yet"}
                             </p>
-                            <p className="mt-0.5" style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
-                              {row.latestLog?.label ?? "Start with the first checkpoint"}
+                            <p
+                              className="mt-0.5"
+                              style={{
+                                color: MUTED,
+                                fontSize: "var(--type-caption)",
+                              }}
+                            >
+                              {row.latestLog?.label ??
+                                "Start with the first checkpoint"}
                             </p>
                           </div>
                         </TableCell>
 
-                        <TableCell><StatusTag status={row.status} /></TableCell>
+                        <TableCell>
+                          <StatusTag status={row.status} />
+                        </TableCell>
 
                         <TableCell className="text-right">
                           <Button
@@ -655,7 +987,11 @@ export function CandlingLogsScreen({
                             className="rounded-xl"
                             onClick={() => onOpenCandling(row.unit.id)}
                             aria-label={`Open candling log for ${row.unit.name}`}
-                            style={{ borderColor: BORDER, color: RUST, backgroundColor: SURFACE }}
+                            style={{
+                              borderColor: BORDER,
+                              color: RUST,
+                              backgroundColor: SURFACE,
+                            }}
                           >
                             Open log <ArrowRight size={15} aria-hidden="true" />
                           </Button>

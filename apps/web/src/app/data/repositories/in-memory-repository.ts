@@ -1,9 +1,18 @@
-import { connectionStateFromPairing, deriveConditionState } from "../../domain/cycle";
+import {
+  connectionStateFromPairing,
+  deriveConditionState,
+} from "../../domain/cycle";
 import { localDateString } from "../../domain/date";
 import { validateHarvestCounts } from "../../domain/fertility";
 import { resetChamberToReady } from "../../domain/incubator";
 import type { Result } from "../../domain/result";
-import type { AbortedCycleRecord, AlertEntry, HatchRecord, Incubator, Mode } from "../../domain/types";
+import type {
+  AbortedCycleRecord,
+  AlertEntry,
+  HatchRecord,
+  Incubator,
+  Mode,
+} from "../../domain/types";
 import { createAlertFixtures } from "../fixtures/alerts";
 import { createHatchRecordFixtures } from "../fixtures/hatch-records";
 import { createIncubatorFixtures } from "../fixtures/incubators";
@@ -30,11 +39,20 @@ export interface InMemoryRepositoryOptions {
 
 const clone = <T>(value: T): T => structuredClone(value);
 const ok = <T>(data: T): Result<T> => ({ ok: true, data: clone(data) });
-const error = (code: string, message: string, details?: unknown): Result<never> => ({
+const error = (
+  code: string,
+  message: string,
+  details?: unknown,
+): Result<never> => ({
   ok: false,
   error: { code, message, details },
 });
-const unreachableDeviceIds = new Set(["EGG-0000", "EGG-9999", "EGG-1005", "EGG-1010"]);
+const unreachableDeviceIds = new Set([
+  "EGG-0000",
+  "EGG-9999",
+  "EGG-1005",
+  "EGG-1010",
+]);
 
 export class InMemoryEggcelerateRepository implements EggcelerateRepository {
   private incubators: Incubator[];
@@ -47,7 +65,9 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
   private readonly now: () => Date;
   private readonly latencyMs: number;
   private readonly failOperations: Set<RepositoryOperation>;
-  private readonly failureModes: Partial<Record<RepositoryOperation, RepositoryFailureMode>>;
+  private readonly failureModes: Partial<
+    Record<RepositoryOperation, RepositoryFailureMode>
+  >;
   private readonly historyAnchorMs: number;
 
   constructor(options: InMemoryRepositoryOptions = {}) {
@@ -64,22 +84,37 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     this.settings = clone(initialSettings);
   }
 
-  private async execute<T>(operation: RepositoryOperation, action: () => Result<T>): Promise<Result<T>> {
+  private async execute<T>(
+    operation: RepositoryOperation,
+    action: () => Result<T>,
+  ): Promise<Result<T>> {
     if (this.latencyMs > 0) {
       await new Promise<void>((resolve) => setTimeout(resolve, this.latencyMs));
     }
     if (this.failOperations.has(operation)) {
-      return error("simulated_failure", `${operation} failed in the in-memory repository.`);
+      return error(
+        "simulated_failure",
+        `${operation} failed in the in-memory repository.`,
+      );
     }
     const failureMode = this.failureModes[operation];
     if (failureMode === "offline") {
-      return error("offline", "The service is offline. Your last loaded data is still available.");
+      return error(
+        "offline",
+        "The service is offline. Your last loaded data is still available.",
+      );
     }
     if (failureMode === "rejected") {
-      return error("rejected", `${operation} was rejected. Review the change and try again.`);
+      return error(
+        "rejected",
+        `${operation} was rejected. Review the change and try again.`,
+      );
     }
     if (failureMode === "timeout") {
-      return error("timeout", `${operation} timed out before it was confirmed.`);
+      return error(
+        "timeout",
+        `${operation} timed out before it was confirmed.`,
+      );
     }
     try {
       return action();
@@ -97,12 +132,16 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     return `${prefix}-${this.now().getTime()}-${this.sequence}`;
   }
 
-  listIncubators() { return this.execute("listIncubators", () => ok(this.incubators)); }
+  listIncubators() {
+    return this.execute("listIncubators", () => ok(this.incubators));
+  }
 
   getIncubator(id: string) {
     return this.execute("getIncubator", () => {
       const unit = this.incubators.find((candidate) => candidate.id === id);
-      return unit ? ok(unit) : error("not_found", `Incubator ${id} was not found.`);
+      return unit
+        ? ok(unit)
+        : error("not_found", `Incubator ${id} was not found.`);
     });
   }
 
@@ -113,10 +152,16 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       }
       const mode = this.modes.find((candidate) => candidate.id === unit.modeId);
       if (!mode) {
-        return error("validation_error", `Mode ${unit.modeId} is not available for this incubator.`);
+        return error(
+          "validation_error",
+          `Mode ${unit.modeId} is not available for this incubator.`,
+        );
       }
       if (unreachableDeviceIds.has(unit.deviceId.toUpperCase())) {
-        return error("offline", `Device ${unit.deviceId} is offline. Check its power and network connection.`);
+        return error(
+          "offline",
+          `Device ${unit.deviceId} is offline. Check its power and network connection.`,
+        );
       }
       const created: Incubator = {
         ...clone(unit),
@@ -140,15 +185,27 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
 
   updateIncubator(id: string, patch: Partial<Incubator>) {
     return this.execute("updateIncubator", () => {
-      const index = this.incubators.findIndex((candidate) => candidate.id === id);
-      if (index < 0) return error("not_found", `Incubator ${id} was not found.`);
-      if (patch.paired === true && unreachableDeviceIds.has(this.incubators[index].deviceId.toUpperCase())) {
-        return error("offline", `Device ${this.incubators[index].deviceId} is offline. Check its power and network connection.`);
+      const index = this.incubators.findIndex(
+        (candidate) => candidate.id === id,
+      );
+      if (index < 0)
+        return error("not_found", `Incubator ${id} was not found.`);
+      if (
+        patch.paired === true &&
+        unreachableDeviceIds.has(this.incubators[index].deviceId.toUpperCase())
+      ) {
+        return error(
+          "offline",
+          `Device ${this.incubators[index].deviceId} is offline. Check its power and network connection.`,
+        );
       }
       const next = { ...this.incubators[index], ...clone(patch), id };
       const mode = this.modes.find((candidate) => candidate.id === next.modeId);
       if (!mode) {
-        return error("validation_error", `Mode ${next.modeId} is not available for this incubator.`);
+        return error(
+          "validation_error",
+          `Mode ${next.modeId} is not available for this incubator.`,
+        );
       }
       const condition = deriveConditionState({
         paired: next.paired,
@@ -161,8 +218,13 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         powerSource: next.powerSource,
         nextTurn: next.nextTurn,
       });
-      const connectionState = patch.connectionState
-        ?? (patch.paired !== undefined ? (next.paired ? "connected" : "offline") : next.connectionState);
+      const connectionState =
+        patch.connectionState ??
+        (patch.paired !== undefined
+          ? next.paired
+            ? "connected"
+            : "offline"
+          : next.connectionState);
       const updated: Incubator = { ...next, ...condition, connectionState };
       this.incubators[index] = updated;
       return ok(updated);
@@ -171,18 +233,32 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
 
   listReadings(query: ReadingQuery) {
     return this.execute("listReadings", () => {
-      const unit = this.incubators.find((candidate) => candidate.id === query.incubatorId);
-      if (!unit) return error("not_found", `Incubator ${query.incubatorId} was not found.`);
+      const unit = this.incubators.find(
+        (candidate) => candidate.id === query.incubatorId,
+      );
+      if (!unit)
+        return error(
+          "not_found",
+          `Incubator ${query.incubatorId} was not found.`,
+        );
       const mode = this.modes.find((candidate) => candidate.id === unit.modeId);
-      if (!mode) return error("not_found", `Mode ${unit.modeId} was not found.`);
-      const hours = query.window === "24h" ? 24 : query.window === "7d" ? 24 * 7 : null;
-      const cutoff = hours === null ? 0 : this.historyAnchorMs - hours * 3_600_000;
-      return ok(createReadingFixtures(unit, mode, this.historyAnchorMs)
-        .filter((reading) => reading.ts >= cutoff));
+      if (!mode)
+        return error("not_found", `Mode ${unit.modeId} was not found.`);
+      const hours =
+        query.window === "24h" ? 24 : query.window === "7d" ? 24 * 7 : null;
+      const cutoff =
+        hours === null ? 0 : this.historyAnchorMs - hours * 3_600_000;
+      return ok(
+        createReadingFixtures(unit, mode, this.historyAnchorMs).filter(
+          (reading) => reading.ts >= cutoff,
+        ),
+      );
     });
   }
 
-  listModes() { return this.execute("listModes", () => ok(this.modes)); }
+  listModes() {
+    return this.execute("listModes", () => ok(this.modes));
+  }
 
   addMode(mode: Mode) {
     return this.execute("addMode", () => {
@@ -200,20 +276,24 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       if (index < 0) return error("not_found", `Mode ${id} was not found.`);
       const updated = { ...this.modes[index], ...clone(patch), id };
       this.modes[index] = updated;
-      this.incubators = this.incubators.map((unit) => unit.modeId !== id ? unit : {
-        ...unit,
-        ...deriveConditionState({
-          paired: unit.paired,
-          temp: unit.temp,
-          targetTemp: updated.targetTemp,
-          humidity: unit.humidity,
-          targetHumidity: updated.targetHumidity,
-          waterOk: unit.waterOk,
-          batteryPct: unit.batteryPct,
-          powerSource: unit.powerSource,
-          nextTurn: unit.nextTurn,
-        }),
-      });
+      this.incubators = this.incubators.map((unit) =>
+        unit.modeId !== id
+          ? unit
+          : {
+              ...unit,
+              ...deriveConditionState({
+                paired: unit.paired,
+                temp: unit.temp,
+                targetTemp: updated.targetTemp,
+                humidity: unit.humidity,
+                targetHumidity: updated.targetHumidity,
+                waterOk: unit.waterOk,
+                batteryPct: unit.batteryPct,
+                powerSource: unit.powerSource,
+                nextTurn: unit.nextTurn,
+              }),
+            },
+      );
       return ok(updated);
     });
   }
@@ -224,14 +304,19 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         return error("not_found", `Mode ${id} was not found.`);
       }
       if (this.incubators.some((unit) => unit.modeId === id)) {
-        return error("conflict", "This mode is still assigned to an incubator.");
+        return error(
+          "conflict",
+          "This mode is still assigned to an incubator.",
+        );
       }
       this.modes = this.modes.filter((mode) => mode.id !== id);
       return ok({ id });
     });
   }
 
-  listAlerts() { return this.execute("listAlerts", () => ok(this.alerts)); }
+  listAlerts() {
+    return this.execute("listAlerts", () => ok(this.alerts));
+  }
 
   acknowledgeAlert(id: string) {
     return this.execute("acknowledgeAlert", () => {
@@ -255,7 +340,10 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
 
   markAllAlertsRead() {
     return this.execute("markAllAlertsRead", () => {
-      this.alerts = this.alerts.map((alert) => ({ ...alert, acknowledged: true }));
+      this.alerts = this.alerts.map((alert) => ({
+        ...alert,
+        acknowledged: true,
+      }));
       return ok(this.alerts);
     });
   }
@@ -267,11 +355,16 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     });
   }
 
-  listHatchRecords() { return this.execute("listHatchRecords", () => ok(this.hatchRecords)); }
+  listHatchRecords() {
+    return this.execute("listHatchRecords", () => ok(this.hatchRecords));
+  }
 
   private createHarvestRecord(input: HarvestInput): Result<HatchRecord> {
     if (!Number.isInteger(input.cycleDays) || input.cycleDays < 1) {
-      return error("validation_error", "Cycle days must be a positive whole number.");
+      return error(
+        "validation_error",
+        "Cycle days must be a positive whole number.",
+      );
     }
     const validationError = validateHarvestCounts(input);
     if (validationError) return error("validation_error", validationError);
@@ -304,8 +397,14 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
 
   completeCycle(input: CompleteCycleInput) {
     return this.execute("completeCycle", () => {
-      const index = this.incubators.findIndex((candidate) => candidate.id === input.incubatorId);
-      if (index < 0) return error("not_found", `Incubator ${input.incubatorId} was not found.`);
+      const index = this.incubators.findIndex(
+        (candidate) => candidate.id === input.incubatorId,
+      );
+      if (index < 0)
+        return error(
+          "not_found",
+          `Incubator ${input.incubatorId} was not found.`,
+        );
       const result = this.createHarvestRecord(input);
       if (!result.ok) return result;
       const incubator = {
@@ -318,22 +417,35 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     });
   }
 
-  listAbortedCycles() { return this.execute("listAbortedCycles", () => ok(this.abortedCycles)); }
+  listAbortedCycles() {
+    return this.execute("listAbortedCycles", () => ok(this.abortedCycles));
+  }
 
-  private createAbortedCycleRecord(input: AbortedCycleInput): Result<AbortedCycleRecord> {
+  private createAbortedCycleRecord(
+    input: AbortedCycleInput,
+  ): Result<AbortedCycleRecord> {
     if (!Number.isInteger(input.dayStopped) || input.dayStopped < 0) {
-      return error("validation_error", "Stopped day must be a non-negative whole number.");
+      return error(
+        "validation_error",
+        "Stopped day must be a non-negative whole number.",
+      );
     }
     if (!Number.isInteger(input.totalEggs) || input.totalEggs < 0) {
-      return error("validation_error", "Total eggs must be a non-negative whole number.");
+      return error(
+        "validation_error",
+        "Total eggs must be a non-negative whole number.",
+      );
     }
     if (
-      input.fertileEggs !== null
-      && (!Number.isInteger(input.fertileEggs)
-        || input.fertileEggs < 0
-        || input.fertileEggs > input.totalEggs)
+      input.fertileEggs !== null &&
+      (!Number.isInteger(input.fertileEggs) ||
+        input.fertileEggs < 0 ||
+        input.fertileEggs > input.totalEggs)
     ) {
-      return error("validation_error", "Fertile eggs must be between zero and total eggs.");
+      return error(
+        "validation_error",
+        "Fertile eggs must be between zero and total eggs.",
+      );
     }
     return {
       ok: true,
@@ -360,8 +472,14 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
 
   stopCycle(input: StopCycleInput) {
     return this.execute("stopCycle", () => {
-      const index = this.incubators.findIndex((candidate) => candidate.id === input.incubatorId);
-      if (index < 0) return error("not_found", `Incubator ${input.incubatorId} was not found.`);
+      const index = this.incubators.findIndex(
+        (candidate) => candidate.id === input.incubatorId,
+      );
+      if (index < 0)
+        return error(
+          "not_found",
+          `Incubator ${input.incubatorId} was not found.`,
+        );
       const result = this.createAbortedCycleRecord(input);
       if (!result.ok) return result;
       const incubator: Incubator = {
@@ -375,12 +493,20 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     });
   }
 
-  listSettings() { return this.execute("listSettings", () => ok(this.settings)); }
+  listSettings() {
+    return this.execute("listSettings", () => ok(this.settings));
+  }
 
   saveSettings(settings: SettingsPreferences) {
     return this.execute("saveSettings", () => {
-      if (!settings.account.farmName.trim() || !settings.account.accountHolder.trim()) {
-        return error("validation_error", "Farm name and account holder are required.");
+      if (
+        !settings.account.farmName.trim() ||
+        !settings.account.accountHolder.trim()
+      ) {
+        return error(
+          "validation_error",
+          "Farm name and account holder are required.",
+        );
       }
       this.settings = clone(settings);
       return ok(this.settings);

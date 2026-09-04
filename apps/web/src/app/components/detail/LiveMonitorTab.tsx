@@ -1,4 +1,4 @@
-import React from "react";
+import { WifiSlash } from "@phosphor-icons/react";
 import {
   ArrowUpRight,
   BatteryMedium,
@@ -13,16 +13,18 @@ import {
   Wifi,
   Zap,
 } from "lucide-react";
-import { WifiSlash } from "@phosphor-icons/react";
+import type React from "react";
+import type {
+  CandlingCheckpoint,
+  Incubator,
+  Mode,
+  Reading,
+} from "../../domain/types";
 import { GaugeDial } from "../GaugeDial";
 import { WaterDroplet } from "../WaterDroplet";
-import type { CandlingCheckpoint, Incubator, Mode, Reading } from "../../domain/types";
-import {
-  RUST, BORDER, TEXT, MUTED,
-  OK, WARN, CRIT, NEUTRAL,
-} from "./types";
 import { SectionCard } from "./primitives";
 import { Timeline } from "./Timeline";
+import { BORDER, CRIT, MUTED, NEUTRAL, OK, RUST, TEXT, WARN } from "./types";
 
 type StatusTone = typeof OK;
 
@@ -82,7 +84,11 @@ function SystemStatusTile({
 function readingStamp(ts: number) {
   const date = new Date(ts);
   return {
-    date: date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }),
+    date: date.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
     time: date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
   };
 }
@@ -102,9 +108,14 @@ function ExtremumTile({
 }) {
   const stamp = readingStamp(reading.ts);
   return (
-    <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}>
+    <div
+      className="rounded-xl px-3.5 py-3"
+      style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
+    >
       <div className="flex items-center gap-2">
-        <span aria-hidden="true" style={{ color: RUST }}>{icon}</span>
+        <span aria-hidden="true" style={{ color: RUST }}>
+          {icon}
+        </span>
         <span
           style={{
             color: MUTED,
@@ -171,29 +182,44 @@ function EnvironmentalSummary({
 }) {
   if (readings.length === 0) return null;
 
-  const highestTemp = readings.reduce((best, reading) => (reading.temp > best.temp ? reading : best), readings[0]);
-  const lowestTemp = readings.reduce((best, reading) => (reading.temp < best.temp ? reading : best), readings[0]);
-  const highestHumidity = readings.reduce((best, reading) => (reading.humidity > best.humidity ? reading : best), readings[0]);
-  const lowestHumidity = readings.reduce((best, reading) => (reading.humidity < best.humidity ? reading : best), readings[0]);
+  const highestTemp = readings.reduce(
+    (best, reading) => (reading.temp > best.temp ? reading : best),
+    readings[0],
+  );
+  const lowestTemp = readings.reduce(
+    (best, reading) => (reading.temp < best.temp ? reading : best),
+    readings[0],
+  );
+  const highestHumidity = readings.reduce(
+    (best, reading) => (reading.humidity > best.humidity ? reading : best),
+    readings[0],
+  );
+  const lowestHumidity = readings.reduce(
+    (best, reading) => (reading.humidity < best.humidity ? reading : best),
+    readings[0],
+  );
   const latest = [...readings].sort((a, b) => b.ts - a.ts).slice(0, 3);
 
   const tempLowDelta = mode.targetTemp.min - lowestTemp.temp;
   const tempHighDelta = highestTemp.temp - mode.targetTemp.max;
-  const temperatureException = tempLowDelta <= 0 && tempHighDelta <= 0
-    ? null
-    : tempHighDelta >= tempLowDelta
-      ? { direction: "high" as const, value: highestTemp.temp }
-      : { direction: "low" as const, value: lowestTemp.temp };
+  const temperatureException =
+    tempLowDelta <= 0 && tempHighDelta <= 0
+      ? null
+      : tempHighDelta >= tempLowDelta
+        ? { direction: "high" as const, value: highestTemp.temp }
+        : { direction: "low" as const, value: lowestTemp.temp };
 
   const humidityLowDelta = mode.targetHumidity.min - lowestHumidity.humidity;
   const humidityHighDelta = highestHumidity.humidity - mode.targetHumidity.max;
-  const humidityException = humidityLowDelta <= 0 && humidityHighDelta <= 0
-    ? null
-    : humidityHighDelta >= humidityLowDelta
-      ? { direction: "high" as const, value: highestHumidity.humidity }
-      : { direction: "low" as const, value: lowestHumidity.humidity };
+  const humidityException =
+    humidityLowDelta <= 0 && humidityHighDelta <= 0
+      ? null
+      : humidityHighDelta >= humidityLowDelta
+        ? { direction: "high" as const, value: highestHumidity.humidity }
+        : { direction: "low" as const, value: lowestHumidity.humidity };
 
-  const hasExceptions = temperatureException !== null || humidityException !== null;
+  const hasExceptions =
+    temperatureException !== null || humidityException !== null;
 
   return (
     <SectionCard
@@ -210,13 +236,19 @@ function EnvironmentalSummary({
         </button>
       }
     >
-      <details className="group rounded-2xl" style={{ border: `1px solid ${BORDER}`, backgroundColor: "#FCFAF6" }}>
+      <details
+        className="group rounded-2xl"
+        style={{ border: `1px solid ${BORDER}`, backgroundColor: "#FCFAF6" }}
+      >
         <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
           <div className="min-w-0">
             <p style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>
               {hasExceptions ? "Cycle exceptions" : "Cycle stability"}
             </p>
-            <p className="mt-0.5 grid gap-1 tabular-nums" style={{ color: MUTED, fontSize: 12 }}>
+            <p
+              className="mt-0.5 grid gap-1 tabular-nums"
+              style={{ color: MUTED, fontSize: 12 }}
+            >
               <span className="inline-flex items-center gap-1">
                 <Thermometer size={13} aria-hidden="true" />
                 {temperatureException
@@ -231,33 +263,87 @@ function EnvironmentalSummary({
               </span>
             </p>
           </div>
-          <span className="inline-flex shrink-0 items-center gap-1.5" style={{ color: RUST, fontSize: 12, fontWeight: 700 }}>
+          <span
+            className="inline-flex shrink-0 items-center gap-1.5"
+            style={{ color: RUST, fontSize: 12, fontWeight: 700 }}
+          >
             Review history
-            <ChevronDown size={16} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+            <ChevronDown
+              size={16}
+              aria-hidden="true"
+              className="transition-transform group-open:rotate-180"
+            />
           </span>
         </summary>
 
         <div className="border-t p-4" style={{ borderColor: BORDER }}>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            <ExtremumTile label="Highest temperature" value={highestTemp.temp.toFixed(1)} unit="°C" reading={highestTemp} icon={<TrendingUp size={15} />} />
-            <ExtremumTile label="Lowest temperature" value={lowestTemp.temp.toFixed(1)} unit="°C" reading={lowestTemp} icon={<TrendingDown size={15} />} />
-            <ExtremumTile label="Highest humidity" value={highestHumidity.humidity.toFixed(1)} unit="% RH" reading={highestHumidity} icon={<TrendingUp size={15} />} />
-            <ExtremumTile label="Lowest humidity" value={lowestHumidity.humidity.toFixed(1)} unit="% RH" reading={lowestHumidity} icon={<TrendingDown size={15} />} />
+            <ExtremumTile
+              label="Highest temperature"
+              value={highestTemp.temp.toFixed(1)}
+              unit="°C"
+              reading={highestTemp}
+              icon={<TrendingUp size={15} />}
+            />
+            <ExtremumTile
+              label="Lowest temperature"
+              value={lowestTemp.temp.toFixed(1)}
+              unit="°C"
+              reading={lowestTemp}
+              icon={<TrendingDown size={15} />}
+            />
+            <ExtremumTile
+              label="Highest humidity"
+              value={highestHumidity.humidity.toFixed(1)}
+              unit="% RH"
+              reading={highestHumidity}
+              icon={<TrendingUp size={15} />}
+            />
+            <ExtremumTile
+              label="Lowest humidity"
+              value={lowestHumidity.humidity.toFixed(1)}
+              unit="% RH"
+              reading={lowestHumidity}
+              icon={<TrendingDown size={15} />}
+            />
           </div>
 
           <div className="mt-4 border-t pt-3" style={{ borderColor: BORDER }}>
-            <p style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>Recent readings</p>
+            <p style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>
+              Recent readings
+            </p>
             <div className="mt-1 divide-y" style={{ borderColor: BORDER }}>
               {latest.map((reading) => {
                 const stamp = readingStamp(reading.ts);
                 return (
-                  <div key={reading.ts} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                  <div
+                    key={reading.ts}
+                    className="flex flex-wrap items-center justify-between gap-2 py-2.5"
+                  >
                     <div>
-                      <p className="tabular-nums" style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>{stamp.date} at {stamp.time}</p>
+                      <p
+                        className="tabular-nums"
+                        style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}
+                      >
+                        {stamp.date} at {stamp.time}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-3 tabular-nums" style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
-                      <span className="inline-flex items-center gap-1"><Thermometer size={13} color={RUST} aria-hidden="true" />{reading.temp.toFixed(1)}°C</span>
-                      <span className="inline-flex items-center gap-1"><Droplets size={13} color={RUST} aria-hidden="true" />{reading.humidity.toFixed(1)}%</span>
+                    <div
+                      className="flex items-center gap-3 tabular-nums"
+                      style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        <Thermometer
+                          size={13}
+                          color={RUST}
+                          aria-hidden="true"
+                        />
+                        {reading.temp.toFixed(1)}°C
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Droplets size={13} color={RUST} aria-hidden="true" />
+                        {reading.humidity.toFixed(1)}%
+                      </span>
                     </div>
                   </div>
                 );
@@ -299,9 +385,17 @@ export function LiveMonitorTab({
   return (
     <div className="space-y-5">
       <SectionCard title="Incubation Timeline">
-        <Timeline currentDay={currentDay} totalDays={totalDays} candling={candling} candled={effectiveCandled} />
+        <Timeline
+          currentDay={currentDay}
+          totalDays={totalDays}
+          candling={candling}
+          candled={effectiveCandled}
+        />
         <div className="my-4" style={{ height: 1, backgroundColor: BORDER }} />
-        <div className="grid grid-cols-1 items-start sm:grid-cols-3" style={{ gap: 24 }}>
+        <div
+          className="grid grid-cols-1 items-start sm:grid-cols-3"
+          style={{ gap: 24 }}
+        >
           <GaugeDial
             value={unit.temp}
             min={30}
@@ -324,7 +418,10 @@ export function LiveMonitorTab({
         </div>
       </SectionCard>
 
-      <SectionCard title="Chamber status" subtitle="Live systems, power, and connectivity">
+      <SectionCard
+        title="Chamber status"
+        subtitle="Live systems, power, and connectivity"
+      >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <SystemStatusTile
             icon={<Flame size={18} />}
@@ -347,11 +444,19 @@ export function LiveMonitorTab({
           <SystemStatusTile
             icon={<Zap size={18} />}
             label="Power"
-            value={unit.powerSource === "battery" ? "Battery power" : "Grid power"}
+            value={
+              unit.powerSource === "battery" ? "Battery power" : "Grid power"
+            }
             tone={unit.powerSource === "battery" ? WARN : OK}
           />
           <SystemStatusTile
-            icon={unit.paired ? <Wifi size={18} /> : <WifiSlash size={18} weight="fill" />}
+            icon={
+              unit.paired ? (
+                <Wifi size={18} />
+              ) : (
+                <WifiSlash size={18} weight="fill" />
+              )
+            }
             label="Connection"
             value={unit.paired ? "Connected" : "Offline"}
             tone={unit.paired ? OK : CRIT}
@@ -359,13 +464,21 @@ export function LiveMonitorTab({
           <SystemStatusTile
             icon={<BatteryMedium size={18} />}
             label="Battery"
-            value={unit.batteryPct <= 25 ? `${unit.batteryPct}% · Low` : `${unit.batteryPct}%`}
+            value={
+              unit.batteryPct <= 25
+                ? `${unit.batteryPct}% · Low`
+                : `${unit.batteryPct}%`
+            }
             tone={unit.batteryPct <= 25 ? CRIT : OK}
           />
         </div>
       </SectionCard>
 
-      <EnvironmentalSummary readings={environmentalReadings} mode={mode} onViewTrends={onOpenTrends} />
+      <EnvironmentalSummary
+        readings={environmentalReadings}
+        mode={mode}
+        onViewTrends={onOpenTrends}
+      />
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import type { ReactNode, SVGProps } from "react";
 
-export type CustomIconProps = Omit<SVGProps<SVGSVGElement>, "color" | "title"> & {
+export type CustomIconProps = Omit<
+  SVGProps<SVGSVGElement>,
+  "color" | "title"
+> & {
   size?: number | string;
   color?: string;
   foregroundColor?: string;

@@ -1,4 +1,4 @@
-import * as React from "react";
+import type * as React from "react";
 import logoApp from "../../../imports/logo-app.webp";
 export function AuthCard({ children }: { children: React.ReactNode }) {
   return (

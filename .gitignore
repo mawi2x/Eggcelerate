@@ -32,10 +32,12 @@ yarn-debug.log*
 # vite cache
 .vite/
 
-# documentation folders (markdown) — local only
+# documentation folders (markdown) — local only, except the guides committed as project record
 review/
 plans/
 guidelines/
 src/imports/pasted_text/
 flow/
-docs/
+docs/*
+!docs/guide
+!docs/SYSTEM_ARCHITECTURE_GUIDE.md

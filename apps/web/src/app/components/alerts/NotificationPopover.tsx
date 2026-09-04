@@ -1,9 +1,9 @@
+import { ArrowRight, Bell, X } from "lucide-react";
 import { useState } from "react";
-import { Bell, X, ArrowRight } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import type { AlertEntry } from "../../domain/types";
-import { severityStyle, timeAgo } from "./alertStyle";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { useIsMobile } from "../ui/use-mobile";
+import { severityStyle, timeAgo } from "./alertStyle";
 
 const RUST = "var(--brand-primary)";
 const TEXT = "var(--text-primary)";
@@ -78,14 +78,21 @@ export function NotificationPopover({
         align="end"
         sideOffset={10}
         className="w-[min(340px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-0 shadow-lg"
-        style={{ backgroundColor: "#FFFFFF", borderColor: BORDER, borderRadius: 12 }}
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderColor: BORDER,
+          borderRadius: 12,
+        }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between gap-3 px-4 py-3"
           style={{ borderBottom: `1px solid ${DIVIDER}` }}
         >
-          <span className="min-w-0 truncate" style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>
+          <span
+            className="min-w-0 truncate"
+            style={{ fontSize: 15, fontWeight: 700, color: TEXT }}
+          >
             Notifications
           </span>
           <button
@@ -103,7 +110,9 @@ export function NotificationPopover({
         {/* Body — five most recent */}
         {recent.length === 0 ? (
           <div className="px-4 py-10 text-center">
-            <p style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>You're all caught up</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>
+              You're all caught up
+            </p>
             <p className="mt-1" style={{ fontSize: 12, color: MUTED }}>
               No notifications right now. 🐣
             </p>
@@ -120,25 +129,37 @@ export function NotificationPopover({
                 >
                   <span
                     className="flex shrink-0 items-center justify-center rounded-lg"
-                    style={{ width: 32, height: 32, backgroundColor: s.bg, color: s.color }}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      backgroundColor: s.bg,
+                      color: s.color,
+                    }}
                   >
                     <s.Icon size={17} />
                   </span>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="min-w-0 truncate" style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
+                      <span
+                        className="min-w-0 truncate"
+                        style={{ fontSize: 13, fontWeight: 700, color: TEXT }}
+                      >
                         {a.title}
                       </span>
                       {!a.acknowledged && (
                         <span
                           className="h-1.5 w-1.5 shrink-0 rounded-full"
                           style={{ backgroundColor: RUST }}
+                          role="img"
                           aria-label="Unread"
                         />
                       )}
                     </div>
-                    <p className="truncate" style={{ fontSize: 11, color: MUTED }}>
+                    <p
+                      className="truncate"
+                      style={{ fontSize: 11, color: MUTED }}
+                    >
                       {a.unit} · {timeAgo(a.timestamp)}
                     </p>
                     {/* Snippet clamped to two lines so every item stays the same height. */}

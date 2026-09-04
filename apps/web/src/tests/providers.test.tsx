@@ -2,8 +2,14 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
 import type { EggcelerateRepository } from "../app/data/repositories/repository";
-import { requireResultData, RepositoryQueryError } from "../app/features/farm/repository-query";
-import { AppProviders, createAppQueryClient } from "../app/providers/AppProviders";
+import {
+  RepositoryQueryError,
+  requireResultData,
+} from "../app/features/farm/repository-query";
+import {
+  AppProviders,
+  createAppQueryClient,
+} from "../app/providers/AppProviders";
 import { useRepository } from "../app/providers/repository-context";
 
 describe("AppProviders", () => {
@@ -17,7 +23,10 @@ describe("AppProviders", () => {
     }
 
     const html = renderToString(
-      <AppProviders repository={repository} queryClient={createAppQueryClient()}>
+      <AppProviders
+        repository={repository}
+        queryClient={createAppQueryClient()}
+      >
         <Probe />
       </AppProviders>,
     );
@@ -27,9 +36,11 @@ describe("AppProviders", () => {
   });
 
   it("turns structured repository failures into query errors", () => {
-    expect(() => requireResultData({
-      ok: false,
-      error: { code: "offline", message: "Repository unavailable." },
-    })).toThrowError(RepositoryQueryError);
+    expect(() =>
+      requireResultData({
+        ok: false,
+        error: { code: "offline", message: "Repository unavailable." },
+      }),
+    ).toThrowError(RepositoryQueryError);
   });
 });

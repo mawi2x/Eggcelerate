@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 function formatDate(d: Date): string {
   // e.g. "Tuesday, Aug 25" — no year, browser local timezone, en-US

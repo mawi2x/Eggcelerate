@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { type ReactNode, useState } from "react";
 import type { EggcelerateRepository } from "../data/repositories/repository";
 import { MockAuthProvider } from "./auth-context";
 import { RepositoryProvider } from "./repository-context";
@@ -28,12 +28,16 @@ export function AppProviders({
   queryClient?: QueryClient;
   initiallyAuthenticated?: boolean;
 }) {
-  const [queryClient] = useState(() => providedQueryClient ?? createAppQueryClient());
+  const [queryClient] = useState(
+    () => providedQueryClient ?? createAppQueryClient(),
+  );
 
   return (
     <MockAuthProvider initiallyAuthenticated={initiallyAuthenticated}>
       <RepositoryProvider repository={repository}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
       </RepositoryProvider>
     </MockAuthProvider>
   );

@@ -1,21 +1,29 @@
+import { Feather, MapPin, User } from "lucide-react";
 import { useState } from "react";
-import { User, Feather, MapPin } from "lucide-react";
-import { AuthCard } from "./AuthCard";
-import { StepperBar } from "./StepperBar";
-import { FormInput } from "./FormInput";
 import { OnboardingStep1Schema } from "../../data/onboarding";
+import { AuthCard } from "./AuthCard";
+import { FormInput } from "./FormInput";
+import { StepperBar } from "./StepperBar";
 
 export function OnboardingStep1({
   onContinue,
   onHaveAccount,
 }: {
-  onContinue: (data: { name: string; farmName: string; location: string }) => void;
+  onContinue: (data: {
+    name: string;
+    farmName: string;
+    location: string;
+  }) => void;
   onHaveAccount: () => void;
 }) {
   const [name, setName] = useState("");
   const [farmName, setFarmName] = useState("");
   const [location, setLocation] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; farmName?: string; location?: string }>({});
+  const [errors, setErrors] = useState<{
+    name?: string;
+    farmName?: string;
+    location?: string;
+  }>({});
 
   const submit = () => {
     const r = OnboardingStep1Schema.safeParse({ name, farmName, location });

@@ -1,11 +1,11 @@
+import { Droplets, Thermometer } from "lucide-react";
 import { useState } from "react";
-import { Thermometer, Droplets } from "lucide-react";
-import { IncubatingIcon } from "../icons";
-import { AuthCard } from "./AuthCard";
-import { StepperBar } from "./StepperBar";
-import { FormInput } from "./FormInput";
 import { OnboardingStep3Schema } from "../../data/onboarding";
 import type { Mode } from "../../domain/types";
+import { IncubatingIcon } from "../icons";
+import { AuthCard } from "./AuthCard";
+import { FormInput } from "./FormInput";
+import { StepperBar } from "./StepperBar";
 
 export function OnboardingStep3({
   onEnter,
@@ -13,7 +13,10 @@ export function OnboardingStep3({
   onHaveAccount,
   modes,
 }: {
-  onEnter: (data: { chamberName: string; startingModeId: string }) => Promise<boolean>;
+  onEnter: (data: {
+    chamberName: string;
+    startingModeId: string;
+  }) => Promise<boolean>;
   onBack: () => void;
   onHaveAccount: () => void;
   modes: Mode[];
@@ -23,7 +26,8 @@ export function OnboardingStep3({
   const [error, setError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const mode = modes.find((candidate) => candidate.id === startingModeId) ?? modes[0];
+  const mode =
+    modes.find((candidate) => candidate.id === startingModeId) ?? modes[0];
 
   const submit = async () => {
     const r = OnboardingStep3Schema.safeParse({ chamberName, startingModeId });
@@ -86,7 +90,9 @@ export function OnboardingStep3({
         >
           Recommended starting Mode
         </p>
-        <div className="mt-2 rounded-2xl border border-[#F5E6CC] bg-[#FFFDF9] p-4"> {/* illustration exception per color-guidelines.md:163 */}
+        <div className="mt-2 rounded-2xl border border-[#F5E6CC] bg-[#FFFDF9] p-4">
+          {" "}
+          {/* illustration exception per color-guidelines.md:163 */}
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FCE4D6] text-[#AD3A1D]">
               <IncubatingIcon size={18} />
@@ -109,13 +115,17 @@ export function OnboardingStep3({
                   color: "var(--text-muted)",
                 }}
               >
-                {mode.targetTemp.min}°C · {mode.targetHumidity.min}% RH · {mode.incubationDays}-day cycle
+                {mode.targetTemp.min}°C · {mode.targetHumidity.min}% RH ·{" "}
+                {mode.incubationDays}-day cycle
               </span>
             </div>
           </div>
           <div className="mt-3.5 grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-white p-3 text-left">
-              <div className="flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+              <div
+                className="flex items-center gap-1.5"
+                style={{ color: "var(--text-muted)" }}
+              >
                 <Thermometer size={14} className="text-[#AD3A1D]" />
                 <span
                   style={{
@@ -141,7 +151,10 @@ export function OnboardingStep3({
               </p>
             </div>
             <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-white p-3 text-left">
-              <div className="flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+              <div
+                className="flex items-center gap-1.5"
+                style={{ color: "var(--text-muted)" }}
+              >
                 <Droplets size={14} className="text-[#0284C7]" />
                 <span
                   style={{
@@ -176,7 +189,10 @@ export function OnboardingStep3({
           onClick={onBack}
           disabled={isSubmitting}
           className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl border bg-white font-semibold transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
-          style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }}
+          style={{
+            borderColor: "var(--border-default)",
+            color: "var(--text-primary)",
+          }}
         >
           ← Back
         </button>

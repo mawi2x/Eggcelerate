@@ -6,10 +6,10 @@ import {
   legacyPathFromSearch,
   onboardingPath,
   parseAppPath,
+  type ScreenId,
   screenPath,
   trendsPath,
   validateRouteIncubator,
-  type ScreenId,
 } from "./routes";
 
 export function useAppRouter(validIncubatorIds?: readonly string[]) {
@@ -21,13 +21,19 @@ export function useAppRouter(validIncubatorIds?: readonly string[]) {
     [legacyTarget, pathname],
   );
   const route = useMemo(
-    () => validIncubatorIds ? validateRouteIncubator(parsedRoute, validIncubatorIds) : parsedRoute,
+    () =>
+      validIncubatorIds
+        ? validateRouteIncubator(parsedRoute, validIncubatorIds)
+        : parsedRoute,
     [parsedRoute, validIncubatorIds],
   );
   const canonicalTarget = legacyTarget ?? route.redirectTo;
 
   useEffect(() => {
-    if (canonicalTarget && `${pathname}${search ? `?${search}` : ""}` !== canonicalTarget) {
+    if (
+      canonicalTarget &&
+      `${pathname}${search ? `?${search}` : ""}` !== canonicalTarget
+    ) {
       navigate(canonicalTarget, { replace: true });
     }
   }, [canonicalTarget, navigate, pathname, search]);

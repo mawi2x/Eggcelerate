@@ -1,8 +1,17 @@
 import { useState } from "react";
+import type { NotificationPreferences } from "../../data/settings";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
-import { PanelHeader, GroupLabel, SettingRow, Field, inputClass, inputStyle, MUTED, CRIT } from "./tokens";
-import type { NotificationPreferences } from "../../data/settings";
+import {
+  CRIT,
+  Field,
+  GroupLabel,
+  inputClass,
+  inputStyle,
+  MUTED,
+  PanelHeader,
+  SettingRow,
+} from "./tokens";
 
 // E.164: leading "+", country code 1-9, then 10-14 digits (max 15 total).
 const PHONE_RE = /^\+[1-9]\d{1,14}$/;
@@ -56,23 +65,55 @@ const triggerGroups: TriggerGroup[] = [
         hint: "No telemetry received for more than 2 minutes.",
         toastLabel: "Offline device alerts",
       },
-      { id: "batteryLow", label: "Battery low (< 20%)", hint: "", toastLabel: "Low battery alerts" },
-      { id: "batteryFull", label: "Battery fully charged", hint: "", toastLabel: "Full charge alerts" },
-      { id: "power", label: "Power source switched", hint: "Mains ↔ battery transitions.", toastLabel: "Power source alerts" },
+      {
+        id: "batteryLow",
+        label: "Battery low (< 20%)",
+        hint: "",
+        toastLabel: "Low battery alerts",
+      },
+      {
+        id: "batteryFull",
+        label: "Battery fully charged",
+        hint: "",
+        toastLabel: "Full charge alerts",
+      },
+      {
+        id: "power",
+        label: "Power source switched",
+        hint: "Mains ↔ battery transitions.",
+        toastLabel: "Power source alerts",
+      },
     ],
   },
   {
     id: "schedule",
     title: "Schedule Reminders",
     triggers: [
-      { id: "candling", label: "Candling checkpoint due", hint: "", toastLabel: "Candling reminders" },
-      { id: "turning", label: "Egg turning reminders", hint: "", toastLabel: "Egg turning reminders" },
-      { id: "hatch", label: "Hatch day approaching (24h)", hint: "", toastLabel: "Hatch day alerts" },
+      {
+        id: "candling",
+        label: "Candling checkpoint due",
+        hint: "",
+        toastLabel: "Candling reminders",
+      },
+      {
+        id: "turning",
+        label: "Egg turning reminders",
+        hint: "",
+        toastLabel: "Egg turning reminders",
+      },
+      {
+        id: "hatch",
+        label: "Hatch day approaching (24h)",
+        hint: "",
+        toastLabel: "Hatch day alerts",
+      },
     ],
   },
 ];
 
-export function validateNotificationPreferences(value: NotificationPreferences): string | null {
+export function validateNotificationPreferences(
+  value: NotificationPreferences,
+): string | null {
   if (value.phone.trim() && !PHONE_RE.test(value.phone.trim())) {
     return "Use international phone format, e.g. +639171234567.";
   }
@@ -94,15 +135,27 @@ export function NotificationsPanel({
 
   const commitPhone = () => {
     const v = value.phone.trim();
-    if (!v) { setPhoneErr(null); return; }
-    if (!PHONE_RE.test(v)) { setPhoneErr("Use international format, e.g. +639171234567"); return; }
+    if (!v) {
+      setPhoneErr(null);
+      return;
+    }
+    if (!PHONE_RE.test(v)) {
+      setPhoneErr("Use international format, e.g. +639171234567");
+      return;
+    }
     setPhoneErr(null);
   };
 
   const commitEmail = () => {
     const v = value.emailAddress.trim();
-    if (!v) { setEmailErr(null); return; }
-    if (!EMAIL_RE.test(v)) { setEmailErr("That doesn't look like a valid email address."); return; }
+    if (!v) {
+      setEmailErr(null);
+      return;
+    }
+    if (!EMAIL_RE.test(v)) {
+      setEmailErr("That doesn't look like a valid email address.");
+      return;
+    }
     setEmailErr(null);
   };
 
@@ -123,13 +176,25 @@ export function NotificationsPanel({
           <SettingRow
             label="SMS"
             hint="Text the number below for critical alerts only."
-            control={<Switch checked={value.sms} onCheckedChange={(v) => onChange({ ...value, sms: Boolean(v) })} aria-label="SMS delivery" />}
+            control={
+              <Switch
+                checked={value.sms}
+                onCheckedChange={(v) => onChange({ ...value, sms: Boolean(v) })}
+                aria-label="SMS delivery"
+              />
+            }
           />
           <SettingRow
             label="Email"
             hint="Full alert digest, including non-critical events."
             control={
-              <Switch checked={value.email} onCheckedChange={(v) => onChange({ ...value, email: Boolean(v) })} aria-label="Email delivery" />
+              <Switch
+                checked={value.email}
+                onCheckedChange={(v) =>
+                  onChange({ ...value, email: Boolean(v) })
+                }
+                aria-label="Email delivery"
+              />
             }
           />
         </div>
@@ -144,14 +209,25 @@ export function NotificationsPanel({
               type="tel"
               maxLength={16}
               value={value.phone}
-              onChange={(e) => { onChange({ ...value, phone: e.target.value }); if (phoneErr) setPhoneErr(null); }}
+              onChange={(e) => {
+                onChange({ ...value, phone: e.target.value });
+                if (phoneErr) setPhoneErr(null);
+              }}
               onBlur={commitPhone}
               placeholder="+1 555 000 1234"
               className={inputClass}
-              style={{ ...inputStyle, borderColor: phoneErr ? CRIT : inputStyle.borderColor }}
+              style={{
+                ...inputStyle,
+                borderColor: phoneErr ? CRIT : inputStyle.borderColor,
+              }}
             />
             {phoneErr && (
-              <p className="mt-1.5" style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}>{phoneErr}</p>
+              <p
+                className="mt-1.5"
+                style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}
+              >
+                {phoneErr}
+              </p>
             )}
           </Field>
           <Field label="Email address" htmlFor="email-addr">
@@ -160,14 +236,25 @@ export function NotificationsPanel({
               type="email"
               maxLength={254}
               value={value.emailAddress}
-              onChange={(e) => { onChange({ ...value, emailAddress: e.target.value }); if (emailErr) setEmailErr(null); }}
+              onChange={(e) => {
+                onChange({ ...value, emailAddress: e.target.value });
+                if (emailErr) setEmailErr(null);
+              }}
               onBlur={commitEmail}
               placeholder="you@farm.com"
               className={inputClass}
-              style={{ ...inputStyle, borderColor: emailErr ? CRIT : inputStyle.borderColor }}
+              style={{
+                ...inputStyle,
+                borderColor: emailErr ? CRIT : inputStyle.borderColor,
+              }}
             />
             {emailErr && (
-              <p className="mt-1.5" style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}>{emailErr}</p>
+              <p
+                className="mt-1.5"
+                style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}
+              >
+                {emailErr}
+              </p>
             )}
           </Field>
         </div>
@@ -185,7 +272,9 @@ export function NotificationsPanel({
                 control={
                   <Switch
                     checked={value.enabled[t.id]}
-                    onCheckedChange={(v) => toggleNotif(t.id, t.toastLabel, Boolean(v))}
+                    onCheckedChange={(v) =>
+                      toggleNotif(t.id, t.toastLabel, Boolean(v))
+                    }
                     aria-label={t.label}
                   />
                 }
@@ -196,7 +285,8 @@ export function NotificationsPanel({
       ))}
 
       <p className="pt-4" style={{ color: MUTED, fontSize: 12 }}>
-        Critical environment alerts always push to the in-app bell, regardless of the channels above.
+        Critical environment alerts always push to the in-app bell, regardless
+        of the channels above.
       </p>
     </div>
   );
