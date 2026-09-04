@@ -26,7 +26,7 @@ function Input({
       data-slot="input"
       data-size={size}
       className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex w-full min-w-0 rounded-md border px-3 py-1 text-base bg-input-background transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex w-full min-w-0 rounded-md border px-3 py-1 bg-input-background transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
         heightClass,
         "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -34,7 +34,11 @@ function Input({
       )}
       style={{
         fontFamily: "var(--font-body)",
-        fontSize: "var(--type-body)",
+        // Control-value role: 14px desktop, 16px on phones (legibility +
+        // suppresses iOS focus auto-zoom). Deliberately not --type-body so
+        // body copy stays 14px. (The old Tailwind size classes claimed the
+        // opposite behavior while this inline token style won; removed.)
+        fontSize: "var(--type-control-value)",
         fontWeight: "var(--weight-regular)",
         lineHeight: "var(--leading-normal)",
         ...style,

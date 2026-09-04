@@ -11,6 +11,7 @@
   --type-heading-md: 1.125rem; /* 18px */
   --type-heading-sm: 1rem; /* 16px */
   --type-body: 0.875rem; /* 14px */
+  --type-control-value: 0.875rem; /* 14px desktop; 16px on phones (legibility + suppresses iOS focus auto-zoom) */
   --type-body-sm: 0.8125rem; /* 13px */
   --type-caption: 0.75rem; /* 12px */
   --type-label: 0.6875rem; /* 11px — system minimum, do not go below globally */
@@ -139,12 +140,29 @@
 
 /* Mobile type step-down — one scale, not a second one. Below Tailwind's
    sm breakpoint (40rem) the two largest tokens drop one visual step so
-   24px/22px titles don't crowd 320–640px viewports. All other tokens,
-   and everything at sm and up, are unchanged. */
+   24px/22px titles don't crowd 320–640px viewports, and form values step
+   up to 16px for legibility (values below 16px trigger iOS auto-zoom on
+   focus). All other tokens, and everything at sm and up, are unchanged.
+   Body copy stays 14px — it does not follow the control-value step-up. */
 @media (max-width: 39.9375rem) {
   :root {
     --type-page-title: 1.25rem; /* 20px */
     --type-panel-title: 1.125rem; /* 18px */
+    --type-control-value: 1rem; /* 16px */
+  }
+}
+
+/* Mobile-shell touch geometry — a wider breakpoint than type (below
+   Tailwind's md, 48rem) so tablets in portrait also get comfortable
+   targets. Only interactive control heights change; chips, badges, and
+   calendar cells keep their compact visual tiers. Desktop/tablet-landscape
+   geometry is unchanged. */
+@media (max-width: 47.9375rem) {
+  :root {
+    --control-height-default: 2.75rem; /* 44px */
+    --control-height-toolbar: 2.75rem; /* 44px */
+    --control-size-icon: 2.75rem; /* 44px target, glyph stays 18–22px */
+    --control-segment-height: 2.75rem; /* 44px */
   }
 }
 
@@ -246,8 +264,12 @@
   }
 
   /**
-   * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-   * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
+   * Default typography styles for HTML elements (h1-h4, label, button, input).
+   * Sizes route through the same `--type-*` roles as components, so there is
+   * only one scale: unclassed elements match the system (page title 24→20,
+   * control values 14→16 on phones) and Tailwind utilities still override.
+   * Weights/line-heights below are intentionally untouched by the mobile
+   * typography work — sizes only.
    */
 
   html {
@@ -255,43 +277,43 @@
   }
 
   h1 {
-    font-size: var(--text-2xl);
+    font-size: var(--type-page-title);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h2 {
-    font-size: var(--text-xl);
+    font-size: var(--type-heading-lg);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h3 {
-    font-size: var(--text-lg);
+    font-size: var(--type-heading-md);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h4 {
-    font-size: var(--text-base);
+    font-size: var(--type-heading-sm);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   label {
-    font-size: var(--text-base);
+    font-size: var(--type-body);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   button {
-    font-size: var(--text-base);
+    font-size: var(--type-body);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   input {
-    font-size: var(--text-base);
+    font-size: var(--type-control-value);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }

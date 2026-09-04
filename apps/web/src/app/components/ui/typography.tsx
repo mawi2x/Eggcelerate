@@ -1,6 +1,16 @@
 import * as React from "react";
 import { cn } from "./utils";
 
+// NOTE (mobile typography): no `labelCompact`/`labelMicro` variants on
+// purpose. The only approved 10px/9px uses (timeline milestones,
+// gauge/water-status sub-labels) need responsive `sm:` overrides, which an
+// inline-style primitive cannot express — they consume
+// `--type-label-compact`/`--type-label-micro` directly with breakpoint
+// classes. Adding variants here would invite general-purpose micro text.
+// Contract: 9px is last-resort for short redundant high-contrast labels
+// with a visible/accessible full-text path (`title` alone is not enough);
+// body/controls/prose/actions never go below 11px. See
+// docs/refine/mobile-typography-and-component-sizing-plan.md.
 export type TypographyVariant =
   | "pageTitle"
   | "panelTitle"

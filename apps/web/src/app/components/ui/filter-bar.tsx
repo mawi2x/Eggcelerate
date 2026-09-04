@@ -76,7 +76,9 @@ export function FilterBar({
           type="button"
           tabIndex={canScrollLeft ? 0 : -1}
           onClick={() => scrollBy(-140)}
-          className="pointer-events-auto flex h-7 w-5 items-center justify-start text-[var(--text-secondary)] opacity-70 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          // 44px touch target with a 16px glyph: padding carries the size,
+          // not the icon (mobile target contract).
+          className="pointer-events-auto flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-start text-[var(--text-secondary)] opacity-70 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label="Show previous filters"
         >
           <ChevronLeft size={16} strokeWidth={2.5} aria-hidden="true" />
@@ -146,7 +148,9 @@ export function FilterBar({
           type="button"
           tabIndex={canScrollRight ? 0 : -1}
           onClick={() => scrollBy(140)}
-          className="pointer-events-auto flex h-7 w-5 items-center justify-end text-[var(--brand-primary)] opacity-70 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          // 44px touch target with a 16px glyph: padding carries the size,
+          // not the icon (mobile target contract).
+          className="pointer-events-auto flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-end text-[var(--brand-primary)] opacity-70 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label="Show more filters"
         >
           <ChevronRight size={16} strokeWidth={2.5} aria-hidden="true" />

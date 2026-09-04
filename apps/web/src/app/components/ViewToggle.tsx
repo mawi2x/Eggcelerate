@@ -8,6 +8,9 @@ interface Props {
 }
 
 // Reusable grid/list segmented toggle, shared across screens for a consistent pattern.
+// Sizing comes from `--control-size-icon`: 36px desktop, 44px below the
+// 768px mobile-shell breakpoint (glyph stays 18px). Do not count the outer
+// `p-1` group padding as part of either button's target.
 export function ViewToggle({ view, onChange }: Props) {
   const options: { key: ViewMode; Icon: typeof LayoutGrid; label: string }[] = [
     { key: "grid", Icon: LayoutGrid, label: "Grid view" },

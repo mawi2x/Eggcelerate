@@ -18,7 +18,9 @@ describe("typography tokens", () => {
   it("PageHeader uses type tokens not hardcoded 24/14", () => {
     const s = fs.readFileSync("src/app/components/PageHeader.tsx", "utf-8");
     // Either direct token use or shared Typography primitive with the same roles
-    expect(s).toMatch(/var\(--type-page-title\)|variant="pageTitle"|variant='pageTitle'/);
+    expect(s).toMatch(
+      /var\(--type-page-title\)|variant="pageTitle"|variant='pageTitle'/,
+    );
     expect(s).toMatch(/var\(--type-body\)|variant="body"|<Typography/);
     expect(s).toContain("Typography");
     expect(s).not.toMatch(/fontSize:\s*24[^r]/); // no raw 24px
@@ -31,7 +33,9 @@ describe("typography tokens", () => {
     expect(panel).toContain("Typography");
     expect(panel).toMatch(/variant="panelTitle"/);
     expect(panel).toMatch(/variant="bodySmall"|variant="body"/);
-    expect(panel).not.toMatch(/fontSize:\s*"var\(--type-panel-title\)"|fontSize:\s*22[^r]/);
+    expect(panel).not.toMatch(
+      /fontSize:\s*"var\(--type-panel-title\)"|fontSize:\s*22[^r]/,
+    );
 
     const card = fs.readFileSync(
       "src/app/components/detail/primitives.tsx",
@@ -41,19 +45,21 @@ describe("typography tokens", () => {
     expect(card).toMatch(/variant="headingSmall"/);
     expect(card).toMatch(/variant="caption"/);
   });
-  it("button/input/label use body token", () => {
+  it("button/label use body token; input/select use control-value", () => {
     const btn = fs.readFileSync("src/app/components/ui/button.tsx", "utf-8");
     // allow Tailwind text-sm (0.875rem = var(--type-body)) or var(--type-body)
     expect(btn).toMatch(/text-sm|var\(--type-body\)/);
+    // Form values ride --type-control-value (14px desktop, 16px on phones
+    // for legibility + iOS zoom stability), not --type-body.
     const input = fs.readFileSync("src/app/components/ui/input.tsx", "utf-8");
-    expect(input).toContain("var(--type-body)");
+    expect(input).toContain("var(--type-control-value)");
     expect(input).toContain("var(--font-body)");
     const label = fs.readFileSync("src/app/components/ui/label.tsx", "utf-8");
     expect(label).toContain("var(--type-body)");
     expect(label).toContain("var(--font-body)");
     expect(label).toContain("var(--weight-medium)");
     const select = fs.readFileSync("src/app/components/ui/select.tsx", "utf-8");
-    expect(select).toContain("var(--type-body)");
+    expect(select).toContain("var(--type-control-value)");
     expect(select).toContain("var(--font-body)");
   });
   it("sidebar brand and nav labels use type tokens", () => {

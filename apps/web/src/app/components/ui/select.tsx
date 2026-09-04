@@ -43,7 +43,10 @@ function SelectTrigger({
       )}
       style={{
         fontFamily: "var(--font-body)",
-        fontSize: "var(--type-body)",
+        // Control-value role: 14px desktop, 16px on phones (matches Input;
+        // suppresses iOS focus auto-zoom). Not --type-body — body copy
+        // stays 14px on phones.
+        fontSize: "var(--type-control-value)",
         fontWeight: "var(--weight-regular)",
         lineHeight: "var(--leading-normal)",
         ...style,

@@ -777,8 +777,9 @@ export function OverviewScreen({
             <Thermometer size={14} className="shrink-0" aria-hidden="true" />
             <span>Temperature</span>
             {offTarget.temp.length > 0 && (
+              // Count duplicates the button's aria-label; 11px label minimum.
               <span
-                className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold"
+                className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-(length:--type-label) font-bold"
                 style={{
                   backgroundColor:
                     conditionTab === "temp"
@@ -816,8 +817,9 @@ export function OverviewScreen({
             <Droplets size={14} className="shrink-0" aria-hidden="true" />
             <span>Humidity</span>
             {offTarget.humidity.length > 0 && (
+              // Count duplicates the button's aria-label; 11px label minimum.
               <span
-                className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold"
+                className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-(length:--type-label) font-bold"
                 style={{
                   backgroundColor:
                     conditionTab === "humidity"

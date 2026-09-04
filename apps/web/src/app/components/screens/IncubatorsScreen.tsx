@@ -77,12 +77,6 @@ const INPUT_BORDER = "#D8D0C0";
 
 type Filter = "all" | UnitStatus;
 
-const STATUS_DOT_COLORS: Record<UnitStatus, string> = {
-  alert: "var(--status-danger-fg)",
-  warning: "var(--status-warning-fg)",
-  optimal: "var(--status-success-fg)",
-};
-
 const inputStyle = { borderColor: INPUT_BORDER, backgroundColor: "#F2EEE5" };
 
 // Framed white control matching the toolbar spec.

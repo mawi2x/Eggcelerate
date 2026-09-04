@@ -52,14 +52,6 @@ const BORDER = "var(--border-default)";
 const CARD_BORDER = "var(--border-default)";
 const SUBTLE = "var(--surface-subtle)";
 
-const CANDLING_STATUS_COLORS: Record<string, string> = {
-  overdue: "#DC2626",
-  due: "#D97706",
-  upcoming: "#2563EB",
-  complete: "#16A34A",
-  "not-started": "#8A6B52",
-  ended: "#78716C",
-};
 const SURFACE = "var(--surface-card)";
 const TILE = "#F2EEE5";
 const INPUT_BORDER = "#D8D0C0";
