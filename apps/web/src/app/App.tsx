@@ -310,7 +310,7 @@ export default function App() {
       subtitle: "Track environmental history and past hatch performance.",
     },
     alerts: {
-      title: "Alerts & Notifications",
+      title: "Notification Center",
       subtitle: "Everything that needed a look, newest first.",
     },
     settings: {

@@ -4,8 +4,11 @@ import logoApp from "../../../imports/logo-app.webp";
 import type { AlertEntry, AlertSeverity } from "../../domain/types";
 import { severityStyle, timeAgo } from "../alerts/alertStyle";
 import { Button } from "../ui/button";
-import { FilterBar } from "../ui/filter-bar";
 import { PaginationBar } from "../ui/pagination-bar";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "../ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -48,15 +51,8 @@ const severityTint: Record<
   },
 };
 
-type Filter = "all" | AlertSeverity;
+type Filter = "all" | "unread" | "important";
 type SortKey = "recent" | "oldest" | "severity";
-
-const filters: { key: Filter; label: string; mobileLabel: string }[] = [
-  { key: "all", label: "All", mobileLabel: "All" },
-  { key: "critical", label: "Urgent", mobileLabel: "Urgent" },
-  { key: "warning", label: "Needs Attention", mobileLabel: "Attention" },
-  { key: "info", label: "Reminder", mobileLabel: "Reminders" },
-];
 
 const severityRank: Record<AlertSeverity, number> = {
   critical: 0,
@@ -93,8 +89,13 @@ export function AlertsScreen({
   const [alertsPerPage, setAlertsPerPage] = useState(ALERTS_PER_PAGE);
 
   const list = useMemo(() => {
-    const filtered = alerts.filter(
-      (a) => filter === "all" || a.severity === filter,
+    const filtered = alerts.filter((a) =>
+      filter === "all"
+        ? true
+        : filter === "unread"
+          ? !a.acknowledged
+          : a.severity === "critical" ||
+            (a.severity === "warning" && !a.acknowledged),
     );
     const byTime = (a: AlertEntry, b: AlertEntry) =>
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
@@ -114,33 +115,83 @@ export function AlertsScreen({
     (page - 1) * alertsPerPage,
     page * alertsPerPage,
   );
+  const dayGroup = (iso: string) => {
+    const atMidnight = (x: Date) =>
+      new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diffDays = Math.round(
+      (atMidnight(new Date()) - atMidnight(new Date(iso))) / 86400000,
+    );
+    return diffDays <= 0 ? "Today" : diffDays === 1 ? "Yesterday" : "Earlier";
+  };
+  const groupedAlerts: { group: string; items: AlertEntry[] }[] = [];
+  for (const a of pagedAlerts) {
+    const group = dayGroup(a.timestamp);
+    const last = groupedAlerts[groupedAlerts.length - 1];
+    if (last && last.group === group) last.items.push(a);
+    else groupedAlerts.push({ group, items: [a] });
+  }
 
   const unreadCount = alerts.filter((a) => !a.acknowledged).length;
+  const importantCount = alerts.filter(
+    (a) =>
+      a.severity === "critical" ||
+      (a.severity === "warning" && !a.acknowledged),
+  ).length;
   const readCount = alerts.length - unreadCount;
 
   return (
     <div className="space-y-5">
       {/* ── Controls header — pills left, actions right ─────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <FilterBar
-          ariaLabel="Alert filter"
-          value={filter}
-          onChange={(key) => {
-            setFilter(key as Filter);
-            setAlertPage(1);
-          }}
-          options={filters.map((f) => ({
-            key: f.key,
-            label: f.label,
-            mobileLabel: f.mobileLabel,
-            count:
-              f.key === "all"
-                ? alerts.length
-                : alerts.filter((a) => a.severity === f.key).length,
-          }))}
-        />
+        <SegmentedControl
+          role="tablist"
+          aria-label="Alert filter"
+          className="w-full sm:w-auto"
+        >
+          {(
+            [
+              { key: "all", label: "All", count: alerts.length },
+              { key: "unread", label: "Unread", count: unreadCount },
+              { key: "important", label: "Important", count: importantCount },
+            ] as const
+          ).map((f) => {
+            const active = filter === f.key;
+            return (
+              <SegmentedControlItem
+                key={f.key}
+                size="default"
+                active={active}
+                role="tab"
+                aria-selected={active}
+                onClick={() => {
+                  setFilter(f.key);
+                  setAlertPage(1);
+                }}
+                className="flex-1 sm:flex-none"
+              >
+                {f.label}
+                <span
+                  className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1"
+                  style={{
+                    backgroundColor: active
+                      ? "var(--brand-primary)"
+                      : "var(--surface-card)",
+                    color: active ? "var(--on-brand)" : "var(--text-secondary)",
+                    border: active ? "none" : "1px solid var(--border-default)",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                  }}
+                  aria-hidden="true"
+                >
+                  {f.count}
+                </span>
+              </SegmentedControlItem>
+            );
+          })}
+        </SegmentedControl>
 
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+        <div className="flex items-center gap-2">
           <Select
             value={sort}
             onValueChange={(value) => {
@@ -150,7 +201,7 @@ export function AlertsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="w-full rounded-xl sm:w-[165px]"
+              className="min-w-0 flex-1 rounded-xl sm:w-[165px] sm:flex-none"
               style={{
                 borderColor: BORDER,
                 backgroundColor: "#FFFFFF",
@@ -161,28 +212,33 @@ export function AlertsScreen({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="recent">Sort: Recent</SelectItem>
-              <SelectItem value="oldest">Sort: Oldest</SelectItem>
-              <SelectItem value="severity">Sort: Severity</SelectItem>
+              <SelectItem value="recent">Recent</SelectItem>
+              <SelectItem value="oldest">Oldest</SelectItem>
+              <SelectItem value="severity">Severity</SelectItem>
             </SelectContent>
           </Select>
-
           <Button
             size="toolbar"
-            className="rounded-xl"
+            className="shrink-0 rounded-xl"
             style={{ backgroundColor: RUST, color: "#fff" }}
             onClick={() => void onMarkAllRead()}
             disabled={unreadCount === 0 || markingAllRead || clearingRead}
             aria-busy={markingAllRead}
           >
             <CheckCheck size={16} />{" "}
-            {markingAllRead ? "Marking…" : "Mark All as Read"}
+            {markingAllRead ? (
+              "Marking…"
+            ) : (
+              <>
+                <span className="hidden sm:inline">Mark All as Read</span>
+                <span className="sm:hidden">Mark All</span>
+              </>
+            )}
           </Button>
-
           <Button
             size="toolbar"
             variant="outline"
-            className="col-span-2 rounded-xl sm:col-span-1"
+            className="shrink-0 rounded-xl"
             style={{ borderColor: BORDER }}
             onClick={() => void onClearRead()}
             disabled={readCount === 0 || clearingRead || markingAllRead}
@@ -196,11 +252,10 @@ export function AlertsScreen({
 
       {/* ── One unified feed container ──────────────────────────────────── */}
       <div
-        className="overflow-hidden shadow-sm"
+        className="-mx-4 overflow-hidden rounded-none shadow-sm sm:mx-0 sm:rounded-2xl"
         style={{
           backgroundColor: "#FFFFFF",
           border: `1px solid ${CARD_BORDER}`,
-          borderRadius: 16,
         }}
       >
         {list.length === 0 ? (
@@ -237,194 +292,219 @@ export function AlertsScreen({
         ) : (
           <>
             <ul>
-              {pagedAlerts.map((a, i) => {
-                const s = severityStyle[a.severity];
-                const tint = severityTint[a.severity];
-                return (
-                  <li
-                    key={a.id}
-                    className="group grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3.5 gap-y-2 transition-colors sm:grid-cols-[auto_minmax(0,1fr)_116px]"
+              {groupedAlerts.map((g, gi) => (
+                <li key={g.group}>
+                  <p
                     style={{
-                      padding: "16px 20px 16px 16px",
-                      borderBottom:
-                        i === pagedAlerts.length - 1
-                          ? "none"
-                          : `1px solid ${DIVIDER}`,
-                      borderLeft: `4px solid ${tint.tileFg}`,
+                      padding: `${gi === 0 ? "16px" : "10px"} 20px 8px`,
+                      borderTop: gi === 0 ? "none" : `1px solid ${DIVIDER}`,
+                      borderBottom: `1px solid ${DIVIDER}`,
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
+                      letterSpacing: "var(--tracking-label)",
+                      lineHeight: "var(--leading-snug)",
+                      textTransform: "uppercase",
+                      color: MUTED,
                     }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = ROW_HOVER)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "transparent")
-                    }
                   >
-                    {/* Column 1 — unread dot + icon tile */}
-                    <div
-                      className="row-span-2 flex shrink-0 items-center gap-2.5 sm:row-span-1"
-                      style={{ paddingTop: 2 }}
-                    >
-                      <span
-                        className="rounded-full"
-                        style={{
-                          width: 6,
-                          height: 6,
-                          backgroundColor: a.acknowledged
-                            ? "transparent"
-                            : RUST,
-                        }}
-                        role="status"
-                        aria-label={
-                          a.acknowledged
-                            ? "Read notification"
-                            : "Unread notification"
-                        }
-                      />
-                      <span
-                        className="flex items-center justify-center rounded-full"
-                        style={{
-                          width: 36,
-                          height: 36,
-                          backgroundColor: tint.tile,
-                          color: tint.tileFg,
-                        }}
-                      >
-                        <s.Icon size={18} />
-                      </span>
-                    </div>
-
-                    {/* Column 2 — title + chamber over message */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 flex-col gap-x-2 gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline">
-                        <span
-                          className="min-w-0 truncate"
+                    {g.group}
+                  </p>
+                  <ul>
+                    {g.items.map((a, i) => {
+                      const s = severityStyle[a.severity];
+                      const tint = severityTint[a.severity];
+                      return (
+                        <li
+                          key={a.id}
+                          className="group grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3.5 gap-y-2 transition-colors sm:grid-cols-[auto_minmax(0,1fr)_116px]"
                           style={{
-                            fontFamily: "var(--font-body)",
-                            fontSize: "var(--type-body)",
-                            fontWeight: "var(--weight-semibold)",
-                            lineHeight: "var(--leading-normal)",
-                            color: TEXT,
+                            padding: "16px 20px 16px 16px",
+                            borderBottom:
+                              i === g.items.length - 1
+                                ? "none"
+                                : `1px solid ${DIVIDER}`,
+                            borderLeft: `4px solid ${tint.tileFg}`,
                           }}
-                          title={a.title}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = ROW_HOVER)
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
                         >
-                          {a.title}
-                        </span>
-                        {onOpenUnit ? (
-                          <button
-                            type="button"
-                            onClick={() => onOpenUnit(a.unit)}
-                            className="min-w-0 shrink-0 truncate rounded px-1.5 py-0.5 transition-colors hover:bg-amber-100/60 focus-visible:outline-none focus-visible:ring-1"
-                            style={{
-                              fontFamily: "var(--font-body)",
-                              fontSize: "var(--type-body-sm)",
-                              fontWeight: "var(--weight-semibold)",
-                              lineHeight: "var(--leading-normal)",
-                              color: RUST,
-                              cursor: "pointer",
-                            }}
-                            title={`Go to ${a.unit}`}
+                          {/* Column 1 — unread dot + icon tile */}
+                          <div
+                            className="row-span-2 flex shrink-0 items-center gap-2.5 sm:row-span-1"
+                            style={{ paddingTop: 2 }}
                           >
-                            {a.unit}
-                          </button>
-                        ) : (
-                          <span
-                            className="min-w-0 shrink-0 truncate"
-                            style={{
-                              fontFamily: "var(--font-body)",
-                              fontSize: "var(--type-body-sm)",
-                              fontWeight: "var(--weight-regular)",
-                              lineHeight: "var(--leading-normal)",
-                              color: MUTED,
-                            }}
-                          >
-                            {a.unit}
-                          </span>
-                        )}
-                      </div>
-                      <p
-                        className="mt-1"
-                        style={{
-                          fontFamily: "var(--font-body)",
-                          fontSize: "var(--type-body-sm)",
-                          fontWeight: "var(--weight-regular)",
-                          lineHeight: "var(--leading-normal)",
-                          color: MUTED,
-                        }}
-                      >
-                        {a.message}
-                      </p>
-                    </div>
-
-                    {/* Column 3 — severity pill above timestamp + quick actions */}
-                    <div
-                      className="col-start-2 row-start-2 flex w-full items-start justify-between gap-3 sm:col-start-3 sm:row-start-1 sm:w-[116px] sm:flex-col sm:items-end sm:gap-1.5"
-                      style={{ minHeight: 44 }}
-                    >
-                      <span
-                        className="whitespace-nowrap rounded-full px-2.5 py-0.5"
-                        style={{
-                          backgroundColor: tint.pill,
-                          color: tint.pillFg,
-                          border: `1px solid ${tint.tile}`,
-                          fontFamily: "var(--font-body)",
-                          fontSize: "var(--type-label)",
-                          fontWeight: "var(--weight-bold)",
-                          letterSpacing: "var(--tracking-label)",
-                          lineHeight: "var(--leading-snug)",
-                        }}
-                      >
-                        {s.label}
-                      </span>
-
-                      <div className="flex flex-col items-end gap-1 sm:relative sm:h-8 sm:w-full">
-                        <span
-                          className="whitespace-nowrap transition-opacity sm:absolute sm:inset-0 sm:flex sm:items-center sm:justify-end sm:group-focus-within:opacity-0 sm:group-hover:opacity-0"
-                          style={{
-                            fontFamily: "var(--font-body)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-regular)",
-                            lineHeight: "var(--leading-snug)",
-                            color: MUTED,
-                          }}
-                        >
-                          {timeAgo(a.timestamp)}
-                        </span>
-                        <div className="flex items-center justify-end gap-1 transition-opacity sm:absolute sm:inset-0 sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
-                          {!a.acknowledged && (
-                            <button
-                              type="button"
-                              onClick={() => void onAcknowledge(a.id)}
-                              disabled={pendingAlertId === a.id}
-                              aria-busy={pendingAlertId === a.id}
-                              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
-                              style={{ borderColor: CARD_BORDER, color: TEXT }}
-                              title="Mark as read"
-                              aria-label={`Mark ${a.title} as read`}
+                            <span
+                              className="rounded-full"
+                              style={{
+                                width: 6,
+                                height: 6,
+                                backgroundColor: a.acknowledged
+                                  ? "transparent"
+                                  : RUST,
+                              }}
+                              role="status"
+                              aria-label={
+                                a.acknowledged
+                                  ? "Read notification"
+                                  : "Unread notification"
+                              }
+                            />
+                            <span
+                              className="flex items-center justify-center rounded-full"
+                              style={{
+                                width: 36,
+                                height: 36,
+                                backgroundColor: tint.tile,
+                                color: tint.tileFg,
+                              }}
                             >
-                              <Check size={14} />
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => void onDismiss(a.id)}
-                            disabled={pendingAlertId === a.id}
-                            aria-busy={pendingAlertId === a.id}
-                            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#FEE2E2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
-                            style={{
-                              borderColor: CARD_BORDER,
-                              color: "#B91C1C",
-                            }}
-                            title="Dismiss"
-                            aria-label={`Dismiss ${a.title}`}
+                              <s.Icon size={18} />
+                            </span>
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 flex-col gap-x-2 gap-y-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-y-0.5">
+                              <span
+                                className="min-w-0 truncate"
+                                style={{
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "var(--type-body)",
+                                  fontWeight: "var(--weight-semibold)",
+                                  lineHeight: "var(--leading-normal)",
+                                  color: TEXT,
+                                }}
+                                title={a.title}
+                              >
+                                {a.title}
+                              </span>
+                              {onOpenUnit ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenUnit(a.unit)}
+                                  className="min-w-0 shrink-0 self-start truncate rounded px-1.5 py-0.5 text-left transition-colors hover:bg-amber-100/60 focus-visible:outline-none focus-visible:ring-1 -ml-1.5"
+                                  style={{
+                                    fontFamily: "var(--font-body)",
+                                    fontSize: "var(--type-body-sm)",
+                                    fontWeight: "var(--weight-semibold)",
+                                    lineHeight: "var(--leading-normal)",
+                                    color: RUST,
+                                    cursor: "pointer",
+                                  }}
+                                  title={`Go to ${a.unit}`}
+                                >
+                                  {a.unit}
+                                </button>
+                              ) : (
+                                <span
+                                  className="min-w-0 shrink-0 self-start truncate text-left"
+                                  style={{
+                                    fontFamily: "var(--font-body)",
+                                    fontSize: "var(--type-body-sm)",
+                                    fontWeight: "var(--weight-regular)",
+                                    lineHeight: "var(--leading-normal)",
+                                    color: MUTED,
+                                  }}
+                                >
+                                  {a.unit}
+                                </span>
+                              )}
+                            </div>
+                            <p
+                              className="mt-1"
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                fontSize: "var(--type-body-sm)",
+                                fontWeight: "var(--weight-regular)",
+                                lineHeight: "var(--leading-normal)",
+                                color: MUTED,
+                              }}
+                            >
+                              {a.message}
+                            </p>
+                          </div>
+
+                          {/* Column 3 — severity pill above timestamp + quick actions */}
+                          <div
+                            className="col-start-2 row-start-2 flex w-full items-start justify-between gap-3 sm:col-start-3 sm:row-start-1 sm:w-[116px] sm:flex-col sm:items-end sm:gap-1.5"
+                            style={{ minHeight: 44 }}
                           >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
+                            <span
+                              className="whitespace-nowrap rounded-full px-2.5 py-0.5"
+                              style={{
+                                backgroundColor: tint.pill,
+                                color: tint.pillFg,
+                                border: `1px solid ${tint.tile}`,
+                                fontFamily: "var(--font-body)",
+                                fontSize: "var(--type-label)",
+                                fontWeight: "var(--weight-bold)",
+                                letterSpacing: "var(--tracking-label)",
+                                lineHeight: "var(--leading-snug)",
+                              }}
+                            >
+                              {s.label}
+                            </span>
+
+                            <div className="flex flex-col items-end gap-1 sm:relative sm:h-8 sm:w-full">
+                              <span
+                                className="whitespace-nowrap transition-opacity sm:absolute sm:inset-0 sm:flex sm:items-center sm:justify-end sm:group-focus-within:opacity-0 sm:group-hover:opacity-0"
+                                style={{
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "var(--type-label)",
+                                  fontWeight: "var(--weight-regular)",
+                                  lineHeight: "var(--leading-snug)",
+                                  color: MUTED,
+                                }}
+                              >
+                                {timeAgo(a.timestamp)}
+                              </span>
+                              <div className="flex items-center justify-end gap-1 transition-opacity sm:absolute sm:inset-0 sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
+                                {!a.acknowledged && (
+                                  <button
+                                    type="button"
+                                    onClick={() => void onAcknowledge(a.id)}
+                                    disabled={pendingAlertId === a.id}
+                                    aria-busy={pendingAlertId === a.id}
+                                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                                    style={{
+                                      borderColor: CARD_BORDER,
+                                      color: TEXT,
+                                    }}
+                                    title="Mark as read"
+                                    aria-label={`Mark ${a.title} as read`}
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => void onDismiss(a.id)}
+                                  disabled={pendingAlertId === a.id}
+                                  aria-busy={pendingAlertId === a.id}
+                                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#FEE2E2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                                  style={{
+                                    borderColor: CARD_BORDER,
+                                    color: "#B91C1C",
+                                  }}
+                                  title="Dismiss"
+                                  aria-label={`Dismiss ${a.title}`}
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              ))}
             </ul>
             <PaginationBar
               page={page}
