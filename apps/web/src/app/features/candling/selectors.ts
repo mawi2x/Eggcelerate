@@ -1,5 +1,49 @@
 import type { CandlingCheckpoint, CandlingLogEntry } from "../../domain/types";
 
+export type InspectionStatus =
+  | "overdue"
+  | "due"
+  | "upcoming"
+  | "complete"
+  | "not-started"
+  | "ended";
+
+export type CandlingFilter = "all" | "todo" | "done";
+
+export function matchesCandlingFilter(
+  status: InspectionStatus,
+  filter: CandlingFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "todo") {
+    return (
+      status === "overdue" ||
+      status === "due" ||
+      status === "upcoming" ||
+      status === "not-started"
+    );
+  }
+  return status === "complete" || status === "ended";
+}
+
+export interface CandlingFilterCounts {
+  all: number;
+  todo: number;
+  done: number;
+}
+
+export function selectCandlingFilterCounts(
+  statuses: InspectionStatus[],
+): CandlingFilterCounts {
+  return {
+    all: statuses.length,
+    todo: statuses.filter((status) => matchesCandlingFilter(status, "todo"))
+      .length,
+    done: statuses.filter((status) => matchesCandlingFilter(status, "done"))
+      .length,
+  };
+}
+
 export type CandlingFeedNode =
   | {
       kind: "logged";

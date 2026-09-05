@@ -1,4 +1,4 @@
-import { Egg, WifiSlash } from "@phosphor-icons/react";
+import { Egg, Lock, WifiSlash } from "@phosphor-icons/react";
 import { ChevronRight, LockKeyhole, RotateCw, Wifi, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -93,7 +93,7 @@ export function DeviceSettingsTab({
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
       {/* Left Sub-Nav Card */}
       <nav
-        className="w-full max-w-none shrink-0 rounded-2xl p-1.5 sm:p-2 border border-[var(--border-default)] bg-[var(--surface-card)] lg:sticky lg:top-6 lg:max-w-[240px] lg:p-4"
+        className="w-full max-w-none shrink-0 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-1.5 sm:p-2 lg:sticky lg:top-6 lg:max-w-[240px] lg:p-4"
         style={{
           borderRadius: "var(--radius-card)",
         }}
@@ -126,7 +126,7 @@ export function DeviceSettingsTab({
                 <button
                   type="button"
                   onClick={() => setSettingTab(id)}
-                  className={`flex w-full cursor-pointer items-center justify-center lg:justify-start gap-1.5 sm:gap-2.5 rounded-xl border px-2 sm:px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${
+                  className={`flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-2 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 lg:justify-start sm:gap-2.5 sm:px-3 ${
                     isActive
                       ? "border-[var(--brand-primary-soft)] bg-[var(--local-nav-selected-bg)] text-[var(--local-nav-selected-fg)]"
                       : "border-transparent bg-transparent text-[var(--text-primary)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"
@@ -136,7 +136,6 @@ export function DeviceSettingsTab({
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-body-sm)",
                     fontWeight: "var(--weight-bold)",
-                    whiteSpace: "nowrap",
                   }}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -150,8 +149,12 @@ export function DeviceSettingsTab({
                         : "var(--text-primary)",
                     }}
                   />
-                  <span className="truncate lg:hidden">{mobileLabel}</span>
-                  <span className="hidden truncate lg:inline">{label}</span>
+                  <span className="min-w-0 break-words whitespace-normal lg:hidden">
+                    {mobileLabel}
+                  </span>
+                  <span className="hidden min-w-0 break-words whitespace-normal lg:inline">
+                    {label}
+                  </span>
                 </button>
               </li>
             );
@@ -201,7 +204,7 @@ export function DeviceSettingsTab({
             </div>
             <div className="pt-5 space-y-4">
               <div
-                className="flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-4 rounded-2xl p-4 md:flex-row md:items-center md:justify-between"
                 style={{
                   backgroundColor: "var(--surface-porcelain)",
                   border: `1px solid var(--border-default)`,
@@ -274,12 +277,12 @@ export function DeviceSettingsTab({
                   >
                     <SelectTrigger
                       aria-label="Choose incubation mode"
-                      className="h-10 w-full rounded-xl sm:w-[180px]"
+                      className="w-full rounded-xl md:w-[180px]"
                       style={{
                         borderColor: "var(--input-border)",
                         backgroundColor: "var(--surface-card)",
                         fontFamily: "var(--font-body)",
-                        fontSize: "var(--type-body-sm)",
+                        fontSize: "var(--type-control-value)",
                         fontWeight: "var(--weight-bold)",
                       }}
                     >
@@ -295,7 +298,7 @@ export function DeviceSettingsTab({
                   </Select>
                 ) : (
                   <span
-                    className="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-full px-3 sm:self-auto"
+                    className="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-full px-3 md:self-auto"
                     style={{
                       backgroundColor: "var(--border-sand)",
                       color: "var(--text-secondary)",
@@ -304,7 +307,7 @@ export function DeviceSettingsTab({
                       fontWeight: "var(--weight-bold)",
                     }}
                   >
-                    <LockKeyhole size={14} aria-hidden="true" /> Locked during
+                    <Lock size={14} weight="fill" aria-hidden="true" /> Locked during
                     cycle
                   </span>
                 )}
@@ -330,7 +333,7 @@ export function DeviceSettingsTab({
               )}
 
               <dl
-                className="grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-2"
+                className="grid grid-cols-1 overflow-hidden rounded-2xl md:grid-cols-2"
                 style={{
                   border: `1px solid var(--border-default)`,
                   backgroundColor: "var(--surface-card)",
@@ -356,7 +359,7 @@ export function DeviceSettingsTab({
                 ].map((item, index) => (
                   <div
                     key={item.label}
-                    className={`p-4 ${index < 3 ? "border-b" : ""} ${index % 2 === 0 ? "sm:border-r" : ""} ${index >= 2 ? "sm:border-b-0" : ""}`}
+                    className={`p-4 ${index < 3 ? "border-b" : ""} ${index % 2 === 0 ? "md:border-r" : ""} ${index >= 2 ? "md:border-b-0" : ""}`}
                     style={{
                       backgroundColor: "var(--surface-porcelain)",
                       borderColor: "var(--border-default)",
@@ -394,7 +397,7 @@ export function DeviceSettingsTab({
                       "Edit this preset under Settings → Mode Library.",
                   })
                 }
-                className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg px-1 text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2"
+                className="inline-flex min-h-[var(--control-height-default)] cursor-pointer items-center gap-1.5 rounded-lg px-1 text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 md:min-h-10"
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: "var(--type-body-sm)",
@@ -497,12 +500,12 @@ export function DeviceSettingsTab({
                   }
                 >
                   <SelectTrigger
-                    className="h-9 w-[110px] rounded-xl"
+                    className="h-[var(--control-height-default)] w-[110px] rounded-xl md:h-9"
                     style={{
                       borderColor: "var(--border-clay)",
                       backgroundColor: "var(--surface-card)",
                       fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-body-sm)",
+                      fontSize: "var(--type-control-value)",
                     }}
                   >
                     <SelectValue />
@@ -518,13 +521,14 @@ export function DeviceSettingsTab({
               </div>
               <div className="flex items-center justify-between gap-2">
                 <span
-                  className="min-w-0 truncate"
+                  className="min-w-0 flex-1 break-words"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-caption)",
                     color: next.overdue
                       ? "var(--status-danger-fg)"
                       : "var(--text-secondary)",
+                    overflowWrap: "anywhere",
                   }}
                 >
                   Next: {next.text} • Last: {relTime(unit.lastTurned)}

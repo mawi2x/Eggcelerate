@@ -16,7 +16,7 @@ describe("mobile typography tokens", () => {
     expect(css()).toContain("--type-control-value: 0.875rem");
   });
 
-  it("steps phone type below sm: titles down, control value up to 16px", () => {
+  it("uses selective phone type overrides without a second scale", () => {
     const c = css();
     const phone = c.match(
       /@media\s*\(\s*max-width:\s*39\.9375rem\s*\)\s*\{[\s\S]*?:root\s*\{([\s\S]*?)\}\s*\}/,
@@ -25,26 +25,21 @@ describe("mobile typography tokens", () => {
     const block = phone?.[1] ?? "";
     expect(block).toContain("--type-page-title: 1.25rem");
     expect(block).toContain("--type-panel-title: 1.125rem");
-    // 16px phone form text (legibility + suppresses iOS focus auto-zoom);
-    // body copy stays 14px and must not appear here.
     expect(block).toContain("--type-control-value: 1rem");
-    expect(block).not.toContain("--type-body:");
+    expect(block).not.toMatch(/--type-(body|body-sm|caption|label):/);
+    expect(c).not.toContain("max-width: 25rem");
+    expect(c).not.toMatch(/--type-[^:]+:\s*0\.(4375|5)rem/);
   });
-
-  it("sizes mobile touch geometry below md without touching chips", () => {
+  it("keeps mobile visual controls compact and leaves hit areas explicit", () => {
     const c = css();
-    const shell = c.match(
-      /@media\s*\(\s*max-width:\s*47\.9375rem\s*\)\s*\{[\s\S]*?:root\s*\{([\s\S]*?)\}\s*\}/,
+    expect(c).toContain("--control-height-default: 2.25rem");
+    expect(c).toContain("--control-height-toolbar: 2.5rem");
+    expect(c).toContain("--control-size-icon: 2.25rem");
+    expect(c).toContain("--control-segment-height: 2.25rem");
+    expect(c).toContain("--control-hit-area-icon: 2.75rem");
+    expect(c).not.toMatch(
+      /@media\s*\(\s*max-width:\s*47\.9375rem\s*\)\s*\{[\s\S]*--control-(?:height-default|height-toolbar|size-icon|segment-height):/,
     );
-    expect(shell).not.toBeNull();
-    const block = shell?.[1] ?? "";
-    expect(block).toContain("--control-height-default: 2.75rem");
-    expect(block).toContain("--control-height-toolbar: 2.75rem");
-    expect(block).toContain("--control-size-icon: 2.75rem");
-    expect(block).toContain("--control-segment-height: 2.75rem");
-    // Compact chip tier keeps its visual baseline on phones.
-    expect(block).not.toContain("--control-height-chip");
-    expect(block).not.toContain("--control-height-compact");
   });
 
   it("routes @layer base element sizes through the same type roles", () => {
@@ -110,6 +105,37 @@ describe("mobile touch targets", () => {
     const s = src("src/app/components/ViewToggle.tsx");
     expect(s).toContain("h-[var(--control-size-icon)]");
     expect(s).toContain("w-[var(--control-size-icon)]");
+  });
+
+  it("shared checkbox keeps a 44px target around its compact visual mark", () => {
+    const s = src("src/app/components/ui/checkbox.tsx");
+    expect(s).toContain("size-11");
+    expect(s).toContain("before:size-4");
+  });
+
+  it("keeps secondary dot navigation compact instead of expanding its layout row", () => {
+    const overview = src("src/app/components/screens/OverviewScreen.tsx");
+    const incubators = src("src/app/components/screens/IncubatorsScreen.tsx");
+    const candling = src("src/app/components/screens/CandlingLogsScreen.tsx");
+    expect(overview).toContain("h-1.5 cursor-pointer");
+    expect(incubators).toContain("h-3 w-2 cursor-pointer");
+    expect(candling).toContain("h-3 w-2 cursor-pointer");
+    expect(overview).not.toContain("h-6 w-6 cursor-pointer");
+    expect(overview).not.toContain("h-11 w-11 cursor-pointer");
+    expect(incubators).not.toContain("h-6 w-6 cursor-pointer");
+    expect(incubators).not.toContain("h-11 w-11 cursor-pointer");
+    expect(candling).not.toContain("h-6 w-6 cursor-pointer");
+    expect(candling).not.toContain("h-11 w-11 cursor-pointer");
+  });
+
+  it("sort and readings actions use the shared target contract", () => {
+    const incubators = src("src/app/components/screens/IncubatorsScreen.tsx");
+    const candling = src("src/app/components/screens/CandlingLogsScreen.tsx");
+    const trends = src("src/app/components/screens/TrendsScreen.tsx");
+    expect(incubators).toContain("var(--control-size-icon)");
+    expect(candling).toContain("var(--control-size-icon)");
+    expect(trends).toContain("md:min-h-[var(--control-height-compact)]");
+    expect(trends).toContain("fontSize: \"var(--type-body-sm)\"");
   });
 
   it("Overview count badges use the 11px label minimum, not 10px", () => {

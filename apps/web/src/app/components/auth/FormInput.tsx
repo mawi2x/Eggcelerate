@@ -48,7 +48,7 @@ export function FormInput({
           aria-invalid={!!error}
           className={`w-full rounded-xl border bg-[var(--surface-input)] px-3.5 py-2.5 transition-colors focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 ${
             Icon ? "pl-10" : ""
-          } ${trailing ? "pr-10" : ""} ${
+          } ${trailing ? "pr-14" : ""} ${
             error
               ? "border-[var(--status-danger-fg)]"
               : "border-[var(--border-default)] hover:border-[var(--input-border)]"

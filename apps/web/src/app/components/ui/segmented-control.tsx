@@ -5,7 +5,8 @@ import { cn } from "./utils";
 export type SegmentedControlSize = "compact" | "default" | "toolbar";
 
 const itemSizeClasses: Record<SegmentedControlSize, string> = {
-  compact: "h-[var(--control-height-compact)] px-3",
+  compact:
+    "h-[var(--control-height-default)] px-3 md:h-[var(--control-height-compact)]",
   default: "h-[var(--control-segment-height)] px-4",
   toolbar: "h-[var(--control-height-toolbar)] px-4",
 };

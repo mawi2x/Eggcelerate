@@ -264,12 +264,13 @@ export default function App() {
     <div className="flex min-w-0 flex-col">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1
-          className="min-w-0 truncate"
+          className="min-w-0 max-w-full break-words"
           style={{
             fontSize: "var(--type-page-title)",
             fontWeight: "var(--weight-bold)",
             color: "var(--text-primary)",
             lineHeight: 1.25,
+            overflowWrap: "anywhere",
           }}
           title={activeUnit.name}
         >
@@ -278,12 +279,14 @@ export default function App() {
         {detailBadges}
       </div>
       <p
+        className="max-w-full break-words"
         style={{
           fontSize: "var(--type-heading-sm)",
           fontWeight: "var(--weight-semibold)",
           color: "var(--text-primary)",
           lineHeight: 1.4,
           marginTop: 4,
+          overflowWrap: "anywhere",
         }}
       >
         {activeMode.name}
@@ -296,18 +299,15 @@ export default function App() {
   const headerCopy: Record<ScreenId, { title: string; subtitle: string }> = {
     overview: {
       title: `Good day, ${overviewName}!`,
-      subtitle:
-        "Here's what needs your attention across your incubation cycles.",
+      subtitle: "Eggcelerate! It's hatching time!",
     },
     incubators: {
       title: "Incubators",
-      subtitle:
-        "Manage each chamber, assign a Mode, and open its full configuration.",
+      subtitle: "Manage and monitor your incubators.",
     },
     candling: {
       title: "Candling Logs",
-      subtitle:
-        "Review inspection progress and upcoming checks across all of your chambers.",
+      subtitle: "Your candling journals",
     },
     detail: {
       title: activeUnit.name,
@@ -315,15 +315,15 @@ export default function App() {
     },
     trends: {
       title: "Historical Trends",
-      subtitle: "Track environmental history and past hatch performance.",
+      subtitle: "Track environment and performance.",
     },
     alerts: {
       title: "Notification Center",
-      subtitle: "Everything that needed a look, newest first.",
+      subtitle: "Recent activity and alerts.",
     },
     settings: {
       title: "Settings",
-      subtitle: "App settings: modes, notifications, and account.",
+      subtitle: "Modes, alerts, and farm setup",
     },
     login: {
       title: "Sign in",
@@ -422,8 +422,7 @@ export default function App() {
         <main
           className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
         >
-          <div
-            className="mx-auto max-w-6xl px-4 pb-44 sm:px-6 sm:pb-28 lg:px-8 lg:pb-20"
+          <div className="mx-auto max-w-6xl px-3 pb-44 sm:px-4 sm:pb-28 md:px-6 lg:px-8 lg:pb-20"
             style={{ paddingTop: 24 }}
           >
             {/* Rows 1 and 2 — utility bar and page title bar. */}

@@ -54,7 +54,7 @@ export function FarmAccountPanel({
 
       {/* Identity strip */}
       <div
-        className="flex items-center gap-3.5 py-5"
+        className="flex min-w-0 items-center gap-3.5 py-5"
         style={{ borderBottom: `var(--border-width-hairline) solid ${BORDER}` }}
       >
         <span
@@ -70,20 +70,25 @@ export function FarmAccountPanel({
         >
           {accountInitials(account)}
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p
-            className="truncate"
+            className="max-w-full break-words"
             style={{
               fontSize: "var(--type-heading-sm)",
               fontWeight: "var(--weight-bold)",
               color: TEXT,
+              overflowWrap: "anywhere",
             }}
           >
             {resolveDisplayName(account)}
           </p>
           <p
-            className="truncate"
-            style={{ fontSize: "var(--type-body-sm)", color: MUTED }}
+            className="max-w-full break-words"
+            style={{
+              fontSize: "var(--type-body-sm)",
+              color: MUTED,
+              overflowWrap: "anywhere",
+            }}
           >
             {account.farmName}
           </p>
@@ -92,7 +97,7 @@ export function FarmAccountPanel({
 
       <div className="pt-6">
         <GroupLabel>Profile</GroupLabel>
-        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field
             labelSlot={
               <FieldCounterLabel
@@ -165,7 +170,7 @@ export function FarmAccountPanel({
 
       <div className="pt-7">
         <GroupLabel>Regional</GroupLabel>
-        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label="Temperature Units" htmlFor="units">
             <Select
               value={temperatureUnit}

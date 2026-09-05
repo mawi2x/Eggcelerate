@@ -4,11 +4,8 @@ import logoApp from "../../../imports/logo-app.webp";
 import type { AlertEntry, AlertSeverity } from "../../domain/types";
 import { severityStyle, timeAgo } from "../alerts/alertStyle";
 import { Button } from "../ui/button";
+import { FilterBar } from "../ui/filter-bar";
 import { PaginationBar } from "../ui/pagination-bar";
-import {
-  SegmentedControl,
-  SegmentedControlItem,
-} from "../ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -142,56 +139,29 @@ export function AlertsScreen({
   return (
     <div className="space-y-5">
       {/* ── Controls header — pills left, actions right ─────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SegmentedControl
-          role="tablist"
-          aria-label="Alert filter"
-          className="w-full sm:w-auto"
-        >
-          {(
-            [
-              { key: "all", label: "All", count: alerts.length },
-              { key: "unread", label: "Unread", count: unreadCount },
-              { key: "important", label: "Important", count: importantCount },
-            ] as const
-          ).map((f) => {
-            const active = filter === f.key;
-            return (
-              <SegmentedControlItem
-                key={f.key}
-                size="default"
-                active={active}
-                role="tab"
-                aria-selected={active}
-                onClick={() => {
-                  setFilter(f.key);
-                  setAlertPage(1);
-                }}
-                className="flex-1 sm:flex-none"
-              >
-                {f.label}
-                <span
-                  className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1"
-                  style={{
-                    backgroundColor: active
-                      ? "var(--brand-primary)"
-                      : "var(--surface-card)",
-                    color: active ? "var(--on-brand)" : "var(--text-secondary)",
-                    border: active ? "none" : "1px solid var(--border-default)",
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-extrabold)",
-                    lineHeight: 1,
-                  }}
-                  aria-hidden="true"
-                >
-                  {f.count}
-                </span>
-              </SegmentedControlItem>
-            );
-          })}
-        </SegmentedControl>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <FilterBar
+          ariaLabel="Alert filter"
+          variant="segmented"
+          fitToScreenOnMobile
+          value={filter}
+          onChange={(key) => {
+            setFilter(key as Filter);
+            setAlertPage(1);
+          }}
+          options={[
+            { key: "all", label: "All", count: alerts.length },
+            { key: "unread", label: "Unread", count: unreadCount },
+            {
+              key: "important",
+              label: "Important",
+              count: importantCount,
+            },
+          ]}
+          className="md:!w-full lg:!w-auto"
+        />
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 lg:w-auto lg:flex-nowrap">
           <Select
             value={sort}
             onValueChange={(value) => {
@@ -201,7 +171,7 @@ export function AlertsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-xl sm:w-[165px] sm:flex-none"
+              className="min-w-0 flex-[1_1_100%] rounded-lg px-2 min-[23rem]:flex-1 md:w-[165px] md:flex-none md:rounded-xl md:px-3 md:text-sm"
               style={{
                 borderColor: BORDER,
                 backgroundColor: "var(--surface-card)",
@@ -219,8 +189,11 @@ export function AlertsScreen({
           </Select>
           <Button
             size="toolbar"
-            className="shrink-0 rounded-xl"
-            style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
+            className="min-w-0 flex-1 rounded-lg md:flex-none md:rounded-xl md:px-4 md:text-sm"
+            style={{
+              backgroundColor: RUST,
+              color: "var(--on-brand)",
+            }}
             onClick={() => void onMarkAllRead()}
             disabled={unreadCount === 0 || markingAllRead || clearingRead}
             aria-busy={markingAllRead}
@@ -230,16 +203,18 @@ export function AlertsScreen({
               "Marking…"
             ) : (
               <>
-                <span className="hidden sm:inline">Mark All as Read</span>
-                <span className="sm:hidden">Mark All</span>
+                <span className="hidden md:inline">Mark All as Read</span>
+                <span className="md:hidden">Mark All</span>
               </>
             )}
           </Button>
           <Button
             size="toolbar"
             variant="outline"
-            className="shrink-0 rounded-xl"
-            style={{ borderColor: BORDER }}
+            className="min-w-0 flex-1 rounded-lg md:flex-none md:rounded-xl md:px-4 md:text-sm"
+            style={{
+              borderColor: BORDER,
+            }}
             onClick={() => void onClearRead()}
             disabled={readCount === 0 || clearingRead || markingAllRead}
             aria-busy={clearingRead}
@@ -252,7 +227,7 @@ export function AlertsScreen({
 
       {/* ── One unified feed container ──────────────────────────────────── */}
       <div
-        className="-mx-4 overflow-hidden rounded-none shadow-sm sm:mx-0 sm:rounded-2xl"
+        className="-mx-3 overflow-hidden rounded-none shadow-sm md:mx-0 md:rounded-2xl"
         style={{
           backgroundColor: "var(--surface-card)",
           border: `1px solid ${CARD_BORDER}`,
@@ -310,20 +285,15 @@ export function AlertsScreen({
                   >
                     {g.group}
                   </p>
-                  <ul>
-                    {g.items.map((a, i) => {
+                  <ul className="space-y-1.5 px-2 py-1.5 md:space-y-0 md:px-0 md:py-0">
+                    {g.items.map((a) => {
                       const s = severityStyle[a.severity];
                       const tint = severityTint[a.severity];
                       return (
                         <li
                           key={a.id}
-                          className="group grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3.5 gap-y-2 transition-colors sm:grid-cols-[auto_minmax(0,1fr)_116px]"
+                          className="group grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 rounded-xl border border-[var(--border-subtle)] px-3.5 py-3 transition-colors md:grid-cols-[auto_minmax(0,1fr)_116px] md:gap-x-3.5 md:gap-y-2 md:rounded-none md:border-0 md:border-b md:border-[var(--surface-fog)] md:p-[var(--list-row-padding)] md:last:border-b-0"
                           style={{
-                            padding: "var(--list-row-padding)",
-                            borderBottom:
-                              i === g.items.length - 1
-                                ? "none"
-                                : `1px solid ${DIVIDER}`,
                             borderLeft: `4px solid ${tint.tileFg}`,
                           }}
                           onMouseEnter={(e) =>
@@ -334,50 +304,45 @@ export function AlertsScreen({
                               "transparent")
                           }
                         >
-                          {/* Column 1 — unread dot + icon tile */}
+                          {/* Column 1 — severity badge (dims once read) */}
                           <div
-                            className="row-span-2 flex shrink-0 items-center gap-2.5 sm:row-span-1"
+                            className="row-span-2 flex shrink-0 items-center md:row-span-1"
                             style={{ paddingTop: 2 }}
                           >
                             <span
-                              className="rounded-full"
-                              style={{
-                                width: "var(--dot-size)",
-                                height: "var(--dot-size)",
-                                backgroundColor: a.acknowledged
-                                  ? "transparent"
-                                  : RUST,
-                              }}
+                              className="flex items-center justify-center rounded-lg"
                               role="status"
                               aria-label={
                                 a.acknowledged
                                   ? "Read notification"
                                   : "Unread notification"
                               }
-                            />
-                            <span
-                              className="flex items-center justify-center rounded-full"
                               style={{
                                 width: 36,
                                 height: 36,
-                                backgroundColor: tint.tile,
-                                color: tint.tileFg,
+                                backgroundColor: "transparent",
+                                color: s.color,
                               }}
                             >
-                              <s.Icon size={18} />
+                              <s.Icon
+                                size={24}
+                                weight="fill"
+                                aria-hidden="true"
+                              />
                             </span>
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="flex min-w-0 flex-col gap-x-2 gap-y-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-y-0.5">
+                            <div className="flex min-w-0 flex-col gap-x-2 gap-y-1 md:flex-row md:flex-wrap md:items-baseline md:gap-y-0.5">
                               <span
-                                className="min-w-0 truncate"
+                                className="min-w-0 max-w-full break-words"
                                 style={{
                                   fontFamily: "var(--font-body)",
                                   fontSize: "var(--type-body)",
                                   fontWeight: "var(--weight-semibold)",
                                   lineHeight: "var(--leading-normal)",
                                   color: TEXT,
+                                  overflowWrap: "anywhere",
                                 }}
                                 title={a.title}
                               >
@@ -387,7 +352,7 @@ export function AlertsScreen({
                                 <button
                                   type="button"
                                   onClick={() => onOpenUnit(a.unit)}
-                                  className="min-w-0 shrink-0 self-start truncate rounded px-1.5 py-0.5 text-left transition-colors hover:bg-amber-100/60 focus-visible:outline-none focus-visible:ring-1 -ml-1.5"
+                                  className="-ml-1.5 inline-flex min-h-[var(--control-height-default)] min-w-0 max-w-full items-center self-start break-words rounded px-1.5 py-0.5 text-left transition-colors hover:bg-amber-100/60 focus-visible:outline-none focus-visible:ring-1 md:min-h-[var(--control-height-compact)]"
                                   style={{
                                     fontFamily: "var(--font-body)",
                                     fontSize: "var(--type-body-sm)",
@@ -395,6 +360,7 @@ export function AlertsScreen({
                                     lineHeight: "var(--leading-normal)",
                                     color: RUST,
                                     cursor: "pointer",
+                                    overflowWrap: "anywhere",
                                   }}
                                   title={`Go to ${a.unit}`}
                                 >
@@ -402,13 +368,14 @@ export function AlertsScreen({
                                 </button>
                               ) : (
                                 <span
-                                  className="min-w-0 shrink-0 self-start truncate text-left"
+                                  className="min-w-0 max-w-full self-start break-words text-left"
                                   style={{
                                     fontFamily: "var(--font-body)",
                                     fontSize: "var(--type-body-sm)",
                                     fontWeight: "var(--weight-regular)",
                                     lineHeight: "var(--leading-normal)",
                                     color: MUTED,
+                                    overflowWrap: "anywhere",
                                   }}
                                 >
                                   {a.unit}
@@ -416,13 +383,14 @@ export function AlertsScreen({
                               )}
                             </div>
                             <p
-                              className="mt-1"
+                              className="mt-1 break-words"
                               style={{
                                 fontFamily: "var(--font-body)",
                                 fontSize: "var(--type-body-sm)",
                                 fontWeight: "var(--weight-regular)",
                                 lineHeight: "var(--leading-normal)",
                                 color: MUTED,
+                                overflowWrap: "anywhere",
                               }}
                             >
                               {a.message}
@@ -431,7 +399,7 @@ export function AlertsScreen({
 
                           {/* Column 3 — severity pill above timestamp + quick actions */}
                           <div
-                            className="col-start-2 row-start-2 flex w-full items-start justify-between gap-3 sm:col-start-3 sm:row-start-1 sm:w-[116px] sm:flex-col sm:items-end sm:gap-1.5"
+                            className="col-start-2 row-start-2 flex w-full items-start justify-between gap-3 md:col-start-3 md:row-start-1 md:w-[116px] md:flex-col md:items-end md:gap-1.5"
                             style={{ minHeight: 44 }}
                           >
                             <span
@@ -450,9 +418,9 @@ export function AlertsScreen({
                               {s.label}
                             </span>
 
-                            <div className="flex flex-col items-end gap-1 sm:relative sm:h-8 sm:w-full">
+                            <div className="flex flex-col items-end gap-1 md:relative md:h-8 md:w-full">
                               <span
-                                className="whitespace-nowrap transition-opacity sm:absolute sm:inset-0 sm:flex sm:items-center sm:justify-end sm:group-focus-within:opacity-0 sm:group-hover:opacity-0"
+                                className="whitespace-nowrap transition-opacity md:absolute md:inset-0 md:flex md:items-center md:justify-end md:group-focus-within:opacity-0 md:group-hover:opacity-0"
                                 style={{
                                   fontFamily: "var(--font-body)",
                                   fontSize: "var(--type-label)",
@@ -463,14 +431,14 @@ export function AlertsScreen({
                               >
                                 {timeAgo(a.timestamp)}
                               </span>
-                              <div className="flex items-center justify-end gap-1 transition-opacity sm:absolute sm:inset-0 sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
+                              <div className="flex items-center justify-end gap-1 transition-opacity md:absolute md:inset-0 md:opacity-0 md:focus-within:opacity-100 md:group-hover:opacity-100">
                                 {!a.acknowledged && (
                                   <button
                                     type="button"
                                     onClick={() => void onAcknowledge(a.id)}
                                     disabled={pendingAlertId === a.id}
                                     aria-busy={pendingAlertId === a.id}
-                                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
                                     style={{
                                       borderColor: CARD_BORDER,
                                       color: TEXT,
@@ -486,7 +454,7 @@ export function AlertsScreen({
                                   onClick={() => void onDismiss(a.id)}
                                   disabled={pendingAlertId === a.id}
                                   aria-busy={pendingAlertId === a.id}
-                                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--status-danger-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--status-danger-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
                                   style={{
                                     borderColor: CARD_BORDER,
                                     color: "var(--status-danger-fg)",

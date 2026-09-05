@@ -1,12 +1,13 @@
+import { Check } from "@phosphor-icons/react";
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
   Camera,
-  Check,
   CheckCircle2,
   ChevronDown,
   Circle,
+  CircleCheck,
   Pencil,
   Plus,
   Trash2,
@@ -231,7 +232,7 @@ export function JournalEntryCard({
                   <Check
                     size={12}
                     color={"var(--status-success-fg)"}
-                    strokeWidth={3}
+                    weight="fill"
                   />{" "}
                   {developmentCheckLabels[c]}
                 </span>
@@ -513,7 +514,7 @@ export function LogModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[var(--dialog-height-max)] overflow-y-auto p-0 shadow-2xl sm:max-w-[var(--dialog-width-wide)]"
+        className="max-h-[var(--dialog-height-max)] overflow-y-auto p-0 shadow-2xl md:max-w-[var(--dialog-width-wide)]"
         style={{
           backgroundColor: "var(--surface-subtle)",
           border: `1px solid var(--border-default)`,
@@ -841,7 +842,7 @@ function LogModalBody({
                     }}
                     aria-hidden="true"
                   >
-                    {completed ? <Check size={13} strokeWidth={3} /> : item.id}
+                    {completed ? <Check size={13} weight="fill" /> : item.id}
                   </span>
                   <span
                     className="min-w-0"
@@ -1016,7 +1017,7 @@ function LogModalBody({
                   <p
                     className="mt-1.5 flex items-center gap-1"
                     style={{
-                      fontSize: "var(--type-caption)",
+                      fontSize: "var(--type-body-sm)",
                       color: "var(--status-danger-fg)",
                       fontWeight: "var(--weight-semibold)",
                     }}
@@ -1184,7 +1185,7 @@ function LogModalBody({
                     style={{
                       borderColor: "var(--status-warning-fg)",
                       color: "var(--status-warning-fg)",
-                      fontSize: "var(--type-caption)",
+                      fontSize: "var(--type-body-sm)",
                     }}
                   >
                     Count remaining as uncertain
@@ -1241,7 +1242,7 @@ function LogModalBody({
                         })
                       }
                       aria-pressed={on}
-                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                      className="inline-flex min-h-[var(--control-height-default)] items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:min-h-8"
                       style={{
                         backgroundColor: on
                           ? "var(--status-success-bg)"
@@ -1250,13 +1251,13 @@ function LogModalBody({
                         color: on
                           ? "var(--status-success-deep)"
                           : "var(--text-secondary)",
-                        fontSize: "var(--type-caption)",
+                        fontSize: "var(--type-body-sm)",
                         fontWeight: "var(--weight-semibold)",
                         cursor: "pointer",
                       }}
                     >
                       {on ? (
-                        <Check size={13} strokeWidth={3} />
+                        <Check size={13} weight="fill" />
                       ) : (
                         <Circle size={13} />
                       )}
@@ -1378,7 +1379,7 @@ function LogModalBody({
                             photos: f.photos.filter((_, idx) => idx !== i),
                           }));
                         }}
-                        className="absolute -top-2 -right-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                        className="absolute -top-2 -right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-7 md:w-7"
                         aria-label="Remove photo"
                       >
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition-transform hover:bg-red-700 active:scale-95">
@@ -1869,7 +1870,7 @@ export function CandlingJournalTab({
             </div>
 
             {/* High-contrast stat tiles with big numbers */}
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
               {isLaterSummary ? (
                 <>
                   <div
@@ -2212,7 +2213,7 @@ export function CandlingJournalTab({
             </div>
 
             <div
-              className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 border-t pt-4 md:flex-row md:items-center md:justify-between"
               style={{ borderColor: "var(--border-default)" }}
             >
               <div>
@@ -2270,14 +2271,14 @@ export function CandlingJournalTab({
               {canLog ? (
                 <Button
                   onClick={openNewInspection}
-                  className="w-full rounded-full sm:w-auto"
+                  className="w-full rounded-full md:w-auto"
                   style={{ ...rustBtn, fontSize: "var(--type-body-sm)" }}
                 >
                   <Plus size={14} /> Log Inspection
                 </Button>
               ) : (
                 <p
-                  className="w-full sm:w-auto sm:text-right"
+                  className="w-full md:w-auto md:text-right"
                   style={{
                     color: "var(--text-secondary)",
                     fontSize: "var(--type-caption)",
@@ -2289,7 +2290,7 @@ export function CandlingJournalTab({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center md:justify-between">
             <div>
               <p
                 style={{
@@ -2346,7 +2347,7 @@ export function CandlingJournalTab({
               <Button
                 onClick={openNewInspection}
                 disabled={isUpdating}
-                className="w-full rounded-full sm:w-auto"
+                className="w-full rounded-full md:w-auto"
                 style={{
                   ...rustBtn,
                   fontSize: "var(--type-body-sm)",
@@ -2357,7 +2358,7 @@ export function CandlingJournalTab({
               </Button>
             ) : (
               <p
-                className="w-full sm:w-auto sm:text-right"
+                className="w-full md:w-auto md:text-right"
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "var(--type-caption)",
@@ -2478,7 +2479,7 @@ export function CandlingJournalTab({
                               return next;
                             })
                           }
-                          className="flex min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2"
+                          className="flex min-h-[var(--control-height-default)] min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 md:min-h-8"
                           style={{
                             fontSize: "var(--type-heading-sm)",
                             fontWeight: "var(--weight-bold)",
@@ -2493,11 +2494,11 @@ export function CandlingJournalTab({
                               ? (CANDLE_SHORT_LABELS[n.idx] ?? n.entry.label)
                               : n.entry.label}
                           </span>
-                          <CheckCircle2
-                            size={18}
-                            fill="var(--status-success-fg)"
-                            color="var(--on-brand)"
+                          <CircleCheck
+                            size={15}
                             strokeWidth={2.5}
+                            className="shrink-0 text-[var(--status-success-fg)]"
+                            aria-hidden="true"
                           />
                           <ChevronDown
                             size={17}
@@ -2521,7 +2522,7 @@ export function CandlingJournalTab({
                               setEditingEntry(n.entry);
                               setShowLogForm(true);
                             }}
-                            className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
                             aria-label={`Edit entry for Day ${n.entry.day}`}
                             title="Edit Inspection"
                           >
@@ -2530,7 +2531,7 @@ export function CandlingJournalTab({
                           <button
                             type="button"
                             onClick={() => setEntryToDelete(n.entry)}
-                            className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-[var(--text-faint)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
                             aria-label={`Delete entry for Day ${n.entry.day}`}
                             title="Delete Journal Entry"
                           >

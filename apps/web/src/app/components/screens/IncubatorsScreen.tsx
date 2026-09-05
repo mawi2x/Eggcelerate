@@ -17,10 +17,12 @@ import {
   validateHarvestCounts,
 } from "../../domain/fertility";
 import { rangeState, waterState } from "../../domain/incubator";
-import type { Incubator, Mode, UnitStatus } from "../../domain/types";
+import type { Incubator, Mode } from "../../domain/types";
 import { useCycleHistoryActions } from "../../features/farm/use-farm-data";
 import {
+  type IncubatorStatusFilter,
   selectFilteredIncubators,
+  selectIncubatorStatusFilterCounts,
   selectSortedIncubators,
 } from "../../features/incubators/selectors";
 import { FieldCounterLabel } from "../FieldCounterLabel";
@@ -75,7 +77,7 @@ const MUTED = "var(--text-secondary)";
 const TEXT = "var(--text-primary)";
 const INPUT_BORDER = "var(--input-border)";
 
-type Filter = "all" | UnitStatus;
+type Filter = IncubatorStatusFilter;
 
 const inputStyle = {
   borderColor: INPUT_BORDER,
@@ -85,12 +87,9 @@ const inputStyle = {
 // Framed white control matching the toolbar spec.
 const sortTriggerStyle = {
   backgroundColor: "var(--surface-card)",
-  borderColor: "var(--border-subtle)",
+  borderColor: "var(--border-default)",
   color: "var(--text-primary)",
-  fontFamily: "var(--font-body)",
-  fontSize: "var(--type-body-sm)",
   fontWeight: "var(--weight-medium)",
-  lineHeight: "var(--leading-normal)",
 };
 
 type SortKey = "progress" | "name";
@@ -172,12 +171,7 @@ export function IncubatorsScreen({
   const modeOf = (id: string) => modes.find((m) => m.id === id) ?? modes[0];
 
   const counts = useMemo(
-    () => ({
-      all: units.length,
-      optimal: units.filter((u) => u.status === "optimal").length,
-      warning: units.filter((u) => u.status === "warning").length,
-      alert: units.filter((u) => u.status === "alert").length,
-    }),
+    () => selectIncubatorStatusFilterCounts(units),
     [units],
   );
 
@@ -195,8 +189,9 @@ export function IncubatorsScreen({
       selectSortedIncubators(filtered, modes, {
         sort,
         sortAsc,
+        prioritizeIssues: filter === "issues",
       }),
-    [filtered, sort, sortAsc, modes],
+    [filtered, filter, sort, sortAsc, modes],
   );
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -260,18 +255,11 @@ export function IncubatorsScreen({
   const filterPills: {
     key: Filter;
     label: string;
-    mobileLabel?: string;
     count: number;
   }[] = [
     { key: "all", label: "ALL", count: counts.all },
     { key: "optimal", label: "OPTIMAL", count: counts.optimal },
-    {
-      key: "warning",
-      label: "NEEDS ATTENTION",
-      mobileLabel: "ATTENTION",
-      count: counts.warning,
-    },
-    { key: "alert", label: "URGENT", count: counts.alert },
+    { key: "issues", label: "ISSUES", count: counts.issues },
   ];
 
   // Pagination for the list view.
@@ -360,7 +348,7 @@ export function IncubatorsScreen({
   return (
     <div className="space-y-6" style={{ color: TEXT }}>
       {/* Row 1: Search + ViewToggle (desktop) + Add Button */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
+      <div className="flex items-center gap-2.5 md:gap-3">
         <div className="relative min-w-0 flex-1">
           <Search
             size={16}
@@ -381,7 +369,7 @@ export function IncubatorsScreen({
             style={inputStyle}
           />
         </div>
-        <div className="hidden sm:block">
+        <div className="hidden md:block">
           <ViewToggle view={view} onChange={setView} />
         </div>
         <Button
@@ -390,24 +378,26 @@ export function IncubatorsScreen({
             setConnectError(null);
             setOpen(true);
           }}
-          className="shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 sm:px-5"
+          className="shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 md:px-5"
           style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
           aria-label="Add incubator"
         >
           <Plus size={18} />
-          <span className="sm:hidden">Add</span>
-          <span className="hidden sm:inline">Add Incubator</span>
+          <span className="md:hidden">Add</span>
+          <span className="hidden md:inline">Add Incubator</span>
         </Button>
       </div>
 
       {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
       <div
-        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
         style={{ marginTop: 16 }}
       >
-        <div className="min-w-0 flex-1 sm:flex-initial">
+        <div className="min-w-0 flex-1 lg:flex-initial">
           <FilterBar
             ariaLabel="Incubator status filter"
+            variant="segmented"
+            fitToScreenOnMobile
             value={filter}
             onChange={(key) => {
               setFilter(key as typeof filter);
@@ -416,13 +406,13 @@ export function IncubatorsScreen({
             options={filterPills.map((p) => ({
               key: p.key,
               label: p.label,
-              mobileLabel: p.mobileLabel,
               count: p.count,
             }))}
+            className="md:!w-full lg:!w-auto"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex w-full items-center justify-end gap-2 lg:w-auto">
           {/* Incubation Mode Select */}
           <Select
             value={modeFilter}
@@ -433,8 +423,10 @@ export function IncubatorsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-(length:--type-body-sm) sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
-              style={sortTriggerStyle}
+              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5 md:text-sm"
+              style={{
+                ...sortTriggerStyle,
+              }}
               aria-label="Filter by incubation mode"
             >
               <SelectValue placeholder="All modes" />
@@ -459,8 +451,10 @@ export function IncubatorsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-(length:--type-body-sm) sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
-              style={sortTriggerStyle}
+              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5 md:text-sm"
+              style={{
+                ...sortTriggerStyle,
+              }}
               aria-label="Sort chambers"
             >
               <SelectValue />
@@ -481,7 +475,7 @@ export function IncubatorsScreen({
               setSortAsc((v) => !v);
               setPage(1);
             }}
-            className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] shrink-0 cursor-pointer items-center justify-center rounded-xl border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2"
+            className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:rounded-xl"
             style={{
               backgroundColor: "var(--surface-card)",
               borderColor: "var(--border-subtle)",
@@ -491,9 +485,9 @@ export function IncubatorsScreen({
             aria-label={`Sort direction: ${sortAsc ? "ascending" : "descending"}`}
           >
             {sortAsc ? (
-              <ArrowUpNarrowWide size={16} />
+              <ArrowUpNarrowWide size={16} className="md:size-[18px]" />
             ) : (
-              <ArrowDownWideNarrow size={16} />
+              <ArrowDownWideNarrow size={16} className="md:size-[18px]" />
             )}
           </button>
         </div>
@@ -524,7 +518,7 @@ export function IncubatorsScreen({
                 setFilter("all");
                 setModeFilter("all");
               }}
-              className="mt-3 cursor-pointer rounded-xl px-3 py-1.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+              className="mt-3 min-h-[var(--control-height-default)] cursor-pointer rounded-xl px-3 py-1.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-8"
               style={{
                 color: RUST,
                 fontWeight: "var(--weight-semibold)",
@@ -537,7 +531,9 @@ export function IncubatorsScreen({
         </div>
       ) : view === "grid" ? (
         <>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {/* Reserve a small mobile gutter so the fixed chamber index never
+              sits on top of the card edge. */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3 pr-4 md:pr-0">
             {sorted.map((unit, idx) => (
               <div
                 key={unit.id}
@@ -564,8 +560,9 @@ export function IncubatorsScreen({
 
           {/* Floating Vertical Dot Track on Mobile (shows incubator count and scroll position) */}
           {sorted.length > 1 && (
-            <fieldset
-              className="scrollbar-none pointer-events-auto fixed right-1 top-1/2 z-20 m-0 flex max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto border-0 bg-transparent p-0 max-[20rem]:hidden md:hidden"
+            <div
+              className="scrollbar-none pointer-events-auto fixed right-1.5 top-1/2 z-20 m-0 flex h-fit max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] w-3 min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto bg-transparent max-[20rem]:hidden md:hidden"
+              role="group"
               aria-label={`Chamber list index. Showing ${sorted.length} chambers.`}
             >
               {sorted.map((unit, idx) => {
@@ -575,7 +572,7 @@ export function IncubatorsScreen({
                     key={unit.id}
                     type="button"
                     onClick={() => scrollToChamber(idx)}
-                    className="flex h-3 w-2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none"
+                    className="flex h-3 w-2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                     aria-label={`Scroll to ${unit.name} (${idx + 1} of ${sorted.length})`}
                     title={`${unit.name} (${idx + 1} of ${sorted.length})`}
                     aria-current={isActive ? "true" : undefined}
@@ -593,7 +590,7 @@ export function IncubatorsScreen({
                   </button>
                 );
               })}
-            </fieldset>
+            </div>
           )}
         </>
       ) : (
@@ -779,7 +776,7 @@ export function IncubatorsScreen({
           }
         }}
       >
-        <DialogContent className="rounded-2xl sm:max-w-md">
+        <DialogContent className="rounded-2xl md:max-w-md">
           <DialogHeader>
             <DialogTitle
               style={{

@@ -115,13 +115,13 @@ export function WaterDroplet({ ok, size = 120 }: WaterDropletProps) {
       </div>
       <div className="mt-1 flex flex-col items-center text-center">
         <span
-          className="text-(length:--type-label-micro) font-bold uppercase tracking-wider sm:text-(length:--type-label-compact)"
+          className="text-(length:--type-label-micro) font-bold uppercase tracking-wider md:text-(length:--type-label-compact)"
           style={{ color: MUTED, opacity: 0.8 }}
         >
           Water status
         </span>
         <span
-          className="text-(length:--type-label-compact) font-semibold sm:text-(length:--type-caption)"
+          className="text-(length:--type-label-compact) font-semibold md:text-(length:--type-caption)"
           style={{ color: ok ? OK : ALERT }}
         >
           {ok ? "Sufficient" : "Refill Needed"}

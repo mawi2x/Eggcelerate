@@ -3,6 +3,7 @@ import { createIncubatorFixtures } from "../app/data/fixtures/incubators";
 import { createModeFixtures } from "../app/data/fixtures/modes";
 import {
   selectFilteredIncubators,
+  selectIncubatorStatusFilterCounts,
   selectSortedIncubators,
 } from "../app/features/incubators/selectors";
 
@@ -20,16 +21,41 @@ describe("selectFilteredIncubators", () => {
     ).toHaveLength(units.length);
   });
 
-  it("filters by chamber status", () => {
-    const expected = units.filter((u) => u.status === "alert").length;
+  it("filters the Issues bucket to warning and alert chambers", () => {
+    const expected = units.filter((u) => u.status !== "optimal").length;
     expect(expected).toBeGreaterThan(0);
+    const result = selectFilteredIncubators(units, modes, {
+      search: "",
+      status: "issues",
+      modeId: "all",
+    });
+    expect(result).toHaveLength(expected);
     expect(
-      selectFilteredIncubators(units, modes, {
-        search: "",
-        status: "alert",
-        modeId: "all",
-      }),
-    ).toHaveLength(expected);
+      result.every((u) => u.status === "warning" || u.status === "alert"),
+    ).toBe(true);
+  });
+
+  it("keeps the Optimal bucket limited to optimal chambers", () => {
+    const testUnits = [
+      { ...units[0], id: "optimal", status: "optimal" as const },
+      ...units,
+    ];
+    const result = selectFilteredIncubators(testUnits, modes, {
+      search: "",
+      status: "optimal",
+      modeId: "all",
+    });
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((u) => u.status === "optimal")).toBe(true);
+  });
+
+  it("counts the three status filter buckets without changing domain statuses", () => {
+    const counts = selectIncubatorStatusFilterCounts(units);
+    expect(counts).toEqual({
+      all: units.length,
+      optimal: units.filter((u) => u.status === "optimal").length,
+      issues: units.filter((u) => u.status !== "optimal").length,
+    });
   });
 
   it("matches chamber name case-insensitively with trimming", () => {
@@ -163,5 +189,33 @@ describe("selectSortedIncubators", () => {
         ).toEqual(["done", "rdy", "mid"]);
       }
     }
+  });
+
+  it("prioritizes alert over warning when the Issues view is active", () => {
+    const warningSource = units.find((u) => u.status === "warning");
+    const alertSource = units.find((u) => u.status === "alert");
+    if (!warningSource || !alertSource) {
+      throw new Error("Expected warning and alert fixture units");
+    }
+    const warning = {
+      ...warningSource,
+      id: "warning",
+      name: "Chamber Warning",
+      cyclePhase: "completed" as const,
+    };
+    const alert = {
+      ...alertSource,
+      id: "alert",
+      name: "Chamber Alert",
+      cyclePhase: "incubating" as const,
+    };
+
+    expect(
+      selectSortedIncubators([warning, alert], modes, {
+        sort: "name",
+        sortAsc: true,
+        prioritizeIssues: true,
+      }).map((u) => u.id),
+    ).toEqual(["alert", "warning"]);
   });
 });

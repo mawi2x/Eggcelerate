@@ -27,6 +27,11 @@ describe("mobile dot navigation contracts", () => {
       expect(source).toContain("overflow-y-auto");
       expect(source).toContain("m-0");
       expect(source).toContain("min-w-0");
+      expect(source).toContain("h-fit");
+      expect(source).toContain("w-3");
+      expect(source).toContain('role="group"');
+      expect(source).toContain("fixed right-1.5 top-1/2");
+      expect(source).not.toContain("fixed right-1 top-1/2");
     });
 
     it(`${path.basename(screen)} exposes text alternatives for dot status`, () => {

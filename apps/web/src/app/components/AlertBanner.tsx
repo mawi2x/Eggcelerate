@@ -51,7 +51,7 @@ export function AlertBanner({ criticalUnits, modes, onView }: Props) {
           />
         }
       />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <p
           style={{
             fontFamily: "var(--font-display)",
@@ -60,12 +60,17 @@ export function AlertBanner({ criticalUnits, modes, onView }: Props) {
             lineHeight: "var(--leading-snug)",
             color: "var(--on-brand)",
             whiteSpace: "normal",
-            wordBreak: "break-word",
+            overflowWrap: "anywhere",
           }}
         >
           {headline}
         </p>
-        <p style={{ opacity: 0.9 }}>{detail}</p>
+        <p
+          className="break-words"
+          style={{ opacity: 0.9, overflowWrap: "anywhere" }}
+        >
+          {detail}
+        </p>
       </div>
       <ChevronRight size={22} className="shrink-0" />
     </button>

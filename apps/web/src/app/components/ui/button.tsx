@@ -21,8 +21,10 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
+        micro:
+          "h-[var(--control-height-default)] rounded-lg gap-1 px-2.5 text-sm has-[>svg]:px-2 md:h-7 md:text-xs",
         default: "h-[var(--control-height-default)] px-4 py-2 has-[>svg]:px-3",
-        sm: "h-[var(--control-height-compact)] rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        sm: "h-[var(--control-height-default)] rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 md:h-[var(--control-height-compact)]",
         lg: "h-[var(--control-height-toolbar)] rounded-md px-6 has-[>svg]:px-4",
         toolbar:
           "h-[var(--control-height-toolbar)] rounded-xl px-4 has-[>svg]:px-3",

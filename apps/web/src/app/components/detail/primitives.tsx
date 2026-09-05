@@ -64,7 +64,7 @@ export function SectionCard({
         boxShadow: "var(--shadow-subtle)",
       }}
     >
-      <CardContent className="p-5">
+      <CardContent className="p-4 sm:p-5">
         <div
           className={`flex items-start justify-between gap-3 min-h-[32px] ${divider ? "mb-3 border-b pb-3" : "mb-4"}`}
           style={{

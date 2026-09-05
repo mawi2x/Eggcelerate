@@ -128,7 +128,7 @@ export function SettingsScreen({
         className="min-w-0 flex-1 rounded-2xl"
         style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
       >
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {category === "modes" && (
             <ModeLibraryPanel
               modes={modes}
@@ -176,7 +176,7 @@ export function SettingsScreen({
         </div>
 
         <div
-          className="sticky bottom-[var(--mobile-bottom-nav-clearance)] z-30 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl px-6 py-3.5 md:bottom-0"
+          className="sticky bottom-[var(--mobile-bottom-nav-clearance)] z-30 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl px-4 py-3.5 md:bottom-0 md:px-6"
           style={{
             backgroundColor: "var(--scrim-card)",
             backdropFilter: "blur(8px)",
@@ -184,8 +184,8 @@ export function SettingsScreen({
           }}
         >
           <span
-            className="min-w-0 text-xs"
-            style={{ color: MUTED }}
+            className="min-w-0"
+            style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}
             role="status"
             aria-live="polite"
             aria-atomic="true"

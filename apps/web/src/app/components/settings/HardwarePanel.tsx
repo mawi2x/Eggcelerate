@@ -52,7 +52,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
       <SegmentedControl
         role="tablist"
         aria-label="Hardware settings sections"
-        className="mt-5 w-full sm:w-auto"
+        className="mt-5 w-full md:w-auto"
       >
         <SegmentedControlItem
           id="hardware-devices-tab"
@@ -61,7 +61,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           aria-controls="hardware-devices-panel"
           active={view === "devices"}
           size="toolbar"
-          className="flex-1 sm:flex-none"
+          className="flex-1 md:flex-none"
           onClick={() => onViewChange("devices")}
         >
           Paired devices ({units.length})
@@ -73,7 +73,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           aria-controls="hardware-preferences-panel"
           active={view === "preferences"}
           size="toolbar"
-          className="flex-1 sm:flex-none"
+          className="flex-1 md:flex-none"
           onClick={() => onViewChange("preferences")}
         >
           Device preferences
@@ -132,7 +132,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p
-                      className="truncate"
+                      className="break-words"
                       style={{
                         fontSize: "var(--type-body)",
                         fontWeight: "var(--weight-semibold)",
@@ -142,7 +142,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                       {unit.name}
                     </p>
                     <p
-                      className="truncate"
+                      className="break-all"
                       style={{ fontSize: "var(--type-caption)", color: MUTED }}
                     >
                       {unit.deviceId}
@@ -298,7 +298,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                     <button
                       type="button"
                       onClick={() => setCalibrationSaved(true)}
-                      className="cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                      className="min-h-[var(--control-height-default)] min-w-[var(--control-height-default)] cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-8 md:min-w-8"
                       style={{
                         backgroundColor: calibrationSaved
                           ? "var(--status-success-bg)"

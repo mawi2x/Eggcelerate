@@ -535,7 +535,7 @@ export function ModeLibraryPanel({
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 py-4">
-        <div className="relative min-w-0 flex-1" style={{ minWidth: 200 }}>
+        <div className="relative min-w-0 w-full flex-1 md:min-w-[200px]">
           <Search
             size={16}
             className="absolute left-3 top-1/2 -translate-y-1/2"
@@ -636,7 +636,7 @@ export function ModeLibraryPanel({
               >
                 <div className="flex items-center justify-between gap-2">
                   <p
-                    className="min-w-0 truncate"
+                    className="min-w-0 break-words"
                     style={{
                       fontFamily: "var(--font-body)",
                       fontSize: "var(--type-body)",
@@ -842,7 +842,7 @@ export function ModeLibraryPanel({
         open={deleteTarget !== null}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
       >
-        <DialogContent className="rounded-3xl sm:max-w-sm">
+        <DialogContent className="rounded-3xl md:max-w-sm">
           <DialogHeader>
             <DialogTitle
               style={{
@@ -883,7 +883,7 @@ export function ModeLibraryPanel({
 
       {/* Edit / Add Mode modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="rounded-3xl sm:max-w-md">
+        <DialogContent className="rounded-3xl md:max-w-md">
           <DialogHeader>
             <DialogTitle
               style={{
@@ -974,7 +974,7 @@ export function ModeLibraryPanel({
 
       {/* Import conflict resolution modal */}
       <Dialog open={conflictOpen} onOpenChange={setConflictOpen}>
-        <DialogContent className="rounded-3xl sm:max-w-lg">
+        <DialogContent className="rounded-3xl md:max-w-lg">
           <DialogHeader>
             <DialogTitle
               style={{
@@ -1038,7 +1038,7 @@ export function ModeLibraryPanel({
                             ),
                           )
                         }
-                        className="cursor-pointer rounded-full px-3 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                        className="min-h-[var(--control-height-default)] cursor-pointer rounded-full px-3 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-8"
                         style={{
                           backgroundColor: active
                             ? RUST

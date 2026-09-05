@@ -1,16 +1,19 @@
-import { BatteryPlus, WifiSlash } from "@phosphor-icons/react";
+import {
+  BatteryPlus,
+  Fan,
+  Flame,
+  Lightning,
+  Waves,
+  WifiHigh,
+  WifiSlash,
+} from "@phosphor-icons/react";
 import {
   ArrowUpRight,
   ChevronDown,
   Droplets,
-  Fan,
-  Flame,
   Thermometer,
   TrendingDown,
   TrendingUp,
-  Waves,
-  Wifi,
-  Zap,
 } from "lucide-react";
 import type React from "react";
 import type {
@@ -40,7 +43,7 @@ function SystemStatusTile({
 }) {
   return (
     <div
-      className="flex min-h-[50px] sm:min-h-16 items-center gap-2 sm:gap-3 rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3"
+      className="flex min-h-[50px] items-center gap-2 rounded-xl px-2.5 py-2 md:min-h-16 md:gap-3 md:px-3.5 md:py-3"
       style={{
         backgroundColor: "var(--surface-porcelain)",
         border: `1px solid var(--border-default)`,
@@ -48,14 +51,14 @@ function SystemStatusTile({
     >
       <span
         aria-hidden="true"
-        className="flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-sm sm:text-base [&>svg]:size-4 sm:[&>svg]:size-[18px]"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm [&>svg]:size-4 md:h-9 md:w-9 md:text-base md:[&>svg]:size-[18px]"
         style={{ backgroundColor: tone.bg, color: tone.fg }}
       >
         {icon}
       </span>
       <div className="min-w-0 flex-1">
         <p
-          className="truncate"
+          className="break-words"
           style={{
             color: "var(--text-secondary)",
             fontFamily: "var(--font-body)",
@@ -68,7 +71,7 @@ function SystemStatusTile({
           {label}
         </p>
         <p
-          className="tabular-nums truncate font-bold text-(length:--type-caption) sm:text-(length:--type-body-sm)"
+          className="tabular-nums break-words font-bold text-(length:--type-caption) md:text-(length:--type-body-sm)"
           style={{
             color: "var(--text-primary)",
             fontFamily: "var(--font-body)",
@@ -114,13 +117,13 @@ function ExtremumTile({
   const stamp = readingStamp(reading.ts);
   return (
     <div
-      className="rounded-xl px-3 py-2 sm:px-3.5 sm:py-3"
+      className="rounded-xl px-3 py-2 md:px-3.5 md:py-3"
       style={{
         backgroundColor: "var(--surface-porcelain)",
         border: `1px solid var(--border-default)`,
       }}
     >
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex items-center gap-1.5 md:gap-2">
         <span
           aria-hidden="true"
           className="shrink-0"
@@ -144,7 +147,7 @@ function ExtremumTile({
         </span>
       </div>
       <p
-        className="mt-1.5 tabular-nums text-(length:--type-heading-sm) sm:mt-2 sm:text-(length:--type-heading-lg)"
+        className="mt-1.5 tabular-nums text-(length:--type-heading-sm) md:mt-2 md:text-(length:--type-heading-lg)"
         style={{
           color: "var(--text-primary)",
           fontFamily: "var(--font-display)",
@@ -167,7 +170,7 @@ function ExtremumTile({
         </span>
       </p>
       <p
-        className="mt-1 truncate sm:mt-1.5"
+        className="mt-1 break-words md:mt-1.5"
         style={{
           color: "var(--text-secondary)",
           fontFamily: "var(--font-body)",
@@ -177,10 +180,10 @@ function ExtremumTile({
         }}
         title={`${stamp.date} at ${stamp.time}`}
       >
-        <span className="sm:hidden">
+        <span className="md:hidden">
           {stamp.shortDate} at {stamp.time}
         </span>
-        <span className="hidden sm:inline">
+        <span className="hidden md:inline">
           {stamp.date} at {stamp.time}
         </span>
       </p>
@@ -246,7 +249,7 @@ function EnvironmentalSummary({
         <button
           type="button"
           onClick={onViewTrends}
-          className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[var(--surface-track)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+          className="inline-flex min-h-[var(--control-height-default)] cursor-pointer items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[var(--surface-track)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:min-h-9"
           style={{
             color: "var(--brand-primary)",
             fontFamily: "var(--font-body)",
@@ -338,7 +341,7 @@ function EnvironmentalSummary({
           className="border-t p-4"
           style={{ borderColor: "var(--border-default)" }}
         >
-          <div className="grid grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 md:gap-2.5 lg:grid-cols-4">
             <ExtremumTile
               label="Highest temperature"
               value={highestTemp.temp.toFixed(1)}
@@ -392,7 +395,7 @@ function EnvironmentalSummary({
                 return (
                   <div
                     key={reading.ts}
-                    className="flex flex-wrap items-center justify-between gap-2 py-2 sm:py-2.5"
+                    className="flex flex-wrap items-center justify-between gap-2 py-2 md:py-2.5"
                   >
                     <div>
                       <p
@@ -483,10 +486,10 @@ export function LiveMonitorTab({
           labelSize={9}
         />
         <div
-          className="my-2.5 sm:my-4"
+        className="my-2.5 md:my-4"
           style={{ height: 1, backgroundColor: "var(--border-default)" }}
         />
-        <div className="grid grid-cols-3 items-start gap-2 sm:gap-6">
+        <div className="grid grid-cols-3 items-start gap-2 md:gap-6">
           <GaugeDial
             value={unit.temp}
             min={30}
@@ -513,9 +516,9 @@ export function LiveMonitorTab({
         title="Chamber status"
         subtitle="Live systems, power, and connectivity"
       >
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-3">
           <SystemStatusTile
-            icon={<Flame size={18} />}
+            icon={<Flame size={18} weight="fill" />}
             label="Heating element"
             value={heaterOn ? "Heating" : "Standby"}
             tone={
@@ -533,7 +536,7 @@ export function LiveMonitorTab({
             }
           />
           <SystemStatusTile
-            icon={<Waves size={18} />}
+            icon={<Waves size={18} weight="fill" />}
             label="Mist maker"
             value={mistOn ? "Misting" : "Off"}
             tone={
@@ -551,7 +554,7 @@ export function LiveMonitorTab({
             }
           />
           <SystemStatusTile
-            icon={<Fan size={18} />}
+            icon={<Fan size={18} weight="fill" />}
             label="Circulation fan"
             value={fanOn ? "Active" : "Off"}
             tone={
@@ -569,7 +572,7 @@ export function LiveMonitorTab({
             }
           />
           <SystemStatusTile
-            icon={<Zap size={18} />}
+            icon={<Lightning size={18} weight="fill" />}
             label="Power"
             value={
               unit.powerSource === "battery" ? "Battery power" : "Grid power"
@@ -591,7 +594,7 @@ export function LiveMonitorTab({
           <SystemStatusTile
             icon={
               unit.paired ? (
-                <Wifi size={18} />
+                <WifiHigh size={18} weight="fill" />
               ) : (
                 <WifiSlash size={18} weight="fill" />
               )
@@ -613,7 +616,7 @@ export function LiveMonitorTab({
             }
           />
           <SystemStatusTile
-            icon={<BatteryPlus size={18} />}
+            icon={<BatteryPlus size={18} weight="fill" />}
             label="Battery"
             value={
               unit.batteryPct <= 25

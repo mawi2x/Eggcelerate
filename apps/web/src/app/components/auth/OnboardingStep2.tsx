@@ -100,7 +100,7 @@ export function OnboardingStep2({
         >
           Primary focus
         </p>
-        <div className="mt-2 grid grid-cols-2 gap-2.5">
+        <div className="mt-2 grid grid-cols-1 gap-2.5 min-[23rem]:grid-cols-2">
           {FOCUS_OPTIONS.map((opt) => {
             const selected = primaryFocus === opt.id;
             const Icon = opt.icon;
@@ -110,7 +110,7 @@ export function OnboardingStep2({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setPrimaryFocus(opt.id)}
-                className="flex cursor-pointer items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-all hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
+                className="flex min-h-[var(--control-height-default)] cursor-pointer items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-all hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
                 style={{
                   backgroundColor: selected
                     ? "var(--surface-selected)"
@@ -124,8 +124,8 @@ export function OnboardingStep2({
                 }}
               >
                 <Icon size={18} className="shrink-0" />
-                <span
-                  className="truncate"
+                  <span
+                  className="min-w-0 break-words whitespace-normal"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-body-sm)",
@@ -162,7 +162,7 @@ export function OnboardingStep2({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => toggleSpecies(s)}
-                className="cursor-pointer rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+                className="min-h-11 cursor-pointer rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-9"
                 style={{
                   backgroundColor: selected
                     ? "var(--brand-primary)"

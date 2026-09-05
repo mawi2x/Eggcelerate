@@ -206,7 +206,14 @@ export function OnboardingStep3({
           aria-busy={isSubmitting}
           className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
-          {isSubmitting ? "Preparing dashboard…" : "Enter dashboard ✓"}
+          {isSubmitting ? (
+            "Preparing dashboard…"
+          ) : (
+            <>
+              <span className="md:hidden">Enter ✓</span>
+              <span className="hidden md:inline">Enter dashboard ✓</span>
+            </>
+          )}
         </button>
       </div>
     </AuthCard>

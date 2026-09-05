@@ -93,7 +93,7 @@ export function SignInScreen({
               type="button"
               onClick={() => setShow(!show)}
               aria-label={show ? "Hide password" : "Show password"}
-              className="cursor-pointer rounded-md p-1 text-muted transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 md:h-8 md:w-8"
               style={{ color: "var(--text-muted)" }}
             >
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -103,7 +103,7 @@ export function SignInScreen({
       </div>
       <div className="mt-3 flex items-center justify-between">
         <label
-          className="flex cursor-pointer items-center gap-2 text-sm"
+          className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"
           style={{
             fontFamily: "var(--font-body)",
             color: "var(--text-secondary)",
@@ -119,7 +119,7 @@ export function SignInScreen({
           type="button"
           onClick={() => alert("Coming soon")}
           aria-disabled="true"
-          className="cursor-pointer text-sm font-semibold text-[var(--brand-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+          className="flex min-h-11 items-center justify-center rounded px-1 text-sm font-semibold text-[var(--brand-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-8"
         >
           Forgot password?
         </button>

@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 import { CANDLE_SHORT_LABELS, dayFraction, markerStatus } from "./types";
 
 interface TimelineProps {
@@ -7,9 +7,9 @@ interface TimelineProps {
   candling: { day: number; label: string }[];
   candled: Record<number, boolean>;
   /**
-   * Milestone label density on <sm screens only (label + DAY lines).
+   * Milestone label density on <md screens only (label + DAY lines).
    * `10` uses `--type-label-compact` (preferred), `9` uses
-   * `--type-label-micro` (last-resort). sm and up always stay at the 11px
+   * `--type-label-micro` (last-resort). md and up always stay at the 11px
    * system minimum. Both are rem-based so user font-size/zoom still
    * scales them.
    */
@@ -41,7 +41,7 @@ export function Timeline({
 
   return (
     <div>
-      <div className="relative mx-1 overflow-visible pt-9 pb-12 sm:pt-11 sm:pb-14">
+      <div className="relative mx-1 overflow-visible pt-9 pb-12 md:pt-11 md:pb-14">
         {/* Track frame — the axis line, centered vertically in the container. */}
         <div
           className="absolute left-0 right-0"
@@ -115,9 +115,10 @@ export function Timeline({
           </div>
 
           {/* Layer 3 — milestone labels, below the track line and nodes.
-              <sm uses the labelSize density exception (10px default, 9px
-              opt-in); sm+ stays at the 11px system minimum. nowrap +
-              maxWidth keeps one line; title discloses the full value. */}
+              <md uses the labelSize density exception (10px default, 9px
+              opt-in); md+ stays at the 11px system minimum. nowrap +
+              maxWidth keeps the visual label compact; aria-label exposes the
+              full value to assistive technology and title adds pointer help. */}
           {candling.map((c, i) => {
             const pct = dayFraction(c.day, totalDays) * 100;
             const fullLabel = CANDLE_SHORT_LABELS[i] ?? c.label;
@@ -125,6 +126,8 @@ export function Timeline({
             return (
               <span
                 key={c.day}
+                role="img"
+                aria-label={`${fullLabel}, Day ${c.day}`}
                 className="absolute flex flex-col items-center whitespace-nowrap"
                 style={{
                   left: `${pct}%`,
@@ -139,7 +142,7 @@ export function Timeline({
               >
                 <span
                   data-timeline="compact-label"
-                  className="sm:hidden"
+                  className="md:hidden"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: milestoneSize,
@@ -153,7 +156,7 @@ export function Timeline({
                   {compactLabel}
                 </span>
                 <span
-                  className="hidden sm:inline"
+                  className="hidden md:inline"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-label)",
@@ -168,7 +171,7 @@ export function Timeline({
                 </span>
                 <span
                   data-timeline="compact-day"
-                  className="sm:hidden"
+                  className="md:hidden"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: milestoneSize,
@@ -182,7 +185,7 @@ export function Timeline({
                   DAY {c.day}
                 </span>
                 <span
-                  className="hidden sm:inline"
+                  className="hidden md:inline"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-label)",
@@ -219,7 +222,7 @@ export function Timeline({
               title={`${c.label}, Day ${c.day}, ${status}`}
             >
               <div
-                className="flex h-[22px] w-[22px] items-center justify-center rounded-full sm:h-6 sm:w-6"
+                className="flex h-[22px] w-[22px] items-center justify-center rounded-full md:h-6 md:w-6"
                 style={{
                   backgroundColor: filled
                     ? "var(--brand-primary)"
@@ -230,7 +233,7 @@ export function Timeline({
                 }}
               >
                 {status === "logged" ? (
-                  <Check size={12} strokeWidth={3.2} />
+                  <Check size={13} weight="bold" />
                 ) : (
                   <span
                     style={{
@@ -250,7 +253,7 @@ export function Timeline({
       </div>
       <div className="mx-1 flex justify-between">
         <span
-          className="sm:hidden"
+          className="md:hidden"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: milestoneSize,
@@ -264,7 +267,7 @@ export function Timeline({
           DAY 1
         </span>
         <span
-          className="hidden sm:inline"
+          className="hidden md:inline"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-label)",
@@ -278,7 +281,7 @@ export function Timeline({
           DAY 1
         </span>
         <span
-          className="sm:hidden"
+          className="md:hidden"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: milestoneSize,
@@ -292,7 +295,7 @@ export function Timeline({
           DAY {totalDays}
         </span>
         <span
-          className="hidden sm:inline"
+          className="hidden md:inline"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-label)",

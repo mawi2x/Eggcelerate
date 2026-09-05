@@ -23,6 +23,13 @@ function SelectValue({
 }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
+const triggerSizeClasses: Record<"micro" | "sm" | "default" | "toolbar", string> = {
+  micro:
+    "h-[var(--control-height-default)] px-2 py-0.5 text-sm md:h-7 md:text-xs",
+  sm: "h-[var(--control-height-default)] px-2.5 md:h-[var(--control-height-compact)]",
+  default: "h-[var(--control-height-default)] px-3 py-2 text-sm",
+  toolbar: "h-[var(--control-height-toolbar)] px-3 py-2 text-sm",
+};
 
 function SelectTrigger({
   className,
@@ -31,21 +38,19 @@ function SelectTrigger({
   style,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  size?: "sm" | "default" | "toolbar";
+  size?: "micro" | "sm" | "default" | "toolbar";
 }) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full items-center justify-between gap-2 rounded-md border bg-input-background px-3 py-2 text-sm whitespace-nowrap transition-[color,box-shadow] outline-none focus-visible:ring-[3px] cursor-pointer hover:bg-accent/50 disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-[var(--control-height-default)] data-[size=sm]:h-[var(--control-height-compact)] data-[size=toolbar]:h-[var(--control-height-toolbar)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full items-center justify-between gap-1.5 rounded-md border bg-input-background whitespace-nowrap transition-[color,box-shadow] outline-none focus-visible:ring-[3px] cursor-pointer hover:bg-accent/50 disabled:cursor-not-allowed disabled:opacity-50 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        triggerSizeClasses[size],
         className,
       )}
       style={{
         fontFamily: "var(--font-body)",
-        // Control-value role: 14px desktop, 16px on phones (matches Input;
-        // suppresses iOS focus auto-zoom). Not --type-body — body copy
-        // stays 14px on phones.
         fontSize: "var(--type-control-value)",
         fontWeight: "var(--weight-regular)",
         lineHeight: "var(--leading-normal)",
@@ -55,7 +60,9 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="size-4 opacity-50" />
+        <ChevronDownIcon
+          className={cn("opacity-50", size === "micro" ? "size-3" : "size-4")}
+        />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -118,7 +125,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex min-h-[var(--control-height-default)] w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 md:min-h-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
       {...props}

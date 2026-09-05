@@ -95,7 +95,7 @@ export function NotificationPopover({
           style={{ borderBottom: `1px solid ${DIVIDER}` }}
         >
           <span
-            className="min-w-0 truncate"
+            className="min-w-0 break-words"
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "var(--type-heading-sm)",
@@ -110,10 +110,10 @@ export function NotificationPopover({
             onClick={() => void onMarkAllRead()}
             disabled={unreadCount === 0 || markingAllRead}
             aria-busy={markingAllRead}
-            className="shrink-0 cursor-pointer rounded-md px-1 transition-opacity hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline"
+            className="min-h-11 shrink-0 cursor-pointer rounded-md px-2 transition-opacity hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline"
             style={{
               fontFamily: "var(--font-body)",
-              fontSize: "var(--type-caption)",
+              fontSize: "var(--type-body-sm)",
               fontWeight: "var(--weight-semibold)",
               color: RUST,
             }}
@@ -153,7 +153,7 @@ export function NotificationPopover({
               return (
                 <li
                   key={a.id}
-                  className="group relative flex items-start gap-3 px-4 py-3 pr-14 transition-colors hover:bg-[var(--surface-app)] sm:pr-4"
+                  className="group relative flex items-start gap-3 px-4 py-3 pr-14 transition-colors hover:bg-[var(--surface-app)] md:pr-4"
                   style={{ borderBottom: `1px solid ${DIVIDER}` }}
                 >
                   <span
@@ -165,13 +165,13 @@ export function NotificationPopover({
                       color: s.color,
                     }}
                   >
-                    <s.Icon size={17} />
+                    <s.Icon size={17} weight="fill" />
                   </span>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span
-                        className="min-w-0 truncate"
+                        className="min-w-0 break-words"
                         style={{
                           fontFamily: "var(--font-body)",
                           fontSize: "var(--type-body-sm)",
@@ -191,7 +191,7 @@ export function NotificationPopover({
                       )}
                     </div>
                     <p
-                      className="truncate"
+                      className="min-w-0 break-words"
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: "var(--type-label)",
@@ -205,7 +205,7 @@ export function NotificationPopover({
                       className="mt-1 overflow-hidden"
                       style={{
                         fontFamily: "var(--font-body)",
-                        fontSize: "var(--type-caption)",
+                        fontSize: "var(--type-body-sm)",
                         color: "var(--text-clay)",
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
@@ -222,7 +222,7 @@ export function NotificationPopover({
                     onClick={() => void onDismiss(a.id)}
                     disabled={pendingAlertId === a.id}
                     aria-busy={pendingAlertId === a.id}
-                    className="absolute right-2 top-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-md opacity-100 transition-opacity hover:bg-[var(--border-divider)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
+                    className="absolute right-2 top-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-md opacity-100 transition-opacity hover:bg-[var(--border-divider)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8 md:opacity-0 md:group-hover:opacity-100"
                     style={{ color: MUTED }}
                     title="Dismiss"
                     aria-label={`Dismiss ${a.title}`}
@@ -242,7 +242,7 @@ export function NotificationPopover({
             setOpen(false);
             onViewAll();
           }}
-          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-b-xl py-3 transition-colors hover:bg-[var(--surface-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset"
+          className="flex min-h-[var(--control-height-default)] w-full cursor-pointer items-center justify-center gap-1.5 rounded-b-xl py-3 transition-colors hover:bg-[var(--surface-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset md:min-h-[var(--control-height-compact)]"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-body-sm)",

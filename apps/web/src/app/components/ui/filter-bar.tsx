@@ -1,39 +1,96 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
+
+import { SegmentedControl, SegmentedControlItem } from "./segmented-control";
 import { cn } from "./utils";
 
 export interface FilterBarOption {
   key: string;
   label: string;
   mobileLabel?: string;
+  compactMobileLabel?: string;
   count?: number;
 }
+
 interface FilterBarProps {
   options: FilterBarOption[];
   value: string;
   onChange: (key: string) => void;
   ariaLabel?: string;
   className?: string;
+  variant?: "chips" | "segmented";
+  equalWidthOnMobile?: boolean;
+  fitToScreenOnMobile?: boolean;
 }
+
+function FilterOptionContent({
+  option,
+  active,
+}: {
+  option: FilterBarOption;
+  active: boolean;
+}) {
+  const hasResponsiveLabel = Boolean(
+    option.mobileLabel || option.compactMobileLabel,
+  );
+
+  return (
+    <>
+      {hasResponsiveLabel ? (
+        <>
+          <span
+            className={cn(
+              "md:hidden",
+              option.compactMobileLabel && "max-[22.5rem]:hidden",
+            )}
+          >
+            {option.mobileLabel ?? option.label}
+          </span>
+          {option.compactMobileLabel && (
+            <span className="hidden max-[22.5rem]:inline md:hidden">
+              {option.compactMobileLabel}
+            </span>
+          )}
+          <span className="hidden md:inline">{option.label}</span>
+        </>
+      ) : (
+        option.label
+      )}
+      {typeof option.count === "number" && (
+        <span style={{ opacity: active ? 0.9 : 0.75 }}>
+          {" "}({option.count})
+        </span>
+      )}
+    </>
+  );
+}
+
 export function FilterBar({
   options,
   value,
   onChange,
   ariaLabel = "Filter",
   className,
+  variant = "chips",
+  equalWidthOnMobile = false,
+  fitToScreenOnMobile = false,
 }: FilterBarProps) {
+  const isSegmented = variant === "segmented";
+  const fitsMobile = fitToScreenOnMobile || equalWidthOnMobile;
   const scrollRef = React.useRef<HTMLFieldSetElement>(null);
   const [canScrollLeft, setCanScrollLeft] = React.useState(false);
   const [canScrollRight, setCanScrollRight] = React.useState(false);
 
   const checkScroll = React.useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    const element = scrollRef.current;
+    if (!element) return;
+
+    setCanScrollLeft(element.scrollLeft > 4);
+    setCanScrollRight(
+      element.scrollLeft + element.clientWidth < element.scrollWidth - 4,
+    );
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Recheck overflow when the option count changes after filtering or data refresh.
   React.useEffect(() => {
     checkScroll();
     window.addEventListener("resize", checkScroll);
@@ -51,114 +108,156 @@ export function FilterBar({
   }, [checkScroll, options.length]);
 
   const scrollBy = (amount: number) => {
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     scrollRef.current?.scrollBy({
       left: amount,
       behavior: reduceMotion ? "auto" : "smooth",
     });
   };
 
-  return (
-    <div className={cn("relative w-full max-w-full sm:w-auto", className)}>
-      {/* Left indicator button & fade — always mounted so focus is never
-          destroyed when the edge state changes; hidden edges leave the tab order. */}
-      {/* Left indicator button & fade */}
-      <div
-        aria-hidden={!canScrollLeft}
+  const optionButtons = options.map((option) => {
+    const active = value === option.key;
+    const accessibleLabel = `${option.label}${typeof option.count === "number" ? ` (${option.count})` : ""}`;
+
+    if (isSegmented) {
+      const equalTrackClass = fitToScreenOnMobile
+        ? "min-w-0 flex-1 md:flex-none md:min-w-max"
+        : equalWidthOnMobile
+          ? "min-w-[var(--control-width-filter-pill-mobile)] md:min-w-max"
+          : "shrink-0";
+
+      return (
+        <SegmentedControlItem
+          key={option.key}
+          size="default"
+          active={active}
+          aria-pressed={active}
+          aria-label={accessibleLabel}
+          onClick={() => onChange(option.key)}
+          className={cn(equalTrackClass, fitsMobile && "px-2 md:px-4")}
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-label)",
+            fontWeight: "var(--weight-bold)",
+            lineHeight: "var(--leading-snug)",
+            letterSpacing: "var(--tracking-label)",
+            textTransform: "uppercase",
+          }}
+        >
+          <FilterOptionContent option={option} active={active} />
+        </SegmentedControlItem>
+      );
+    }
+
+    const equalWidthClass = equalWidthOnMobile
+      ? "min-w-[var(--control-width-filter-pill-mobile)] md:min-w-max"
+      : undefined;
+
+    return (
+      <button
+        key={option.key}
+        type="button"
+        onClick={() => onChange(option.key)}
+        aria-pressed={active}
+        aria-label={accessibleLabel}
         className={cn(
-          "pointer-events-none absolute left-0 top-0 h-[var(--control-size-lg)] z-10 flex items-center pr-3 pl-0.5 bg-gradient-to-r from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
-          !canScrollLeft && "invisible opacity-0",
+          "min-h-[var(--control-height-chip-touch)] shrink-0 cursor-pointer whitespace-nowrap rounded-full px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-[var(--control-height-chip)] md:shrink",
+          equalWidthClass,
+        )}
+        style={{
+          backgroundColor: active
+            ? "var(--brand-primary)"
+            : "var(--surface-card)",
+          color: active ? "var(--on-brand)" : "var(--text-muted)",
+          border: `1px solid ${active ? "var(--brand-primary)" : "var(--border-default)"}`,
+          fontFamily: "var(--font-body)",
+          fontSize: "var(--type-label)",
+          fontWeight: "var(--weight-bold)",
+          lineHeight: "var(--leading-snug)",
+          letterSpacing: "var(--tracking-label)",
+          textTransform: "uppercase",
+        }}
+      >
+        <FilterOptionContent option={option} active={active} />
+      </button>
+    );
+  });
+
+  // Fit-to-screen rows never need paging. Equal-width rows intentionally keep
+  // their scroll affordance when the fixed pills exceed the viewport.
+  const arrowsEnabled = !fitToScreenOnMobile;
+
+  return (
+    <div className={cn("relative w-full max-w-full md:w-auto", className)}>
+      <div
+        aria-hidden={!arrowsEnabled || !canScrollLeft}
+        className={cn(
+          "pointer-events-none absolute left-0 top-0 z-10 flex h-[var(--control-height-filter-row)] items-center bg-gradient-to-r from-[var(--surface-page)] via-[var(--surface-page)] to-transparent pr-3 pl-0.5 transition-opacity duration-200 md:hidden",
+          arrowsEnabled && canScrollLeft
+            ? "visible opacity-100"
+            : "invisible opacity-0",
         )}
       >
         <button
           type="button"
-          tabIndex={canScrollLeft ? 0 : -1}
+          tabIndex={arrowsEnabled && canScrollLeft ? 0 : -1}
           onClick={() => scrollBy(-140)}
-          // 44px touch target with a 16px glyph: padding carries the size,
-          // not the icon (mobile target contract).
-          className="pointer-events-auto flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-start text-[var(--text-secondary)] opacity-70 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          className="pointer-events-auto flex h-11 w-11 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-start text-[var(--text-secondary)] opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label="Show previous filters"
         >
           <ChevronLeft size={16} strokeWidth={2.5} aria-hidden="true" />
         </button>
       </div>
 
-      {/* Scrollable track on mobile, wrap on tablet/desktop */}
       <fieldset
         ref={scrollRef}
         onScroll={checkScroll}
         aria-label={ariaLabel}
-        className="scrollbar-none m-0 flex min-w-0 w-full max-w-full gap-2 overflow-x-auto border-0 p-1 scroll-pr-12 sm:flex-wrap sm:overflow-visible sm:scroll-p-0"
-      >
-        {options.map((opt) => {
-          const active = value === opt.key;
-          return (
-            <button
-              key={opt.key}
-              type="button"
-              onClick={() => onChange(opt.key)}
-              aria-pressed={active}
-              className="min-h-11 shrink-0 cursor-pointer whitespace-nowrap rounded-full px-3.5 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 sm:min-h-[var(--control-height-chip)] sm:py-1.5 sm:shrink"
-              style={{
-                backgroundColor: active
-                  ? "var(--brand-primary)"
-                  : "var(--surface-card)",
-                color: active ? "var(--on-brand)" : "var(--text-muted)",
-                border: `1px solid ${active ? "var(--brand-primary)" : "var(--border-default)"}`,
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-label)",
-                fontWeight: "var(--weight-bold)",
-                lineHeight: "var(--leading-snug)",
-                letterSpacing: "var(--tracking-label)",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              {opt.mobileLabel ? (
-                <>
-                  <span className="sm:hidden">{opt.mobileLabel}</span>
-                  <span className="hidden sm:inline">{opt.label}</span>
-                </>
-              ) : (
-                opt.label
-              )}
-              {typeof opt.count === "number" && (
-                <span style={{ opacity: active ? 0.9 : 0.75 }}>
-                  {" "}
-                  ({opt.count})
-                </span>
-              )}
-            </button>
-          );
-        })}
-        {/* Trailing clearance so the last chip scrolls fully clear of the
-            overlay arrow zone on mobile; hidden on sm+ where the group wraps. */}
-        <span aria-hidden="true" className="w-11 shrink-0 sm:hidden" />
-      </fieldset>
-      {(canScrollLeft || canScrollRight) && (
-        <p className="mt-1 px-1 text-xs text-[var(--text-secondary)] sm:hidden">
-          Swipe for more filters
-        </p>
-      )}
-
-      {/* Right indicator button & fade — always mounted for the same reason. */}
-      {/* Right indicator button & fade */}
-      <div
-        aria-hidden={!canScrollRight}
         className={cn(
-          "pointer-events-none absolute right-0 top-0 h-[var(--control-size-lg)] z-10 flex items-center pl-3 pr-0.5 bg-gradient-to-l from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
-          !canScrollRight && "invisible opacity-0",
+          "scrollbar-none m-0 flex min-w-0 w-full max-w-full overflow-x-auto border-0",
+          isSegmented
+            ? "items-center gap-0 p-0 md:overflow-visible md:scroll-p-0"
+            : "gap-2 p-1 scroll-pr-12 md:flex-wrap md:overflow-visible md:scroll-p-0",
+        )}
+      >
+        {isSegmented ? (
+          <SegmentedControl
+            role="presentation"
+            className={cn(
+              "w-max shrink-0",
+              fitToScreenOnMobile && "w-full min-w-0",
+            )}
+          >
+            {optionButtons}
+          </SegmentedControl>
+        ) : (
+          optionButtons
+        )}
+        <span
+          aria-hidden="true"
+          className={cn(
+            "w-11 shrink-0 md:hidden",
+            !arrowsEnabled && "hidden",
+          )}
+        />
+      </fieldset>
+
+      <div
+        aria-hidden={!arrowsEnabled || !canScrollRight}
+        className={cn(
+          "pointer-events-none absolute right-0 top-0 z-10 flex h-[var(--control-height-filter-row)] items-center bg-gradient-to-l from-[var(--surface-page)] via-[var(--surface-page)] to-transparent pl-3 pr-0.5 transition-opacity duration-200 md:hidden",
+          arrowsEnabled && canScrollRight
+            ? "visible opacity-100"
+            : "invisible opacity-0",
         )}
       >
         <button
           type="button"
-          tabIndex={canScrollRight ? 0 : -1}
+          tabIndex={arrowsEnabled && canScrollRight ? 0 : -1}
           onClick={() => scrollBy(140)}
-          // 44px touch target with a 16px glyph: padding carries the size,
-          // not the icon (mobile target contract).
-          className="pointer-events-auto flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-end text-[var(--brand-primary)] opacity-70 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          className="pointer-events-auto flex h-11 w-11 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-end text-[var(--brand-primary)] opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label="Show more filters"
         >
           <ChevronRight size={16} strokeWidth={2.5} aria-hidden="true" />

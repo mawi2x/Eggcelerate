@@ -11,10 +11,12 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import {
+  Area,
   CartesianGrid,
   ComposedChart,
   Line,
   ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -431,15 +433,18 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
     ];
   }, [chartData, activeUnits, bands, metric]);
 
-  // Explicit x ticks (3 mobile / 5 desktop) so axis labels are deterministic
-  // and never repeat the same wall time on the 24h view.
+  // Explicit x ticks (5 on all viewports) so axis labels are deterministic.
+  // Five ticks over 24h land ~6h apart, which reads as a progression
+  // (4 PM → 10 PM → 4 AM …); three ticks land ~12h apart so both ends read
+  // the same wall time with one midpoint — it looks like a broken axis.
+  // Hour labels are short enough (~40px at 11px) to fit five across a phone.
   const xTickValues = useMemo(
     () =>
       pickTimeTicks(
         chartData.map((row) => row.ts),
-        isMobile ? 3 : 5,
+        5,
       ),
-    [chartData, isMobile],
+    [chartData],
   );
   const xTickLabels = useMemo(
     () => dedupeTickLabels(xTickValues.map((ts) => formatXTick(ts, range))),
@@ -468,10 +473,10 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   // One target-range label when every active chamber shares a band, otherwise a hint.
   const targetRangeLabel =
     bands.length === 1
-      ? `Target Safe Range · ${bands[0].min} to ${bands[0].max}${metricInfo[metric].unit}`
-      : "Target Safe Range · varies by incubation mode";
-
+      ? `Target Safe Range is ${bands[0].min} to ${bands[0].max}${metricInfo[metric].unit}`
+      : "Target Safe Range varies by incubation mode";
   // Never allow the selection to drop below two chambers — that would blank the chart.
+
   const toggleCompareId = (id: string) =>
     setCompareIds((prev) => {
       if (!prev.includes(id)) return [...prev, id];
@@ -551,14 +556,14 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-start gap-4">
-        <SegmentedControl aria-label="Trend view" className="w-full sm:w-auto">
+        <SegmentedControl aria-label="Trend view" className="w-full md:w-auto">
           {viewOptions.map(({ key, label, Icon }) => {
             const active = trendView === key;
             return (
               <SegmentedControlItem
                 key={key}
                 active={active}
-                className="min-w-0 flex-1 !h-auto min-h-11 whitespace-normal px-3 py-2 text-center sm:flex-none sm:px-4"
+                className="min-w-0 flex-1 !h-auto min-h-[var(--control-segment-height)] whitespace-normal px-3 py-2 text-center md:flex-none md:px-4"
                 aria-pressed={active}
                 onClick={() => setTrendView(key)}
               >
@@ -586,7 +591,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <Select value={unitId} onValueChange={setUnitId}>
                   <SelectTrigger
                     size="toolbar"
-                    className="w-full rounded-xl sm:w-[240px]"
+                    className="min-w-0 flex-1 rounded-xl md:w-[240px] md:shrink-0"
                     style={{
                       ...toolbarInputStyle,
                       ...CONTROL_FONT,
@@ -613,7 +618,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="flex h-[var(--control-height-toolbar)] w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-4 transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 sm:w-[240px]"
+                      className="flex h-[var(--control-height-toolbar)] min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 rounded-xl px-4 transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:w-[240px] md:shrink-0"
                       style={{
                         ...toolbarInputStyle,
                         ...CONTROL_FONT,
@@ -656,6 +661,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                             }`}
                           >
                             <Checkbox
+                              id={`compare-chamber-${u.id}`}
                               checked={checked}
                               disabled={locked}
                               onCheckedChange={() => toggleCompareId(u.id)}
@@ -669,7 +675,14 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                                   : BORDER,
                               }}
                             />
-                            <span style={{ ...CONTROL_FONT, color: TEXT }}>
+                            <span
+                              className="min-w-0 break-words"
+                              style={{
+                                ...CONTROL_FONT,
+                                color: TEXT,
+                                overflowWrap: "anywhere",
+                              }}
+                            >
                               {u.name}
                             </span>
                           </div>
@@ -681,7 +694,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               )}
 
               <div
-                className="flex cursor-pointer items-center gap-2"
+                className="flex shrink-0 cursor-pointer items-center gap-2"
                 style={{ ...CONTROL_FONT, color: compare ? TEXT : MUTED }}
               >
                 <Switch
@@ -692,24 +705,6 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 Compare Chambers
               </div>
 
-              {/* Metric segmented toggle. */}
-              <SegmentedControl className="ml-auto" aria-label="Metric">
-                {(Object.keys(metricInfo) as Metric[]).map((mk) => {
-                  const active = metric === mk;
-                  return (
-                    <SegmentedControlItem
-                      key={mk}
-                      size="compact"
-                      active={active}
-                      aria-pressed={active}
-                      onClick={() => setMetric(mk)}
-                      style={{ color: active ? TEXT : MUTED }}
-                    >
-                      {metricInfo[mk].label}
-                    </SegmentedControlItem>
-                  );
-                })}
-              </SegmentedControl>
             </div>
 
             <div
@@ -718,6 +713,8 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             >
               <FilterBar
                 ariaLabel="Time horizon"
+                variant="segmented"
+                fitToScreenOnMobile
                 value={range}
                 onChange={(key) => setRange(key as RangeKey)}
                 options={ranges.map((r) => ({ key: r.key, label: r.label }))}
@@ -726,11 +723,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <button
                   type="button"
                   onClick={() => setReadingsOpen(true)}
-                  className="ml-auto flex min-h-[var(--control-height-chip)] cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+                  className="ml-auto flex min-h-[var(--control-height-default)] cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-[var(--control-height-compact)]"
                   style={{
                     color: "var(--brand-primary)",
                     fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-label)",
+                    fontSize: "var(--type-body-sm)",
                     fontWeight: "var(--weight-bold)",
                   }}
                 >
@@ -742,9 +739,10 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
           </div>
 
           <Card style={{ ...cardStyle, backgroundColor: SURFACE }}>
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-5">
-                <div className="shrink-0">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex min-w-0 flex-col gap-3">
+                <div className="flex min-w-0 flex-col items-start gap-3 md:flex-row md:items-start md:justify-between">
+                <div className="min-w-0">
                   <h2
                     id="environmental-chart-title"
                     style={{
@@ -773,7 +771,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
                 <fieldset
                   aria-label="Chart legend"
-                  className="m-0 flex max-h-[44px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 overflow-y-auto border-0 p-0 pr-1 lg:max-w-[76%] lg:justify-end"
+                  className="m-0 flex max-h-[44px] min-w-0 w-full flex-wrap items-center justify-start gap-x-2.5 gap-y-0.5 overflow-y-auto border-0 p-0 pr-1 text-left md:w-auto md:justify-end md:text-right lg:max-w-[76%]"
                   style={{
                     color: TEXT,
                     fontFamily: "var(--font-body)",
@@ -792,7 +790,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       onMouseLeave={() => setHighlightedUnitId(null)}
                       onFocus={() => setHighlightedUnitId(u.id)}
                       onBlur={() => setHighlightedUnitId(null)}
-                      className="flex min-h-4 cursor-pointer items-center gap-1 rounded-md px-0.5 transition-[background-color,opacity] duration-150 hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none"
+                      className="flex min-h-[var(--control-height-default)] cursor-pointer items-center gap-1 rounded-md px-0.5 transition-[background-color,opacity] duration-150 hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none md:min-h-4"
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: "var(--type-label)",
@@ -815,10 +813,30 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     </button>
                   ))}
                 </fieldset>
+                </div>
+
+                {/* Metric segmented toggle — lives with the chart it drives. */}
+                <SegmentedControl className="self-end" aria-label="Metric">
+                  {(Object.keys(metricInfo) as Metric[]).map((mk) => {
+                    const active = metric === mk;
+                    return (
+                      <SegmentedControlItem
+                        key={mk}
+                        size="compact"
+                        active={active}
+                        aria-pressed={active}
+                        onClick={() => setMetric(mk)}
+                        style={{ color: active ? TEXT : MUTED }}
+                      >
+                        {metricInfo[mk].label}
+                      </SegmentedControlItem>
+                    );
+                  })}
+                </SegmentedControl>
               </div>
 
               <div
-                className="mt-4 h-[360px] w-full border-t pt-4 sm:h-[420px] lg:h-[440px]"
+                className="mt-3 h-[260px] w-full border-t pt-3 md:mt-4 md:h-[420px] md:pt-4 lg:h-[440px]"
                 style={{ borderColor: BORDER }}
                 role="img"
                 aria-labelledby="environmental-chart-title"
@@ -827,8 +845,36 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={chartData}
-                    margin={{ top: 8, right: 18, left: 22, bottom: 12 }}
+                    margin={{
+                      top: 8,
+                      right: 18,
+                      left: isMobile ? 4 : 22,
+                      bottom: 12,
+                    }}
                   >
+                    <defs key="defs">
+                      {activeUnits.map((u) => (
+                        <linearGradient
+                          key={`gradient-${u.id}`}
+                          id={`gradient-${u.id}`}
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor={colorFor(u.id)}
+                            stopOpacity={0.24}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor={colorFor(u.id)}
+                            stopOpacity={0.0}
+                          />
+                        </linearGradient>
+                      ))}
+                    </defs>
                     {/* Every chart child carries an explicit key: recharts clones children
                         and reuses their keys, so unkeyed siblings collide. */}
                     <CartesianGrid
@@ -858,7 +904,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     <YAxis
                       key="y-axis"
                       domain={domain}
-                      width={isMobile ? 52 : 72}
+                      width={isMobile ? 40 : 72}
                       tick={{
                         fill: MUTED,
                         fontFamily: "var(--font-body)",
@@ -917,6 +963,35 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         strokeOpacity={0}
                       />
                     ))}
+                    {/* Soft gradient under-fill for single unit or highlighted unit (Copilot Money style) */}
+                    {activeUnits.map((u) => {
+                      const isSoleOrHighlighted =
+                        activeUnits.length === 1 ||
+                        activeHighlightedUnitId === u.id;
+                      if (!isSoleOrHighlighted) return null;
+                      return (
+                        <Area
+                          key={`area-${u.id}`}
+                          type="monotone"
+                          dataKey={u.id}
+                          stroke="none"
+                          fill={`url(#gradient-${u.id})`}
+                          fillOpacity={1}
+                          connectNulls
+                          isAnimationActive={false}
+                        />
+                      );
+                    })}
+                    {bands[0] && (
+                      <ReferenceLine
+                        key="target-reference-line"
+                        y={Number(((bands[0].min + bands[0].max) / 2).toFixed(1))}
+                        stroke="var(--chart-target-band)"
+                        strokeDasharray="4 4"
+                        strokeWidth={1.5}
+                        strokeOpacity={0.75}
+                      />
+                    )}
                     {activeUnits.map((u) => {
                       const highlighted = activeHighlightedUnitId === u.id;
                       const faded = Boolean(
@@ -960,7 +1035,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       ) : (
         <>
           {/* KPI summary row. */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <KpiCard
               Icon={Layers}
               label="Completed Cycles"
@@ -986,7 +1061,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
           {/* Control bar: search + species filter dropdown */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1" style={{ minWidth: 220 }}>
+            <div className="relative min-w-0 w-full flex-1 md:min-w-[220px]">
               <Search
                 size={16}
                 className="absolute left-3 top-1/2 -translate-y-1/2"
@@ -1005,7 +1080,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 style={inputStyle}
               />
             </div>
-            <div className="w-[200px] shrink-0">
+            <div className="w-full shrink-0 md:w-[200px]">
               <Select
                 value={species}
                 onValueChange={(val) => {
@@ -1175,7 +1250,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
       {/* Raw readings modal */}
       <Dialog open={readingsOpen} onOpenChange={setReadingsOpen}>
-        <DialogContent className="rounded-2xl sm:max-w-2xl">
+        <DialogContent className="rounded-2xl md:max-w-2xl">
           <DialogHeader>
             <DialogTitle
               style={{

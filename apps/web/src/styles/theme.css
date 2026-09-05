@@ -81,6 +81,8 @@
   --control-height-default: 2.25rem; /* 36px */
   --control-height-toolbar: 2.5rem; /* 40px */
   --control-height-chip: 1.75rem; /* 28px visual baseline */
+  --control-height-chip-touch: 2.25rem; /* 36px — FilterBar mobile height; stays compact while toolbar steps to 44px */
+  --control-width-filter-pill-mobile: 8.5rem; /* 136px — equal status filters on phones */
   --control-size-icon: 2.25rem; /* 36px visual control */
   --control-hit-area-icon: 2.75rem; /* 44px touch-friendly area */
   --mobile-bottom-nav-clearance: calc(
@@ -88,6 +90,7 @@
     env(safe-area-inset-bottom, 0px)
   );
   --control-segment-height: 2.25rem; /* 36px default segmented item */
+  --control-height-filter-row: 2.75rem; /* 44px — outer filter/toolbar row */
 
   /* Component semantics preserve navigation hierarchy. */
   --global-nav-selected-bg: var(--brand-primary);
@@ -343,31 +346,15 @@
   --chart-series-12: #77906f;
 }
 
-/* Mobile type step-down — one scale, not a second one. Below Tailwind's
-   sm breakpoint (40rem) the two largest tokens drop one visual step so
-   24px/22px titles don't crowd 320–640px viewports, and form values step
-   up to 16px for legibility (values below 16px trigger iOS auto-zoom on
-   focus). All other tokens, and everything at sm and up, are unchanged.
-   Body copy stays 14px — it does not follow the control-value step-up. */
+/* Phone type adjustments are selective. Titles may step down to preserve
+   hierarchy, while ordinary body text stays readable and editable values
+   step up to the 16px iOS focus-zoom floor. There is intentionally no
+   second <=400px scale: narrower screens reflow or wrap instead. */
 @media (max-width: 39.9375rem) {
   :root {
     --type-page-title: 1.25rem; /* 20px */
     --type-panel-title: 1.125rem; /* 18px */
     --type-control-value: 1rem; /* 16px */
-  }
-}
-
-/* Mobile-shell touch geometry — a wider breakpoint than type (below
-   Tailwind's md, 48rem) so tablets in portrait also get comfortable
-   targets. Only interactive control heights change; chips, badges, and
-   calendar cells keep their compact visual tiers. Desktop/tablet-landscape
-   geometry is unchanged. */
-@media (max-width: 47.9375rem) {
-  :root {
-    --control-height-default: 2.75rem; /* 44px */
-    --control-height-toolbar: 2.75rem; /* 44px */
-    --control-size-icon: 2.75rem; /* 44px target, glyph stays 18–22px */
-    --control-segment-height: 2.75rem; /* 44px */
   }
 }
 

@@ -3,7 +3,7 @@ import { cn } from "./utils";
 
 // NOTE (mobile typography): no `labelCompact`/`labelMicro` variants on
 // purpose. The only approved 10px/9px uses (timeline milestones,
-// gauge/water-status sub-labels) need responsive `sm:` overrides, which an
+// gauge/water-status sub-labels) need responsive `md:` overrides, which an
 // inline-style primitive cannot express — they consume
 // `--type-label-compact`/`--type-label-micro` directly with breakpoint
 // classes. Adding variants here would invite general-purpose micro text.

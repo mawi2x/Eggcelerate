@@ -48,7 +48,7 @@ export function PaginationBar({
     <nav
       aria-label={`${itemLabel} pagination`}
       className={cn(
-        "flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 border-t px-4 py-3 md:flex-row md:items-center md:justify-between",
         className,
       )}
       style={{ borderColor: BORDER }}
@@ -71,7 +71,8 @@ export function PaginationBar({
               onValueChange={(value) => onPageSizeChange?.(Number(value))}
             >
               <SelectTrigger
-                className="h-8 w-[72px] rounded-lg"
+                size="default"
+                className="h-[var(--control-height-default)] w-[72px] rounded-lg md:h-8"
                 style={INPUT_STYLE}
                 aria-label={`Items per page for ${itemLabel}`}
               >
@@ -92,7 +93,7 @@ export function PaginationBar({
           <Button
             size="sm"
             variant="outline"
-            className="rounded-lg"
+            className="h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] rounded-lg p-0 md:h-8 md:w-8"
             style={{ borderColor: BORDER }}
             disabled={safePage <= 1}
             onClick={() => onPageChange(Math.max(1, safePage - 1))}
@@ -106,7 +107,7 @@ export function PaginationBar({
           <Button
             size="sm"
             variant="outline"
-            className="rounded-lg"
+            className="h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] rounded-lg p-0 md:h-8 md:w-8"
             style={{ borderColor: BORDER }}
             disabled={safePage >= totalPages}
             onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}

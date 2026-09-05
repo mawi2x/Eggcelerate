@@ -96,7 +96,7 @@ function SubTabNav({
       <SegmentedControl
         role="tablist"
         aria-label="Incubator detail sections"
-        className="w-max shrink-0"
+        className="w-full md:w-max md:shrink-0"
       >
         {tabs.map((t) => {
           const isActive = active === t.id;
@@ -104,6 +104,7 @@ function SubTabNav({
             <SegmentedControlItem
               key={t.id}
               size="toolbar"
+              className="min-w-0 flex-1 px-2 md:flex-none md:px-4"
               active={isActive}
               role="tab"
               aria-selected={isActive}
@@ -118,8 +119,8 @@ function SubTabNav({
               }}
             >
               {t.icon}
-              <span className="sm:hidden">{t.mobileLabel}</span>
-              <span className="hidden sm:inline">{t.label}</span>
+              <span className="md:hidden">{t.mobileLabel}</span>
+              <span className="hidden md:inline">{t.label}</span>
             </SegmentedControlItem>
           );
         })}
@@ -274,7 +275,7 @@ export function DetailScreen({
       {isReady && (
         <div
           role="status"
-          className="flex flex-col gap-4 rounded-2xl p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-4 rounded-2xl p-4 shadow-sm md:flex-row md:items-center md:justify-between"
           style={{
             backgroundColor: "var(--surface-subtle)",
             border: `1px solid var(--border-default)`,
@@ -318,7 +319,7 @@ export function DetailScreen({
           <Button
             size="toolbar"
             onClick={() => setSetupOpen(true)}
-            className="w-full rounded-xl px-5 sm:w-auto"
+            className="w-full rounded-xl px-5 md:w-auto"
             style={{
               backgroundColor: "var(--brand-primary-hover)",
               color: "var(--on-brand)",
@@ -337,7 +338,7 @@ export function DetailScreen({
         }}
       >
         <DialogContent
-          className="max-h-[var(--dialog-height-max)] overflow-y-auto p-0 shadow-2xl sm:max-w-[var(--dialog-width-wide)]"
+          className="max-h-[var(--dialog-height-max)] overflow-y-auto p-0 shadow-2xl md:max-w-[var(--dialog-width-wide)]"
           style={{
             backgroundColor: "var(--surface-subtle)",
             border: `1px solid var(--border-default)`,
@@ -505,7 +506,7 @@ export function DetailScreen({
                       {setupMode.incubationDays} days
                     </span>
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
                     {[
                       {
                         label: "Cycle length",
@@ -713,7 +714,7 @@ export function DetailScreen({
             border: `1px solid var(--border-default)`,
           }}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
             <span
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold"
               style={{
@@ -723,7 +724,7 @@ export function DetailScreen({
             >
               <ExclamationIcon size={22} />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p
                 style={{
                   fontFamily: "var(--font-display)",
@@ -732,7 +733,7 @@ export function DetailScreen({
                   lineHeight: "var(--leading-snug)",
                   color: "var(--status-warning-fg)",
                   whiteSpace: "normal",
-                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
                 }}
               >
                 Lockdown Active, Do Not Open
@@ -761,7 +762,7 @@ export function DetailScreen({
             border: `1px solid var(--border-default)`,
           }}
         >
-          <div>
+          <div className="min-w-0 flex-1">
             <p
               style={{
                 fontFamily: "var(--font-display)",
@@ -770,7 +771,7 @@ export function DetailScreen({
                 lineHeight: "var(--leading-snug)",
                 color: "var(--status-warning-fg)",
                 whiteSpace: "normal",
-                wordBreak: "break-word",
+                overflowWrap: "anywhere",
               }}
             >
               Past Hatch Day

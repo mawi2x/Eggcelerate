@@ -34,6 +34,21 @@ describe("filter-bar primitive", () => {
     expect(s).not.toMatch(/fontSize: 11,/);
     expect(s.match(/FilterBar/g)?.length).toBeGreaterThanOrEqual(1);
   });
+  it("Incubator toolbar selects inherit shared control typography", () => {
+    const s = fs.readFileSync(
+      path.resolve("src/app/components/screens/IncubatorsScreen.tsx"),
+      "utf-8",
+    );
+    const style = s.slice(
+      s.indexOf("const sortTriggerStyle"),
+      s.indexOf("type SortKey"),
+    );
+
+    expect(style).toContain('borderColor: "var(--border-default)"');
+    expect(style).not.toContain("fontFamily:");
+    expect(style).not.toContain("fontSize:");
+    expect(style).not.toContain("lineHeight:");
+  });
   it("TrendsScreen horizon uses FilterBar not rounded-xl", () => {
     const s = fs.readFileSync(
       path.resolve("src/app/components/screens/TrendsScreen.tsx"),
@@ -86,7 +101,42 @@ describe("filter-bar primitive", () => {
     );
 
     expect(s).toContain(
-      'className="scrollbar-none m-0 flex min-w-0 w-full max-w-full gap-2 overflow-x-auto',
+      '"scrollbar-none m-0 flex min-w-0 w-full max-w-full overflow-x-auto border-0"',
     );
+  });
+
+  it("does not render redundant instructional swipe text on mobile", () => {
+    const s = fs.readFileSync(
+      path.resolve("src/app/components/ui/filter-bar.tsx"),
+      "utf-8",
+    );
+
+    expect(s).not.toContain("Swipe for more filters");
+  });
+
+  it("supports equal-width mobile filter controls", () => {
+    const filterBar = fs.readFileSync(
+      path.resolve("src/app/components/ui/filter-bar.tsx"),
+      "utf-8",
+    );
+    expect(filterBar).toContain("equalWidthOnMobile");
+    expect(filterBar).toContain("fitToScreenOnMobile");
+    expect(filterBar).toContain("compactMobileLabel");
+    expect(filterBar).toContain('variant?: "chips" | "segmented"');
+    expect(filterBar).toContain('variant === "segmented"');
+    expect(filterBar).toContain("var(--control-width-filter-pill-mobile)");
+    expect(filterBar).toContain("md:flex-none md:min-w-max");
+    expect(filterBar).not.toContain("h-6");
+
+    for (const file of [
+      "src/app/components/screens/IncubatorsScreen.tsx",
+      "src/app/components/screens/CandlingLogsScreen.tsx",
+      "src/app/components/screens/AlertsScreen.tsx",
+      "src/app/components/screens/TrendsScreen.tsx",
+    ]) {
+      const screen = fs.readFileSync(path.resolve(file), "utf-8");
+      expect(screen).toContain('variant="segmented"');
+      expect(screen).toContain("fitToScreenOnMobile");
+    }
   });
 });

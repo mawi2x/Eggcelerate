@@ -11,7 +11,7 @@ describe("alerts responsive row layout", () => {
   it("moves alert metadata below the message on narrow screens", () => {
     expect(source).toContain("grid-cols-[auto_minmax(0,1fr)]");
     expect(source).toContain("col-start-2 row-start-2");
-    expect(source).toContain("sm:col-start-3 sm:row-start-1");
+    expect(source).toContain("md:col-start-3 md:row-start-1");
   });
 
   it("keeps compact status labels on one line", () => {
@@ -20,9 +20,18 @@ describe("alerts responsive row layout", () => {
     );
   });
 
+  it("keeps the Important filter label consistent across viewports", () => {
+    const filterStart = source.indexOf("<FilterBar");
+    const filterEnd = source.indexOf("/>", filterStart);
+    const filter = source.slice(filterStart, filterEnd);
+    expect(filter).toContain('label: "Important"');
+    expect(filter).not.toContain('mobileLabel: "Urgent"');
+    expect(filter).not.toContain('compactMobileLabel: "Urg"');
+  });
+
   it("keeps quick actions visible on touch-sized layouts", () => {
     expect(source).toContain(
-      "transition-opacity sm:absolute sm:inset-0 sm:opacity-0",
+      "transition-opacity md:absolute md:inset-0 md:opacity-0",
     );
     expect(source).not.toContain(
       "absolute inset-0 flex items-center justify-end gap-1 opacity-0",

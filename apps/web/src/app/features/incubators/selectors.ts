@@ -1,7 +1,33 @@
 import { daysUntilHatch } from "../../domain/incubator";
 import type { Incubator, Mode, UnitStatus } from "../../domain/types";
 
-export type IncubatorStatusFilter = "all" | UnitStatus;
+export type IncubatorStatusFilter = "all" | "optimal" | "issues";
+
+export function matchesIncubatorStatusFilter(
+  status: UnitStatus,
+  filter: IncubatorStatusFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "issues") return status !== "optimal";
+  return status === filter;
+}
+
+export interface IncubatorStatusFilterCounts {
+  all: number;
+  optimal: number;
+  issues: number;
+}
+
+export function selectIncubatorStatusFilterCounts(
+  units: Incubator[],
+): IncubatorStatusFilterCounts {
+  const optimal = units.filter((unit) => unit.status === "optimal").length;
+  return {
+    all: units.length,
+    optimal,
+    issues: units.length - optimal,
+  };
+}
 
 export function selectFilteredIncubators(
   units: Incubator[],
@@ -11,7 +37,7 @@ export function selectFilteredIncubators(
   const modeOf = (id: string) => modes.find((m) => m.id === id) ?? modes[0];
   const q = opts.search.trim().toLowerCase();
   return units.filter((u) => {
-    if (opts.status !== "all" && u.status !== opts.status) return false;
+    if (!matchesIncubatorStatusFilter(u.status, opts.status)) return false;
     if (opts.modeId !== "all" && u.modeId !== opts.modeId) return false;
     if (!q) return true;
     return (
@@ -59,7 +85,11 @@ function getChamberNaturalOrder(name: string): number {
 export function selectSortedIncubators(
   filtered: Incubator[],
   modes: Mode[],
-  opts: { sort: IncubatorSortKey; sortAsc: boolean },
+  opts: {
+    sort: IncubatorSortKey;
+    sortAsc: boolean;
+    prioritizeIssues?: boolean;
+  },
 ): Incubator[] {
   const modeOf = (id: string) => modes.find((m) => m.id === id) ?? modes[0];
   const remaining = (u: Incubator) => {
@@ -85,9 +115,18 @@ export function selectSortedIncubators(
   // (setup needed). Everything else keeps the requested ordering.
   const actionRank = (u: Incubator) =>
     u.cyclePhase === "completed" ? 0 : u.cyclePhase === "ready" ? 1 : 2;
+  const statusRank: Record<UnitStatus, number> = {
+    alert: 0,
+    warning: 1,
+    optimal: 2,
+  };
 
   // Copy first — `filtered` is derived state and must not be mutated in place.
   return [...filtered].sort((a, b) => {
+    if (opts.prioritizeIssues) {
+      const status = statusRank[a.status] - statusRank[b.status];
+      if (status !== 0) return status;
+    }
     const pin = actionRank(a) - actionRank(b);
     if (pin !== 0) return pin;
     const dir = opts.sortAsc ? 1 : -1;

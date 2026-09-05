@@ -269,6 +269,7 @@ function Reading({
       style={{
         backgroundColor: tileBg[state],
         border: `1px solid ${tileBorder[state]}`,
+        padding: "0.75rem",
         overflow: "hidden",
       }}
     >
@@ -408,7 +409,7 @@ export function IncubatorCard({
         <div className="mb-3 min-w-0">
           <div className="flex min-w-0 items-center justify-between gap-3">
             <h3
-              className="flex min-w-0 items-center gap-1"
+              className="flex min-w-0 flex-1 items-center gap-1"
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: "var(--type-heading-sm)",
@@ -419,7 +420,11 @@ export function IncubatorCard({
             >
               <span
                 className="min-w-0"
-                style={{ whiteSpace: "normal", wordBreak: "break-word" }}
+                style={{
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                }}
               >
                 {unit.name}
               </span>
@@ -429,7 +434,7 @@ export function IncubatorCard({
                   "shrink-0 transition-opacity duration-200",
                   highlighted
                     ? "opacity-100"
-                    : "opacity-60 sm:opacity-0 group-hover:opacity-100",
+                    : "opacity-60 md:opacity-0 group-hover:opacity-100",
                 )}
                 style={{ color: "var(--progress-stroke)" }}
                 aria-hidden
@@ -445,13 +450,14 @@ export function IncubatorCard({
           </div>
           <div className="mt-1.5 flex min-w-0 items-center justify-between gap-2">
             <p
-              className="min-w-0 truncate"
+              className="min-w-0 flex-1 break-words"
               style={{
                 color: ready ? "var(--text-gray-cool)" : "var(--text-farm)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-body-sm)",
                 fontWeight: "var(--weight-medium)",
                 lineHeight: "var(--leading-normal)",
+                overflowWrap: "anywhere",
               }}
             >
               {ready ? "Unassigned" : mode.name}
@@ -646,6 +652,7 @@ export function IncubatorCard({
             /* Hatch day reached — harvest & reset ends the overtime run. */
             <Button
               type="button"
+              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 onHarvest?.(unit);
@@ -654,7 +661,6 @@ export function IncubatorCard({
               style={{
                 backgroundColor: RUST,
                 color: "var(--on-brand)",
-                height: 32,
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-bold)",
@@ -668,6 +674,7 @@ export function IncubatorCard({
           ) : (
             <Button
               type="button"
+              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 onOpen(unit.id);
@@ -676,7 +683,6 @@ export function IncubatorCard({
               style={{
                 backgroundColor: "var(--surface-card)",
                 color: CTA,
-                height: 32,
                 border: "1px solid var(--border-ink)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-body-sm)",

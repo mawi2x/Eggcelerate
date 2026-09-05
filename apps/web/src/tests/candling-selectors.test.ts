@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { CandlingCheckpoint, CandlingLogEntry } from "../app/domain/types";
 import {
   formatCheckpointTiming,
+  matchesCandlingFilter,
   selectCandlingFeedNodes,
+  selectCandlingFilterCounts,
   selectCandlingTallyValidation,
   selectPendingCheckpoint,
 } from "../app/features/candling/selectors";
@@ -12,6 +14,37 @@ const candling: CandlingCheckpoint[] = [
   { label: "Second candling", dayRange: "Day 12 to 14", day: 13 },
   { label: "Lockdown check", dayRange: "Day 18", day: 18 },
 ];
+
+describe("matchesCandlingFilter", () => {
+  const statuses = [
+    "overdue",
+    "due",
+    "upcoming",
+    "not-started",
+    "complete",
+    "ended",
+  ] as const;
+
+  it("groups outstanding and future checks into To Do", () => {
+    expect(
+      statuses.filter((status) => matchesCandlingFilter(status, "todo")),
+    ).toEqual(["overdue", "due", "upcoming", "not-started"]);
+  });
+
+  it("groups terminal states into Done", () => {
+    expect(
+      statuses.filter((status) => matchesCandlingFilter(status, "done")),
+    ).toEqual(["complete", "ended"]);
+  });
+
+  it("counts all three filter buckets", () => {
+    expect(selectCandlingFilterCounts([...statuses])).toEqual({
+      all: 6,
+      todo: 4,
+      done: 2,
+    });
+  });
+});
 
 function entry(day: number, label = `Day ${day}`): CandlingLogEntry {
   return {

@@ -31,7 +31,7 @@ const conditionRowStyle = `
 `;
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: "var(--surface-subtle)",
+  backgroundColor: "var(--surface-card)",
   borderColor: "var(--border-default)",
   borderRadius: "var(--radius-card)",
   boxShadow: "var(--shadow-card)",
@@ -44,6 +44,7 @@ interface KpiPill {
 interface KpiFooter {
   primary: string;
   secondary?: string;
+  tertiary?: string;
 }
 
 function KpiCard({
@@ -76,7 +77,7 @@ function KpiCard({
           width: 80,
           height: 80,
           color: "var(--brand-primary)",
-          opacity: 0.07,
+          opacity: 0.12,
           transform: "rotate(-12deg)",
         }}
         strokeWidth={1.5}
@@ -150,6 +151,14 @@ function KpiCard({
                 style={{ color: "var(--text-muted)" }}
               >
                 {footer.secondary}
+              </div>
+            )}
+            {footer.tertiary && (
+              <div
+                className="text-(length:--type-label)"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {footer.tertiary}
               </div>
             )}
           </div>
@@ -244,7 +253,7 @@ function OffTargetRow({
       <button
         type="button"
         onClick={() => onOpen(unit.id)}
-        className="condition-row group flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2"
+      className="condition-row group flex min-h-[var(--control-height-default)] w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 md:min-h-0"
         title={`${unit.name} · ${displayValue}${unitLabel}`}
       >
         <div className="flex min-w-0 items-center gap-3">
@@ -363,14 +372,14 @@ function MiniCard({
     <button
       type="button"
       onClick={() => onOpen(unit.id)}
-      className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 sm:p-4 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:rounded-2xl md:p-4"
       title={`${unit.name} · Day ${unit.dayOfIncubation} of ${mode.incubationDays} — click to view`}
     >
       {/* Top-left header stack — name over mode over progress. */}
       <div className="w-full min-w-0 text-left">
         <div className="flex items-start justify-between gap-1">
           <span
-            className="block min-w-0 flex-1 truncate"
+            className="block min-w-0 flex-1 break-words"
             style={{
               fontFamily: "var(--font-display)",
               fontSize: "var(--type-heading-sm)",
@@ -384,13 +393,13 @@ function MiniCard({
           </span>
           <ChevronRight
             size={14}
-            className="mt-0.5 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 hidden sm:block"
+            className="mt-0.5 hidden shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:block"
             style={{ color: "var(--progress-stroke)" }}
             aria-hidden
           />
         </div>
         <span
-          className="block min-w-0 truncate"
+          className="block min-w-0 break-words"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-body-sm)",
@@ -403,7 +412,7 @@ function MiniCard({
           {mode.name}
         </span>
         <span
-          className="block min-w-0 truncate"
+          className="block min-w-0 break-words"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-caption)",
@@ -419,7 +428,7 @@ function MiniCard({
       </div>
 
       {/* Center body — the ring */}
-      <div className="relative mt-2.5 flex min-h-0 items-center justify-center sm:mt-3">
+      <div className="relative mt-2.5 flex min-h-0 items-center justify-center md:mt-3">
         <svg
           width={size}
           height={size}
@@ -449,7 +458,7 @@ function MiniCard({
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <span
-            className="tracking-tight font-bold text-sm sm:text-base"
+            className="tracking-tight font-bold text-sm md:text-base"
             style={{
               fontFamily: "var(--font-display)",
               color: stroke,
@@ -575,7 +584,11 @@ export function OverviewScreen({
     const chamberName = stats.nextHatch.u.name;
     const modeName = stats.nextHatch.m.name;
     if (nextRemaining <= 0)
-      return { primary: chamberName, secondary: `${modeName}, check chamber` };
+      return {
+        primary: chamberName,
+        secondary: modeName,
+        tertiary: "check chamber",
+      };
     if (nextRemaining === 1)
       return { primary: "Due tomorrow", secondary: `${modeName}` };
     return { primary: `In ${nextRemaining} days`, secondary: `${modeName}` };
@@ -623,7 +636,7 @@ export function OverviewScreen({
 
       {/* Section 3: chamber status grid, wrapped in one white container */}
       <section
-        className="rounded-2xl border p-3 sm:p-6"
+        className="rounded-2xl border p-3 md:p-6"
         style={{
           backgroundColor: "var(--surface-card)",
           borderColor: "var(--border-subtle)",
@@ -658,12 +671,12 @@ export function OverviewScreen({
           <button
             type="button"
             onClick={onManageAll}
-            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-xl border bg-[var(--surface-card)] px-3 py-1.5 text-xs font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:px-4 sm:py-2 sm:text-sm"
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-xl border bg-[var(--surface-card)] px-3 py-1.5 text-sm font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:px-4 md:py-2"
             style={{ borderColor: RUST, color: RUST }}
             aria-label="View all incubators"
           >
-            <span className="sm:hidden">View all →</span>
-            <span className="hidden sm:inline">View All Incubators</span>
+            <span className="md:hidden">View all →</span>
+            <span className="hidden md:inline">View All Incubators</span>
           </button>
         </div>
         <div
@@ -673,19 +686,19 @@ export function OverviewScreen({
         <div
           ref={carouselRef}
           onScroll={handleCarouselScroll}
-          className="flex gap-2.5 overflow-x-auto pb-1 pt-0.5 snap-x snap-mandatory scrollbar-none sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
+          className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:pb-0 lg:grid-cols-4"
         >
           {priorityUnits.map((u) => (
             <div
               key={u.id}
-              className="w-[calc((100%-10px)/2)] shrink-0 snap-start sm:w-auto sm:shrink sm:snap-none"
+              className="w-[calc((100%-10px)/2)] shrink-0 snap-start md:w-auto md:shrink md:snap-none"
             >
               <MiniCard unit={u} mode={modeOf(u.modeId)} onOpen={onOpenUnit} />
             </div>
           ))}
         </div>
         {priorityUnits.length > 2 && (
-          <div className="mt-3 flex justify-center gap-1.5 sm:hidden">
+          <div className="mt-3 flex justify-center gap-1.5 md:hidden">
             {Array.from(
               { length: Math.ceil(priorityUnits.length / 2) },
               (_, i) => i,
@@ -701,7 +714,9 @@ export function OverviewScreen({
                   });
                   setCarouselPage(page);
                 }}
-                className="h-1.5 rounded-full transition-all cursor-pointer"
+                className="h-1.5 cursor-pointer rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                aria-current={carouselPage === page ? "true" : undefined}
+                aria-label={`Go to slide ${page + 1}`}
                 style={{
                   width:
                     carouselPage === page
@@ -710,7 +725,6 @@ export function OverviewScreen({
                   backgroundColor:
                     carouselPage === page ? RUST : "var(--dot-idle)",
                 }}
-                aria-label={`Go to slide ${page + 1}`}
               />
             ))}
           </div>
@@ -719,7 +733,7 @@ export function OverviewScreen({
 
       {/* Section 4: Conditions to Check — 1 container, 2 columns on desktop, tabs on mobile */}
       <section
-        className="rounded-2xl border p-4 sm:p-6"
+        className="rounded-2xl border p-4 md:p-6"
         style={{
           backgroundColor: "var(--surface-card)",
           borderColor: "var(--border-subtle)",
@@ -753,7 +767,7 @@ export function OverviewScreen({
 
         {/* Mobile toggle between Temperature and Humidity */}
         <fieldset
-          className="mb-4 flex rounded-xl border p-1 lg:hidden"
+          className="mb-4 flex rounded-full border p-1 lg:hidden"
           style={{
             backgroundColor: "var(--surface-muted)",
             borderColor: "var(--border-subtle)",
@@ -766,7 +780,7 @@ export function OverviewScreen({
             aria-pressed={conditionTab === "temp"}
             aria-controls="condition-temp-panel"
             aria-label={`Temperature, ${offTarget.temp.length} need attention`}
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
               backgroundColor:
                 conditionTab === "temp" ? "var(--surface-card)" : "transparent",
@@ -805,7 +819,7 @@ export function OverviewScreen({
             aria-pressed={conditionTab === "humidity"}
             aria-controls="condition-humidity-panel"
             aria-label={`Humidity, ${offTarget.humidity.length} need attention`}
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
               backgroundColor:
                 conditionTab === "humidity"

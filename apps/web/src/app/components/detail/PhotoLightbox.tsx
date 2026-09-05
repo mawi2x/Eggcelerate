@@ -35,7 +35,7 @@ const VIEWER_VIEWPORT_CLASS =
   "relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden transition-all select-none";
 const VIEWER_VIEWPORT_FULLSCREEN = "h-full w-full";
 const VIEWER_VIEWPORT_NORMAL =
-  "h-auto w-full min-h-[400px] max-h-[82vh] p-4 sm:p-6 bg-black/40";
+  "h-auto w-full min-h-[min(400px,calc(100dvh-8rem))] max-h-[82vh] p-4 sm:p-6 bg-black/40";
 const VIEWER_IMAGE_FULLSCREEN = "absolute left-1/2 top-1/2 block";
 const VIEWER_IMAGE_NORMAL =
   "mx-auto block h-auto w-auto max-h-[65vh] max-w-full rounded-2xl shadow-2xl";
@@ -281,15 +281,15 @@ export function PhotoLightboxModal({
         </DialogDescription>
 
         {/* Top Header Bar with Single Unified Close Button */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3 select-none sm:flex-nowrap sm:px-6 sm:py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3 select-none md:flex-nowrap md:px-6 md:py-4">
           <span className="shrink-0 text-sm font-semibold text-[var(--overlay-fg)]">
             Photo {safeIndex + 1} of {total}
           </span>
-          <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1 sm:gap-2">
+          <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1 md:gap-2">
             <Button
               size="sm"
               variant="ghost"
-              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-[var(--overlay-fg)] hover:bg-white/10 hover:text-white sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
+              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-[var(--overlay-fg)] hover:bg-white/10 hover:text-white md:h-8 md:w-auto md:min-h-0 md:min-w-0 md:px-3"
               onClick={toggleFullscreen}
               title={
                 fullscreen ? "Exit Fullscreen (Esc)" : "Enlarge / Fullscreen"
@@ -297,36 +297,36 @@ export function PhotoLightboxModal({
               aria-label={fullscreen ? "Exit fullscreen" : "Enlarge photo"}
             >
               {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-              <span className="hidden sm:inline">
+              <span className="hidden md:inline">
                 {fullscreen ? "Exit Fullscreen" : "Enlarge"}
               </span>
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-[var(--overlay-fg)] hover:bg-white/10 hover:text-white sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
+              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-[var(--overlay-fg)] hover:bg-white/10 hover:text-white md:h-8 md:w-auto md:min-h-0 md:min-w-0 md:px-3"
               onClick={handleDownload}
               title="Download photo"
               aria-label="Download photo"
             >
               <Download size={14} />
-              <span className="hidden sm:inline">Download</span>
+              <span className="hidden md:inline">Download</span>
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-red-400 hover:bg-red-500/10 hover:text-red-300 sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
+              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-red-400 hover:bg-red-500/10 hover:text-red-300 md:h-8 md:w-auto md:min-h-0 md:min-w-0 md:px-3"
               onClick={handleDeleteCurrent}
               title="Delete photo"
               aria-label="Delete photo"
             >
               <Trash2 size={14} />
-              <span className="hidden sm:inline">Delete</span>
+              <span className="hidden md:inline">Delete</span>
             </Button>
             <button
               type="button"
               onClick={onClose}
-              className="ml-0 flex h-11 w-11 min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full p-0 text-stone-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:ml-2 sm:h-8 sm:w-8 sm:min-h-0 sm:min-w-0 sm:p-1.5"
+              className="ml-0 flex h-11 w-11 min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full p-0 text-stone-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:ml-2 md:h-8 md:w-8 md:min-h-0 md:min-w-0 md:p-1.5"
               aria-label="Close photo viewer"
               title="Close (Esc)"
             >
@@ -351,7 +351,7 @@ export function PhotoLightboxModal({
                 e.stopPropagation();
                 handlePrev();
               }}
-              className="absolute left-4 sm:left-6 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+              className="absolute left-4 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:left-6"
               aria-label="Previous photo"
               title="Previous photo (←)"
             >
@@ -418,7 +418,7 @@ export function PhotoLightboxModal({
                 e.stopPropagation();
                 handleNext();
               }}
-              className="absolute right-4 sm:right-6 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+              className="absolute right-4 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:right-6"
               aria-label="Next photo"
               title="Next photo (→)"
             >
@@ -432,7 +432,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={zoomOut}
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-[var(--overlay-fg)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-[var(--overlay-fg)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
                 aria-label="Zoom out"
                 title="Zoom out (-)"
               >
@@ -444,7 +444,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={zoomIn}
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-[var(--overlay-fg)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-[var(--overlay-fg)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
                 aria-label="Zoom in"
                 title="Zoom in (+)"
               >
@@ -454,7 +454,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={resetView}
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-[var(--overlay-fg)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-[var(--overlay-fg)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
                 aria-label="Fit to screen"
                 title="Fit to screen (0)"
               >

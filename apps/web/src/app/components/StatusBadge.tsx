@@ -1,26 +1,23 @@
-import { AlertOctagon, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { CheckCircle, Warning, WarningOctagon } from "@phosphor-icons/react";
 import type { UnitStatus } from "../domain/types";
 import { statusLabels } from "./statusPresentation";
 
 // Semantic status palette — WCAG AA contrast on each tinted background.
-const styles: Record<
-  UnitStatus,
-  { bg: string; fg: string; Icon: typeof CheckCircle2 }
-> = {
+const styles: Record<UnitStatus, { bg: string; fg: string; Icon: typeof CheckCircle }> = {
   optimal: {
     bg: "var(--status-success-bg)",
     fg: "var(--status-success-fg)",
-    Icon: CheckCircle2,
+    Icon: CheckCircle,
   },
   warning: {
     bg: "var(--status-warning-bg)",
     fg: "var(--status-warning-fg)",
-    Icon: AlertTriangle,
+    Icon: Warning,
   },
   alert: {
     bg: "var(--status-danger-bg)",
     fg: "var(--status-danger-fg)",
-    Icon: AlertOctagon,
+    Icon: WarningOctagon,
   },
 };
 
@@ -36,7 +33,7 @@ export function StatusBadge({ status }: { status: UnitStatus }) {
         padding: "var(--pill-padding)",
       }}
     >
-      <Icon size={13} strokeWidth={2.5} />
+      <Icon size={14} weight="fill" />
       <span
         className="whitespace-nowrap"
         style={{

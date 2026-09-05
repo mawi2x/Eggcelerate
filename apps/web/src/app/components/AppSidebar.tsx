@@ -137,23 +137,36 @@ export function AppSidebar({
                   setMobileMoreOpen(false);
                   onNavigate(id);
                 }}
-                className="relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                style={{
-                  color: isActive
-                    ? "var(--brand-primary)"
-                    : "var(--text-secondary)",
-                }}
+                className="relative flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                 aria-label={label}
                 aria-current={isActive ? "page" : undefined}
               >
-                <Icon size={22} strokeWidth={isActive ? 2.6 : 2} />
+                <div
+                  className="flex h-8 w-11 items-center justify-center rounded-2xl transition-all duration-200"
+                  style={{
+                    backgroundColor: isActive
+                      ? "var(--global-nav-selected-bg)"
+                      : "transparent",
+                    color: isActive
+                      ? "var(--global-nav-selected-fg)"
+                      : "var(--text-secondary)",
+                    boxShadow: isActive ? "var(--shadow-lift)" : "none",
+                  }}
+                >
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                </div>
                 <span
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-bold)",
+                    fontWeight: isActive
+                      ? "var(--weight-bold)"
+                      : "var(--weight-semibold)",
                     lineHeight: "var(--leading-snug)",
                     letterSpacing: "var(--tracking-label)",
+                    color: isActive
+                      ? "var(--brand-primary)"
+                      : "var(--text-secondary)",
                   }}
                 >
                   {displayLabel}
@@ -181,29 +194,48 @@ export function AppSidebar({
             type="button"
             ref={mobileMoreTriggerRef}
             onClick={() => setMobileMoreOpen((open) => !open)}
-            className="relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-            style={{
-              color:
-                moreActive || mobileMoreOpen
-                  ? "var(--brand-primary)"
-                  : "var(--text-secondary)",
-            }}
+            className="relative flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             aria-label="More navigation options"
             aria-haspopup="menu"
             aria-expanded={mobileMoreOpen}
             aria-controls="mobile-more-menu"
           >
-            <MoreHorizontal
-              size={22}
-              strokeWidth={moreActive || mobileMoreOpen ? 2.6 : 2}
-            />
+            <div
+              className="flex h-8 w-11 items-center justify-center rounded-2xl transition-all duration-200"
+              style={{
+                backgroundColor:
+                  moreActive || mobileMoreOpen
+                    ? "var(--global-nav-selected-bg)"
+                    : "transparent",
+                color:
+                  moreActive || mobileMoreOpen
+                    ? "var(--global-nav-selected-fg)"
+                    : "var(--text-secondary)",
+                boxShadow:
+                  moreActive || mobileMoreOpen
+                    ? "var(--shadow-lift)"
+                    : "none",
+              }}
+            >
+              <MoreHorizontal
+                size={20}
+                strokeWidth={moreActive || mobileMoreOpen ? 2.5 : 2}
+              />
+            </div>
             <span
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
-                fontWeight: "var(--weight-bold)",
+                fontWeight:
+                  moreActive || mobileMoreOpen
+                    ? "var(--weight-bold)"
+                    : "var(--weight-semibold)",
                 lineHeight: "var(--leading-snug)",
                 letterSpacing: "var(--tracking-label)",
+                color:
+                  moreActive || mobileMoreOpen
+                    ? "var(--brand-primary)"
+                    : "var(--text-secondary)",
               }}
             >
               More
@@ -250,7 +282,7 @@ export function AppSidebar({
                     setMobileMoreOpen(false);
                     onNavigate(id);
                   }}
-                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  className="flex min-h-[var(--control-height-default)] w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                   style={{
                     backgroundColor: isActive
                       ? "var(--local-nav-selected-bg)"
@@ -628,26 +660,28 @@ export function AppSidebar({
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span
-            className="truncate"
+            className="max-w-full break-words"
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "var(--type-body)",
               fontWeight: "var(--weight-semibold)",
               lineHeight: "var(--leading-snug)",
               color: "var(--text-primary)",
+              overflowWrap: "anywhere",
             }}
             title={resolveDisplayName(account)}
           >
             {resolveDisplayName(account)}
           </span>
           <span
-            className="truncate"
+            className="max-w-full break-words"
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "var(--type-caption)",
               fontWeight: "var(--weight-medium)",
               lineHeight: "var(--leading-normal)",
               color: "var(--text-secondary)",
+              overflowWrap: "anywhere",
             }}
             title={account.farmName}
           >

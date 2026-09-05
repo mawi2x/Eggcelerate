@@ -18,23 +18,26 @@ const toneBackgrounds: Record<StatusIconBadgeTone, string> = {
 
 const sizeTokens: Record<
   StatusIconBadgeSize,
-  { circle: string; glyph: string }
+  { circle: string; glyph: number }
 > = {
   sm: {
     circle: "var(--status-icon-badge-size-sm)",
-    glyph: "var(--status-icon-badge-glyph-sm)",
+    // Phosphor writes `size` to the SVG width/height attributes, where a CSS
+    // var() token is invalid. Keep the semantic CSS token for documentation,
+    // but pass the equivalent numeric viewBox size to the icon.
+    glyph: 15,
   },
   md: {
     circle: "var(--status-icon-badge-size-md)",
-    glyph: "var(--status-icon-badge-glyph-md)",
+    glyph: 18,
   },
   lg: {
     circle: "var(--status-icon-badge-size-lg)",
-    glyph: "var(--status-icon-badge-glyph-lg)",
+    glyph: 36,
   },
   banner: {
     circle: "var(--status-icon-badge-size-banner)",
-    glyph: "var(--status-icon-badge-glyph-banner)",
+    glyph: 22,
   },
 };
 
@@ -71,6 +74,6 @@ export function StatusIconBadge({
   );
 }
 
-export function statusIconBadgeGlyphSize(size: StatusIconBadgeSize): string {
+export function statusIconBadgeGlyphSize(size: StatusIconBadgeSize): number {
   return sizeTokens[size].glyph;
 }

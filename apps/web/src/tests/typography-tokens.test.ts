@@ -71,7 +71,7 @@ describe("typography tokens", () => {
     expect(sb).toContain("var(--weight-bold)");
     expect(sb).not.toMatch(/fontFamily:\s*"Baloo 2, sans-serif"/);
   });
-  it("type scale steps down the two largest tokens below sm", () => {
+  it("uses selective phone type overrides", () => {
     const css = fs.readFileSync("src/styles/theme.css", "utf-8");
     expect(css).toMatch(
       /@media\s*\(\s*max-width:\s*39\.9375rem\s*\)[\s\S]*?--type-page-title:\s*1\.25rem/,
@@ -79,5 +79,7 @@ describe("typography tokens", () => {
     expect(css).toMatch(
       /@media\s*\(\s*max-width:\s*39\.9375rem\s*\)[\s\S]*?--type-panel-title:\s*1\.125rem/,
     );
+    expect(css).toContain("--type-control-value: 1rem");
+    expect(css).not.toContain("max-width: 25rem");
   });
 });

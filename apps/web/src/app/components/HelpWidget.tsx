@@ -188,7 +188,7 @@ export function HelpWidget() {
             <button
               type="button"
               onClick={closePanel}
-              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--surface-help-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+              className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--surface-help-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
               style={{ color: "var(--text-secondary)" }}
               aria-label="Close help"
             >
@@ -221,7 +221,7 @@ export function HelpWidget() {
                 >
                   <p
                     style={{
-                      fontSize: "var(--type-caption)",
+                      fontSize: "var(--type-body-sm)",
                       fontWeight: "var(--weight-bold)",
                       lineHeight: 1.4,
                     }}
@@ -237,7 +237,7 @@ export function HelpWidget() {
                   }}
                 >
                   <p
-                    style={{ fontSize: "var(--type-caption)", lineHeight: 1.5 }}
+                    style={{ fontSize: "var(--type-body-sm)", lineHeight: 1.5 }}
                   >
                     {FAQS[selectedIndex].answer}
                   </p>
@@ -265,7 +265,7 @@ export function HelpWidget() {
                     key={faq.question}
                     type="button"
                     onClick={() => setSelectedIndex(index)}
-                    className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-help)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                    className="flex min-h-[var(--control-height-default)] w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-help)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-[var(--control-height-compact)]"
                     style={{
                       border:
                         "var(--border-width-hairline) solid var(--border-help-row)",
@@ -275,7 +275,7 @@ export function HelpWidget() {
                   >
                     <span
                       style={{
-                        fontSize: "var(--type-caption)",
+                        fontSize: "var(--type-body-sm)",
                         fontWeight: "var(--weight-bold)",
                         lineHeight: 1.35,
                       }}

@@ -15,8 +15,9 @@ This guide applies to the dashboard control families reviewed in Trends, Candlin
 
 The canonical scale is **32px compact, 36px default, and 40px toolbar**. There is intentionally no 38px tier.
 
-| Role | Token | Value | Use |
+| Role | Token / Class | Value | Use |
 |---|---|---:|---|
+| Micro | `size="micro"` / `h-7` | `1.75rem` / **28px** | Inline toolbar dropdowns, micro filters, compact sort toggles |
 | Compact | `--control-height-compact` | `2rem` / **32px** | Dense utility actions, small selects, compact segments |
 | Default | `--control-height-default` | `2.25rem` / **36px** | Ordinary buttons, inputs, and selects |
 | Toolbar | `--control-height-toolbar` | `2.5rem` / **40px** | Search fields, toolbar selects, and page-level toolbar actions |
@@ -24,19 +25,19 @@ The canonical scale is **32px compact, 36px default, and 40px toolbar**. There i
 | Icon visual | `--control-size-icon` | `2.25rem` / **36px** | Grid/list toggles and icon-only controls |
 | Icon hit area | `--control-hit-area-icon` | `2.75rem` / **44px** | Touch-friendly wrapper or minimum interactive area when layout permits |
 | Segmented item | `--control-segment-height` | `2.25rem` / **36px default** | Shared visual geometry for choice segments and tabs |
-
+| Filter row | `--control-height-filter-row` | `calc(var(--control-segment-height) + 0.5rem)` / **44px** | Desktop filter row: height-matched segmented FilterBar and dropdown controls |
 All tokens live in `apps/web/src/styles/theme.css`. Screen code should consume these semantic tokens through the shared primitives rather than introducing numeric height literals.
 
 ## Shared component API
 
 ### Buttons
-
 Use `Button` sizes by role:
 
 ```tsx
-<Button size="sm">Compact action</Button>
-<Button>Default action</Button>
-<Button size="toolbar">Toolbar action</Button>
+<Button size="micro">Micro action</Button>        {/* 28px */}
+<Button size="sm">Compact action</Button>         {/* 32px */}
+<Button>Default action</Button>                   {/* 36px */}
+<Button size="toolbar">Toolbar action</Button>    {/* 40px */}
 <Button size="icon" aria-label="More options">...</Button>
 ```
 
@@ -59,11 +60,11 @@ The wrapper's `size` prop selects the visual control tier; it is not the native 
 Use `SelectTrigger` with the matching semantic size:
 
 ```tsx
-<SelectTrigger size="sm">...</SelectTrigger>       {/* 32px */}
-<SelectTrigger>...</SelectTrigger>                  {/* 36px */}
-<SelectTrigger size="toolbar">...</SelectTrigger>  {/* 40px */}
+<SelectTrigger size="micro">...</SelectTrigger>     {/* 28px */}
+<SelectTrigger size="sm">...</SelectTrigger>        {/* 32px */}
+<SelectTrigger>...</SelectTrigger>                   {/* 36px */}
+<SelectTrigger size="toolbar">...</SelectTrigger>   {/* 40px */}
 ```
-
 Custom button triggers that visually participate in a toolbar should use `h-[var(--control-height-toolbar)]` and the same padding, border, typography, and focus treatment as the shared trigger.
 
 ### Filter chips
@@ -71,6 +72,10 @@ Custom button triggers that visually participate in a toolbar should use `h-[var
 Use the shared `FilterBar` for dashboard filter groups. It owns the compact pill treatment, uppercase label typography, counts, spacing, border, and `aria-pressed` state.
 
 Do not promote filter chips to the 40px toolbar tier. The chip token is a 28px minimum visual baseline; its content padding and count label may make the rendered height slightly larger. Preserve wrapping and do not force a fixed height that clips labels or counts.
+
+For status groups that need the connected tab treatment, use `FilterBar` with `variant="segmented"`. It reuses the shared segmented-control surface, active elevation, focus ring, and choice semantics; status screens may choose full-width equal mobile segments or the scrollable treatment when labels need more room.
+
+When all status options are short enough to remain visible, `fitToScreenOnMobile` makes the segmented group fill the phone width with equal columns and removes the overflow affordance. Provide `compactMobileLabel` for any extra-small breakpoint labels that cannot fit without clipping; use the scrolling treatment for groups whose labels need more room.
 
 ### Segmented controls and tabs
 
@@ -100,17 +105,18 @@ Visual geometry is shared, but interaction semantics are not:
 Separate the visual size from the interactive hit area:
 
 - Keep the visible icon control at 36px when it belongs to the icon-control family.
-- Below the 768px mobile-shell breakpoint the shared tokens step
-  interactive heights to 44px (`--control-height-default`,
-  `--control-height-toolbar`, `--control-size-icon`,
-  `--control-segment-height` → `2.75rem` in `theme.css`), so `Button`,
-  `Input`, `SelectTrigger`, `SegmentedControlItem`, `ViewToggle`, and
-  toolbar controls all meet the mobile target with no per-screen code.
-  Glyphs stay 18–22px; only the target grows.
-- `ViewToggle` uses 36px visual buttons on desktop and 44px targets on
-  mobile via `--control-size-icon`; preserve this treatment rather than
-  enlarging the glyphs. Do not count the outer group padding as part of an
-  individual button target.
+- Below the 768px mobile-shell breakpoint the shared visual tokens stay at
+  the compact 32/36/40px scale. Do not globally step
+  `--control-height-default`, `--control-height-toolbar`,
+  `--control-size-icon`, or `--control-segment-height` to 44px: that makes
+  every visible filter, select, and toolbar row grow.
+- Use explicit 44px wrappers when a touch target needs to grow without
+  enlarging its visual mark: `Switch`, `Checkbox`, filter scroll arrows,
+  dialog close actions, and other icon actions where the surrounding layout
+  can absorb the wrapper. Glyphs stay 16–22px.
+- `ViewToggle` uses the 36px visual icon token. Do not count outer group
+  padding as an individual button target; add a wrapper when a larger target
+  is required.
 - `FilterBar` chips stay compact (28px baseline, 36px mobile) and satisfy
   the WCAG 2.2 24px minimum with spacing — the 44px project goal applies to
   primary controls, not chips. The `FilterBar` scroll arrows are the

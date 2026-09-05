@@ -1,4 +1,4 @@
-import { AlertOctagon, AlertTriangle, Info } from "lucide-react";
+import { Info, Warning, WarningOctagon } from "@phosphor-icons/react";
 import type { AlertSeverity } from "../../domain/types";
 
 /** Icon tile treatment by severity. */
@@ -9,13 +9,13 @@ export const severityStyle: Record<
   critical: {
     color: "var(--status-danger-fg)",
     bg: "var(--status-danger-bg)",
-    Icon: AlertOctagon,
+    Icon: WarningOctagon,
     label: "Urgent",
   },
   warning: {
     color: "var(--text-brand-soft)",
     bg: "var(--wash-alert)",
-    Icon: AlertTriangle,
+    Icon: Warning,
     label: "Needs Attention",
   },
   info: {

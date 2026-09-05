@@ -170,7 +170,7 @@ export function GaugeDial({
       <div className="mt-1 flex flex-col items-center text-center">
         {safeLabel ? (
           <span
-            className="text-(length:--type-label-compact) font-semibold sm:text-(length:--type-caption)"
+            className="text-(length:--type-label-compact) font-semibold md:text-(length:--type-caption)"
             style={{ color: MUTED }}
           >
             {safeLabel}
@@ -178,12 +178,12 @@ export function GaugeDial({
         ) : (
           <>
             <span
-              className="text-(length:--type-label-micro) font-bold uppercase tracking-wider sm:text-(length:--type-label-compact)"
+              className="text-(length:--type-label-micro) font-bold uppercase tracking-wider md:text-(length:--type-label-compact)"
               style={{ color: MUTED, opacity: 0.8 }}
             >
               Safe range
             </span>
-            <span className="text-(length:--type-label-compact) font-semibold text-[var(--text-primary)] sm:text-(length:--type-caption)">
+            <span className="text-(length:--type-label-compact) font-semibold text-[var(--text-primary)] md:text-(length:--type-caption)">
               {safe.min} to {safe.max}
               {unit === "%" ? "% RH" : unit}
             </span>

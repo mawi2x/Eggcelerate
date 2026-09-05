@@ -19,6 +19,12 @@ import type {
   Incubator,
   Mode,
 } from "../../domain/types";
+import {
+  type CandlingFilter,
+  type InspectionStatus,
+  matchesCandlingFilter,
+  selectCandlingFilterCounts,
+} from "../../features/candling/selectors";
 import { ExclamationIcon } from "../icons";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { Button } from "../ui/button";
@@ -60,13 +66,7 @@ const inputStyle = {
   backgroundColor: "var(--surface-tile)",
 };
 
-export type InspectionStatus =
-  | "overdue"
-  | "due"
-  | "upcoming"
-  | "complete"
-  | "not-started"
-  | "ended";
+export type { InspectionStatus } from "../../features/candling/selectors";
 
 export interface CandlingSummary {
   unit: Incubator;
@@ -136,7 +136,7 @@ const statusMeta: Record<
   },
 };
 
-type RowFilter = "all" | "action" | "upcoming" | "complete";
+type RowFilter = CandlingFilter;
 type SortKey = "attention" | "name" | "recent";
 
 function latestLogFor(unit: Incubator): CandlingLogEntry | null {
@@ -243,26 +243,28 @@ function JournalCard({
     >
       <div>
         <div className="flex min-w-0 items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3
-              className="truncate"
+              className="max-w-full break-words"
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: "var(--type-heading-sm)",
                 fontWeight: "var(--weight-semibold)",
                 lineHeight: "var(--leading-snug)",
                 color: TEXT,
+                overflowWrap: "anywhere",
               }}
               title={row.unit.name}
             >
               {row.unit.name}
             </h3>
             <p
-              className="mt-0.5 truncate"
+              className="mt-0.5 max-w-full break-words"
               style={{
                 color: MUTED,
                 fontSize: "var(--type-body-sm)",
                 lineHeight: "var(--leading-normal)",
+                overflowWrap: "anywhere",
               }}
               title={row.mode.name}
             >
@@ -295,8 +297,12 @@ function JournalCard({
               Latest journal entry
             </p>
             <p
-              className="mt-1 truncate"
-              style={{ color: MUTED, fontSize: "var(--type-caption)" }}
+              className="mt-1 line-clamp-2 break-words"
+              style={{
+                color: MUTED,
+                fontSize: "var(--type-caption)",
+                overflowWrap: "anywhere",
+              }}
               title={row.latestLog?.label ?? undefined}
             >
               {row.latestLog
@@ -367,12 +373,12 @@ function JournalCard({
             e.stopPropagation();
             onOpen(row.unit.id);
           }}
+          size="sm"
           className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
           aria-label={`Open candling log for ${row.unit.name}`}
           style={{
             backgroundColor: "var(--surface-card)",
             color: RUST,
-            height: "var(--control-height-compact)",
             border: "1px solid var(--border-ink-soft)",
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-body-sm)",
@@ -424,27 +430,14 @@ export function CandlingLogsScreen({
   );
 
   const counts = useMemo(
-    () => ({
-      action: summaries.filter(
-        (row) => row.status === "overdue" || row.status === "due",
-      ).length,
-      due: summaries.filter((row) => row.status === "due").length,
-
-      upcoming: summaries.filter((row) => row.status === "upcoming").length,
-      complete: summaries.filter((row) => row.status === "complete").length,
-    }),
+    () => selectCandlingFilterCounts(summaries.map((row) => row.status)),
     [summaries],
   );
 
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
     const filtered = summaries.filter((row) => {
-      const matchesFilter =
-        filter === "all" ||
-        (filter === "action" &&
-          (row.status === "overdue" || row.status === "due")) ||
-        (filter === "upcoming" && row.status === "upcoming") ||
-        (filter === "complete" && row.status === "complete");
+      const matchesFilter = matchesCandlingFilter(row.status, filter);
       const matchesMode = modeFilter === "all" || row.mode.id === modeFilter;
       const matchesSearch =
         !query ||
@@ -547,7 +540,7 @@ export function CandlingLogsScreen({
   return (
     <div className="space-y-6" style={{ color: TEXT }}>
       {/* Row 1: Search + ViewToggle (desktop only) */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
+      <div className="flex items-center gap-2.5 md:gap-3">
         <div className="relative min-w-0 flex-1">
           <Search
             size={16}
@@ -568,35 +561,37 @@ export function CandlingLogsScreen({
             style={inputStyle}
           />
         </div>
-        <div className="hidden sm:block">
+        <div className="hidden md:block">
           <ViewToggle view={view} onChange={setView} />
         </div>
       </div>
 
       {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
       <div
-        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
         style={{ marginTop: 16 }}
       >
-        <div className="min-w-0 flex-1 sm:flex-initial">
+        <div className="min-w-0 flex-1 lg:flex-initial">
           <FilterBar
             ariaLabel="Candling log filter"
+            variant="segmented"
+            fitToScreenOnMobile
             value={filter}
             onChange={(key) => setFilter(key as RowFilter)}
             options={[
               { key: "all", label: "All", count: summaries.length },
-              { key: "action", label: "Needs action", count: counts.action },
-              { key: "upcoming", label: "Upcoming", count: counts.upcoming },
-              { key: "complete", label: "Complete", count: counts.complete },
+              { key: "todo", label: "To Do", count: counts.todo },
+              { key: "done", label: "Done", count: counts.done },
             ]}
+            className="md:!w-full lg:!w-auto"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex w-full items-center justify-end gap-2 lg:w-auto">
           <Select value={modeFilter} onValueChange={setModeFilter}>
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-(length:--type-body-sm) sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
+              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5 md:text-sm"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
@@ -623,7 +618,7 @@ export function CandlingLogsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-(length:--type-body-sm) sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
+              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5 md:text-sm"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
@@ -644,7 +639,7 @@ export function CandlingLogsScreen({
           <button
             type="button"
             onClick={() => setSortAsc(!sortAsc)}
-            className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] shrink-0 cursor-pointer items-center justify-center rounded-xl border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2"
+            className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:rounded-xl"
             style={{
               backgroundColor: SURFACE,
               borderColor: CARD_BORDER,
@@ -654,9 +649,9 @@ export function CandlingLogsScreen({
             aria-label={sortAsc ? "Sort ascending" : "Sort descending"}
           >
             {sortAsc ? (
-              <ArrowUpNarrowWide size={16} />
+              <ArrowUpNarrowWide size={16} className="md:size-[18px]" />
             ) : (
-              <ArrowDownWideNarrow size={16} />
+              <ArrowDownWideNarrow size={16} className="md:size-[18px]" />
             )}
           </button>
         </div>
@@ -698,7 +693,9 @@ export function CandlingLogsScreen({
           </div>
         ) : view === "grid" ? (
           <>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {/* Reserve a small mobile gutter so the fixed chamber index never
+                sits on top of the card edge. */}
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3 pr-4 md:pr-0">
               {rows.map((row, idx) => (
                 <div
                   key={row.unit.id}
@@ -722,8 +719,9 @@ export function CandlingLogsScreen({
 
             {/* Floating Vertical Dot Track on Mobile (shows candling chamber count and scroll position) */}
             {rows.length > 1 && (
-              <fieldset
-                className="scrollbar-none pointer-events-auto fixed right-1 top-1/2 z-20 m-0 flex max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto border-0 bg-transparent p-0 max-[20rem]:hidden md:hidden"
+              <div
+                className="scrollbar-none pointer-events-auto fixed right-1.5 top-1/2 z-20 m-0 flex h-fit max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] w-3 min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto bg-transparent max-[20rem]:hidden md:hidden"
+                role="group"
                 aria-label={`Candling chamber index. Showing ${rows.length} chambers.`}
               >
                 {rows.map((row, idx) => {
@@ -733,7 +731,7 @@ export function CandlingLogsScreen({
                       key={row.unit.id}
                       type="button"
                       onClick={() => scrollToCandling(idx)}
-                      className="flex h-3 w-2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none"
+                      className="flex h-3 w-2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                       aria-label={`Scroll to ${row.unit.name} (${row.status}, ${idx + 1} of ${rows.length})`}
                       title={`${row.unit.name}: ${statusMeta[row.status].label}`}
                       aria-current={isActive ? "true" : undefined}
@@ -751,7 +749,7 @@ export function CandlingLogsScreen({
                     </button>
                   );
                 })}
-              </fieldset>
+              </div>
             )}
           </>
         ) : (

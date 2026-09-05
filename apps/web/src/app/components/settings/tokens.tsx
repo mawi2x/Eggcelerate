@@ -72,12 +72,12 @@ export function SettingRow({
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-6 py-3.5"
+      className="flex flex-col gap-3 py-3.5 md:flex-row md:items-center md:justify-between md:gap-6"
       style={{ borderBottom: `var(--border-width-hairline) solid ${DIVIDER}` }}
     >
       <label htmlFor={htmlFor} className="min-w-0 flex-1">
         <span
-          className="block truncate"
+          className="block break-words"
           style={{
             fontSize: "var(--type-body)",
             fontWeight: "var(--weight-semibold)",
@@ -88,14 +88,18 @@ export function SettingRow({
         </span>
         {hint && (
           <span
-            className="mt-0.5 block"
-            style={{ fontSize: "var(--type-caption)", color: MUTED }}
+            className="mt-0.5 block break-words"
+            style={{
+              fontSize: "var(--type-caption)",
+              color: MUTED,
+              overflowWrap: "anywhere",
+            }}
           >
             {hint}
           </span>
         )}
       </label>
-      <div className="shrink-0">{control}</div>
+      <div className="shrink-0 self-end md:self-auto">{control}</div>
     </div>
   );
 }

@@ -33,10 +33,10 @@ const MUTED = "var(--text-secondary)";
 const RUST = "var(--brand-primary)";
 
 /**
- * Rows 1 and 2 of the main content area, identical on every screen:
- *   Row 1 — utility bar: optional back link at the left, alerts bell at the right.
- *   Row 2 — page title bar (title + optional inline badges, over the subtitle).
- * Page-local controls (search, filters, view toggles) belong to Row 3.
+ * Single-row header for the main content area, identical on every screen:
+ * title block left, ambient date (overview only) + alerts bell right.
+ * Sub-views (e.g. Incubator Detail) render a slim back link row above.
+ * Page-local controls (search, filters, view toggles) belong below.
  */
 export function PageHeader({
   title,
@@ -113,8 +113,8 @@ export function PageHeader({
                   <Typography
                     as="h1"
                     variant="pageTitle"
-                    className="min-w-0"
-                    style={{ color: TEXT }}
+                    className="min-w-0 max-w-full break-words"
+                    style={{ color: TEXT, overflowWrap: "anywhere" }}
                     title={title}
                   >
                     {renderTitle()}
@@ -122,8 +122,8 @@ export function PageHeader({
                   {badges}
                 </div>
                 <Typography
-                  className="min-w-0"
-                  style={{ color: MUTED, marginTop: 2 }}
+                  className="min-w-0 max-w-full break-words"
+                  style={{ color: MUTED, marginTop: 2, overflowWrap: "anywhere" }}
                 >
                   {subtitle}
                 </Typography>
@@ -146,31 +146,57 @@ export function PageHeader({
     );
   }
 
-  // Desktop Overview: spacious two-row with ambient live date/time
-  if (showDateTime) {
-    return (
-      <div>
-        {/* Row 1: utility bar — bell stays top-right alone */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            {onBack ? (
-              <button
-                type="button"
-                onClick={onBack}
-                className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                style={{
-                  color: RUST,
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-body)",
-                  fontWeight: "var(--weight-medium)",
-                  minHeight: "var(--control-hit-area-icon)",
-                }}
+  // Desktop: single row — title left, date (overview only) + bell right.
+  // No empty utility bar; back link (detail only) sits in a slim row above.
+  return (
+    <div>
+      {onBack ? (
+        <div className="mb-2">
+          <button
+            type="button"
+            onClick={onBack}
+            className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+            style={{
+              color: RUST,
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-body)",
+              fontWeight: "var(--weight-medium)",
+              minHeight: "var(--control-hit-area-icon)",
+            }}
+          >
+            <ArrowLeft size={16} className="shrink-0" />
+            <span className="min-w-0 truncate">{backLabel}</span>
+          </button>
+        </div>
+      ) : null}
+
+      <header className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          {titleNode ?? (
+            <>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Typography
+                  as="h1"
+                  variant="pageTitle"
+                  className="min-w-0 max-w-full break-words"
+                  style={{ color: TEXT, overflowWrap: "anywhere" }}
+                  title={title}
+                >
+                  {renderTitle()}
+                </Typography>
+                {badges}
+              </div>
+              <Typography
+                className="min-w-0"
+                style={{ color: MUTED, marginTop: 4 }}
               >
-                <ArrowLeft size={16} className="shrink-0" />
-                <span className="min-w-0 truncate">{backLabel}</span>
-              </button>
-            ) : null}
-          </div>
+                {subtitle}
+              </Typography>
+            </>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-3 pt-0.5">
+          {showDateTime ? <LiveDateTime /> : null}
           <NotificationPopover
             alerts={alerts}
             unreadCount={alertCount}
@@ -181,114 +207,6 @@ export function PageHeader({
             markingAllRead={markingAllRead}
           />
         </div>
-
-        {/* Row 2: title block left + ambient date/time right — restores 16px gap to Row 1 */}
-        <header className="w-full min-w-0" style={{ marginTop: 16 }}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-            <div className="min-w-0 flex-1">
-              {titleNode ?? (
-                <>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <Typography
-                      as="h1"
-                      variant="pageTitle"
-                      className="min-w-0 truncate"
-                      style={{ color: TEXT }}
-                      title={title}
-                    >
-                      {renderTitle()}
-                    </Typography>
-                    {badges}
-                  </div>
-                  <Typography
-                    className="min-w-0"
-                    style={{ color: MUTED, marginTop: 4 }}
-                  >
-                    {subtitle}
-                  </Typography>
-                </>
-              )}
-            </div>
-            {/* Right: ambient date/time — no card/border/background, right-aligned, not leveled with bell */}
-            <div className="flex shrink-0 self-end sm:self-start sm:pt-1">
-              <LiveDateTime />
-            </div>
-          </div>
-        </header>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {/* ── Row 1: utility bar ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          {onBack ? (
-            <button
-              type="button"
-              onClick={onBack}
-              className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-              style={{
-                color: RUST,
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body)",
-                fontWeight: "var(--weight-medium)",
-                minHeight: "var(--control-hit-area-icon)",
-              }}
-            >
-              <ArrowLeft size={16} className="shrink-0" />
-              <span className="min-w-0 truncate">{backLabel}</span>
-            </button>
-          ) : null}
-        </div>
-
-        <NotificationPopover
-          alerts={alerts}
-          unreadCount={alertCount}
-          onViewAll={onViewAlerts}
-          onMarkAllRead={onMarkAllRead}
-          onDismiss={onDismissAlert}
-          pendingAlertId={pendingAlertId}
-          markingAllRead={markingAllRead}
-        />
-      </div>
-
-      {/* ── Row 2: title block + inline metadata badges ─────────────────── */}
-      <header className="w-full min-w-0" style={{ marginTop: 16 }}>
-        {titleNode ?? (
-          <>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <h1
-                className="min-w-0 truncate"
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "var(--type-page-title)",
-                  fontWeight: "var(--weight-bold)",
-                  lineHeight: "var(--leading-snug)",
-                  color: TEXT,
-                }}
-                title={title}
-              >
-                {renderTitle()}
-              </h1>
-              {badges}
-            </div>
-            <p
-              className="min-w-0"
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body)",
-                fontWeight: "var(--weight-regular)",
-                lineHeight: "var(--leading-normal)",
-                color: MUTED,
-                marginTop: 4,
-              }}
-            >
-              {subtitle}
-            </p>
-          </>
-        )}
       </header>
     </div>
   );

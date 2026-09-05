@@ -183,7 +183,7 @@ export function NotificationsPanel({
       <SegmentedControl
         role="tablist"
         aria-label="Notification settings sections"
-        className="mt-5 w-full sm:w-auto"
+        className="mt-5 w-full md:w-auto"
       >
         <SegmentedControlItem
           id="notification-delivery-tab"
@@ -192,7 +192,7 @@ export function NotificationsPanel({
           aria-controls="notification-delivery-panel"
           active={view === "delivery"}
           size="toolbar"
-          className="flex-1 sm:flex-none"
+          className="flex-1 md:flex-none"
           onClick={() => onViewChange("delivery")}
         >
           Delivery & contacts
@@ -204,7 +204,7 @@ export function NotificationsPanel({
           aria-controls="notification-rules-panel"
           active={view === "rules"}
           size="toolbar"
-          className="flex-1 sm:flex-none"
+          className="flex-1 md:flex-none"
           onClick={() => onViewChange("rules")}
         >
           Alert rules

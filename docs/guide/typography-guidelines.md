@@ -228,52 +228,42 @@ Raw `px` may remain when it expresses physical UI detail, not typographic scale:
 
 Every exception should have a nearby comment or be an obvious chart/illustration prop. Do not add raw `fontSize` for new prose.
 
-## Mobile type and touch geometry (one scale, not two)
+## Mobile type and visual control geometry (one scale, three tiers)
 
-There is a single type scale. Below Tailwind's `sm` breakpoint the two
-largest tokens step down one visual step so 24px/22px titles don't crowd
-320–640px viewports, while form values step up to 16px for legibility
-(values below 16px trigger iOS auto-zoom on focus). Do not invent parallel
-`--type-*-mobile` tokens — they drift from the scale within weeks.
+There is a single type scale. Default `:root` is the 1440/desktop scale.
+Below 640px, only page/panel titles step down selectively while form values
+step up to 16px for legibility (values below 16px trigger iOS auto-zoom on
+focus). Control visuals keep the canonical 32/36/40px compact scale on
+phones; larger hit areas are explicit wrappers, not a global height override.
+Do not invent parallel `--type-*-mobile` tokens — they drift from the scale
+within weeks.
 
 ```css
-/* theme.css */
+/* theme.css — selective phone type adjustments only */
 @media (max-width: 39.9375rem) {
   :root {
-    --type-page-title: 1.25rem; /* 20px, was 24px */
-    --type-panel-title: 1.125rem; /* 18px, was 22px */
-    --type-control-value: 1rem; /* 16px, was 14px */
-  }
-}
-
-/* Touch geometry uses a wider breakpoint (below md, 48rem) so portrait
-   tablets also get comfortable targets. Only interactive heights change;
-   chips, badges, and calendar cells keep their compact tiers. */
-@media (max-width: 47.9375rem) {
-  :root {
-    --control-height-default: 2.75rem; /* 44px */
-    --control-height-toolbar: 2.75rem; /* 44px */
-    --control-size-icon: 2.75rem; /* 44px target, glyph stays 18–22px */
-    --control-segment-height: 2.75rem; /* 44px */
+    --type-page-title: 1.25rem; /* 20px */
+    --type-panel-title: 1.125rem; /* 18px */
+    --type-control-value: 1rem; /* 16px */
   }
 }
 ```
 
 Rules:
 
-- Only these tokens change. Everything smaller is already compact (body
-  stays 14px — it does not follow the control-value step-up); everything
-  at `sm`/`md` and up is unchanged.
+- Only the three selective phone type tokens change. Body stays 14px and
+  labels stay 11px; the canonical 32/36/40px visual control scale is
+  unchanged on phones. Everything at `md` and up is unchanged.
 - Breakpoints are `rem`-based so they follow user font-size and 200% zoom.
   Do not convert them to `px`. Type and geometry deliberately use different
-  breakpoints: 640px for reading density, 768px for touch comfort.
+  breakpoints: 640px for reading density, 400px for small-phone crowding,
+  768px for the mobile shell and explicit hit-area treatment.
 - No per-screen `useIsMobile` font switching: components keep reading
   the tokens and the tokens do the work.
 - Enforced by `mobile-typography.test.ts` (file-content assertions — jsdom
   cannot evaluate media queries).
-- Validate on a real 320px and 375px viewport after any change here. Add
-  another tier only on a concrete crowding complaint, never speculatively
-  (see decision 2026-09-04: single step-down over `clamp()`/multi-tier).
+- Validate on real 1440px, 600px, 400px, 320px and 375px viewports after any
+  change here.
 
 ## Accessibility requirements
 
@@ -308,4 +298,3 @@ Standardized via 2 SDD runs (`fff9c75..cb67abe` Phase 1-2 + `0caa6fa..bca3846` P
 - `pnpm test` `11/11` (`typography-tokens` `batch-a/b/c`) `typecheck` PASS `build` `index 298.76kB + vendor 183.88kB + Trends 409.58kB` <500kB `bca3846`
 
 Light-theme token system is the supported implementation. Dark-mode `oklch()` values in `theme.css` remain generic, not brand-approved — do not expand without a separate dark-mode review (`color-guidelines.md` current scope).
-
