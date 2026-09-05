@@ -82,12 +82,8 @@ Do not replace families — the Baloo 2 / Nunito pairing is brand-locked (`docs/
 | `--type-heading-lg` | `1.25rem` | 20 | Section `h2` (`DeviceSettingsTab.tsx`) |
 | `--type-heading-md` | `1.125rem` | 18 | Dialog titles, chart titles (`HarvestModal.tsx`, `TrendsScreen.tsx`) |
 | `--type-heading-sm` | `1rem` | 16 | Card `h3` (`detail/primitives.tsx` `SectionCard`), `16` mode names |
-| `--type-body` | `0.875rem` | 14 | Body, controls, inputs (`ui/input.tsx`, `ui/label.tsx`, `ui/select.tsx`) |
-| `--type-body-sm` | `0.8125rem` | 13 | Dense table cells, supporting metadata |
-| `--type-caption` | `0.75rem` | 12 | Captions, helper text, card subtitles |
-| `--type-label` | `0.6875rem` | 11 | Micro-labels, table headers, badges — labels only, not paragraphs |
-| `--type-label-compact` | `0.625rem` | 10 | Sub-label tier (opt-in) — short uppercase micro-labels where 11px crowds, e.g. timeline milestones on `<sm` |
-| `--type-label-micro` | `0.5625rem` | 9 | Sub-label tier (last-resort) — same contract as compact, only when 10px still crowds |
+| `--type-body` | `0.875rem` | 14 | Body copy and form labels (`ui/label.tsx`); editable values use `--type-control-value` below, never this token |
+| `--type-control-value` | `0.875rem` → `1rem` on phones | 14 → 16 | Editable form values (`Input`, `SelectTrigger`); decoupled from body so phones get 16px legibility + iOS focus-zoom stability while body stays 14px |
 
 `11px` is for compact labels/table headers/metadata — do not create `8px/9px` tokens. The former `8px`/`9px` calendar/photo labels were migrated to `11px` label (`IncubationCalendar.tsx`, `CandlingJournalTab.tsx`).
 
@@ -128,10 +124,8 @@ controls, prose, errors, or action text.
 | `--type-label-compact` | `0.625rem` | 10 | Preferred concession — timeline milestone labels on `<sm` (`Timeline.tsx` `labelSize={10}`, the default) |
 | `--type-label-micro` | `0.5625rem` | 9 | Last-resort — same slots when 10px still crowds (`labelSize={9}`), currently live on Monitor + Candling timelines |
 
-Rules for reuse anywhere else in the project:
-
 - Short strings only (roughly ≤8 characters per line, e.g. `1ST`, `DAY 8`, `LOCKDOWN`), uppercase, bold, with `var(--tracking-label)`.
-- Pair with a full-text disclosure: `title` attr at minimum, so pointer/keyboard/touch users can recover the untruncated value.
+- Pair with a recoverable full-text path: visible supporting text, an accessible label, or an operable details/tooltip pattern. A `title` attribute alone is not sufficient for touch or assistive-technology users — keep it only as a supplement (mobile typography plan, Phase 3.4).
 - Keep 4.5:1 contrast — small text gets no contrast discount.
 - Both are `rem`, so they scale with browser zoom and Dynamic Type — never convert them to `px`.
 - Prefer 10px. Reach for 9px only with a concrete crowding screenshot, and note it the way this section notes the timeline.
@@ -145,7 +139,7 @@ Rules for reuse anywhere else in the project:
 | Panel title | `--font-display` | `--type-panel-title` `22` | `700` | `1.25` | `PanelHeader` `h2` |
 | Section / card title | `--font-display` | `--type-heading-sm` `16` to `--type-heading-md` `18` | `600–700` | `1.25` | `SectionCard` `h3` |
 | KPI / metric value | `--font-display` | `22–24` via panel/page title | `700–800` | `1.1` | `OverviewScreen.tsx` `22/800`, candling summary `24/800` |
-| Body & control copy | `--font-body` | `--type-body` `14` | `400–600` | `1.5` | `input.tsx` `label.tsx` `select.tsx` |
+| Body, labels & control values | `--font-body` | `--type-body` `14`, `--type-control-value` `14`→`16` on phones | `400–600` | `1.5` | `label.tsx` body, `input.tsx`/`select.tsx` values |
 | Dense table / supporting | `--font-body` | `--type-body-sm` `13` | `400–600` | `1.5` | Mode table cells |
 | Caption / helper | `--font-body` | `--type-caption` `12` | `400–500` | `1.5` | `SectionCard` subtitle |
 | Micro-label | `--font-body` | `--type-label` `11` | `700` | `1.25` uppercase `0.05em` | `StatusPill`, table `TH` |
@@ -234,12 +228,13 @@ Raw `px` may remain when it expresses physical UI detail, not typographic scale:
 
 Every exception should have a nearby comment or be an obvious chart/illustration prop. Do not add raw `fontSize` for new prose.
 
-## Mobile step-down (one scale, not two)
+## Mobile type and touch geometry (one scale, not two)
 
 There is a single type scale. Below Tailwind's `sm` breakpoint the two
 largest tokens step down one visual step so 24px/22px titles don't crowd
-320–640px viewports. Do not invent parallel `--type-*-mobile` tokens —
-they drift from the scale within weeks.
+320–640px viewports, while form values step up to 16px for legibility
+(values below 16px trigger iOS auto-zoom on focus). Do not invent parallel
+`--type-*-mobile` tokens — they drift from the scale within weeks.
 
 ```css
 /* theme.css */
@@ -247,23 +242,35 @@ they drift from the scale within weeks.
   :root {
     --type-page-title: 1.25rem; /* 20px, was 24px */
     --type-panel-title: 1.125rem; /* 18px, was 22px */
+    --type-control-value: 1rem; /* 16px, was 14px */
+  }
+}
+
+/* Touch geometry uses a wider breakpoint (below md, 48rem) so portrait
+   tablets also get comfortable targets. Only interactive heights change;
+   chips, badges, and calendar cells keep their compact tiers. */
+@media (max-width: 47.9375rem) {
+  :root {
+    --control-height-default: 2.75rem; /* 44px */
+    --control-height-toolbar: 2.75rem; /* 44px */
+    --control-size-icon: 2.75rem; /* 44px target, glyph stays 18–22px */
+    --control-segment-height: 2.75rem; /* 44px */
   }
 }
 ```
 
 Rules:
 
-- Only these two tokens change. Everything smaller is already compact;
-  everything at `sm` and up is unchanged.
-- The breakpoint is `rem`-based (`39.9375rem` = just below `40rem`/`sm`),
-  so the step-down also follows user font-size and 200% zoom — a zoomed
-  desktop gets the compact titles too. Do not convert it to `px`.
+- Only these tokens change. Everything smaller is already compact (body
+  stays 14px — it does not follow the control-value step-up); everything
+  at `sm`/`md` and up is unchanged.
+- Breakpoints are `rem`-based so they follow user font-size and 200% zoom.
+  Do not convert them to `px`. Type and geometry deliberately use different
+  breakpoints: 640px for reading density, 768px for touch comfort.
 - No per-screen `useIsMobile` font switching: components keep reading
-  `var(--type-page-title)` / `var(--type-panel-title)` and the tokens do
-  the work.
-- Enforced by `typography-tokens.test.ts` ("type scale steps down the two
-  largest tokens below sm", file-content assertions — jsdom cannot
-  evaluate media queries).
+  the tokens and the tokens do the work.
+- Enforced by `mobile-typography.test.ts` (file-content assertions — jsdom
+  cannot evaluate media queries).
 - Validate on a real 320px and 375px viewport after any change here. Add
   another tier only on a concrete crowding complaint, never speculatively
   (see decision 2026-09-04: single step-down over `clamp()`/multi-tier).

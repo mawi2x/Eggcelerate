@@ -100,9 +100,21 @@ Visual geometry is shared, but interaction semantics are not:
 Separate the visual size from the interactive hit area:
 
 - Keep the visible icon control at 36px when it belongs to the icon-control family.
-- Use `--control-hit-area-icon` for a 44px wrapper or minimum interactive area on touch-oriented layouts when it does not disrupt the surrounding geometry.
-- `ViewToggle` intentionally uses 36px visual buttons inside a padded group; preserve this treatment rather than enlarging the glyph buttons.
-- A sort-direction button placed in a 40px toolbar may use the toolbar tier because its surrounding role is toolbar alignment, not the standalone 36px icon family.
+- Below the 768px mobile-shell breakpoint the shared tokens step
+  interactive heights to 44px (`--control-height-default`,
+  `--control-height-toolbar`, `--control-size-icon`,
+  `--control-segment-height` → `2.75rem` in `theme.css`), so `Button`,
+  `Input`, `SelectTrigger`, `SegmentedControlItem`, `ViewToggle`, and
+  toolbar controls all meet the mobile target with no per-screen code.
+  Glyphs stay 18–22px; only the target grows.
+- `ViewToggle` uses 36px visual buttons on desktop and 44px targets on
+  mobile via `--control-size-icon`; preserve this treatment rather than
+  enlarging the glyphs. Do not count the outer group padding as part of an
+  individual button target.
+- `FilterBar` chips stay compact (28px baseline, 36px mobile) and satisfy
+  the WCAG 2.2 24px minimum with spacing — the 44px project goal applies to
+  primary controls, not chips. The `FilterBar` scroll arrows are the
+  exception inside that component: 44px targets with 16px glyphs.
 - Every icon-only button needs an accessible name, a `type="button"` when it is not submitting a form, and a visible focus state.
 
 ## Screen application
