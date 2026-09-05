@@ -25,6 +25,12 @@ import type { ReadingWindow } from "../../data/repositories/repository";
 import type { HatchRecord, Incubator, Mode } from "../../domain/types";
 import { useIncubatorReadingMap } from "../../features/farm/use-incubator-readings";
 import {
+  dedupeTickLabels,
+  formatXTick,
+  formatYTick,
+  pickTimeTicks,
+} from "../../features/trends/chart-ticks";
+import {
   selectFilteredHatch,
   selectHatchKpis,
   selectHatchWithPct,
@@ -63,6 +69,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { useIsMobile } from "../ui/use-mobile";
 
 // ── Design tokens ───────────────────────────────────────────────────────────
 const RUST = "var(--brand-primary)";
@@ -137,14 +144,6 @@ interface TooltipMeta {
   metricLabel: string;
 }
 
-function formatAxisTime(timestamp: number, range: RangeKey) {
-  const date = new Date(timestamp);
-  if (range === "24h") {
-    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  }
-  return date.toLocaleDateString([], { month: "short", day: "numeric" });
-}
-
 function formatTooltipTime(timestamp: number) {
   const date = new Date(timestamp);
   const day = date.toLocaleDateString([], { month: "short", day: "numeric" });
@@ -167,6 +166,8 @@ function ChartTooltip({
   unit,
   meta,
   highlightedId,
+  compact = false,
+  range = "24h",
 }: {
   active?: boolean;
   payload?: {
@@ -179,6 +180,9 @@ function ChartTooltip({
   unit: string;
   meta?: Record<string, TooltipMeta>;
   highlightedId?: string | null;
+  /** Mobile value pill: value + timestamp only, pinned near the touch point. */
+  compact?: boolean;
+  range?: RangeKey;
 }) {
   if (!active || !payload?.length) return null;
 
@@ -194,6 +198,43 @@ function ChartTooltip({
   const info: TooltipMeta | undefined =
     typeof reading.dataKey === "string" ? meta?.[reading.dataKey] : undefined;
   const timestamp = reading.payload?.ts;
+
+  // Mobile: minimal dark value pill pinned near the touch point (ref pattern).
+  // Chamber name and target range already live in the card legend/subtitle.
+  if (compact) {
+    return (
+      <div
+        className="flex items-baseline gap-2 rounded-full px-3 py-1.5 shadow-lg"
+        style={{
+          backgroundColor: "var(--text-primary)",
+          color: "#FFFFFF",
+          fontFamily: "var(--font-body)",
+        }}
+      >
+        <span
+          style={{
+            fontSize: "var(--type-body)",
+            fontWeight: "var(--weight-bold)",
+            lineHeight: "var(--leading-snug)",
+          }}
+        >
+          {formatMeasurement(reading.value, unit)}
+        </span>
+        {typeof timestamp === "number" && (
+          <span
+            style={{
+              fontSize: "var(--type-label)",
+              fontWeight: "var(--weight-semibold)",
+              letterSpacing: "var(--tracking-label)",
+              color: "rgba(255, 255, 255, 0.75)",
+            }}
+          >
+            {formatXTick(timestamp, range)}
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -259,6 +300,8 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   const [unitId, setUnitId] = useState(initialUnitId ?? units[0]?.id ?? "");
   const [range, setRange] = useState<RangeKey>("24h");
   const [readingsOpen, setReadingsOpen] = useState(false);
+  // Narrow-viewport chart treatment (tick density, y gutter, tooltip pill).
+  const isMobile = useIsMobile();
 
   // Compare mode state.
   const [compare, setCompare] = useState(false);
@@ -361,6 +404,22 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       Math.ceil((max + pad) * 10) / 10,
     ];
   }, [chartData, activeUnits, bands, metric]);
+
+  // Explicit x ticks (3 mobile / 5 desktop) so axis labels are deterministic
+  // and never repeat the same wall time on the 24h view.
+  const xTickValues = useMemo(
+    () =>
+      pickTimeTicks(
+        chartData.map((row) => row.ts),
+        isMobile ? 3 : 5,
+      ),
+    [chartData, isMobile],
+  );
+  const xTickLabels = useMemo(
+    () => dedupeTickLabels(xTickValues.map((ts) => formatXTick(ts, range))),
+    [xTickValues, range],
+  );
+  const ySpan = domain[1] - domain[0];
 
   const colorFor = (id: string) =>
     compare
@@ -467,13 +526,14 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-start gap-4">
-        <SegmentedControl aria-label="Trend view">
+        <SegmentedControl aria-label="Trend view" className="w-full sm:w-auto">
           {viewOptions.map(({ key, label, Icon }) => {
             const active = trendView === key;
             return (
               <SegmentedControlItem
                 key={key}
                 active={active}
+                className="min-w-0 flex-1 !h-auto min-h-11 whitespace-normal px-3 py-2 text-center sm:flex-none sm:px-4"
                 aria-pressed={active}
                 onClick={() => setTrendView(key)}
               >
@@ -752,30 +812,28 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       strokeWidth={1}
                     />
                     <XAxis
-                      key="x-axis"
+                      key={`x-axis-${range}-${metric}`}
                       dataKey="ts"
                       type="number"
                       scale="time"
                       domain={["dataMin", "dataMax"]}
+                      ticks={xTickValues}
                       tick={{
                         fill: MUTED,
                         fontFamily: "var(--font-body)",
                         fontSize: "var(--type-label)",
                         fontWeight: "var(--weight-medium)",
                       }}
-                      tickFormatter={(value) =>
-                        formatAxisTime(Number(value), range)
-                      }
+                      tickFormatter={(_, index) => xTickLabels[index] ?? ""}
                       axisLine={{ stroke: "#D8D0C0" }}
                       tickLine={false}
                       tickMargin={10}
-                      interval="preserveStartEnd"
-                      minTickGap={range === "24h" ? 48 : 58}
+                      interval={0}
                     />
                     <YAxis
                       key="y-axis"
                       domain={domain}
-                      width={72}
+                      width={isMobile ? 52 : 72}
                       tick={{
                         fill: MUTED,
                         fontFamily: "var(--font-body)",
@@ -783,29 +841,40 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         fontWeight: "var(--weight-medium)",
                       }}
                       tickCount={5}
+                      tickFormatter={(value) =>
+                        formatYTick(Number(value), ySpan)
+                      }
                       tickLine={false}
                       axisLine={false}
-                      tickMargin={8}
+                      tickMargin={isMobile ? 4 : 8}
                       allowDecimals
-                      label={{
-                        value: `${metricInfo[metric].label} (${metricInfo[metric].unit})`,
-                        angle: -90,
-                        position: "insideLeft",
-                        fill: MUTED,
-                        fontFamily: "var(--font-body)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-semibold)",
-                      }}
+                      label={
+                        isMobile
+                          ? undefined
+                          : {
+                              value: `${metricInfo[metric].label} (${metricInfo[metric].unit})`,
+                              angle: -90,
+                              position: "insideLeft",
+                              fill: MUTED,
+                              fontFamily: "var(--font-body)",
+                              fontSize: "var(--type-label)",
+                              fontWeight: "var(--weight-semibold)",
+                            }
+                      }
                     />
                     <Tooltip
                       key="tooltip"
                       cursor={{ stroke: "#D8D0C0", strokeWidth: 1 }}
                       wrapperStyle={{ outline: "none" }}
+                      position={isMobile ? { y: 0 } : undefined}
+                      allowEscapeViewBox={{ x: false, y: true }}
                       content={
                         <ChartTooltip
                           unit={metricInfo[metric].unit}
                           meta={tooltipMeta}
                           highlightedId={activeHighlightedUnitId}
+                          compact={isMobile}
+                          range={range}
                         />
                       }
                     />

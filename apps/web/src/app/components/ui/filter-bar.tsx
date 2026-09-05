@@ -68,7 +68,7 @@ export function FilterBar({
       <div
         aria-hidden={!canScrollLeft}
         className={cn(
-          "pointer-events-none absolute left-0 top-0 bottom-0 z-10 flex items-center pr-3 pl-0.5 bg-gradient-to-r from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
+          "pointer-events-none absolute left-0 top-0 h-[52px] z-10 flex items-center pr-3 pl-0.5 bg-gradient-to-r from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
           !canScrollLeft && "invisible opacity-0",
         )}
       >
@@ -90,7 +90,7 @@ export function FilterBar({
         ref={scrollRef}
         onScroll={checkScroll}
         aria-label={ariaLabel}
-        className="scrollbar-none m-0 flex min-w-0 w-full max-w-full gap-2 overflow-x-auto border-0 p-1 sm:flex-wrap sm:overflow-visible"
+        className="scrollbar-none m-0 flex min-w-0 w-full max-w-full gap-2 overflow-x-auto border-0 p-1 scroll-pr-12 sm:flex-wrap sm:overflow-visible sm:scroll-p-0"
       >
         {options.map((opt) => {
           const active = value === opt.key;
@@ -100,7 +100,7 @@ export function FilterBar({
               type="button"
               onClick={() => onChange(opt.key)}
               aria-pressed={active}
-              className="min-h-9 shrink-0 cursor-pointer whitespace-nowrap rounded-full px-3.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 sm:min-h-[var(--control-height-chip)] sm:shrink"
+              className="min-h-11 shrink-0 cursor-pointer whitespace-nowrap rounded-full px-3.5 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 sm:min-h-[var(--control-height-chip)] sm:py-1.5 sm:shrink"
               style={{
                 backgroundColor: active
                   ? "var(--brand-primary)"
@@ -133,14 +133,22 @@ export function FilterBar({
             </button>
           );
         })}
+        {/* Trailing clearance so the last chip scrolls fully clear of the
+            overlay arrow zone on mobile; hidden on sm+ where the group wraps. */}
+        <span aria-hidden="true" className="w-11 shrink-0 sm:hidden" />
       </fieldset>
+      {(canScrollLeft || canScrollRight) && (
+        <p className="mt-1 px-1 text-xs text-[var(--text-secondary)] sm:hidden">
+          Swipe for more filters
+        </p>
+      )}
 
       {/* Right indicator button & fade — always mounted for the same reason. */}
       {/* Right indicator button & fade */}
       <div
         aria-hidden={!canScrollRight}
         className={cn(
-          "pointer-events-none absolute right-0 top-0 bottom-0 z-10 flex items-center pl-3 pr-0.5 bg-gradient-to-l from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
+          "pointer-events-none absolute right-0 top-0 h-[52px] z-10 flex items-center pl-3 pr-0.5 bg-gradient-to-l from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
           !canScrollRight && "invisible opacity-0",
         )}
       >
