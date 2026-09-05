@@ -70,6 +70,23 @@ describe("mobile form primitives", () => {
     const s = src("src/app/components/ui/select.tsx");
     expect(s).toContain("var(--type-control-value)");
   });
+  it("every focusable text entry surface uses control-value (no iOS zoom)", () => {
+    // Raw <input>/<textarea> must not pin 14px body or 13px body-sm: values
+    // below 16px trigger iOS focus auto-zoom on phones.
+    const form = src("src/app/components/auth/FormInput.tsx");
+    expect(form).toContain("var(--type-control-value)");
+    expect(form).not.toMatch(/fontSize: "var\(--type-body\)"/);
+    const journal = src("src/app/components/detail/CandlingJournalTab.tsx");
+    for (const m of journal.matchAll(
+      /<(input|textarea)[\s\S]*?\/>|<(textarea)[\s\S]*?<\/textarea>/g,
+    )) {
+      const tag = m[0];
+      if (/type="(file|hidden)"/.test(tag)) continue;
+      if (/<(input|textarea)[\s\S]*fontSize/.test(tag)) {
+        expect(tag).toContain("var(--type-control-value)");
+      }
+    }
+  });
 
   it("Typography documents why micro variants do not exist", () => {
     const s = src("src/app/components/ui/typography.tsx");

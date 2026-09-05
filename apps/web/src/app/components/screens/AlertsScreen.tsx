@@ -22,8 +22,8 @@ const TEXT = "var(--text-primary)";
 const MUTED = "var(--text-muted)";
 const BORDER = "var(--border-default)";
 const CARD_BORDER = "var(--border-subtle)";
-const DIVIDER = "#F5F4F0";
-const ROW_HOVER = "#FAFAF9";
+const DIVIDER = "var(--surface-fog)";
+const ROW_HOVER = "var(--surface-paper)";
 const ALERTS_PER_PAGE = 10;
 
 /** Severity pill + icon tile tints, tuned for the cream surface. */
@@ -34,19 +34,19 @@ const severityTint: Record<
   critical: {
     tile: "var(--status-danger-bg)",
     tileFg: "var(--status-danger-fg)",
-    pill: "#FEF2F2",
+    pill: "var(--surface-blush)",
     pillFg: "var(--status-danger-fg)",
   },
   warning: {
     tile: "var(--status-warning-bg)",
     tileFg: "var(--status-warning-fg)",
-    pill: "#FFFBEB",
+    pill: "var(--surface-warn-tile)",
     pillFg: "var(--status-warning-fg)",
   },
   info: {
     tile: "var(--status-info-bg)",
     tileFg: "var(--status-info-fg)",
-    pill: "#FAFAF9",
+    pill: "var(--surface-paper)",
     pillFg: "var(--status-info-fg)",
   },
 };
@@ -178,8 +178,8 @@ export function AlertsScreen({
                       : "var(--surface-card)",
                     color: active ? "var(--on-brand)" : "var(--text-secondary)",
                     border: active ? "none" : "1px solid var(--border-default)",
-                    fontSize: 11,
-                    fontWeight: 800,
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-extrabold)",
                     lineHeight: 1,
                   }}
                   aria-hidden="true"
@@ -204,7 +204,7 @@ export function AlertsScreen({
               className="min-w-0 flex-1 rounded-xl sm:w-[165px] sm:flex-none"
               style={{
                 borderColor: BORDER,
-                backgroundColor: "#FFFFFF",
+                backgroundColor: "var(--surface-card)",
                 color: TEXT,
               }}
               aria-label="Sort notifications"
@@ -220,7 +220,7 @@ export function AlertsScreen({
           <Button
             size="toolbar"
             className="shrink-0 rounded-xl"
-            style={{ backgroundColor: RUST, color: "#fff" }}
+            style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
             onClick={() => void onMarkAllRead()}
             disabled={unreadCount === 0 || markingAllRead || clearingRead}
             aria-busy={markingAllRead}
@@ -254,7 +254,7 @@ export function AlertsScreen({
       <div
         className="-mx-4 overflow-hidden rounded-none shadow-sm sm:mx-0 sm:rounded-2xl"
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "var(--surface-card)",
           border: `1px solid ${CARD_BORDER}`,
         }}
       >
@@ -319,7 +319,7 @@ export function AlertsScreen({
                           key={a.id}
                           className="group grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3.5 gap-y-2 transition-colors sm:grid-cols-[auto_minmax(0,1fr)_116px]"
                           style={{
-                            padding: "16px 20px 16px 16px",
+                            padding: "var(--list-row-padding)",
                             borderBottom:
                               i === g.items.length - 1
                                 ? "none"
@@ -342,8 +342,8 @@ export function AlertsScreen({
                             <span
                               className="rounded-full"
                               style={{
-                                width: 6,
-                                height: 6,
+                                width: "var(--dot-size)",
+                                height: "var(--dot-size)",
                                 backgroundColor: a.acknowledged
                                   ? "transparent"
                                   : RUST,
@@ -470,7 +470,7 @@ export function AlertsScreen({
                                     onClick={() => void onAcknowledge(a.id)}
                                     disabled={pendingAlertId === a.id}
                                     aria-busy={pendingAlertId === a.id}
-                                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                                     style={{
                                       borderColor: CARD_BORDER,
                                       color: TEXT,
@@ -486,10 +486,10 @@ export function AlertsScreen({
                                   onClick={() => void onDismiss(a.id)}
                                   disabled={pendingAlertId === a.id}
                                   aria-busy={pendingAlertId === a.id}
-                                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#FEE2E2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--status-danger-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                                   style={{
                                     borderColor: CARD_BORDER,
-                                    color: "#B91C1C",
+                                    color: "var(--status-danger-fg)",
                                   }}
                                   title="Dismiss"
                                   aria-label={`Dismiss ${a.title}`}

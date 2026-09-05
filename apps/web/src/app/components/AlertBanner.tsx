@@ -43,7 +43,7 @@ export function AlertBanner({ criticalUnits, modes, onView }: Props) {
     >
       <StatusIconBadge
         size="banner"
-        backgroundColor="rgba(255,255,255,0.18)"
+        backgroundColor="var(--tint-on-brand)"
         icon={
           <ExclamationIcon
             size={statusIconBadgeGlyphSize("banner")}

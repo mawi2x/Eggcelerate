@@ -26,37 +26,6 @@ export type TallyKey =
   | "developing"
   | "stoppedDeveloping";
 
-// ─── Design tokens ───────────────────────────────────────────────────────────
-export const RUST = "var(--brand-primary)";
-export const RUST_NODE = "var(--brand-primary)";
-export const BG = "#FAF6F0";
-export const CARD = "var(--surface-subtle)";
-export const SURFACE = "var(--surface-card)";
-export const BORDER = "var(--border-default)";
-export const TEXT = "var(--text-primary)";
-export const MUTED = "var(--text-secondary)";
-export const INPUT_BORDER = "var(--input-border)";
-export const RADIUS = 16;
-export const SHADOW = "0 2px 12px rgba(0,0,0,0.04)";
-
-// Semantic status tokens use verified WCAG AA foreground/background pairs.
-export const OK = {
-  fg: "var(--status-success-fg)",
-  bg: "var(--status-success-bg)",
-  ring: "var(--status-success-fg)",
-};
-export const WARN = {
-  fg: "var(--status-warning-fg)",
-  bg: "var(--status-warning-bg)",
-  ring: "var(--status-warning-fg)",
-};
-export const CRIT = {
-  fg: "var(--status-danger-fg)",
-  bg: "var(--status-danger-bg)",
-  ring: "var(--status-danger-fg)",
-};
-export const NEUTRAL = { fg: MUTED, bg: "#EFE9DC", ring: "#C9BEA8" };
-
 export const CANDLE_SHORT_LABELS = ["1st Candling", "2nd Candling", "Lockdown"];
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const NOTES_MAX = 500;

@@ -53,9 +53,12 @@ const CARD_BORDER = "var(--border-default)";
 const SUBTLE = "var(--surface-subtle)";
 
 const SURFACE = "var(--surface-card)";
-const TILE = "#F2EEE5";
-const INPUT_BORDER = "#D8D0C0";
-const inputStyle = { borderColor: INPUT_BORDER, backgroundColor: "#F2EEE5" };
+const TILE = "var(--surface-tile)";
+const INPUT_BORDER = "var(--input-border)";
+const inputStyle = {
+  borderColor: INPUT_BORDER,
+  backgroundColor: "var(--surface-tile)",
+};
 
 export type InspectionStatus =
   | "overdue"
@@ -207,8 +210,8 @@ function StatusTag({ status }: { status: InspectionStatus }) {
       style={{
         backgroundColor: meta.bg,
         color: meta.fg,
-        fontSize: 12,
-        fontWeight: 700,
+        fontSize: "var(--type-caption)",
+        fontWeight: "var(--weight-bold)",
       }}
     >
       <Icon size={14} color={meta.fg} aria-hidden="true" />
@@ -235,7 +238,7 @@ function JournalCard({
         "group flex h-full min-w-0 flex-col justify-between rounded-2xl border p-5 transition-colors duration-200",
         highlighted
           ? "border-[var(--nav-hover-border)] bg-[var(--nav-hover-bg)] shadow-md"
-          : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[0_2px_12px_rgba(0,0,0,0.04)]",
+          : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[var(--shadow-card)]",
       )}
     >
       <div>
@@ -274,6 +277,7 @@ function JournalCard({
           style={{
             backgroundColor: TILE,
             borderColor: BORDER,
+            // One-off decorative ruled-paper wash — values intentionally local, not themed.
             backgroundImage:
               "repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(232,226,213,0.85) 28px)",
           }}
@@ -316,7 +320,7 @@ function JournalCard({
       <div
         className="mt-4 flex items-center justify-between gap-2 rounded-full p-1.5"
         style={{
-          backgroundColor: "#F5EFE6",
+          backgroundColor: "var(--surface-track)",
           border: `1px solid ${BORDER}`,
         }}
       >
@@ -348,8 +352,8 @@ function JournalCard({
             style={{
               color: TEXT,
               fontFamily: "var(--font-body)",
-              fontSize: 13,
-              fontWeight: 700,
+              fontSize: "var(--type-body-sm)",
+              fontWeight: "var(--weight-bold)",
               lineHeight: "var(--leading-normal)",
             }}
           >
@@ -363,13 +367,13 @@ function JournalCard({
             e.stopPropagation();
             onOpen(row.unit.id);
           }}
-          className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[#FFF5F2]"
+          className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
           aria-label={`Open candling log for ${row.unit.name}`}
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: "var(--surface-card)",
             color: RUST,
             height: "var(--control-height-compact)",
-            border: "1px solid rgba(0,0,0,0.08)",
+            border: "1px solid var(--border-ink-soft)",
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-body-sm)",
             fontWeight: "var(--weight-bold)",
@@ -592,12 +596,12 @@ export function CandlingLogsScreen({
           <Select value={modeFilter} onValueChange={setModeFilter}>
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
+              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-(length:--type-body-sm) sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
                 color: TEXT,
-                fontWeight: 500,
+                fontWeight: "var(--weight-medium)",
               }}
               aria-label="Filter by incubation mode"
             >
@@ -619,12 +623,12 @@ export function CandlingLogsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
+              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-(length:--type-body-sm) sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
                 color: TEXT,
-                fontWeight: 500,
+                fontWeight: "var(--weight-medium)",
               }}
               aria-label="Sort candling logs"
             >
@@ -718,36 +722,36 @@ export function CandlingLogsScreen({
 
             {/* Floating Vertical Dot Track on Mobile (shows candling chamber count and scroll position) */}
             {rows.length > 1 && (
-            <fieldset
-              className="scrollbar-none pointer-events-auto fixed right-1 top-1/2 z-20 m-0 flex max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto border-0 bg-transparent p-0 max-[20rem]:hidden md:hidden"
-              aria-label={`Candling chamber index. Showing ${rows.length} chambers.`}
-            >
-              {rows.map((row, idx) => {
-                const isActive = activeCardIndex === idx;
-                return (
-                  <button
-                    key={row.unit.id}
-                    type="button"
-                    onClick={() => scrollToCandling(idx)}
-                    className="flex h-3 w-2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none"
-                    aria-label={`Scroll to ${row.unit.name} (${row.status}, ${idx + 1} of ${rows.length})`}
-                    title={`${row.unit.name}: ${statusMeta[row.status].label}`}
-                    aria-current={isActive ? "true" : undefined}
-                  >
-                    <span
-                      className="rounded-full transition-all duration-200 motion-reduce:transition-none"
-                      style={{
-                        width: isActive ? 4 : 2.5,
-                        height: isActive ? 12 : 2.5,
-                        backgroundColor: isActive
-                          ? "var(--brand-primary)"
-                          : "rgba(138, 107, 82, 0.4)",
-                      }}
-                    />
-                  </button>
-                );
-              })}
-            </fieldset>
+              <fieldset
+                className="scrollbar-none pointer-events-auto fixed right-1 top-1/2 z-20 m-0 flex max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto border-0 bg-transparent p-0 max-[20rem]:hidden md:hidden"
+                aria-label={`Candling chamber index. Showing ${rows.length} chambers.`}
+              >
+                {rows.map((row, idx) => {
+                  const isActive = activeCardIndex === idx;
+                  return (
+                    <button
+                      key={row.unit.id}
+                      type="button"
+                      onClick={() => scrollToCandling(idx)}
+                      className="flex h-3 w-2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none"
+                      aria-label={`Scroll to ${row.unit.name} (${row.status}, ${idx + 1} of ${rows.length})`}
+                      title={`${row.unit.name}: ${statusMeta[row.status].label}`}
+                      aria-current={isActive ? "true" : undefined}
+                    >
+                      <span
+                        className="rounded-full transition-all duration-200 motion-reduce:transition-none"
+                        style={{
+                          width: isActive ? 4 : 2.5,
+                          height: isActive ? 12 : 2.5,
+                          backgroundColor: isActive
+                            ? "var(--brand-primary)"
+                            : "var(--wash-checkbox)",
+                        }}
+                      />
+                    </button>
+                  );
+                })}
+              </fieldset>
             )}
           </>
         ) : (

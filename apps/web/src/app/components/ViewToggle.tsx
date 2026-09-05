@@ -20,7 +20,7 @@ export function ViewToggle({ view, onChange }: Props) {
   return (
     <div
       className="flex items-center gap-1 rounded-full p-1"
-      style={{ backgroundColor: "#F5EDD8" }}
+      style={{ backgroundColor: "var(--surface-muted)" }}
     >
       {options.map(({ key, Icon, label }) => {
         const active = view === key;
@@ -32,9 +32,9 @@ export function ViewToggle({ view, onChange }: Props) {
             aria-pressed={active}
             title={label}
             onClick={() => onChange(key)}
-            className={`flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] cursor-pointer items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${active ? "bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-[0_1px_3px_rgba(0,0,0,0.08)]" : "bg-transparent text-[var(--text-secondary)] hover:bg-white/60 hover:text-[var(--brand-primary)]"}`}
+            className={`flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] cursor-pointer items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${active ? "bg-[var(--surface-card)] text-[var(--brand-primary)]" : "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--wash-white-60)] hover:text-[var(--brand-primary)]"}`}
             style={{
-              boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              boxShadow: active ? "var(--shadow-lift)" : "none",
             }}
           >
             <Icon size={18} strokeWidth={active ? 2.6 : 2} aria-hidden="true" />

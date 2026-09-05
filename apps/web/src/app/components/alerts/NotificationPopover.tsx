@@ -9,7 +9,7 @@ const RUST = "var(--brand-primary)";
 const TEXT = "var(--text-primary)";
 const MUTED = "var(--text-secondary)";
 const BORDER = "var(--border-default)";
-const DIVIDER = "#F0EDE6";
+const DIVIDER = "var(--border-divider)";
 
 interface Props {
   alerts: AlertEntry[];
@@ -40,11 +40,15 @@ export function NotificationPopover({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="relative flex shrink-0 cursor-pointer items-center justify-center rounded-[10px] border transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          className="relative flex shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-compact)] border transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           style={{
-            height: isMobile ? "var(--control-hit-area-icon)" : 52,
-            width: isMobile ? "var(--control-hit-area-icon)" : 52,
-            backgroundColor: "#FFFFFF",
+            height: isMobile
+              ? "var(--control-hit-area-icon)"
+              : "var(--control-size-lg)",
+            width: isMobile
+              ? "var(--control-hit-area-icon)"
+              : "var(--control-size-lg)",
+            backgroundColor: "var(--surface-card)",
             borderColor: BORDER,
             color: MUTED,
           }}
@@ -61,12 +65,12 @@ export function NotificationPopover({
                 height: isMobile ? 18 : 22,
                 minWidth: isMobile ? 18 : 22,
                 padding: "0 4px",
-                backgroundColor: "#D92B0F",
-                color: "#FFFFFF",
+                backgroundColor: "var(--badge-alert-bg)",
+                color: "var(--surface-card)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-bold)",
-                border: "2px solid #FAF6F0",
+                border: "2px solid var(--surface-app)",
               }}
             >
               {unreadCount}
@@ -80,9 +84,9 @@ export function NotificationPopover({
         sideOffset={10}
         className="w-[min(340px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-0 shadow-lg"
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "var(--surface-card)",
           borderColor: BORDER,
-          borderRadius: 12,
+          borderRadius: "var(--radius-dialog)",
         }}
       >
         {/* Header */}
@@ -149,7 +153,7 @@ export function NotificationPopover({
               return (
                 <li
                   key={a.id}
-                  className="group relative flex items-start gap-3 px-4 py-3 pr-14 transition-colors hover:bg-[#FAF6F0] sm:pr-4"
+                  className="group relative flex items-start gap-3 px-4 py-3 pr-14 transition-colors hover:bg-[var(--surface-app)] sm:pr-4"
                   style={{ borderBottom: `1px solid ${DIVIDER}` }}
                 >
                   <span
@@ -202,7 +206,7 @@ export function NotificationPopover({
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: "var(--type-caption)",
-                        color: "#5C4636",
+                        color: "var(--text-clay)",
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical",
@@ -218,7 +222,7 @@ export function NotificationPopover({
                     onClick={() => void onDismiss(a.id)}
                     disabled={pendingAlertId === a.id}
                     aria-busy={pendingAlertId === a.id}
-                    className="absolute right-2 top-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-md opacity-100 transition-opacity hover:bg-[#F0EDE6] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
+                    className="absolute right-2 top-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-md opacity-100 transition-opacity hover:bg-[var(--border-divider)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
                     style={{ color: MUTED }}
                     title="Dismiss"
                     aria-label={`Dismiss ${a.title}`}
@@ -238,7 +242,7 @@ export function NotificationPopover({
             setOpen(false);
             onViewAll();
           }}
-          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-b-xl py-3 transition-colors hover:bg-[#FAF6F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset"
+          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-b-xl py-3 transition-colors hover:bg-[var(--surface-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-body-sm)",

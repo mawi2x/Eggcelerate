@@ -90,11 +90,11 @@ export function OnboardingStep3({
         >
           Recommended starting Mode
         </p>
-        <div className="mt-2 rounded-2xl border border-[#F5E6CC] bg-[#FFFDF9] p-4">
+        <div className="mt-2 rounded-2xl border border-[var(--border-illustration)] bg-[var(--surface-illustration)] p-4">
           {" "}
           {/* illustration exception per color-guidelines.md:163 */}
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FCE4D6] text-[#AD3A1D]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]">
               <IncubatingIcon size={18} />
             </span>
             <div className="flex flex-col text-left">
@@ -121,12 +121,15 @@ export function OnboardingStep3({
             </div>
           </div>
           <div className="mt-3.5 grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-white p-3 text-left">
+            <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-3 text-left">
               <div
                 className="flex items-center gap-1.5"
                 style={{ color: "var(--text-muted)" }}
               >
-                <Thermometer size={14} className="text-[#AD3A1D]" />
+                <Thermometer
+                  size={14}
+                  className="text-[var(--brand-primary)]"
+                />
                 <span
                   style={{
                     fontFamily: "var(--font-body)",
@@ -150,12 +153,12 @@ export function OnboardingStep3({
                 {mode.targetTemp.min}°C
               </p>
             </div>
-            <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-white p-3 text-left">
+            <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-3 text-left">
               <div
                 className="flex items-center gap-1.5"
                 style={{ color: "var(--text-muted)" }}
               >
-                <Droplets size={14} className="text-[#0284C7]" />
+                <Droplets size={14} className="text-[var(--icon-info)]" />
                 <span
                   style={{
                     fontFamily: "var(--font-body)",
@@ -188,7 +191,7 @@ export function OnboardingStep3({
           type="button"
           onClick={onBack}
           disabled={isSubmitting}
-          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl border bg-white font-semibold transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl border bg-[var(--surface-card)] font-semibold transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           style={{
             borderColor: "var(--border-default)",
             color: "var(--text-primary)",
@@ -201,7 +204,7 @@ export function OnboardingStep3({
           onClick={() => void submit()}
           disabled={isSubmitting}
           aria-busy={isSubmitting}
-          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
           {isSubmitting ? "Preparing dashboard…" : "Enter dashboard ✓"}
         </button>

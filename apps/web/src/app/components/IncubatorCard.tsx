@@ -32,27 +32,27 @@ interface Props {
 
 // Design tokens.
 const BORDER = "var(--border-default)";
-const TILE = "#F2EEE5";
+const TILE = "var(--surface-tile)";
 const MUTED = "var(--text-secondary)";
 const RUST = "var(--brand-primary)";
 const CTA = "var(--brand-primary)";
 
 const tileBg: Record<string, string> = {
   ok: TILE,
-  warning: "#FFFBEB",
-  critical: "#FEF2F2",
+  warning: "var(--surface-warn-tile)",
+  critical: "var(--surface-blush)",
 };
 const tileBorder: Record<string, string> = {
   ok: BORDER,
-  warning: "#FCD34D",
-  critical: "#FCA5A5",
+  warning: "var(--tile-border-warning)",
+  critical: "var(--tile-border-critical)",
 };
 
 // Farmer-friendly lifecycle status pill, derived from the shared cycle phase.
 // Farmer-friendly lifecycle status pill, derived from the shared cycle phase.
 function LockFillIcon({
   size = 15,
-  color = "#FFFFFF",
+  color = "var(--on-brand)",
 }: {
   size?: number | string;
   color?: string;
@@ -62,7 +62,7 @@ function LockFillIcon({
 
 function EggCrackFillIcon({
   size = 15,
-  color = "#FFFFFF",
+  color = "var(--on-brand)",
 }: {
   size?: number | string;
   color?: string;
@@ -72,7 +72,7 @@ function EggCrackFillIcon({
 
 function EggFillIcon({
   size = 15,
-  color = "#FFFFFF",
+  color = "var(--on-brand)",
 }: {
   size?: number | string;
   color?: string;
@@ -82,7 +82,7 @@ function EggFillIcon({
 
 function WifiSlashIcon({
   size = 15,
-  color = "#FFFFFF",
+  color = "var(--on-brand)",
 }: {
   size?: number | string;
   color?: string;
@@ -92,7 +92,7 @@ function WifiSlashIcon({
 
 function CheckFillIcon({
   size = 15,
-  color = "#FFFFFF",
+  color = "var(--on-brand)",
 }: {
   size?: number | string;
   color?: string;
@@ -102,7 +102,7 @@ function CheckFillIcon({
 
 function ReadyCheckIcon({
   size = 15,
-  color = "#FFFFFF",
+  color = "var(--on-brand)",
 }: {
   size?: number | string;
   color?: string;
@@ -112,7 +112,7 @@ function ReadyCheckIcon({
 
 function BirdFillIcon({
   size = 15,
-  color = "#FFFFFF",
+  color = "var(--on-brand)",
 }: {
   size?: number | string;
   color?: string;
@@ -122,7 +122,7 @@ function BirdFillIcon({
 
 function ExclamationFillIcon({
   size = 15,
-  color = "#FFFFFF",
+  color = "var(--on-brand)",
 }: {
   size?: number | string;
   color?: string;
@@ -148,34 +148,39 @@ function operationalStatus(unit: Incubator): {
         : unit.connectionState === "connection_failed"
           ? "Connection Failed"
           : "Offline";
-    return { label, bg: "#FCE8E6", fg: "#C5221F", Icon: WifiSlashIcon };
+    return {
+      label,
+      bg: "var(--status-offline-bg)",
+      fg: "var(--status-offline-fg)",
+      Icon: WifiSlashIcon,
+    };
   }
   if (unit.cyclePhase === "completed")
     return {
       label: "Completed",
-      bg: "#D1FAE5",
-      fg: "#065F46",
+      bg: "var(--status-success-pale)",
+      fg: "var(--status-success-strong)",
       Icon: CheckFillIcon,
     };
   if (unit.cyclePhase === "stopped_early")
     return {
       label: "Stopped Early",
-      bg: "#FEE2E2",
-      fg: "#991B1B",
+      bg: "var(--status-danger-bg)",
+      fg: "var(--status-danger-strong)",
       Icon: ExclamationFillIcon,
     };
   if (unit.cyclePhase === "awaiting_finish")
     return {
       label: "Awaiting Finish",
-      bg: "#FFF4D6",
-      fg: "#9A6700",
+      bg: "var(--surface-pending)",
+      fg: "var(--text-amber-soft)",
       Icon: EggCrackFillIcon,
     };
   if (unit.cyclePhase === "hatching")
     return {
       label: "Hatching",
-      bg: "#E8F0FE",
-      fg: "#1967D2",
+      bg: "var(--status-flight-bg)",
+      fg: "var(--status-flight-fg)",
       Icon: BirdFillIcon,
     };
   if (unit.cyclePhase === "lockdown")
@@ -188,15 +193,15 @@ function operationalStatus(unit: Incubator): {
   if (unit.cyclePhase === "ready")
     return {
       label: "Ready",
-      bg: "#F1F3F4",
-      fg: "#5F6368",
+      bg: "var(--status-idle-bg)",
+      fg: "var(--status-idle-fg)",
       Icon: ReadyCheckIcon,
       dot: true,
     };
   return {
     label: "Incubating",
-    bg: "#E6F4EA",
-    fg: "#137333",
+    bg: "var(--status-hatch-bg)",
+    fg: "var(--status-hatch-fg)",
     Icon: EggFillIcon,
   };
 }
@@ -264,7 +269,6 @@ function Reading({
       style={{
         backgroundColor: tileBg[state],
         border: `1px solid ${tileBorder[state]}`,
-        padding: 12,
         overflow: "hidden",
       }}
     >
@@ -385,9 +389,9 @@ export function IncubatorCard({
         "group h-full cursor-pointer overflow-hidden border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         highlighted
           ? "border-[var(--nav-hover-border)] bg-[var(--nav-hover-bg)] shadow-md"
-          : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[0_2px_12px_rgba(0,0,0,0.04)]",
+          : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[var(--shadow-card)]",
       )}
-      style={{ borderRadius: 16 }}
+      style={{ borderRadius: "var(--radius-card)" }}
       tabIndex={0}
       role="button"
       aria-label={`Open details for ${unit.name} — click to view`}
@@ -425,9 +429,9 @@ export function IncubatorCard({
                   "shrink-0 transition-opacity duration-200",
                   highlighted
                     ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100",
+                    : "opacity-60 sm:opacity-0 group-hover:opacity-100",
                 )}
-                style={{ color: "#C27B4A" }}
+                style={{ color: "var(--progress-stroke)" }}
                 aria-hidden
               />
             </h3>
@@ -443,7 +447,7 @@ export function IncubatorCard({
             <p
               className="min-w-0 truncate"
               style={{
-                color: ready ? "#9CA3AF" : "#6E6259",
+                color: ready ? "var(--text-gray-cool)" : "var(--text-farm)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-body-sm)",
                 fontWeight: "var(--weight-medium)",
@@ -458,12 +462,12 @@ export function IncubatorCard({
                 style={{
                   backgroundColor:
                     unit.conditionSeverity === "critical"
-                      ? "#FEE2E2"
-                      : "#FEF3C7",
+                      ? "var(--status-danger-bg)"
+                      : "var(--status-warning-bg)",
                   color:
                     unit.conditionSeverity === "critical"
-                      ? "#991B1B"
-                      : "#92400E",
+                      ? "var(--status-danger-strong)"
+                      : "var(--text-amber-deep)",
                   fontFamily: "var(--font-body)",
                   fontSize: "var(--type-label)",
                   fontWeight: "var(--weight-bold)",
@@ -482,7 +486,7 @@ export function IncubatorCard({
           /* Ready chamber — no cycle running yet, prompt the farmer to set up. */
           <div
             className="flex flex-1 flex-col items-center justify-center rounded-2xl px-4 py-5 text-center"
-            style={{ backgroundColor: "#F9F6F0" }}
+            style={{ backgroundColor: "var(--surface-subtle)" }}
           >
             <p
               style={{
@@ -500,7 +504,7 @@ export function IncubatorCard({
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-regular)",
-                color: "#6E6259",
+                color: "var(--text-farm)",
                 lineHeight: "var(--leading-normal)",
                 marginTop: 4,
               }}
@@ -575,7 +579,10 @@ export function IncubatorCard({
               </div>
               <div
                 className="w-full overflow-hidden rounded-full"
-                style={{ height: 6, backgroundColor: BORDER }}
+                style={{
+                  height: "var(--progress-thickness)",
+                  backgroundColor: BORDER,
+                }}
                 role="progressbar"
                 aria-valuenow={progress}
                 aria-valuemin={0}
@@ -587,7 +594,7 @@ export function IncubatorCard({
                     width: `${progress}%`,
                     height: "100%",
                     backgroundColor: RUST,
-                    borderRadius: 9999,
+                    borderRadius: "var(--radius-pill)",
                   }}
                 />
               </div>
@@ -626,8 +633,8 @@ export function IncubatorCard({
               style={{
                 color: status.fg,
                 fontFamily: "var(--font-body)",
-                fontSize: 14,
-                fontWeight: 700,
+                fontSize: "var(--type-body)",
+                fontWeight: "var(--weight-bold)",
                 lineHeight: "var(--leading-normal)",
               }}
             >
@@ -646,7 +653,7 @@ export function IncubatorCard({
               className="cursor-pointer rounded-full shadow-sm transition-colors hover:brightness-110"
               style={{
                 backgroundColor: RUST,
-                color: "#FFFFFF",
+                color: "var(--on-brand)",
                 height: 32,
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-caption)",
@@ -665,15 +672,15 @@ export function IncubatorCard({
                 e.stopPropagation();
                 onOpen(unit.id);
               }}
-              className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[#FFF5F2]"
+              className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: "var(--surface-card)",
                 color: CTA,
                 height: 32,
-                border: "1px solid rgba(0,0,0,0.12)",
+                border: "1px solid var(--border-ink)",
                 fontFamily: "var(--font-body)",
-                fontSize: 13,
-                fontWeight: 700,
+                fontSize: "var(--type-body-sm)",
+                fontWeight: "var(--weight-bold)",
                 lineHeight: "var(--leading-normal)",
                 paddingLeft: 12,
                 paddingRight: 10,

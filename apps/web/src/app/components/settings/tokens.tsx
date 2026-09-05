@@ -4,7 +4,7 @@ import { Typography } from "../ui/typography";
 export const RUST = "var(--brand-primary)";
 export const SURFACE = "var(--surface-card)";
 export const BORDER = "var(--border-subtle)";
-export const DIVIDER = "#F0EDE6";
+export const DIVIDER = "var(--border-divider)";
 export const MUTED = "var(--text-muted)";
 export const TEXT = "var(--text-primary)";
 export const CRIT = "var(--status-danger-fg)";
@@ -17,7 +17,11 @@ export const inputStyle = {
   backgroundColor: SURFACE,
   color: TEXT,
 };
-export const labelStyle = { color: "#57534E", fontSize: 13, fontWeight: 600 };
+export const labelStyle = {
+  color: "var(--status-info-fg)",
+  fontSize: "var(--type-body-sm)",
+  fontWeight: "var(--weight-semibold)",
+};
 
 /** Uppercase micro-heading that opens a group of rows. */
 export function GroupLabel({ children }: { children: React.ReactNode }) {
@@ -37,7 +41,10 @@ export function PanelHeader({
   description: string;
 }) {
   return (
-    <div className="pb-5" style={{ borderBottom: `1px solid ${DIVIDER}` }}>
+    <div
+      className="pb-5"
+      style={{ borderBottom: `var(--border-width-hairline) solid ${DIVIDER}` }}
+    >
       <Typography as="h2" variant="panelTitle" style={{ color: TEXT }}>
         {title}
       </Typography>
@@ -66,17 +73,24 @@ export function SettingRow({
   return (
     <div
       className="flex items-center justify-between gap-6 py-3.5"
-      style={{ borderBottom: `1px solid ${DIVIDER}` }}
+      style={{ borderBottom: `var(--border-width-hairline) solid ${DIVIDER}` }}
     >
       <label htmlFor={htmlFor} className="min-w-0 flex-1">
         <span
           className="block truncate"
-          style={{ fontSize: 14, fontWeight: 600, color: TEXT }}
+          style={{
+            fontSize: "var(--type-body)",
+            fontWeight: "var(--weight-semibold)",
+            color: TEXT,
+          }}
         >
           {label}
         </span>
         {hint && (
-          <span className="mt-0.5 block" style={{ fontSize: 12, color: MUTED }}>
+          <span
+            className="mt-0.5 block"
+            style={{ fontSize: "var(--type-caption)", color: MUTED }}
+          >
             {hint}
           </span>
         )}
@@ -109,7 +123,10 @@ export function Field({
       )}
       <div className="mt-1.5">{children}</div>
       {hint && (
-        <p className="mt-1.5" style={{ color: MUTED, fontSize: 12 }}>
+        <p
+          className="mt-1.5"
+          style={{ color: MUTED, fontSize: "var(--type-caption)" }}
+        >
           {hint}
         </p>
       )}

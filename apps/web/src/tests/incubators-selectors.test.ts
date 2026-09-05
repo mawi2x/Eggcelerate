@@ -113,7 +113,10 @@ describe("selectSortedIncubators", () => {
     // Action-needed chambers pin to the top in both directions; the rest
     // reverses.
     expect(asc.filter((u) => !pinned(u)).map((u) => u.id)).toEqual(
-      desc.filter((u) => !pinned(u)).map((u) => u.id).reverse(),
+      desc
+        .filter((u) => !pinned(u))
+        .map((u) => u.id)
+        .reverse(),
     );
     expect(asc.slice(0, asc.filter(pinned).length).every(pinned)).toBe(true);
     expect(desc.slice(0, desc.filter(pinned).length).every(pinned)).toBe(true);

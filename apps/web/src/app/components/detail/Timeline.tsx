@@ -1,11 +1,5 @@
 import { Check } from "lucide-react";
-import {
-  CANDLE_SHORT_LABELS,
-  dayFraction,
-  markerStatus,
-  RUST,
-  RUST_NODE,
-} from "./types";
+import { CANDLE_SHORT_LABELS, dayFraction, markerStatus } from "./types";
 
 interface TimelineProps {
   currentDay: number;
@@ -43,28 +37,31 @@ export function Timeline({
   // preserve the full meaning for pointer/keyboard/touch.
   const COMPACT_LABELS = ["1st", "2nd", "Lockdown"];
   const milestoneSize =
-    labelSize === 9
-      ? "var(--type-label-micro)"
-      : "var(--type-label-compact)";
+    labelSize === 9 ? "var(--type-label-micro)" : "var(--type-label-compact)";
 
   return (
     <div>
-      <div
-        className="relative mx-1 overflow-visible pt-9 pb-12 sm:pt-11 sm:pb-14"
-      >
+      <div className="relative mx-1 overflow-visible pt-9 pb-12 sm:pt-11 sm:pb-14">
         {/* Track frame — the axis line, centered vertically in the container. */}
         <div
           className="absolute left-0 right-0"
-          style={{ height: 6, top: "50%", transform: "translateY(-50%)" }}
+          style={{
+            height: "var(--progress-thickness)",
+            top: "50%",
+            transform: "translateY(-50%)",
+          }}
         >
           {/* Track line (6px stroke) + progress fill. */}
           <div
             className="absolute inset-0 rounded-full"
-            style={{ backgroundColor: "#ECE6D9" }}
+            style={{ backgroundColor: "var(--track-gauge)" }}
           />
           <div
             className="absolute inset-y-0 left-0 rounded-full"
-            style={{ width: `${fillPct}%`, backgroundColor: RUST }}
+            style={{
+              width: `${fillPct}%`,
+              backgroundColor: "var(--brand-primary)",
+            }}
           />
 
           {/* Layer 1 — "Today" badge. */}
@@ -74,20 +71,20 @@ export function Timeline({
               left: badgeLeft,
               bottom: "100%",
               transform: "translateX(-50%)",
-              zIndex: 30,
+              zIndex: "var(--z-top)",
             }}
           >
             <span
-              className="flex flex-col items-center justify-center whitespace-nowrap rounded-lg px-2.5 py-1 shadow-sm"
+              className="flex flex-col items-center justify-center whitespace-nowrap rounded-lg px-2.5 py-1"
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-extrabold)",
                 letterSpacing: "var(--tracking-label)",
                 lineHeight: "var(--leading-snug)",
-                backgroundColor: RUST,
-                color: "#fff",
-                boxShadow: "0 2px 6px rgba(173,58,29,0.28)",
+                backgroundColor: "var(--brand-primary)",
+                color: "var(--on-brand)",
+                boxShadow: "var(--shadow-accent)",
               }}
             >
               <span style={{ lineHeight: 1.15 }}>
@@ -113,7 +110,7 @@ export function Timeline({
               style={{ display: "block" }}
               aria-hidden
             >
-              <path d="M1.5 1 L8.5 1 L5 7.5 Z" fill={RUST} />
+              <path d="M1.5 1 L8.5 1 L5 7.5 Z" fill={"var(--brand-primary)"} />
             </svg>
           </div>
 
@@ -133,7 +130,7 @@ export function Timeline({
                   left: `${pct}%`,
                   top: "calc(100% + 10px)",
                   transform: "translateX(-50%)",
-                  zIndex: 5,
+                  zIndex: "var(--z-raised)",
                   maxWidth: 88,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -217,17 +214,19 @@ export function Timeline({
                 left: `${pct}%`,
                 top: "50%",
                 transform: "translate(-50%, -50%)",
-                zIndex: 10,
+                zIndex: "var(--z-above)",
               }}
               title={`${c.label}, Day ${c.day}, ${status}`}
             >
               <div
                 className="flex h-[22px] w-[22px] items-center justify-center rounded-full sm:h-6 sm:w-6"
                 style={{
-                  backgroundColor: filled ? RUST_NODE : "#FFFFFF",
-                  border: `2px solid ${RUST_NODE}`,
-                  color: filled ? "#FFFFFF" : RUST_NODE,
-                  boxShadow: "0 0 0 2.5px #F9F6F0",
+                  backgroundColor: filled
+                    ? "var(--brand-primary)"
+                    : "var(--surface-card)",
+                  border: `2px solid var(--brand-primary)`,
+                  color: filled ? "var(--on-brand)" : "var(--brand-primary)",
+                  boxShadow: "0 0 0 2.5px var(--surface-subtle)",
                 }}
               >
                 {status === "logged" ? (

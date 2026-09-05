@@ -11,6 +11,7 @@ test-results/
 playwright-report/
 blob-report/
 .playwright/
+.playwright-cli/
 
 # env files
 .env

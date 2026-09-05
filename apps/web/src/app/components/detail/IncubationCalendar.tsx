@@ -2,7 +2,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import type { CandlingCheckpoint } from "../../domain/types";
 import { SectionCard } from "./primitives";
-import { TEXT } from "./types";
 
 // Design anchor: cycle Day 1 = Aug 5, 2026, so Day 6 = Aug 10, Day 13 = Aug 17,
 // Day 18 = Aug 22, Day 21 = Aug 25 — all within the August 2026 default view.
@@ -113,21 +112,26 @@ export function IncubationCalendar({
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
-          className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] cursor-pointer items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+          className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] cursor-pointer items-center justify-center rounded-full text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-track)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
           aria-label="Previous month"
         >
           <ChevronLeft size={15} />
         </button>
         <span
           className="text-center"
-          style={{ minWidth: 118, fontSize: 14, fontWeight: 600, color: TEXT }}
+          style={{
+            minWidth: 118,
+            fontSize: "var(--type-body)",
+            fontWeight: "var(--weight-semibold)",
+            color: "var(--text-primary)",
+          }}
         >
           {MONTH_NAMES[view.m]} {view.y}
         </span>
         <button
           type="button"
           onClick={() => shiftMonth(1)}
-          className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] cursor-pointer items-center justify-center rounded-full text-[#A8A29E] transition-colors hover:bg-[#F5EFE6] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+          className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] cursor-pointer items-center justify-center rounded-full text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-track)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
           aria-label="Next month"
         >
           <ChevronRight size={15} />
@@ -145,7 +149,7 @@ export function IncubationCalendar({
               fontSize: "var(--type-label)",
               fontWeight: "var(--weight-bold)",
               letterSpacing: "var(--tracking-label)",
-              color: "#A8A29E",
+              color: "var(--text-faint)",
             }}
           >
             {w[0]}
@@ -209,23 +213,23 @@ export function IncubationCalendar({
                 marginLeft: phaseTransitionBefore ? 9 : undefined,
                 backgroundColor: inCycle
                   ? inLockdownPhase
-                    ? "#FCE4D6"
-                    : "#FFF0D6"
+                    ? "var(--brand-primary-soft)"
+                    : "var(--surface-amber-wash)"
                   : "transparent",
                 borderTop: inCycle
-                  ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}`
+                  ? `1px solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
                   : undefined,
                 borderBottom: inCycle
-                  ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}`
+                  ? `1px solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
                   : undefined,
                 borderLeft: startsPhaseBand
-                  ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}`
+                  ? `1px solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
                   : undefined,
                 borderRight: endsPhaseBand
-                  ? `1px solid ${inLockdownPhase ? "#E3A16F" : "#E9C27E"}`
+                  ? `1px solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
                   : undefined,
-                borderRadius: `${startsPhaseBand ? 10 : 0}px ${endsPhaseBand ? 10 : 0}px ${endsPhaseBand ? 10 : 0}px ${startsPhaseBand ? 10 : 0}px`,
-                zIndex: m?.kind === "today" ? 2 : undefined,
+                borderRadius: `${startsPhaseBand ? "var(--radius-compact)" : 0} ${endsPhaseBand ? "var(--radius-compact)" : 0} ${endsPhaseBand ? "var(--radius-compact)" : 0} ${startsPhaseBand ? "var(--radius-compact)" : 0}`,
+                zIndex: m?.kind === "today" ? "var(--z-sunken)" : undefined,
               }}
               title={
                 m?.label ??
@@ -236,15 +240,15 @@ export function IncubationCalendar({
             >
               {m?.kind === "today" ? (
                 <span
-                  className="pointer-events-none absolute flex flex-col items-center justify-center rounded-[10px]"
+                  className="pointer-events-none absolute flex flex-col items-center justify-center rounded-[var(--radius-compact)]"
                   style={{
                     width: 44,
                     height: 38,
                     boxSizing: "border-box",
-                    backgroundColor: "#8B3A1C",
-                    color: "#FFFFFF",
-                    boxShadow: "0 1px 2px rgba(139,58,28,0.18)",
-                    zIndex: 3,
+                    backgroundColor: "var(--brand-primary-hover)",
+                    color: "var(--on-brand)",
+                    boxShadow: "var(--shadow-dot)",
+                    zIndex: "var(--z-low)",
                   }}
                 >
                   <span
@@ -275,13 +279,15 @@ export function IncubationCalendar({
                   style={{
                     width: 28,
                     height: 28,
-                    fontSize: 12,
+                    fontSize: "var(--type-caption)",
                     boxSizing: "border-box",
-                    fontWeight: m ? 700 : 500,
+                    fontWeight: m
+                      ? "var(--weight-bold)"
+                      : "var(--weight-medium)",
                     borderRadius: m ? 7 : 999,
                     backgroundColor:
                       m?.kind === "candling"
-                        ? "#F2C94C"
+                        ? "var(--accent-gold)"
                         : m?.kind === "lockdown"
                           ? "var(--status-warning-fg)"
                           : m?.kind === "hatch"
@@ -289,15 +295,17 @@ export function IncubationCalendar({
                             : "transparent",
                     color:
                       m?.kind === "lockdown"
-                        ? "#FFFFFF"
+                        ? "var(--on-brand)"
                         : m?.kind === "hatch"
-                          ? "#FFFFFF"
+                          ? "var(--on-brand)"
                           : m?.kind === "candling"
-                            ? "#713F12"
+                            ? "var(--text-amber-strong)"
                             : m
-                              ? TEXT
+                              ? "var(--text-primary)"
                               : "var(--text-muted)",
-                    ...(c.trailing ? { color: "#D1C7BD", opacity: 0.4 } : {}),
+                    ...(c.trailing
+                      ? { color: "var(--border-stone)", opacity: 0.4 }
+                      : {}),
                   }}
                 >
                   {c.day}
@@ -311,14 +319,18 @@ export function IncubationCalendar({
       {/* One-line legend */}
       <div
         className="mt-3 flex items-center justify-center gap-x-2 whitespace-nowrap border-t pt-2.5"
-        style={{ borderColor: "#EFE9DC" }}
+        style={{ borderColor: "var(--border-sand)" }}
       >
         {[
           {
             swatch: (
               <span
                 className="rounded-sm"
-                style={{ width: 11, height: 11, backgroundColor: "#8B3A1C" }}
+                style={{
+                  width: 11,
+                  height: 11,
+                  backgroundColor: "var(--brand-primary-hover)",
+                }}
               />
             ),
             label: "Today",
@@ -327,7 +339,11 @@ export function IncubationCalendar({
             swatch: (
               <span
                 className="rounded-sm"
-                style={{ width: 11, height: 11, backgroundColor: "#F2C94C" }}
+                style={{
+                  width: 11,
+                  height: 11,
+                  backgroundColor: "var(--accent-gold)",
+                }}
               />
             ),
             label: "Candling",
@@ -336,7 +352,11 @@ export function IncubationCalendar({
             swatch: (
               <span
                 className="rounded-sm"
-                style={{ width: 11, height: 11, backgroundColor: "#D97706" }}
+                style={{
+                  width: 11,
+                  height: 11,
+                  backgroundColor: "var(--legend-amber)",
+                }}
               />
             ),
             label: "Lockdown",
@@ -345,7 +365,11 @@ export function IncubationCalendar({
             swatch: (
               <span
                 className="rounded-sm"
-                style={{ width: 11, height: 11, backgroundColor: "#16A34A" }}
+                style={{
+                  width: 11,
+                  height: 11,
+                  backgroundColor: "var(--legend-green)",
+                }}
               />
             ),
             label: "Hatch",
@@ -368,12 +392,15 @@ export function IncubationCalendar({
       </div>
 
       {/* Key Cycle Dates schedule */}
-      <div className="mt-3.5 border-t pt-3" style={{ borderColor: "#EFE9DC" }}>
+      <div
+        className="mt-3.5 border-t pt-3"
+        style={{ borderColor: "var(--border-sand)" }}
+      >
         <div className="mb-2 flex items-center justify-between gap-2">
           <div>
             <p
               style={{
-                color: TEXT,
+                color: "var(--text-primary)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-bold)",
@@ -404,15 +431,15 @@ export function IncubationCalendar({
               lineHeight: "var(--leading-snug)",
               backgroundColor:
                 currentDay >= totalDays
-                  ? "#DCFCE7"
+                  ? "var(--status-success-bg)"
                   : currentDay >= lockdownDay
-                    ? "#FCE4D6"
-                    : "#F4ECE1",
+                    ? "var(--brand-primary-soft)"
+                    : "var(--surface-oat)",
               color:
                 currentDay >= totalDays
                   ? "var(--status-success-fg)"
                   : currentDay >= lockdownDay
-                    ? "#8A4B08"
+                    ? "var(--text-caramel)"
                     : "var(--text-muted)",
             }}
           >
@@ -427,7 +454,7 @@ export function IncubationCalendar({
           <div
             className="rounded-xl p-2"
             style={{
-              backgroundColor: "#FCFAF6",
+              backgroundColor: "var(--surface-porcelain)",
               border: "1px solid var(--border-subtle)",
             }}
           >
@@ -450,7 +477,7 @@ export function IncubationCalendar({
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-bold)",
                 lineHeight: "var(--leading-normal)",
-                color: TEXT,
+                color: "var(--text-primary)",
                 marginTop: 1,
               }}
             >
@@ -475,14 +502,18 @@ export function IncubationCalendar({
             className="rounded-xl p-2"
             style={{
               backgroundColor:
-                currentDay >= lockdownDay ? "#FFF4D6" : "#FCFAF6",
-              border: `1px solid ${currentDay >= lockdownDay ? "#F2C94C" : "var(--border-subtle)"}`,
+                currentDay >= lockdownDay
+                  ? "var(--surface-pending)"
+                  : "var(--surface-porcelain)",
+              border: `1px solid ${currentDay >= lockdownDay ? "var(--accent-gold)" : "var(--border-subtle)"}`,
             }}
           >
             <span
               style={{
                 color:
-                  currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
+                  currentDay >= lockdownDay
+                    ? "var(--text-caramel)"
+                    : "var(--text-muted)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-bold)",
@@ -499,7 +530,10 @@ export function IncubationCalendar({
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-bold)",
                 lineHeight: "var(--leading-normal)",
-                color: currentDay >= lockdownDay ? "#8A4B08" : TEXT,
+                color:
+                  currentDay >= lockdownDay
+                    ? "var(--text-caramel)"
+                    : "var(--text-primary)",
                 marginTop: 1,
               }}
             >
@@ -511,7 +545,9 @@ export function IncubationCalendar({
             <p
               style={{
                 color:
-                  currentDay >= lockdownDay ? "#8A4B08" : "var(--text-muted)",
+                  currentDay >= lockdownDay
+                    ? "var(--text-caramel)"
+                    : "var(--text-muted)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-regular)",
@@ -524,7 +560,7 @@ export function IncubationCalendar({
           <div
             className="rounded-xl p-2"
             style={{
-              backgroundColor: "#FCFAF6",
+              backgroundColor: "var(--surface-porcelain)",
               border: "1px solid var(--border-subtle)",
             }}
           >
@@ -547,7 +583,7 @@ export function IncubationCalendar({
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-bold)",
                 lineHeight: "var(--leading-normal)",
-                color: TEXT,
+                color: "var(--text-primary)",
                 marginTop: 1,
               }}
             >
@@ -571,7 +607,10 @@ export function IncubationCalendar({
           <div
             className="rounded-xl p-2"
             style={{
-              backgroundColor: currentDay >= totalDays ? "#DCFCE7" : "#FCFAF6",
+              backgroundColor:
+                currentDay >= totalDays
+                  ? "var(--status-success-bg)"
+                  : "var(--surface-porcelain)",
               border: `1px solid ${currentDay >= totalDays ? "var(--status-success-fg)" : "var(--border-subtle)"}`,
             }}
           >
@@ -597,7 +636,10 @@ export function IncubationCalendar({
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-bold)",
                 lineHeight: "var(--leading-normal)",
-                color: currentDay >= totalDays ? "#15803D" : TEXT,
+                color:
+                  currentDay >= totalDays
+                    ? "var(--status-success-fg)"
+                    : "var(--text-primary)",
                 marginTop: 1,
               }}
             >

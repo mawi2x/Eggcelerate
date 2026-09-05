@@ -68,7 +68,7 @@ export function FilterBar({
       <div
         aria-hidden={!canScrollLeft}
         className={cn(
-          "pointer-events-none absolute left-0 top-0 h-[52px] z-10 flex items-center pr-3 pl-0.5 bg-gradient-to-r from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
+          "pointer-events-none absolute left-0 top-0 h-[var(--control-size-lg)] z-10 flex items-center pr-3 pl-0.5 bg-gradient-to-r from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
           !canScrollLeft && "invisible opacity-0",
         )}
       >
@@ -148,7 +148,7 @@ export function FilterBar({
       <div
         aria-hidden={!canScrollRight}
         className={cn(
-          "pointer-events-none absolute right-0 top-0 h-[52px] z-10 flex items-center pl-3 pr-0.5 bg-gradient-to-l from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
+          "pointer-events-none absolute right-0 top-0 h-[var(--control-size-lg)] z-10 flex items-center pl-3 pr-0.5 bg-gradient-to-l from-[var(--surface-page)] via-[var(--surface-page)] to-transparent sm:hidden transition-opacity duration-200",
           !canScrollRight && "invisible opacity-0",
         )}
       >

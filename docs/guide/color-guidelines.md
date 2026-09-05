@@ -163,7 +163,7 @@ Do not reuse a chamber-series color for an error, success, or warning state.
 
 Raw values may remain when they are part of a dedicated visual asset or data system, including:
 
-- mascot and illustration artwork;
+- mascot artwork (`Mascot.tsx` fills/strokes — bespoke illustration values, see file header);
 - chamber-series palettes;
 - target-range chart accents;
 - photograph overlays and scrims;

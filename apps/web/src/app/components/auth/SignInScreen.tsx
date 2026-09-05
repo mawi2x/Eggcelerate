@@ -58,7 +58,7 @@ export function SignInScreen({
           Check on your clutch.
         </h1>
         <p
-          className="mt-1.5 max-w-[340px]"
+          className="mt-1.5 max-w-[var(--measure-auth)]"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-body)",
@@ -127,7 +127,7 @@ export function SignInScreen({
       <button
         type="button"
         onClick={submit}
-        className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-white hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
         Sign in →
       </button>

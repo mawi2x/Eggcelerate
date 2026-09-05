@@ -30,7 +30,7 @@ export function FilledIncubatorDeviceIcon({
   ...props
 }: CustomIconProps) {
   const backgroundColor = color ?? "currentColor";
-  const glyphColor = foregroundColor ?? "var(--on-brand, #FFFFFF)";
+  const glyphColor = foregroundColor ?? "var(--on-brand)";
 
   return (
     <IconSvg {...props} size={size} title={title}>

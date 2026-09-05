@@ -109,7 +109,9 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                 <div
                   key={unit.id}
                   className="flex min-w-0 items-center gap-3 rounded-xl p-3"
-                  style={{ border: `1px solid ${BORDER}` }}
+                  style={{
+                    border: `var(--border-width-hairline) solid ${BORDER}`,
+                  }}
                 >
                   <span
                     className="flex shrink-0 items-center justify-center rounded-xl"
@@ -117,8 +119,8 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                       width: 36,
                       height: 36,
                       backgroundColor: online
-                        ? "rgba(200,90,50,0.10)"
-                        : "#F5F5F4",
+                        ? "var(--wash-brand-10)"
+                        : "var(--surface-neutral)",
                       color: online ? RUST : MUTED,
                     }}
                   >
@@ -131,20 +133,24 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                   <div className="min-w-0 flex-1">
                     <p
                       className="truncate"
-                      style={{ fontSize: 14, fontWeight: 600, color: TEXT }}
+                      style={{
+                        fontSize: "var(--type-body)",
+                        fontWeight: "var(--weight-semibold)",
+                        color: TEXT,
+                      }}
                     >
                       {unit.name}
                     </p>
                     <p
                       className="truncate"
-                      style={{ fontSize: 12, color: MUTED }}
+                      style={{ fontSize: "var(--type-caption)", color: MUTED }}
                     >
                       {unit.deviceId}
                     </p>
                   </div>
                   <span
                     className="hidden shrink-0 items-center gap-1.5 xl:flex"
-                    style={{ fontSize: 12, color: MUTED }}
+                    style={{ fontSize: "var(--type-caption)", color: MUTED }}
                   >
                     {unit.powerSource === "battery" ? (
                       <BatteryMedium size={15} />
@@ -158,10 +164,12 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                   <span
                     className="shrink-0 rounded-full px-2.5 py-0.5"
                     style={{
-                      backgroundColor: online ? "#DCFCE7" : "#F5F5F4",
-                      color: online ? "#15803D" : MUTED,
-                      fontSize: 11,
-                      fontWeight: 700,
+                      backgroundColor: online
+                        ? "var(--status-success-bg)"
+                        : "var(--surface-neutral)",
+                      color: online ? "var(--status-success-fg)" : MUTED,
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
                     }}
                   >
                     {unit.connectionState === "connecting"
@@ -177,11 +185,11 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
               <div
                 className="rounded-2xl px-5 py-10 text-center md:col-span-2"
                 style={{
-                  backgroundColor: "#FAF6F0",
-                  border: `1px dashed ${BORDER}`,
+                  backgroundColor: "var(--surface-app)",
+                  border: `var(--border-width-hairline) dashed ${BORDER}`,
                 }}
               >
-                <p style={{ fontWeight: 700, color: TEXT }}>
+                <p style={{ fontWeight: "var(--weight-bold)", color: TEXT }}>
                   No devices paired yet
                 </p>
               </div>
@@ -197,7 +205,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
         >
           <section
             className="rounded-2xl p-4"
-            style={{ border: `1px solid ${BORDER}` }}
+            style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
           >
             <GroupLabel>Sensor & Sampling</GroupLabel>
             <div className="mt-1">
@@ -225,7 +233,13 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                 label="Research Logging Interval"
                 hint="Stored research records use a fixed five minute interval."
                 control={
-                  <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
+                  <span
+                    style={{
+                      fontSize: "var(--type-body-sm)",
+                      fontWeight: "var(--weight-bold)",
+                      color: TEXT,
+                    }}
+                  >
                     Every 5 minutes
                   </span>
                 }
@@ -246,12 +260,16 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
 
           <section
             className="rounded-2xl p-4"
-            style={{ border: `1px solid ${BORDER}` }}
+            style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
           >
             <GroupLabel>Advanced and Calibration</GroupLabel>
             <p
               className="mt-2"
-              style={{ color: MUTED, fontSize: 12, lineHeight: 1.5 }}
+              style={{
+                color: MUTED,
+                fontSize: "var(--type-caption)",
+                lineHeight: 1.5,
+              }}
             >
               Calibration changes every temperature record. Use a trusted
               reference thermometer before saving an offset.
@@ -283,11 +301,13 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                       className="cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                       style={{
                         backgroundColor: calibrationSaved
-                          ? "#DCFCE7"
-                          : "#F2EEE5",
-                        color: calibrationSaved ? "#166534" : RUST,
-                        fontSize: 12,
-                        fontWeight: 700,
+                          ? "var(--status-success-bg)"
+                          : "var(--surface-tile)",
+                        color: calibrationSaved
+                          ? "var(--status-success-deep)"
+                          : RUST,
+                        fontSize: "var(--type-caption)",
+                        fontWeight: "var(--weight-bold)",
                       }}
                     >
                       {calibrationSaved ? "Saved" : "Save"}
@@ -300,7 +320,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
 
           <section
             className="rounded-2xl p-4"
-            style={{ border: `1px solid ${BORDER}` }}
+            style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
           >
             <GroupLabel>Hardware Display</GroupLabel>
             <div className="mt-1">

@@ -162,13 +162,13 @@ export default function App() {
       >
         <div>
           <h1
-            className="text-xl font-bold"
+            className="text-(length:--type-heading-lg) font-bold"
             style={{ color: "var(--text-primary)" }}
           >
             Unable to load farm data
           </h1>
           <p
-            className="mt-2 text-sm"
+            className="mt-2 text-(length:--type-body)"
             style={{ color: "var(--text-secondary)" }}
           >
             {repositoryErrorMessage(farmDataError)}
@@ -191,13 +191,13 @@ export default function App() {
       >
         <div>
           <h1
-            className="text-xl font-bold"
+            className="text-(length:--type-heading-lg) font-bold"
             style={{ color: "var(--text-primary)" }}
           >
             No farm data available
           </h1>
           <p
-            className="mt-2 text-sm"
+            className="mt-2 text-(length:--type-body)"
             style={{ color: "var(--text-secondary)" }}
           >
             The current data source did not return both incubation modes and
@@ -222,8 +222,16 @@ export default function App() {
   const activeMode = modes.find((m) => m.id === activeUnit.modeId) ?? modes[0];
   const statusTone =
     activeUnit.status === "optimal"
-      ? { fg: "#15803D", bg: "#DCFCE7", label: "All Systems Optimal" }
-      : { fg: "#B45309", bg: "#FEF3C7", label: "Needs Attention" };
+      ? {
+          fg: "var(--status-success-fg)",
+          bg: "var(--status-success-bg)",
+          label: "All Systems Optimal",
+        }
+      : {
+          fg: "var(--status-warning-fg)",
+          bg: "var(--status-warning-bg)",
+          label: "Needs Attention",
+        };
 
   const detailBadges = (
     <>
@@ -231,9 +239,9 @@ export default function App() {
         className="shrink-0 rounded-full px-3 py-1"
         style={{
           backgroundColor: "var(--brand-primary)",
-          color: "#FFFFFF",
-          fontSize: 13,
-          fontWeight: 700,
+          color: "var(--on-brand)",
+          fontSize: "var(--type-body-sm)",
+          fontWeight: "var(--weight-bold)",
         }}
       >
         Day {activeUnit.dayOfIncubation} of {activeMode.incubationDays}
@@ -243,8 +251,8 @@ export default function App() {
         style={{
           backgroundColor: statusTone.bg,
           color: statusTone.fg,
-          fontSize: 13,
-          fontWeight: 700,
+          fontSize: "var(--type-body-sm)",
+          fontWeight: "var(--weight-bold)",
         }}
       >
         {statusTone.label}
@@ -258,8 +266,8 @@ export default function App() {
         <h1
           className="min-w-0 truncate"
           style={{
-            fontSize: 24,
-            fontWeight: 700,
+            fontSize: "var(--type-page-title)",
+            fontWeight: "var(--weight-bold)",
             color: "var(--text-primary)",
             lineHeight: 1.25,
           }}
@@ -271,8 +279,8 @@ export default function App() {
       </div>
       <p
         style={{
-          fontSize: 16,
-          fontWeight: 600,
+          fontSize: "var(--type-heading-sm)",
+          fontWeight: "var(--weight-semibold)",
           color: "var(--text-primary)",
           lineHeight: 1.4,
           marginTop: 4,
@@ -400,7 +408,7 @@ export default function App() {
     <RequireAuth>
       <div
         className="min-h-screen w-full"
-        style={{ backgroundColor: "#FAF6F0" }}
+        style={{ backgroundColor: "var(--surface-app)" }}
       >
         <AppSidebar
           active={screen}
@@ -419,7 +427,7 @@ export default function App() {
             style={{ paddingTop: 24 }}
           >
             {/* Rows 1 and 2 — utility bar and page title bar. */}
-            <div style={{ marginBottom: 20 }}>
+            <div className="mb-5">
               <PageHeader
                 title={headerCopy[screen].title}
                 subtitle={headerCopy[screen].subtitle}

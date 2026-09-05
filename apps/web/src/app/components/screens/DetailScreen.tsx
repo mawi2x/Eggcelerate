@@ -21,23 +21,11 @@ import { useIncubatorReadings } from "../../features/farm/use-incubator-readings
 import { CandlingJournalTab } from "../detail/CandlingJournalTab";
 import { DeviceSettingsTab } from "../detail/DeviceSettingsTab";
 import { LiveMonitorTab } from "../detail/LiveMonitorTab";
-import { statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { SectionCard, StatusCallout } from "../detail/primitives";
-import {
-  BORDER,
-  CARD,
-  type DetailTab,
-  INPUT_BORDER,
-  MUTED,
-  RADIUS,
-  RUST,
-  SURFACE,
-  TEXT,
-  WARN,
-} from "../detail/types";
+import type { DetailTab } from "../detail/types";
 import { HarvestModal } from "../HarvestModal";
 import { ExclamationIcon } from "../icons";
-import { Button } from "../ui/button";
+import { statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
+import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
@@ -280,21 +269,24 @@ export function DetailScreen({
   };
 
   return (
-    <div className="space-y-5" style={{ color: TEXT }}>
+    <div className="space-y-5" style={{ color: "var(--text-primary)" }}>
       {/* Ready Incubator — compact setup prompt */}
       {isReady && (
         <div
           role="status"
           className="flex flex-col gap-4 rounded-2xl p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
           style={{
-            backgroundColor: CARD,
-            border: `1px solid ${BORDER}`,
+            backgroundColor: "var(--surface-subtle)",
+            border: `1px solid var(--border-default)`,
           }}
         >
           <div className="flex min-w-0 items-center gap-3">
             <span
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-              style={{ backgroundColor: "var(--brand-primary-soft)", color: "var(--brand-primary-hover)" }}
+              style={{
+                backgroundColor: "var(--brand-primary-soft)",
+                color: "var(--brand-primary-hover)",
+              }}
               aria-hidden="true"
             >
               <EggIcon size={22} weight="fill" />
@@ -313,7 +305,11 @@ export function DetailScreen({
               </p>
               <p
                 className="mt-0.5"
-                style={{ fontSize: 13, color: MUTED, lineHeight: 1.45 }}
+                style={{
+                  fontSize: "var(--type-body-sm)",
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.45,
+                }}
               >
                 Load the tray, choose an incubation mode, and begin Day 1.
               </p>
@@ -323,7 +319,10 @@ export function DetailScreen({
             size="toolbar"
             onClick={() => setSetupOpen(true)}
             className="w-full rounded-xl px-5 sm:w-auto"
-            style={{ backgroundColor: "var(--brand-primary-hover)", color: "var(--on-brand)" }}
+            style={{
+              backgroundColor: "var(--brand-primary-hover)",
+              color: "var(--on-brand)",
+            }}
           >
             Set up incubation
           </Button>
@@ -338,11 +337,11 @@ export function DetailScreen({
         }}
       >
         <DialogContent
-          className="max-h-[88vh] overflow-y-auto p-0 shadow-2xl sm:max-w-[600px]"
+          className="max-h-[var(--dialog-height-max)] overflow-y-auto p-0 shadow-2xl sm:max-w-[var(--dialog-width-wide)]"
           style={{
-            backgroundColor: CARD,
-            border: `1px solid ${BORDER}`,
-            borderRadius: RADIUS,
+            backgroundColor: "var(--surface-subtle)",
+            border: `1px solid var(--border-default)`,
+            borderRadius: "var(--radius-card)",
           }}
         >
           <form
@@ -355,7 +354,7 @@ export function DetailScreen({
             <DialogHeader className="px-5 pt-5 text-left">
               <DialogTitle
                 style={{
-                  color: TEXT,
+                  color: "var(--text-primary)",
                   fontFamily: "var(--font-display)",
                   fontSize: "var(--type-heading-md)",
                   fontWeight: "var(--weight-bold)",
@@ -366,7 +365,11 @@ export function DetailScreen({
               </DialogTitle>
               <DialogDescription
                 className="space-y-0.5"
-                style={{ color: MUTED, fontSize: 12, lineHeight: 1.5 }}
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "var(--type-caption)",
+                  lineHeight: 1.5,
+                }}
               >
                 <span className="block">
                   Configure the new batch for {unit.name}.
@@ -381,11 +384,17 @@ export function DetailScreen({
               <div>
                 <Label
                   htmlFor="setup-mode"
-                  style={{ fontSize: 13, color: TEXT }}
+                  style={{
+                    fontSize: "var(--type-body-sm)",
+                    color: "var(--text-primary)",
+                  }}
                 >
                   Incubation mode
                 </Label>
-                <p className="mt-0.5 text-xs" style={{ color: MUTED }}>
+                <p
+                  className="mt-0.5 text-xs"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   Select the species profile for this batch.
                 </p>
                 <Select
@@ -397,8 +406,8 @@ export function DetailScreen({
                     id="setup-mode"
                     className="mt-2 w-full rounded-xl"
                     style={{
-                      borderColor: INPUT_BORDER,
-                      backgroundColor: SURFACE,
+                      borderColor: "var(--input-border)",
+                      backgroundColor: "var(--surface-card)",
                     }}
                   >
                     <SelectValue placeholder="Select an incubation mode" />
@@ -416,7 +425,10 @@ export function DetailScreen({
               <div>
                 <Label
                   htmlFor="setup-eggs"
-                  style={{ fontSize: 13, color: TEXT }}
+                  style={{
+                    fontSize: "var(--type-body-sm)",
+                    color: "var(--text-primary)",
+                  }}
                 >
                   Eggs loaded
                 </Label>
@@ -433,9 +445,9 @@ export function DetailScreen({
                   placeholder="0"
                   className="mt-2 rounded-xl"
                   style={{
-                    borderColor: INPUT_BORDER,
-                    backgroundColor: SURFACE,
-                    color: TEXT,
+                    borderColor: "var(--input-border)",
+                    backgroundColor: "var(--surface-card)",
+                    color: "var(--text-primary)",
                   }}
                   aria-describedby="setup-eggs-help"
                   disabled={isUpdating}
@@ -447,9 +459,11 @@ export function DetailScreen({
                     color:
                       setupEggs !== "" && !setupEggsValid
                         ? "var(--status-danger-fg)"
-                        : MUTED,
+                        : "var(--text-secondary)",
                     fontWeight:
-                      setupEggs !== "" && !setupEggsValid ? 600 : 400,
+                      setupEggs !== "" && !setupEggsValid
+                        ? "var(--weight-semibold)"
+                        : "var(--weight-regular)",
                   }}
                 >
                   {setupEggs !== "" && !setupEggsValid
@@ -462,22 +476,31 @@ export function DetailScreen({
                 <div
                   className="rounded-2xl p-4"
                   style={{
-                    backgroundColor: "#FAF6F0",
-                    border: "1px solid #E9DED1",
+                    backgroundColor: "var(--surface-app)",
+                    border: "1px solid var(--border-preview)",
                   }}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold" style={{ color: TEXT }}>
+                      <p
+                        className="text-sm font-bold"
+                        style={{ color: "var(--text-primary)" }}
+                      >
                         {setupMode.name} profile
                       </p>
-                      <p className="mt-0.5 text-xs" style={{ color: MUTED }}>
+                      <p
+                        className="mt-0.5 text-xs"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
                         These targets will be applied when the cycle starts.
                       </p>
                     </div>
                     <span
                       className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold"
-                      style={{ backgroundColor: "#F4E6D5", color: "#713016" }}
+                      style={{
+                        backgroundColor: "var(--surface-count)",
+                        color: "var(--text-earth)",
+                      }}
                     >
                       {setupMode.incubationDays} days
                     </span>
@@ -509,23 +532,23 @@ export function DetailScreen({
                       return (
                         <div
                           key={item.label}
-                          className="min-w-0 rounded-xl bg-white p-3"
-                          style={{ border: "1px solid #E9DED1" }}
+                          className="min-w-0 rounded-xl bg-[var(--surface-card)] p-3"
+                          style={{ border: "1px solid var(--border-preview)" }}
                         >
                           <Icon
                             size={16}
-                            style={{ color: "#8B3A1C" }}
+                            style={{ color: "var(--brand-primary-hover)" }}
                             aria-hidden="true"
                           />
                           <p
-                            className="mt-2 text-[11px]"
-                            style={{ color: MUTED }}
+                            className="mt-2 text-(length:--type-label)"
+                            style={{ color: "var(--text-secondary)" }}
                           >
                             {item.label}
                           </p>
                           <p
                             className="mt-0.5 text-xs font-bold"
-                            style={{ color: TEXT }}
+                            style={{ color: "var(--text-primary)" }}
                           >
                             {item.value}
                           </p>
@@ -546,7 +569,10 @@ export function DetailScreen({
 
             <div
               className="sticky bottom-0 px-5 py-4"
-              style={{ backgroundColor: CARD, borderTop: `1px solid ${BORDER}` }}
+              style={{
+                backgroundColor: "var(--surface-subtle)",
+                borderTop: `1px solid var(--border-default)`,
+              }}
             >
               <div className="flex items-center justify-between gap-2">
                 <Button
@@ -564,8 +590,8 @@ export function DetailScreen({
                   aria-busy={isUpdating}
                   className="rounded-full px-5"
                   style={{
-                    backgroundColor: RUST,
-                    color: "#fff",
+                    backgroundColor: "var(--brand-primary)",
+                    color: "var(--on-brand)",
                     opacity:
                       !setupMode || !setupEggsValid || isUpdating ? 0.5 : 1,
                   }}
@@ -580,11 +606,18 @@ export function DetailScreen({
       <AlertDialog open={setupConfirmOpen} onOpenChange={setSetupConfirmOpen}>
         <AlertDialogContent
           className="rounded-2xl border-[var(--border-default)]"
-          style={{ backgroundColor: CARD, color: TEXT }}
+          style={{
+            backgroundColor: "var(--surface-subtle)",
+            color: "var(--text-primary)",
+          }}
         >
           <AlertDialogHeader className="text-left">
             <AlertDialogTitle
-              style={{ color: TEXT, fontSize: 18, fontWeight: 700 }}
+              style={{
+                color: "var(--text-primary)",
+                fontSize: "var(--type-heading-md)",
+                fontWeight: "var(--weight-bold)",
+              }}
             >
               Start incubation cycle?
             </AlertDialogTitle>
@@ -617,13 +650,19 @@ export function DetailScreen({
           <AlertDialogFooter>
             <AlertDialogCancel
               className="rounded-full"
-              style={{ borderColor: BORDER, color: MUTED }}
+              style={{
+                borderColor: "var(--border-default)",
+                color: "var(--text-secondary)",
+              }}
             >
               Go back
             </AlertDialogCancel>
             <AlertDialogAction
               className="rounded-full"
-              style={{ backgroundColor: RUST, color: "#FFFFFF" }}
+              style={{
+                backgroundColor: "var(--brand-primary)",
+                color: "var(--surface-card)",
+              }}
               disabled={isUpdating}
               aria-busy={isUpdating}
               onClick={(event) => {
@@ -641,7 +680,9 @@ export function DetailScreen({
       {/* Stopped Early Banner */}
       {unit.cyclePhase === "stopped_early" && (
         <SectionCard title="Cycle Stopped Early" titleSize={19}>
-          <p style={{ fontSize: 14, color: "#6E6259" }}>
+          <p
+            style={{ fontSize: "var(--type-body)", color: "var(--text-farm)" }}
+          >
             This batch was archived before hatch day. Reset the incubator when
             you are ready to load a new batch.
           </p>
@@ -652,7 +693,10 @@ export function DetailScreen({
               disabled={isUpdating}
               aria-busy={isUpdating}
               className="rounded-full"
-              style={{ backgroundColor: "#8B3A1C", color: "#fff" }}
+              style={{
+                backgroundColor: "var(--brand-primary-hover)",
+                color: "var(--on-brand)",
+              }}
             >
               {isUpdating ? "Resetting…" : "Reset to Ready"}
             </Button>
@@ -664,12 +708,18 @@ export function DetailScreen({
       {unit.cyclePhase === "lockdown" && (
         <div
           className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4 shadow-sm"
-          style={{ backgroundColor: WARN.bg, border: `1px solid ${BORDER}` }}
+          style={{
+            backgroundColor: "var(--status-warning-bg)",
+            border: `1px solid var(--border-default)`,
+          }}
         >
           <div className="flex items-center gap-3">
             <span
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold"
-              style={{ backgroundColor: WARN.bg, color: WARN.fg }}
+              style={{
+                backgroundColor: "var(--status-warning-bg)",
+                color: "var(--status-warning-fg)",
+              }}
             >
               <ExclamationIcon size={22} />
             </span>
@@ -680,14 +730,20 @@ export function DetailScreen({
                   fontSize: "var(--type-heading-sm)",
                   fontWeight: "var(--weight-extrabold)",
                   lineHeight: "var(--leading-snug)",
-                  color: WARN.fg,
+                  color: "var(--status-warning-fg)",
                   whiteSpace: "normal",
                   wordBreak: "break-word",
                 }}
               >
                 Lockdown Active, Do Not Open
               </p>
-              <p style={{ fontSize: 13, color: WARN.fg, marginTop: 2 }}>
+              <p
+                style={{
+                  fontSize: "var(--type-body-sm)",
+                  color: "var(--status-warning-fg)",
+                  marginTop: 2,
+                }}
+              >
                 Turning Stopped. Keep the incubator closed while hatching
                 begins.
               </p>
@@ -700,7 +756,10 @@ export function DetailScreen({
       {cycleEnded && (
         <div
           className="flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm"
-          style={{ backgroundColor: WARN.bg, border: `1px solid ${BORDER}` }}
+          style={{
+            backgroundColor: "var(--status-warning-bg)",
+            border: `1px solid var(--border-default)`,
+          }}
         >
           <div>
             <p
@@ -709,14 +768,20 @@ export function DetailScreen({
                 fontSize: "var(--type-heading-sm)",
                 fontWeight: "var(--weight-extrabold)",
                 lineHeight: "var(--leading-snug)",
-                color: WARN.fg,
+                color: "var(--status-warning-fg)",
                 whiteSpace: "normal",
                 wordBreak: "break-word",
               }}
             >
               Past Hatch Day
             </p>
-            <p style={{ fontSize: 13, color: WARN.fg, marginTop: 2 }}>
+            <p
+              style={{
+                fontSize: "var(--type-body-sm)",
+                color: "var(--status-warning-fg)",
+                marginTop: 2,
+              }}
+            >
               Some eggs may still be hatching. Finish the cycle when ready.
             </p>
           </div>
@@ -724,7 +789,10 @@ export function DetailScreen({
             size="toolbar"
             onClick={() => setHarvestOpen(true)}
             className="rounded-xl px-5 font-bold shadow-sm transition-all"
-            style={{ backgroundColor: "var(--brand-primary-hover)", color: "var(--on-brand)" }}
+            style={{
+              backgroundColor: "var(--brand-primary-hover)",
+              color: "var(--on-brand)",
+            }}
           >
             Finish Cycle
           </Button>

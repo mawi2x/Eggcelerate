@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { useIsMobile } from "../ui/use-mobile";
 import { type ViewMode, ViewToggle } from "../ViewToggle";
 import {
   BORDER,
@@ -153,6 +154,7 @@ export function ModeLibraryPanel({
   onDeleteMode,
 }: Props) {
   const [view, setView] = useState<ViewMode>("list");
+  const isMobile = useIsMobile();
   const [modeSearch, setModeSearch] = useState("");
 
   const filteredModes = useMemo(() => {
@@ -413,9 +415,9 @@ export function ModeLibraryPanel({
   // Per-item action buttons, shared between grid cards and list rows.
   const ModeActions = ({ m }: { m: Mode }) => {
     const iconBtn =
-      "inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[#FAF6EE] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1";
+      "inline-flex h-11 w-11 md:h-8 md:w-8 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--surface-hover-cream)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1";
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2 md:gap-1.5">
         <button
           type="button"
           onClick={() => openEdit(m)}
@@ -496,7 +498,7 @@ export function ModeLibraryPanel({
       <span
         className="shrink-0 rounded-full px-2 py-0.5"
         style={{
-          backgroundColor: "rgba(200,90,50,0.12)",
+          backgroundColor: "var(--wash-brand-12)",
           color: RUST,
           fontFamily: "var(--font-body)",
           fontSize: "var(--type-label)",
@@ -511,8 +513,8 @@ export function ModeLibraryPanel({
       <span
         className="shrink-0 rounded-full px-2 py-0.5"
         style={{
-          backgroundColor: "#DCFCE7",
-          color: "#15803D",
+          backgroundColor: "var(--status-success-bg)",
+          color: "var(--status-success-fg)",
           fontFamily: "var(--font-body)",
           fontSize: "var(--type-label)",
           fontWeight: "var(--weight-bold)",
@@ -549,7 +551,9 @@ export function ModeLibraryPanel({
             style={inputStyle}
           />
         </div>
-        <ViewToggle view={view} onChange={setView} />
+        <div className="hidden md:block">
+          <ViewToggle view={view} onChange={setView} />
+        </div>
         <input
           ref={fileRef}
           type="file"
@@ -579,7 +583,7 @@ export function ModeLibraryPanel({
         </Button>
         <Button
           className="rounded-xl"
-          style={{ backgroundColor: RUST, color: "#fff" }}
+          style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
           onClick={openAdd}
         >
           <Plus size={17} /> Add Custom Mode
@@ -589,7 +593,10 @@ export function ModeLibraryPanel({
       {filteredModes.length === 0 ? (
         <div
           className="rounded-2xl px-5 py-12 text-center"
-          style={{ backgroundColor: "#FAF6F0", border: `1px dashed ${BORDER}` }}
+          style={{
+            backgroundColor: "var(--surface-app)",
+            border: `var(--border-width-hairline) dashed ${BORDER}`,
+          }}
         >
           <p
             style={{
@@ -615,7 +622,7 @@ export function ModeLibraryPanel({
             Try a different name, or add it as a custom mode.
           </p>
         </div>
-      ) : view === "grid" ? (
+      ) : isMobile || view === "grid" ? (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {filteredModes.map((m) => {
             const candling = computeCandling(m.incubationDays);
@@ -623,7 +630,9 @@ export function ModeLibraryPanel({
               <div
                 key={m.id}
                 className="rounded-2xl p-4"
-                style={{ border: `1px solid ${BORDER}` }}
+                style={{
+                  border: `var(--border-width-hairline) solid ${BORDER}`,
+                }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <p
@@ -712,7 +721,7 @@ export function ModeLibraryPanel({
           style={{ borderColor: BORDER }}
         >
           <Table>
-            <TableHeader style={{ backgroundColor: "#F2EEE5" }}>
+            <TableHeader style={{ backgroundColor: "var(--surface-tile)" }}>
               <TableRow>
                 {[
                   "MODE NAME",
@@ -861,7 +870,7 @@ export function ModeLibraryPanel({
             </Button>
             <Button
               className="rounded-xl"
-              style={{ backgroundColor: CRIT, color: "#fff" }}
+              style={{ backgroundColor: CRIT, color: "var(--on-brand)" }}
               disabled={isMutating}
               aria-busy={isMutating}
               onClick={() => void confirmDelete()}
@@ -952,7 +961,7 @@ export function ModeLibraryPanel({
             </Button>
             <Button
               className="rounded-xl"
-              style={{ backgroundColor: RUST, color: "#fff" }}
+              style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
               disabled={isMutating}
               aria-busy={isMutating}
               onClick={() => void saveModal()}
@@ -1002,7 +1011,7 @@ export function ModeLibraryPanel({
               <div
                 key={c.incoming.id}
                 className="rounded-2xl p-3"
-                style={{ backgroundColor: "#FBF6E7" }}
+                style={{ backgroundColor: "var(--surface-import)" }}
               >
                 <p
                   style={{
@@ -1031,9 +1040,13 @@ export function ModeLibraryPanel({
                         }
                         className="cursor-pointer rounded-full px-3 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                         style={{
-                          backgroundColor: active ? RUST : "#FFFFFF",
-                          color: active ? "#FFFFFF" : "#57534E",
-                          border: `1px solid ${active ? RUST : BORDER}`,
+                          backgroundColor: active
+                            ? RUST
+                            : "var(--surface-card)",
+                          color: active
+                            ? "var(--on-brand)"
+                            : "var(--status-info-fg)",
+                          border: `var(--border-width-hairline) solid ${active ? RUST : BORDER}`,
                           fontFamily: "var(--font-body)",
                           fontSize: "var(--type-body-sm)",
                           fontWeight: "var(--weight-semibold)",
@@ -1061,7 +1074,7 @@ export function ModeLibraryPanel({
             </Button>
             <Button
               className="rounded-xl"
-              style={{ backgroundColor: RUST, color: "#fff" }}
+              style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
               disabled={isMutating}
               aria-busy={isMutating}
               onClick={() => void applyImport()}

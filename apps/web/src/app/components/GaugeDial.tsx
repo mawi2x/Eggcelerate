@@ -23,7 +23,7 @@ interface GaugeDialProps {
 }
 
 // Shared semantic status colors used throughout the dashboard.
-const TRACK = "#ECE6D9";
+const TRACK = "var(--track-gauge)";
 const SAFE = "var(--status-success-fg)";
 const WARN = "var(--status-warning-fg)";
 const CRITICAL = "var(--status-danger-fg)";
@@ -134,7 +134,7 @@ export function GaugeDial({
           cx={knob.x}
           cy={knob.y}
           r={stroke * 0.57}
-          fill="#FFFFFF"
+          fill="var(--surface-card)"
           stroke={arcColor}
           strokeWidth={stroke * 0.29}
         />
@@ -169,7 +169,10 @@ export function GaugeDial({
       </svg>
       <div className="mt-1 flex flex-col items-center text-center">
         {safeLabel ? (
-          <span className="text-(length:--type-label-compact) font-semibold sm:text-(length:--type-caption)" style={{ color: MUTED }}>
+          <span
+            className="text-(length:--type-label-compact) font-semibold sm:text-(length:--type-caption)"
+            style={{ color: MUTED }}
+          >
             {safeLabel}
           </span>
         ) : (

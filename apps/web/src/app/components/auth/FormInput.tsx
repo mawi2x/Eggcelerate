@@ -38,7 +38,7 @@ export function FormInput({
           <Icon
             size={16}
             className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2"
-            style={{ color: "#78716C" }}
+            style={{ color: "var(--text-muted)" }}
           />
         )}
         <input
@@ -46,16 +46,16 @@ export function FormInput({
           {...props}
           aria-describedby={error ? `${id}-error` : undefined}
           aria-invalid={!!error}
-          className={`w-full rounded-xl border bg-[#FAF7F2] px-3.5 py-2.5 text-sm transition-colors focus-visible:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 ${
+          className={`w-full rounded-xl border bg-[var(--surface-input)] px-3.5 py-2.5 transition-colors focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 ${
             Icon ? "pl-10" : ""
           } ${trailing ? "pr-10" : ""} ${
             error
               ? "border-[var(--status-danger-fg)]"
-              : "border-[#E8E2D5] hover:border-[#D8D0C0]"
+              : "border-[var(--border-default)] hover:border-[var(--input-border)]"
           }`}
           style={{
             fontFamily: "var(--font-body)",
-            fontSize: "var(--type-body)",
+            fontSize: "var(--type-control-value)",
             color: "var(--text-primary)",
           }}
         />

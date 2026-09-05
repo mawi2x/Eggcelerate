@@ -143,16 +143,17 @@ export function HelpWidget() {
           aria-label="Eggcelerate help"
           className="touch-auto select-auto absolute bottom-[68px] right-0 flex max-h-[min(520px,70vh)] w-[min(360px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "1px solid #E8DED1",
-            boxShadow: "0 18px 45px rgba(45,26,14,0.18)",
+            backgroundColor: "var(--surface-card)",
+            border: "var(--border-width-hairline) solid var(--border-help)",
+            boxShadow: "var(--shadow-float)",
           }}
         >
           <div
             className="flex items-center justify-between gap-3 px-4 py-3.5"
             style={{
-              backgroundColor: "#FFF8F1",
-              borderBottom: "1px solid #EFE7DC",
+              backgroundColor: "var(--surface-help)",
+              borderBottom:
+                "var(--border-width-hairline) solid var(--border-help-soft)",
             }}
           >
             <div className="flex min-w-0 items-center gap-2.5">
@@ -174,7 +175,12 @@ export function HelpWidget() {
                 >
                   Eggcelerate Help
                 </p>
-                <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                <p
+                  style={{
+                    color: "var(--text-muted)",
+                    fontSize: "var(--type-label)",
+                  }}
+                >
                   Quick answers for your incubator
                 </p>
               </div>
@@ -182,7 +188,7 @@ export function HelpWidget() {
             <button
               type="button"
               onClick={closePanel}
-              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[#F2E8DC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--surface-help-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
               style={{ color: "var(--text-secondary)" }}
               aria-label="Close help"
             >
@@ -194,11 +200,11 @@ export function HelpWidget() {
             <div
               className="rounded-2xl rounded-tl-md px-3.5 py-3"
               style={{
-                backgroundColor: "#F5EFE6",
+                backgroundColor: "var(--surface-track)",
                 color: "var(--text-secondary)",
               }}
             >
-              <p style={{ fontSize: 13, lineHeight: 1.45 }}>
+              <p style={{ fontSize: "var(--type-body-sm)", lineHeight: 1.45 }}>
                 Hi, Farmer! Choose a question below and I’ll help you find the
                 answer.
               </p>
@@ -213,18 +219,26 @@ export function HelpWidget() {
                     color: "var(--on-brand)",
                   }}
                 >
-                  <p style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>
+                  <p
+                    style={{
+                      fontSize: "var(--type-caption)",
+                      fontWeight: "var(--weight-bold)",
+                      lineHeight: 1.4,
+                    }}
+                  >
                     {FAQS[selectedIndex].question}
                   </p>
                 </div>
                 <div
                   className="mr-5 rounded-2xl rounded-tl-md px-3.5 py-3"
                   style={{
-                    backgroundColor: "#F5EFE6",
+                    backgroundColor: "var(--surface-track)",
                     color: "var(--text-secondary)",
                   }}
                 >
-                  <p style={{ fontSize: 12, lineHeight: 1.5 }}>
+                  <p
+                    style={{ fontSize: "var(--type-caption)", lineHeight: 1.5 }}
+                  >
                     {FAQS[selectedIndex].answer}
                   </p>
                 </div>
@@ -234,7 +248,7 @@ export function HelpWidget() {
             <div className="mt-4">
               <p
                 style={{
-                  color: "#8A6B52",
+                  color: "var(--text-taupe)",
                   fontFamily: "var(--font-body)",
                   fontSize: "var(--type-label)",
                   fontWeight: "var(--weight-extrabold)",
@@ -251,14 +265,18 @@ export function HelpWidget() {
                     key={faq.question}
                     type="button"
                     onClick={() => setSelectedIndex(index)}
-                    className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[#FFF8F1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                    style={{ border: "1px solid #EAE2D8", color: "#3F342C" }}
+                    className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-help)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                    style={{
+                      border:
+                        "var(--border-width-hairline) solid var(--border-help-row)",
+                      color: "var(--text-help)",
+                    }}
                     aria-pressed={selectedIndex === index}
                   >
                     <span
                       style={{
-                        fontSize: 12,
-                        fontWeight: 700,
+                        fontSize: "var(--type-caption)",
+                        fontWeight: "var(--weight-bold)",
                         lineHeight: 1.35,
                       }}
                     >
@@ -288,9 +306,9 @@ export function HelpWidget() {
         }}
         className="relative flex h-14 w-14 cursor-grab items-center justify-center rounded-2xl transition-transform hover:-translate-y-0.5 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "1px solid #E8DED1",
-          boxShadow: "0 8px 24px rgba(45,26,14,0.18)",
+          backgroundColor: "var(--surface-card)",
+          border: "var(--border-width-hairline) solid var(--border-help)",
+          boxShadow: "var(--shadow-bubble)",
         }}
         aria-label={open ? "Close Eggcelerate help" : "Open Eggcelerate help"}
         aria-expanded={open}

@@ -9,15 +9,6 @@ import {
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import {
-  BORDER,
-  CARD,
-  MUTED,
-  RADIUS,
-  RUST,
-  SURFACE,
-  TEXT,
-} from "./detail/types";
 
 /**
  * Finish Cycle modal: log chicks hatched against the eggs loaded at cycle
@@ -82,9 +73,9 @@ export function HarvestModal({
       <DialogContent
         className="w-[90vw] max-w-[460px] max-h-[88vh] overflow-y-auto p-0 shadow-2xl [&>[data-slot=dialog-close]]:hidden"
         style={{
-          backgroundColor: CARD,
-          border: `1px solid ${BORDER}`,
-          borderRadius: RADIUS,
+          backgroundColor: "var(--surface-subtle)",
+          border: `1px solid var(--border-default)`,
+          borderRadius: "var(--radius-card)",
         }}
       >
         <DialogHeader className="px-5 pt-5 text-left">
@@ -94,16 +85,16 @@ export function HarvestModal({
               fontSize: "var(--type-heading-md)",
               fontWeight: "var(--weight-bold)",
               lineHeight: "var(--leading-snug)",
-              color: TEXT,
+              color: "var(--text-primary)",
             }}
           >
             <span className="block">Finish Cycle</span>
             <span
               className="block"
               style={{
-                fontSize: 12,
-                fontWeight: 500,
-                color: TEXT,
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-medium)",
+                color: "var(--text-primary)",
                 marginTop: 2,
               }}
             >
@@ -112,7 +103,11 @@ export function HarvestModal({
           </DialogTitle>
           <DialogDescription
             className="mt-1.5"
-            style={{ fontSize: 12, color: MUTED, lineHeight: 1.5 }}
+            style={{
+              fontSize: "var(--type-caption)",
+              color: "var(--text-secondary)",
+              lineHeight: 1.5,
+            }}
           >
             Enter the final chick count for this batch. Eggs loaded:{" "}
             {totalEggsLoaded}.
@@ -123,7 +118,10 @@ export function HarvestModal({
           <div>
             <Label
               htmlFor="harvest-hatched"
-              style={{ fontSize: 13, color: "var(--text-primary)" }}
+              style={{
+                fontSize: "var(--type-body-sm)",
+                color: "var(--text-primary)",
+              }}
             >
               Chicks hatched
             </Label>
@@ -142,7 +140,7 @@ export function HarvestModal({
                 borderColor: exceedsMax
                   ? "var(--status-danger-fg)"
                   : "var(--input-border)",
-                backgroundColor: SURFACE,
+                backgroundColor: "var(--surface-card)",
                 color: "var(--text-primary)",
               }}
               aria-invalid={exceedsMax}
@@ -151,9 +149,9 @@ export function HarvestModal({
               <p
                 className="mt-1.5"
                 style={{
-                  fontSize: 12,
+                  fontSize: "var(--type-caption)",
                   color: "var(--status-danger-fg)",
-                  fontWeight: 600,
+                  fontWeight: "var(--weight-semibold)",
                 }}
               >
                 Cannot exceed total eggs loaded ({totalEggsLoaded})
@@ -163,9 +161,9 @@ export function HarvestModal({
               <p
                 className="mt-1.5"
                 style={{
-                  fontSize: 12,
+                  fontSize: "var(--type-caption)",
                   color: "var(--status-danger-fg)",
-                  fontWeight: 600,
+                  fontWeight: "var(--weight-semibold)",
                 }}
               >
                 No eggs were loaded for this cycle.
@@ -175,15 +173,15 @@ export function HarvestModal({
           <div
             className="flex items-center justify-between rounded-xl px-3.5 py-2.5"
             style={{
-              backgroundColor: CARD,
-              border: `1px solid ${BORDER}`,
+              backgroundColor: "var(--surface-subtle)",
+              border: `1px solid var(--border-default)`,
             }}
           >
             <div>
               <span
                 style={{
-                  fontSize: 13,
-                  fontWeight: 600,
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-semibold)",
                   color: "var(--text-secondary)",
                 }}
               >
@@ -191,7 +189,10 @@ export function HarvestModal({
               </span>
               <span
                 className="block"
-                style={{ fontSize: 12, color: MUTED }}
+                style={{
+                  fontSize: "var(--type-caption)",
+                  color: "var(--text-secondary)",
+                }}
               >
                 {exceedsMax
                   ? `Cannot exceed ${totalEggsLoaded} eggs loaded.`
@@ -220,7 +221,10 @@ export function HarvestModal({
 
         <div
           className="sticky bottom-0 px-5 py-4"
-          style={{ backgroundColor: CARD, borderTop: `1px solid ${BORDER}` }}
+          style={{
+            backgroundColor: "var(--surface-subtle)",
+            borderTop: `1px solid var(--border-default)`,
+          }}
         >
           <div className="flex items-center justify-between gap-2">
             <Button
@@ -237,8 +241,8 @@ export function HarvestModal({
               aria-busy={isSaving}
               className="rounded-full px-5"
               style={{
-                backgroundColor: RUST,
-                color: "#fff",
+                backgroundColor: "var(--brand-primary)",
+                color: "var(--on-brand)",
                 opacity: !valid || isSaving ? 0.5 : 1,
               }}
             >

@@ -5,14 +5,13 @@ import { ExclamationIcon } from "../icons/ExclamationIcon";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { Card, CardContent } from "../ui/card";
 import { Typography } from "../ui/typography";
-import { BORDER, CRIT, MUTED, OK, SURFACE, TEXT, WARN } from "./types";
 export function StatusPill({
   tone,
   children,
   dot = true,
   pulse = false,
 }: {
-  tone: typeof OK;
+  tone: { fg: string; bg: string; ring: string };
   children: React.ReactNode;
   dot?: boolean;
   pulse?: boolean;
@@ -23,8 +22,8 @@ export function StatusPill({
       style={{
         backgroundColor: tone.bg,
         color: tone.fg,
-        fontSize: 12,
-        fontWeight: 700,
+        fontSize: "var(--type-caption)",
+        fontWeight: "var(--weight-bold)",
       }}
     >
       {dot && (
@@ -61,8 +60,8 @@ export function SectionCard({
       style={{
         backgroundColor: "var(--surface-card)",
         border: "1px solid var(--border-subtle)",
-        borderRadius: 16,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        borderRadius: "var(--radius-card)",
+        boxShadow: "var(--shadow-subtle)",
       }}
     >
       <CardContent className="p-5">
@@ -72,7 +71,7 @@ export function SectionCard({
             ...(centered
               ? { justifyContent: "center", textAlign: "center" }
               : {}),
-            ...(divider ? { borderColor: "#EFE9DC" } : {}),
+            ...(divider ? { borderColor: "var(--border-sand)" } : {}),
           }}
         >
           <div className="min-w-0 flex-1">
@@ -111,8 +110,8 @@ export function InnerTile({
     <div
       className="rounded-2xl p-4"
       style={{
-        backgroundColor: tone ? `${tone}0D` : SURFACE,
-        border: `1px solid ${tone ? `${tone}40` : BORDER}`,
+        backgroundColor: tone ? `${tone}0D` : "var(--surface-card)",
+        border: `1px solid ${tone ? `${tone}40` : "var(--border-default)"}`,
       }}
     >
       {children}
@@ -132,10 +131,27 @@ export function KeyValue({
   return (
     <div
       className="rounded-xl p-3.5"
-      style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
+      style={{
+        backgroundColor: "var(--surface-card)",
+        border: `1px solid var(--border-default)`,
+      }}
     >
-      <p style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>{label}</p>
-      <p style={{ fontSize: 14, fontWeight: 700, color: accent ?? TEXT }}>
+      <p
+        style={{
+          fontSize: "var(--type-caption)",
+          color: "var(--text-secondary)",
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          fontSize: "var(--type-body)",
+          fontWeight: "var(--weight-bold)",
+          color: accent ?? "var(--text-primary)",
+        }}
+      >
         {value}
       </p>
     </div>
@@ -168,25 +184,25 @@ export function StatusCallout({
   const iconSize = statusIconBadgeGlyphSize(badgeSize);
   const toneMap = {
     success: {
-      bg: OK.bg,
-      fg: OK.fg,
-      border: `${OK.fg}33`,
+      bg: "var(--status-success-bg)",
+      fg: "var(--status-success-fg)",
+      border: `var(--status-success-fg)33`,
       defaultIcon: (
         <CheckIcon size={iconSize} color="var(--status-icon-badge-fg)" />
       ),
     },
     danger: {
-      bg: CRIT.bg,
-      fg: CRIT.fg,
-      border: `${CRIT.fg}33`,
+      bg: "var(--status-danger-bg)",
+      fg: "var(--status-danger-fg)",
+      border: `var(--status-danger-fg)33`,
       defaultIcon: (
         <ExclamationIcon size={iconSize} color="var(--status-icon-badge-fg)" />
       ),
     },
     warning: {
-      bg: WARN.bg,
-      fg: WARN.fg,
-      border: `${WARN.fg}33`,
+      bg: "var(--status-warning-bg)",
+      fg: "var(--status-warning-fg)",
+      border: "color-mix(in srgb, var(--status-warning-fg) 20%, transparent)",
       defaultIcon: (
         <ExclamationIcon size={iconSize} color="var(--status-icon-badge-fg)" />
       ),
@@ -194,7 +210,7 @@ export function StatusCallout({
     info: {
       bg: "var(--status-info-bg)",
       fg: "var(--status-info-fg)",
-      border: "var(--status-info-fg)33",
+      border: "color-mix(in srgb, var(--status-info-fg) 20%, transparent)",
       defaultIcon: (
         <InfoIcon size={iconSize} color="var(--status-icon-badge-fg)" />
       ),
@@ -233,7 +249,7 @@ export function StatusCallout({
               size === "lg"
                 ? "var(--type-heading-md)"
                 : size === "sm"
-                  ? 13
+                  ? "var(--type-body-sm)"
                   : "var(--type-heading-sm)",
             fontWeight: "var(--weight-bold)",
             lineHeight: "var(--leading-snug)",
@@ -245,10 +261,14 @@ export function StatusCallout({
           <p
             className={size === "sm" ? "mt-0.5" : "mt-1"}
             style={{
-              color: MUTED,
+              color: "var(--text-secondary)",
               fontFamily: "var(--font-body)",
               fontSize:
-                size === "lg" ? 15 : size === "sm" ? 12 : "var(--type-body)",
+                size === "lg"
+                  ? "var(--type-body-lg)"
+                  : size === "sm"
+                    ? "var(--type-caption)"
+                    : "var(--type-body)",
               lineHeight: size === "sm" ? 1.35 : "var(--leading-relaxed)",
             }}
           >

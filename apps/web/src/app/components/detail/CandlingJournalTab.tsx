@@ -62,27 +62,14 @@ import { PhotoLightboxModal } from "./PhotoLightbox";
 import { SectionCard, StatusCallout } from "./primitives";
 import { Timeline } from "./Timeline";
 import {
-  BG,
-  BORDER,
   CANDLE_SHORT_LABELS,
-  CARD,
   type CandleForm,
   emptyForm,
   fmtTimestamp,
   formatNodeDay,
-  INPUT_BORDER,
   MAX_PHOTO_BYTES,
-  MUTED,
   NOTES_MAX,
-  OK,
-  RADIUS,
-  RUST,
-  RUST_NODE,
-  SHADOW,
-  SURFACE,
   type TallyKey,
-  TEXT,
-  WARN,
 } from "./types";
 
 // ─── Candling feed journal card ──────────────────────────────────────────────
@@ -148,18 +135,18 @@ export function JournalEntryCard({
     <>
       <Card
         style={{
-          backgroundColor: CARD,
-          border: `1px solid ${BORDER}`,
-          borderRadius: RADIUS,
-          boxShadow: SHADOW,
+          backgroundColor: "var(--surface-subtle)",
+          border: `1px solid var(--border-default)`,
+          borderRadius: "var(--radius-card)",
+          boxShadow: "var(--shadow-card)",
         }}
       >
         <CardContent style={{ padding: 18 }}>
           <p
             style={{
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: "0.05em",
+              fontSize: "var(--type-caption)",
+              fontWeight: "var(--weight-bold)",
+              letterSpacing: "var(--tracking-label)",
               color: "var(--text-primary)",
               marginBottom: 8,
             }}
@@ -172,12 +159,12 @@ export function JournalEntryCard({
             <span
               className="inline-block whitespace-nowrap"
               style={{
-                backgroundColor: "#DCFCE7",
-                color: "#15803D",
-                padding: "4px 10px",
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
+                backgroundColor: "var(--status-success-bg)",
+                color: "var(--status-success-fg)",
+                padding: "var(--pill-padding)",
+                borderRadius: "var(--radius-chip)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-semibold)",
               }}
             >
               {isLaterEntry ? developing : entry.fertile}{" "}
@@ -186,12 +173,12 @@ export function JournalEntryCard({
             <span
               className="inline-block whitespace-nowrap"
               style={{
-                backgroundColor: "#F1F5F9",
-                color: "#475569",
-                padding: "4px 10px",
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
+                backgroundColor: "var(--surface-slate)",
+                color: "var(--text-slate-soft)",
+                padding: "var(--pill-padding)",
+                borderRadius: "var(--radius-chip)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-semibold)",
               }}
             >
               {entry.clear} Clear
@@ -199,12 +186,12 @@ export function JournalEntryCard({
             <span
               className="inline-block whitespace-nowrap"
               style={{
-                backgroundColor: "#FEF3C7",
-                color: "#B45309",
-                padding: "4px 10px",
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
+                backgroundColor: "var(--status-warning-bg)",
+                color: "var(--status-warning-fg)",
+                padding: "var(--pill-padding)",
+                borderRadius: "var(--radius-chip)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-semibold)",
               }}
             >
               {entry.uncertain} Uncertain
@@ -213,12 +200,12 @@ export function JournalEntryCard({
               <span
                 className="inline-block whitespace-nowrap"
                 style={{
-                  backgroundColor: "#FEE2E2",
-                  color: "#991B1B",
-                  padding: "4px 10px",
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: 600,
+                  backgroundColor: "var(--status-danger-bg)",
+                  color: "var(--status-danger-strong)",
+                  padding: "var(--pill-padding)",
+                  borderRadius: "var(--radius-chip)",
+                  fontSize: "var(--type-caption)",
+                  fontWeight: "var(--weight-semibold)",
                 }}
               >
                 {stoppedDeveloping} Stopped Developing
@@ -234,14 +221,18 @@ export function JournalEntryCard({
                   key={c}
                   className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1"
                   style={{
-                    backgroundColor: "#FFFFFF",
-                    border: `1px solid ${BORDER}`,
-                    color: "#3D3228",
-                    fontSize: 11,
-                    fontWeight: 600,
+                    backgroundColor: "var(--surface-card)",
+                    border: `1px solid var(--border-default)`,
+                    color: "var(--text-strong)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-semibold)",
                   }}
                 >
-                  <Check size={12} color={OK.fg} strokeWidth={3} />{" "}
+                  <Check
+                    size={12}
+                    color={"var(--status-success-fg)"}
+                    strokeWidth={3}
+                  />{" "}
                   {developmentCheckLabels[c]}
                 </span>
               ))}
@@ -252,9 +243,9 @@ export function JournalEntryCard({
           <span
             className="block"
             style={{
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: "0.05em",
+              fontSize: "var(--type-caption)",
+              fontWeight: "var(--weight-bold)",
+              letterSpacing: "var(--tracking-label)",
               color: "var(--text-primary)",
               marginBottom: 6,
             }}
@@ -276,10 +267,10 @@ export function JournalEntryCard({
                     rows={3}
                     className="w-full resize-none rounded-xl px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                     style={{
-                      border: `1px solid ${INPUT_BORDER}`,
-                      backgroundColor: "#F2EEE5",
-                      fontSize: 13,
-                      color: TEXT,
+                      border: `1px solid var(--input-border)`,
+                      backgroundColor: "var(--surface-tile)",
+                      fontSize: "var(--type-control-value)",
+                      color: "var(--text-primary)",
                     }}
                   />
                   <div className="mt-2 flex justify-end gap-2">
@@ -298,7 +289,10 @@ export function JournalEntryCard({
                     <Button
                       size="sm"
                       className="rounded-full"
-                      style={{ backgroundColor: RUST, color: "#fff" }}
+                      style={{
+                        backgroundColor: "var(--brand-primary)",
+                        color: "var(--on-brand)",
+                      }}
                       disabled={isSavingNote}
                       aria-busy={isSavingNote}
                       onClick={() => {
@@ -323,10 +317,10 @@ export function JournalEntryCard({
                   onClick={() => setNoteEditing(true)}
                   className="w-full rounded-xl px-3.5 py-3 text-left transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                   style={{
-                    backgroundColor: "#FAF9F6",
-                    border: `1px solid ${BORDER}`,
+                    backgroundColor: "var(--surface-note)",
+                    border: `1px solid var(--border-default)`,
                     borderLeft: `3px solid var(--brand-primary)`,
-                    borderRadius: 12,
+                    borderRadius: "var(--radius-dialog)",
                     cursor: "pointer",
                   }}
                   aria-label="Edit inspector notes"
@@ -335,16 +329,21 @@ export function JournalEntryCard({
                     <span
                       className="block"
                       style={{
-                        fontSize: 13,
+                        fontSize: "var(--type-body-sm)",
                         fontStyle: "italic",
-                        color: "#44403C",
+                        color: "var(--text-note)",
                         lineHeight: 1.45,
                       }}
                     >
                       {entry.note}
                     </span>
                   ) : (
-                    <span style={{ fontSize: 13, color: MUTED }}>
+                    <span
+                      style={{
+                        fontSize: "var(--type-body-sm)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
                       + Add note observations…
                     </span>
                   )}
@@ -365,9 +364,9 @@ export function JournalEntryCard({
                   }}
                   className="relative overflow-hidden rounded-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2"
                   style={{
-                    width: 56,
-                    height: 56,
-                    border: `1px solid ${BORDER}`,
+                    width: "var(--control-size-photo)",
+                    height: "var(--control-size-photo)",
+                    border: `1px solid var(--border-default)`,
                     cursor: "pointer",
                   }}
                   aria-label={`View photo ${i + 1}`}
@@ -393,9 +392,9 @@ export function JournalEntryCard({
                   }}
                   className="relative overflow-hidden rounded-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2"
                   style={{
-                    width: 56,
-                    height: 56,
-                    border: `1px solid ${BORDER}`,
+                    width: "var(--control-size-photo)",
+                    height: "var(--control-size-photo)",
+                    border: `1px solid var(--border-default)`,
                     cursor: "pointer",
                   }}
                   aria-label={`View all ${photos.length} photos`}
@@ -411,8 +410,8 @@ export function JournalEntryCard({
                   <div
                     className="absolute inset-0 flex items-center justify-center font-bold text-white backdrop-blur-[1px]"
                     style={{
-                      backgroundColor: "rgba(0, 0, 0, 0.60)",
-                      fontSize: 13,
+                      backgroundColor: "rgba(0, 0, 0, 0.60)", // photo scrim exception — keep literal
+                      fontSize: "var(--type-body-sm)",
                     }}
                   >
                     +{overflowCount}
@@ -423,24 +422,24 @@ export function JournalEntryCard({
               <button
                 type="button"
                 onClick={() => photoRef.current?.click()}
-                className="flex flex-col items-center justify-center gap-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors hover:bg-stone-50"
+                className="flex flex-col items-center justify-center gap-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors hover:bg-[var(--surface-paper)]"
                 style={{
-                  width: 56,
-                  height: 56,
-                  border: `1.5px dashed #C9B182`,
-                  backgroundColor: SURFACE,
+                  width: "var(--control-size-photo)",
+                  height: "var(--control-size-photo)",
+                  border: `1.5px dashed var(--border-accent)`,
+                  backgroundColor: "var(--surface-card)",
                   cursor: "pointer",
                 }}
                 aria-label="Add candling photo"
               >
-                <Plus size={15} color={MUTED} />
+                <Plus size={15} color={"var(--text-secondary)"} />
                 <span
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-label)",
                     fontWeight: "var(--weight-semibold)",
                     letterSpacing: "var(--tracking-label)",
-                    color: MUTED,
+                    color: "var(--text-secondary)",
                   }}
                 >
                   Photo
@@ -514,11 +513,11 @@ export function LogModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[88vh] overflow-y-auto p-0 shadow-2xl sm:max-w-[600px]"
+        className="max-h-[var(--dialog-height-max)] overflow-y-auto p-0 shadow-2xl sm:max-w-[var(--dialog-width-wide)]"
         style={{
-          backgroundColor: CARD,
-          border: `1px solid ${BORDER}`,
-          borderRadius: RADIUS,
+          backgroundColor: "var(--surface-subtle)",
+          border: `1px solid var(--border-default)`,
+          borderRadius: "var(--radius-card)",
         }}
       >
         <LogModalBody
@@ -721,23 +720,35 @@ function LogModalBody({
   const tallyFields: { key: TallyKey; label: string; color: string }[] =
     isLaterCheckpoint
       ? [
-          { key: "developing", label: "Developing", color: "#166534" },
-          { key: "clear", label: "Clear", color: "#334155" },
+          {
+            key: "developing",
+            label: "Developing",
+            color: "var(--status-success-deep)",
+          },
+          { key: "clear", label: "Clear", color: "var(--text-slate)" },
           {
             key: "stoppedDeveloping",
             label: "Stopped Developing",
-            color: "#991B1B",
+            color: "var(--status-danger-strong)",
           },
           {
             key: "uncertain",
             label: "Uncertain or Not sure",
-            color: "#92400E",
+            color: "var(--text-amber-deep)",
           },
         ]
       : [
-          { key: "fertile", label: "Fertile", color: "#166534" },
-          { key: "clear", label: "Clear", color: "#334155" },
-          { key: "uncertain", label: "Uncertain", color: "#92400E" },
+          {
+            key: "fertile",
+            label: "Fertile",
+            color: "var(--status-success-deep)",
+          },
+          { key: "clear", label: "Clear", color: "var(--text-slate)" },
+          {
+            key: "uncertain",
+            label: "Uncertain",
+            color: "var(--text-amber-deep)",
+          },
         ];
 
   const countRemainingAsUncertain = () => {
@@ -772,7 +783,7 @@ function LogModalBody({
             fontSize: "var(--type-heading-md)",
             fontWeight: "var(--weight-bold)",
             lineHeight: "var(--leading-snug)",
-            color: TEXT,
+            color: "var(--text-primary)",
           }}
         >
           {isEditing
@@ -780,10 +791,10 @@ function LogModalBody({
             : "Candling Journal"}
         </DialogTitle>
         <DialogDescription className="text-xs font-medium space-y-0.5">
-          <span className="block" style={{ color: TEXT }}>
+          <span className="block" style={{ color: "var(--text-primary)" }}>
             {chamberName}
           </span>
-          <span className="block" style={{ color: MUTED }}>
+          <span className="block" style={{ color: "var(--text-secondary)" }}>
             {modeName}
           </span>
         </DialogDescription>
@@ -799,25 +810,34 @@ function LogModalBody({
                 <div
                   className="flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2"
                   style={{
-                    borderColor: active ? RUST : completed ? OK.fg : BORDER,
-                    backgroundColor: active
-                      ? `${RUST}12`
+                    borderColor: active
+                      ? "var(--brand-primary)"
                       : completed
-                        ? OK.bg
-                        : SURFACE,
+                        ? "var(--status-success-fg)"
+                        : "var(--border-default)",
+                    backgroundColor: active
+                      ? "color-mix(in srgb, var(--brand-primary) 7%, transparent)"
+                      : completed
+                        ? "var(--status-success-bg)"
+                        : "var(--surface-card)",
                   }}
                 >
                   <span
                     className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
                     style={{
                       backgroundColor: active
-                        ? RUST
+                        ? "var(--brand-primary)"
                         : completed
-                          ? OK.fg
+                          ? "var(--status-success-fg)"
                           : "transparent",
                       border:
-                        active || completed ? "none" : `1px solid ${BORDER}`,
-                      color: active || completed ? "#FFFFFF" : MUTED,
+                        active || completed
+                          ? "none"
+                          : `1px solid var(--border-default)`,
+                      color:
+                        active || completed
+                          ? "var(--surface-card)"
+                          : "var(--text-secondary)",
                     }}
                     aria-hidden="true"
                   >
@@ -826,9 +846,11 @@ function LogModalBody({
                   <span
                     className="min-w-0"
                     style={{
-                      color: active ? RUST : TEXT,
-                      fontSize: 11,
-                      fontWeight: 700,
+                      color: active
+                        ? "var(--brand-primary)"
+                        : "var(--text-primary)",
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
                       lineHeight: 1.2,
                     }}
                   >
@@ -846,11 +868,21 @@ function LogModalBody({
           ref={stageHeadingRef}
           tabIndex={-1}
           className="focus-visible:outline-none"
-          style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}
+          style={{
+            color: "var(--text-primary)",
+            fontSize: "var(--type-body)",
+            fontWeight: "var(--weight-bold)",
+          }}
         >
           {stage}. {LOG_STAGES[stage - 1].label}
         </h3>
-        <p className="mt-0.5" style={{ color: MUTED, fontSize: 12 }}>
+        <p
+          className="mt-0.5"
+          style={{
+            color: "var(--text-secondary)",
+            fontSize: "var(--type-caption)",
+          }}
+        >
           {LOG_STAGES[stage - 1].description}
         </p>
       </div>
@@ -858,24 +890,37 @@ function LogModalBody({
       <div className="space-y-4 px-5 pb-1">
         {stage === 1 && (
           <div>
-            <Label style={{ fontSize: 13, color: TEXT }}>Checkpoint</Label>
+            <Label
+              style={{
+                fontSize: "var(--type-body-sm)",
+                color: "var(--text-primary)",
+              }}
+            >
+              Checkpoint
+            </Label>
             {isEditing ? (
               <div
                 className="mt-1.5 flex items-center justify-between rounded-xl px-3 py-2.5"
                 style={{
-                  border: `1px solid ${BORDER}`,
-                  backgroundColor: SURFACE,
+                  border: `1px solid var(--border-default)`,
+                  backgroundColor: "var(--surface-card)",
                 }}
               >
-                <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>
+                <span
+                  style={{
+                    fontSize: "var(--type-body)",
+                    fontWeight: "var(--weight-semibold)",
+                    color: "var(--text-primary)",
+                  }}
+                >
                   {target?.label ?? `Day ${form.targetDay} Candling`} (Day{" "}
                   {form.targetDay})
                 </span>
                 <span
                   className="rounded-full px-2 py-0.5"
                   style={{
-                    fontSize: 11,
-                    fontWeight: 700,
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-bold)",
                     backgroundColor: "var(--border-subtle)",
                     color: "var(--text-muted)",
                   }}
@@ -900,8 +945,8 @@ function LogModalBody({
                 <SelectTrigger
                   className="mt-1.5 rounded-xl"
                   style={{
-                    borderColor: INPUT_BORDER,
-                    backgroundColor: SURFACE,
+                    borderColor: "var(--input-border)",
+                    backgroundColor: "var(--surface-card)",
                   }}
                 >
                   <SelectValue />
@@ -921,12 +966,21 @@ function LogModalBody({
               <div className="mt-3">
                 <Label
                   htmlFor="custom-day-input"
-                  style={{ fontSize: 13, color: TEXT }}
+                  style={{
+                    fontSize: "var(--type-body-sm)",
+                    color: "var(--text-primary)",
+                  }}
                 >
                   Day Number
                 </Label>
                 <div className="mt-1.5 flex items-center gap-2">
-                  <span style={{ fontSize: 14, fontWeight: 600, color: MUTED }}>
+                  <span
+                    style={{
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-semibold)",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
                     Day
                   </span>
                   <Input
@@ -952,9 +1006,9 @@ function LogModalBody({
                     style={{
                       borderColor: customDayError
                         ? "var(--status-danger-fg)"
-                        : INPUT_BORDER,
-                      backgroundColor: SURFACE,
-                      color: TEXT,
+                        : "var(--input-border)",
+                      backgroundColor: "var(--surface-card)",
+                      color: "var(--text-primary)",
                     }}
                   />
                 </div>
@@ -962,9 +1016,9 @@ function LogModalBody({
                   <p
                     className="mt-1.5 flex items-center gap-1"
                     style={{
-                      fontSize: 12,
+                      fontSize: "var(--type-caption)",
                       color: "var(--status-danger-fg)",
-                      fontWeight: 600,
+                      fontWeight: "var(--weight-semibold)",
                     }}
                   >
                     <AlertCircle size={13} /> Day must be between 1 and{" "}
@@ -997,10 +1051,21 @@ function LogModalBody({
         {/* Tally inputs */}
         {stage === 2 && (
           <div>
-            <Label style={{ fontSize: 13, color: TEXT }}>
+            <Label
+              style={{
+                fontSize: "var(--type-body-sm)",
+                color: "var(--text-primary)",
+              }}
+            >
               {isLaterCheckpoint ? "Development tally" : "Fertility tally"}
             </Label>
-            <p className="mt-1" style={{ fontSize: 12, color: MUTED }}>
+            <p
+              className="mt-1"
+              style={{
+                fontSize: "var(--type-caption)",
+                color: "var(--text-secondary)",
+              }}
+            >
               {isLaterCheckpoint
                 ? "Classify every egg as developing, clear, stopped developing, or uncertain."
                 : "Record the first candling result for each egg."}
@@ -1011,8 +1076,8 @@ function LogModalBody({
               aria-label="Egg category counts"
             >
               <div
-                className="flex items-center justify-between px-3 text-[11px] font-bold uppercase tracking-wide"
-                style={{ color: MUTED }}
+                className="flex items-center justify-between px-3 text-[var(--type-label)] font-bold uppercase tracking-wide"
+                style={{ color: "var(--text-secondary)" }}
               >
                 <span>Category</span>
                 <span>Eggs</span>
@@ -1021,12 +1086,19 @@ function LogModalBody({
                 <div
                   key={f.key}
                   className="flex min-h-14 items-center justify-between gap-4 rounded-xl border px-3.5 py-2.5"
-                  style={{ backgroundColor: SURFACE, borderColor: BORDER }}
+                  style={{
+                    backgroundColor: "var(--surface-card)",
+                    borderColor: "var(--border-default)",
+                  }}
                 >
                   <label
                     htmlFor={`tally-${f.key}`}
                     className="min-w-0 leading-5"
-                    style={{ color: f.color, fontSize: 13, fontWeight: 700 }}
+                    style={{
+                      color: f.color,
+                      fontSize: "var(--type-body-sm)",
+                      fontWeight: "var(--weight-bold)",
+                    }}
                   >
                     {f.label}
                   </label>
@@ -1050,9 +1122,9 @@ function LogModalBody({
                     style={{
                       borderColor: isTallyOverCapacity
                         ? "var(--status-danger-fg)"
-                        : INPUT_BORDER,
-                      backgroundColor: SURFACE,
-                      color: TEXT,
+                        : "var(--input-border)",
+                      backgroundColor: "var(--surface-card)",
+                      color: "var(--text-primary)",
                     }}
                   />
                 </div>
@@ -1107,12 +1179,12 @@ function LogModalBody({
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full cursor-pointer rounded-lg transition-colors hover:bg-[#FFF8E1] active:bg-[#FEF3C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                    className="w-full cursor-pointer rounded-lg transition-colors hover:bg-[var(--surface-honey)] active:bg-[var(--status-warning-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                     onClick={countRemainingAsUncertain}
                     style={{
-                      borderColor: WARN.fg,
-                      color: WARN.fg,
-                      fontSize: 12,
+                      borderColor: "var(--status-warning-fg)",
+                      color: "var(--status-warning-fg)",
+                      fontSize: "var(--type-caption)",
                     }}
                   >
                     Count remaining as uncertain
@@ -1143,7 +1215,12 @@ function LogModalBody({
         {stage === 3 && (
           <>
             <div>
-              <Label style={{ fontSize: 13, color: TEXT }}>
+              <Label
+                style={{
+                  fontSize: "var(--type-body-sm)",
+                  color: "var(--text-primary)",
+                }}
+              >
                 Development observed
               </Label>
               <div className="mt-1.5 flex flex-wrap gap-2">
@@ -1166,11 +1243,15 @@ function LogModalBody({
                       aria-pressed={on}
                       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                       style={{
-                        backgroundColor: on ? OK.bg : SURFACE,
-                        border: `1px solid ${on ? OK.fg : BORDER}`,
-                        color: on ? "#166534" : MUTED,
-                        fontSize: 12,
-                        fontWeight: 600,
+                        backgroundColor: on
+                          ? "var(--status-success-bg)"
+                          : "var(--surface-card)",
+                        border: `1px solid ${on ? "var(--status-success-fg)" : "var(--border-default)"}`,
+                        color: on
+                          ? "var(--status-success-deep)"
+                          : "var(--text-secondary)",
+                        fontSize: "var(--type-caption)",
+                        fontWeight: "var(--weight-semibold)",
                         cursor: "pointer",
                       }}
                     >
@@ -1188,7 +1269,13 @@ function LogModalBody({
 
             {/* Notes */}
             <div>
-              <Label htmlFor="lf-note" style={{ fontSize: 13, color: TEXT }}>
+              <Label
+                htmlFor="lf-note"
+                style={{
+                  fontSize: "var(--type-body-sm)",
+                  color: "var(--text-primary)",
+                }}
+              >
                 Notes
               </Label>
               <textarea
@@ -1199,17 +1286,24 @@ function LogModalBody({
                 rows={3}
                 className="mt-1.5 w-full resize-none rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                 style={{
-                  border: `1px solid ${INPUT_BORDER}`,
-                  backgroundColor: SURFACE,
-                  fontSize: 14,
-                  color: TEXT,
+                  border: `1px solid var(--input-border)`,
+                  backgroundColor: "var(--surface-card)",
+                  fontSize: "var(--type-control-value)",
+                  color: "var(--text-primary)",
                 }}
               />
             </div>
 
             {/* Photos */}
             <div>
-              <Label style={{ fontSize: 13, color: TEXT }}>Photos</Label>
+              <Label
+                style={{
+                  fontSize: "var(--type-body-sm)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                Photos
+              </Label>
               <button
                 type="button"
                 aria-label="Add candling photos"
@@ -1222,16 +1316,34 @@ function LogModalBody({
                 onDrop={onDrop}
                 className="mt-1.5 flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                 style={{
-                  border: `1.5px dashed ${dragging ? RUST : "#C9B182"}`,
-                  backgroundColor: dragging ? `${RUST}0A` : SURFACE,
-                  transition: "border-color 0.15s, background-color 0.15s",
+                  border: `1.5px dashed ${dragging ? "var(--brand-primary)" : "var(--border-accent)"}`,
+                  backgroundColor: dragging
+                    ? "color-mix(in srgb, var(--brand-primary) 4%, transparent)"
+                    : "var(--surface-card)",
+                  transition: "var(--transition-interactive)",
                 }}
               >
-                <Camera size={20} color={dragging ? RUST : "#9E8B72"} />
-                <span style={{ color: TEXT, fontSize: 13, fontWeight: 600 }}>
+                <Camera
+                  size={20}
+                  color={
+                    dragging ? "var(--brand-primary)" : "var(--icon-earth)"
+                  }
+                />
+                <span
+                  style={{
+                    color: "var(--text-primary)",
+                    fontSize: "var(--type-body-sm)",
+                    fontWeight: "var(--weight-semibold)",
+                  }}
+                >
                   Add photos from candling
                 </span>
-                <span style={{ color: MUTED, fontSize: 12 }}>
+                <span
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontSize: "var(--type-caption)",
+                  }}
+                >
                   Click or drag &amp; drop
                 </span>
               </button>
@@ -1254,7 +1366,7 @@ function LogModalBody({
                         style={{
                           width: 60,
                           height: 60,
-                          border: `1px solid ${BORDER}`,
+                          border: `1px solid var(--border-default)`,
                         }}
                       />
                       <button
@@ -1309,7 +1421,10 @@ function LogModalBody({
 
       <div
         className="sticky bottom-0 px-5 py-4"
-        style={{ backgroundColor: CARD, borderTop: `1px solid ${BORDER}` }}
+        style={{
+          backgroundColor: "var(--surface-subtle)",
+          borderTop: `1px solid var(--border-default)`,
+        }}
       >
         <div className="flex items-center justify-between gap-2">
           <Button
@@ -1333,8 +1448,8 @@ function LogModalBody({
             <Button
               className="rounded-full"
               style={{
-                backgroundColor: RUST,
-                color: "#fff",
+                backgroundColor: "var(--brand-primary)",
+                color: "var(--on-brand)",
                 opacity: canAdvance ? 1 : 0.5,
               }}
               disabled={!canAdvance}
@@ -1346,8 +1461,8 @@ function LogModalBody({
             <Button
               className="rounded-full"
               style={{
-                backgroundColor: RUST,
-                color: "#fff",
+                backgroundColor: "var(--brand-primary)",
+                color: "var(--on-brand)",
                 opacity: isSaveDisabled ? 0.5 : 1,
               }}
               disabled={isSaveDisabled || isSaving}
@@ -1371,11 +1486,18 @@ function LogModalBody({
       >
         <AlertDialogContent
           className="rounded-2xl border-[var(--border-default)]"
-          style={{ backgroundColor: CARD, color: TEXT }}
+          style={{
+            backgroundColor: "var(--surface-subtle)",
+            color: "var(--text-primary)",
+          }}
         >
           <AlertDialogHeader className="text-left">
             <AlertDialogTitle
-              style={{ color: TEXT, fontSize: 18, fontWeight: 700 }}
+              style={{
+                color: "var(--text-primary)",
+                fontSize: "var(--type-heading-md)",
+                fontWeight: "var(--weight-bold)",
+              }}
             >
               Save without notes or photos?
             </AlertDialogTitle>
@@ -1393,13 +1515,19 @@ function LogModalBody({
           <AlertDialogFooter>
             <AlertDialogCancel
               className="rounded-full"
-              style={{ borderColor: BORDER, color: MUTED }}
+              style={{
+                borderColor: "var(--border-default)",
+                color: "var(--text-secondary)",
+              }}
             >
               Go back
             </AlertDialogCancel>
             <AlertDialogAction
               className="rounded-full"
-              style={{ backgroundColor: RUST, color: "#FFFFFF" }}
+              style={{
+                backgroundColor: "var(--brand-primary)",
+                color: "var(--surface-card)",
+              }}
               disabled={isSaving}
               aria-busy={isSaving}
               onClick={(event) => {
@@ -1636,7 +1764,10 @@ export function CandlingJournalTab({
       ),
     });
 
-  const rustBtn = { backgroundColor: RUST, color: "#fff" };
+  const rustBtn = {
+    backgroundColor: "var(--brand-primary)",
+    color: "var(--on-brand)",
+  };
 
   return (
     <div className="space-y-5">
@@ -1649,7 +1780,10 @@ export function CandlingJournalTab({
           candled={effectiveCandled}
           labelSize={9}
         />
-        <div className="my-4" style={{ height: 1, backgroundColor: BORDER }} />
+        <div
+          className="my-4"
+          style={{ height: 1, backgroundColor: "var(--border-default)" }}
+        />
         {latestCandlingEntry ? (
           <div className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1661,7 +1795,7 @@ export function CandlingJournalTab({
                     fontWeight: "var(--weight-extrabold)",
                     letterSpacing: "var(--tracking-label)",
                     lineHeight: "var(--leading-snug)",
-                    color: RUST,
+                    color: "var(--brand-primary)",
                     textTransform: "uppercase",
                   }}
                 >
@@ -1669,23 +1803,29 @@ export function CandlingJournalTab({
                 </p>
                 <p
                   style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: TEXT,
+                    fontSize: "var(--type-heading-sm)",
+                    fontWeight: "var(--weight-bold)",
+                    color: "var(--text-primary)",
                     marginTop: 2,
                   }}
                 >
                   Day {latestCandlingEntry.day} · {latestCandlingEntry.label}
                 </p>
-                <p style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>
+                <p
+                  style={{
+                    fontSize: "var(--type-caption)",
+                    color: "var(--text-secondary)",
+                    marginTop: 1,
+                  }}
+                >
                   Recorded {fmtTimestamp(latestCandlingEntry.date)}
                 </p>
               </div>
               <div
                 className="rounded-xl px-3.5 py-2 text-right"
                 style={{
-                  backgroundColor: "#F5EFE6",
-                  border: `1px solid ${BORDER}`,
+                  backgroundColor: "var(--surface-track)",
+                  border: `1px solid var(--border-default)`,
                 }}
               >
                 <p
@@ -1695,7 +1835,7 @@ export function CandlingJournalTab({
                     fontWeight: "var(--weight-extrabold)",
                     letterSpacing: "var(--tracking-label)",
                     lineHeight: "var(--leading-snug)",
-                    color: MUTED,
+                    color: "var(--text-secondary)",
                     textTransform: "uppercase",
                   }}
                 >
@@ -1703,9 +1843,9 @@ export function CandlingJournalTab({
                 </p>
                 <p
                   style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: TEXT,
+                    fontSize: "var(--type-body-sm)",
+                    fontWeight: "var(--weight-bold)",
+                    color: "var(--text-primary)",
                     marginTop: 1,
                   }}
                 >
@@ -1717,7 +1857,7 @@ export function CandlingJournalTab({
                       fontSize: "var(--type-heading-sm)",
                       fontWeight: "var(--weight-extrabold)",
                       lineHeight: "var(--leading-tight)",
-                      color: RUST,
+                      color: "var(--brand-primary)",
                     }}
                   >
                     {summaryFertilityRate !== null
@@ -1735,15 +1875,15 @@ export function CandlingJournalTab({
                   <div
                     className="rounded-xl p-2.5"
                     style={{
-                      backgroundColor: "#F0FDF4",
-                      border: "1px solid #BBF7D0",
+                      backgroundColor: "var(--surface-mint)",
+                      border: "1px solid var(--border-mint)",
                     }}
                   >
                     <span
                       style={{
-                        color: "#15803D",
-                        fontSize: 11,
-                        fontWeight: 700,
+                        color: "var(--status-success-fg)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -1755,13 +1895,19 @@ export function CandlingJournalTab({
                         fontSize: "var(--type-page-title)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-tight)",
-                        color: "#15803D",
+                        color: "var(--status-success-fg)",
                         marginTop: 2,
                       }}
                     >
                       {summaryDeveloping}
                     </p>
-                    <p style={{ color: "#166534", fontSize: 11, marginTop: 2 }}>
+                    <p
+                      style={{
+                        color: "var(--status-success-deep)",
+                        fontSize: "var(--type-label)",
+                        marginTop: 2,
+                      }}
+                    >
                       Developing embryos
                     </p>
                   </div>
@@ -1769,15 +1915,20 @@ export function CandlingJournalTab({
                     className="rounded-xl p-2.5"
                     style={{
                       backgroundColor:
-                        summaryStopped > 0 ? "#FEF2F2" : "#F8FAF9",
-                      border: `1px solid ${summaryStopped > 0 ? "#FECACA" : "#DCE7E2"}`,
+                        summaryStopped > 0
+                          ? "var(--surface-blush)"
+                          : "var(--surface-mist)",
+                      border: `1px solid ${summaryStopped > 0 ? "var(--border-blush)" : "var(--border-mist)"}`,
                     }}
                   >
                     <span
                       style={{
-                        color: summaryStopped > 0 ? "#B91C1C" : "#64748B",
-                        fontSize: 11,
-                        fontWeight: 700,
+                        color:
+                          summaryStopped > 0
+                            ? "var(--status-danger-fg)"
+                            : "var(--text-slate-cool)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -1789,7 +1940,10 @@ export function CandlingJournalTab({
                         fontSize: "var(--type-page-title)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-tight)",
-                        color: summaryStopped > 0 ? "#B91C1C" : "#475569",
+                        color:
+                          summaryStopped > 0
+                            ? "var(--status-danger-fg)"
+                            : "var(--text-slate-cool)",
                         marginTop: 2,
                       }}
                     >
@@ -1797,8 +1951,11 @@ export function CandlingJournalTab({
                     </p>
                     <p
                       style={{
-                        color: summaryStopped > 0 ? "#991B1B" : "#64748B",
-                        fontSize: 11,
+                        color:
+                          summaryStopped > 0
+                            ? "var(--status-danger-strong)"
+                            : "var(--text-slate-cool)",
+                        fontSize: "var(--type-label)",
                         marginTop: 2,
                       }}
                     >
@@ -1808,15 +1965,15 @@ export function CandlingJournalTab({
                   <div
                     className="rounded-xl p-2.5"
                     style={{
-                      backgroundColor: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
+                      backgroundColor: "var(--surface-slate-light)",
+                      border: "1px solid var(--border-slate-light)",
                     }}
                   >
                     <span
                       style={{
-                        color: "#475569",
-                        fontSize: 11,
-                        fontWeight: 700,
+                        color: "var(--text-slate-soft)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -1828,28 +1985,34 @@ export function CandlingJournalTab({
                         fontSize: "var(--type-page-title)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-tight)",
-                        color: "#334155",
+                        color: "var(--text-slate)",
                         marginTop: 2,
                       }}
                     >
                       {summaryClear}
                     </p>
-                    <p style={{ color: "#64748B", fontSize: 11, marginTop: 2 }}>
+                    <p
+                      style={{
+                        color: "var(--text-slate-cool)",
+                        fontSize: "var(--type-label)",
+                        marginTop: 2,
+                      }}
+                    >
                       Likely infertile
                     </p>
                   </div>
                   <div
                     className="rounded-xl p-2.5"
                     style={{
-                      backgroundColor: "#FFFBEB",
-                      border: "1px solid #FDE68A",
+                      backgroundColor: "var(--surface-warn-tile)",
+                      border: "1px solid var(--border-amber-soft)",
                     }}
                   >
                     <span
                       style={{
-                        color: "#B45309",
-                        fontSize: 11,
-                        fontWeight: 700,
+                        color: "var(--status-warning-fg)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -1861,13 +2024,19 @@ export function CandlingJournalTab({
                         fontSize: "var(--type-page-title)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-tight)",
-                        color: "#B45309",
+                        color: "var(--status-warning-fg)",
                         marginTop: 2,
                       }}
                     >
                       {summaryUncertain}
                     </p>
-                    <p style={{ color: "#92400E", fontSize: 11, marginTop: 2 }}>
+                    <p
+                      style={{
+                        color: "var(--text-amber-deep)",
+                        fontSize: "var(--type-label)",
+                        marginTop: 2,
+                      }}
+                    >
                       {summaryUncertain > 0
                         ? pendingCheckpoint
                           ? `Recheck Day ${pendingCheckpoint.day}`
@@ -1881,15 +2050,15 @@ export function CandlingJournalTab({
                   <div
                     className="rounded-xl p-2.5"
                     style={{
-                      backgroundColor: "#F0FDF4",
-                      border: "1px solid #BBF7D0",
+                      backgroundColor: "var(--surface-mint)",
+                      border: "1px solid var(--border-mint)",
                     }}
                   >
                     <span
                       style={{
-                        color: "#15803D",
-                        fontSize: 11,
-                        fontWeight: 700,
+                        color: "var(--status-success-fg)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -1901,28 +2070,34 @@ export function CandlingJournalTab({
                         fontSize: "var(--type-page-title)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-tight)",
-                        color: "#15803D",
+                        color: "var(--status-success-fg)",
                         marginTop: 2,
                       }}
                     >
                       {latestCandlingEntry.fertile}
                     </p>
-                    <p style={{ color: "#166534", fontSize: 11, marginTop: 2 }}>
+                    <p
+                      style={{
+                        color: "var(--status-success-deep)",
+                        fontSize: "var(--type-label)",
+                        marginTop: 2,
+                      }}
+                    >
                       Development observed
                     </p>
                   </div>
                   <div
                     className="rounded-xl p-2.5"
                     style={{
-                      backgroundColor: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
+                      backgroundColor: "var(--surface-slate-light)",
+                      border: "1px solid var(--border-slate-light)",
                     }}
                   >
                     <span
                       style={{
-                        color: "#475569",
-                        fontSize: 11,
-                        fontWeight: 700,
+                        color: "var(--text-slate-soft)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -1934,28 +2109,34 @@ export function CandlingJournalTab({
                         fontSize: "var(--type-page-title)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-tight)",
-                        color: "#334155",
+                        color: "var(--text-slate)",
                         marginTop: 2,
                       }}
                     >
                       {latestCandlingEntry.clear}
                     </p>
-                    <p style={{ color: "#64748B", fontSize: 11, marginTop: 2 }}>
+                    <p
+                      style={{
+                        color: "var(--text-slate-cool)",
+                        fontSize: "var(--type-label)",
+                        marginTop: 2,
+                      }}
+                    >
                       Likely infertile
                     </p>
                   </div>
                   <div
                     className="rounded-xl p-2.5"
                     style={{
-                      backgroundColor: "#FFFBEB",
-                      border: "1px solid #FDE68A",
+                      backgroundColor: "var(--surface-warn-tile)",
+                      border: "1px solid var(--border-amber-soft)",
                     }}
                   >
                     <span
                       style={{
-                        color: "#B45309",
-                        fontSize: 11,
-                        fontWeight: 700,
+                        color: "var(--status-warning-fg)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -1967,13 +2148,19 @@ export function CandlingJournalTab({
                         fontSize: "var(--type-page-title)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-tight)",
-                        color: "#B45309",
+                        color: "var(--status-warning-fg)",
                         marginTop: 2,
                       }}
                     >
                       {latestCandlingEntry.uncertain}
                     </p>
-                    <p style={{ color: "#92400E", fontSize: 11, marginTop: 2 }}>
+                    <p
+                      style={{
+                        color: "var(--text-amber-deep)",
+                        fontSize: "var(--type-label)",
+                        marginTop: 2,
+                      }}
+                    >
                       {latestCandlingEntry.uncertain > 0
                         ? pendingCheckpoint
                           ? `Recheck Day ${pendingCheckpoint.day}`
@@ -1984,15 +2171,15 @@ export function CandlingJournalTab({
                   <div
                     className="rounded-xl p-2.5"
                     style={{
-                      backgroundColor: "#F5EFE6",
+                      backgroundColor: "var(--surface-track)",
                       border: "1px solid var(--border-subtle)",
                     }}
                   >
                     <span
                       style={{
                         color: "var(--text-muted)",
-                        fontSize: 11,
-                        fontWeight: 700,
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -2004,7 +2191,7 @@ export function CandlingJournalTab({
                         fontSize: "var(--type-page-title)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-tight)",
-                        color: TEXT,
+                        color: "var(--text-primary)",
                         marginTop: 2,
                       }}
                     >
@@ -2013,7 +2200,7 @@ export function CandlingJournalTab({
                     <p
                       style={{
                         color: "var(--text-muted)",
-                        fontSize: 11,
+                        fontSize: "var(--type-label)",
                         marginTop: 2,
                       }}
                     >
@@ -2026,7 +2213,7 @@ export function CandlingJournalTab({
 
             <div
               className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
-              style={{ borderColor: BORDER }}
+              style={{ borderColor: "var(--border-default)" }}
             >
               <div>
                 <p
@@ -2036,14 +2223,20 @@ export function CandlingJournalTab({
                     fontWeight: "var(--weight-extrabold)",
                     letterSpacing: "var(--tracking-label)",
                     lineHeight: "var(--leading-snug)",
-                    color: MUTED,
+                    color: "var(--text-secondary)",
                     textTransform: "uppercase",
                   }}
                 >
                   {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>
+                  <span
+                    style={{
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-bold)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
                     {pendingCheckpoint
                       ? `${pendingCheckpoint.label} · Day ${pendingCheckpoint.day}`
                       : "All scheduled checks completed"}
@@ -2064,8 +2257,8 @@ export function CandlingJournalTab({
                             : checkpointDistance === 0
                               ? "var(--status-warning-fg)"
                               : "var(--text-secondary)",
-                        fontSize: 11,
-                        fontWeight: 700,
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
                         letterSpacing: "0.02em",
                       }}
                     >
@@ -2078,14 +2271,17 @@ export function CandlingJournalTab({
                 <Button
                   onClick={openNewInspection}
                   className="w-full rounded-full sm:w-auto"
-                  style={{ ...rustBtn, fontSize: 13 }}
+                  style={{ ...rustBtn, fontSize: "var(--type-body-sm)" }}
                 >
                   <Plus size={14} /> Log Inspection
                 </Button>
               ) : (
                 <p
                   className="w-full sm:w-auto sm:text-right"
-                  style={{ color: MUTED, fontSize: 12 }}
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontSize: "var(--type-caption)",
+                  }}
                 >
                   Start an incubation cycle to log inspections.
                 </p>
@@ -2102,14 +2298,20 @@ export function CandlingJournalTab({
                   fontWeight: "var(--weight-extrabold)",
                   letterSpacing: "var(--tracking-label)",
                   lineHeight: "var(--leading-snug)",
-                  color: MUTED,
+                  color: "var(--text-secondary)",
                   textTransform: "uppercase",
                 }}
               >
                 {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-2">
-                <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>
+                <span
+                  style={{
+                    fontSize: "var(--type-body)",
+                    fontWeight: "var(--weight-bold)",
+                    color: "var(--text-primary)",
+                  }}
+                >
                   {pendingCheckpoint
                     ? `${pendingCheckpoint.label} · Day ${pendingCheckpoint.day}`
                     : "Candling checks scheduled"}
@@ -2130,8 +2332,8 @@ export function CandlingJournalTab({
                           : checkpointDistance === 0
                             ? "var(--status-warning-fg)"
                             : "var(--text-secondary)",
-                      fontSize: 11,
-                      fontWeight: 700,
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
                       letterSpacing: "0.02em",
                     }}
                   >
@@ -2145,14 +2347,21 @@ export function CandlingJournalTab({
                 onClick={openNewInspection}
                 disabled={isUpdating}
                 className="w-full rounded-full sm:w-auto"
-                style={{ ...rustBtn, fontSize: 13, fontWeight: 700 }}
+                style={{
+                  ...rustBtn,
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-bold)",
+                }}
               >
                 <Plus size={14} /> Log Inspection
               </Button>
             ) : (
               <p
                 className="w-full sm:w-auto sm:text-right"
-                style={{ color: MUTED, fontSize: 12 }}
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "var(--type-caption)",
+                }}
               >
                 Start an incubation cycle to log inspections.
               </p>
@@ -2186,8 +2395,8 @@ export function CandlingJournalTab({
           <div className="flex items-center justify-between gap-3">
             <p
               style={{
-                fontSize: 18,
-                fontWeight: 600,
+                fontSize: "var(--type-heading-md)",
+                fontWeight: "var(--weight-semibold)",
                 color: "var(--text-primary)",
               }}
             >
@@ -2206,13 +2415,13 @@ export function CandlingJournalTab({
                   top: 0,
                   left: "50%",
                   transform: "translateX(-50%)",
-                  fontSize: 11,
-                  fontWeight: 700,
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-bold)",
                   textTransform: "uppercase",
-                  letterSpacing: "0.05em",
+                  letterSpacing: "var(--tracking-label)",
                   color: "var(--text-muted)",
                   lineHeight: "1",
-                  zIndex: 20,
+                  zIndex: "var(--z-overlay)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -2243,11 +2452,11 @@ export function CandlingJournalTab({
                         style={{
                           width: 32,
                           height: 32,
-                          backgroundColor: RUST_NODE,
-                          color: "#FFFFFF",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          boxShadow: `0 0 0 3px ${BG}`,
+                          backgroundColor: "var(--brand-primary)",
+                          color: "var(--surface-card)",
+                          fontSize: "var(--type-body-sm)",
+                          fontWeight: "var(--weight-bold)",
+                          boxShadow: `0 0 0 3px var(--surface-app)`,
                         }}
                       >
                         {formatNodeDay(n.day)}
@@ -2271,8 +2480,8 @@ export function CandlingJournalTab({
                           }
                           className="flex min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2"
                           style={{
-                            fontSize: 16,
-                            fontWeight: 700,
+                            fontSize: "var(--type-heading-sm)",
+                            fontWeight: "var(--weight-bold)",
                             color: "var(--text-primary)",
                           }}
                           aria-expanded={expandedDays.has(n.day)}
@@ -2299,7 +2508,10 @@ export function CandlingJournalTab({
                         <div className="flex items-center gap-1.5">
                           <span
                             className="whitespace-nowrap mr-3"
-                            style={{ fontSize: 13, color: "#6E6259" }}
+                            style={{
+                              fontSize: "var(--type-body-sm)",
+                              color: "var(--text-farm)",
+                            }}
                           >
                             {fmtTimestamp(n.entry.date)}
                           </span>
@@ -2309,7 +2521,7 @@ export function CandlingJournalTab({
                               setEditingEntry(n.entry);
                               setShowLogForm(true);
                             }}
-                            className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[#FFF5F2] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                            className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                             aria-label={`Edit entry for Day ${n.entry.day}`}
                             title="Edit Inspection"
                           >
@@ -2318,7 +2530,7 @@ export function CandlingJournalTab({
                           <button
                             type="button"
                             onClick={() => setEntryToDelete(n.entry)}
-                            className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-[#A8A29E] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                            className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-[var(--text-faint)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                             aria-label={`Delete entry for Day ${n.entry.day}`}
                             title="Delete Journal Entry"
                           >
@@ -2362,16 +2574,16 @@ export function CandlingJournalTab({
                             style={{
                               width: 32,
                               height: 32,
-                              backgroundColor: "#FFFFFF",
+                              backgroundColor: "var(--surface-card)",
                               border: isDue
                                 ? "2px solid var(--status-warning-fg)"
                                 : "2px solid var(--border-subtle)",
                               color: isDue
                                 ? "var(--status-warning-fg)"
                                 : "var(--text-muted)",
-                              fontSize: 13,
-                              fontWeight: 700,
-                              boxShadow: `0 0 0 3px ${BG}`,
+                              fontSize: "var(--type-body-sm)",
+                              fontWeight: "var(--weight-bold)",
+                              boxShadow: `0 0 0 3px var(--surface-app)`,
                             }}
                           >
                             {formatNodeDay(n.day)}
@@ -2383,8 +2595,8 @@ export function CandlingJournalTab({
                             <p
                               className="flex flex-wrap items-center gap-1.5"
                               style={{
-                                fontSize: 16,
-                                fontWeight: 700,
+                                fontSize: "var(--type-heading-sm)",
+                                fontWeight: "var(--weight-bold)",
                                 color: "var(--text-primary)",
                               }}
                             >
@@ -2399,8 +2611,8 @@ export function CandlingJournalTab({
                           ) : (
                             <p
                               style={{
-                                fontSize: 13,
-                                fontWeight: 600,
+                                fontSize: "var(--type-body-sm)",
+                                fontWeight: "var(--weight-semibold)",
                                 color: "var(--text-muted)",
                               }}
                             >
@@ -2432,21 +2644,25 @@ export function CandlingJournalTab({
               onOpenChange={(open) => !open && setEntryToDelete(null)}
             >
               <DialogContent
-                className="max-w-[400px] w-[90vw] p-6 rounded-2xl bg-[var(--surface-card)] shadow-xl border border-[var(--border-subtle)] [&>[data-slot=dialog-close]]:hidden"
-                style={{ borderRadius: 16 }}
+                className="max-w-[var(--dialog-width-narrow)] w-[90vw] p-6 rounded-2xl bg-[var(--surface-card)] shadow-xl border border-[var(--border-subtle)] [&>[data-slot=dialog-close]]:hidden"
+                style={{ borderRadius: "var(--radius-card)" }}
               >
                 <DialogHeader className="gap-2 text-left">
                   <DialogTitle
                     style={{
-                      fontSize: 18,
-                      fontWeight: 700,
+                      fontSize: "var(--type-heading-md)",
+                      fontWeight: "var(--weight-bold)",
                       color: "var(--text-primary)",
                     }}
                   >
                     Delete Journal Entry?
                   </DialogTitle>
                   <DialogDescription
-                    style={{ fontSize: 13, color: "#525252", lineHeight: 1.5 }}
+                    style={{
+                      fontSize: "var(--type-body-sm)",
+                      color: "var(--text-neutral-deep)",
+                      lineHeight: 1.5,
+                    }}
                   >
                     Are you sure you want to delete this inspection log for Day{" "}
                     {entryToDelete?.day}? This will recalculate the cycle
@@ -2457,7 +2673,7 @@ export function CandlingJournalTab({
                   <Button
                     variant="outline"
                     onClick={() => setEntryToDelete(null)}
-                    className="rounded-xl border-[var(--border-subtle)] text-[#44403C] hover:bg-stone-50"
+                    className="rounded-xl border-[var(--border-subtle)] text-[var(--text-note)] hover:bg-[var(--surface-paper)]"
                   >
                     Cancel
                   </Button>

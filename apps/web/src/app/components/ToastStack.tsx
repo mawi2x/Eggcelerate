@@ -2,9 +2,9 @@ import { Check, Info } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // Dark charcoal surface from the toast spec.
-const TOAST_BG = "#1A1510";
-const SAGE = "#93B58C";
-const NEUTRAL = "#C9BEB0";
+const TOAST_BG = "var(--toast-bg)";
+const SAGE = "var(--toast-success)";
+const NEUTRAL = "var(--toast-neutral)";
 
 export interface ToastItem {
   id: number;
@@ -76,7 +76,7 @@ export function ToastStack({
             className="pointer-events-auto flex max-w-[calc(100vw-2rem)] cursor-pointer items-center gap-2.5 rounded-xl px-4 py-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:max-w-[320px]"
             style={{
               backgroundColor: TOAST_BG,
-              boxShadow: "0 8px 16px rgba(26,21,16,0.32)",
+              boxShadow: "var(--shadow-toast)",
               animation: "eggcelerate-toast-in 220ms ease-out",
             }}
             aria-label={`Dismiss notification: ${t.message}`}
@@ -91,7 +91,13 @@ export function ToastStack({
                 <Info size={17} />
               )}
             </span>
-            <span style={{ color: "#F5F0E8", fontSize: 13, fontWeight: 600 }}>
+            <span
+              style={{
+                color: "var(--text-toast)",
+                fontSize: "var(--type-body-sm)",
+                fontWeight: "var(--weight-semibold)",
+              }}
+            >
               {t.message}
             </span>
           </button>

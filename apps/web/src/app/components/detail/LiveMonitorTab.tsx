@@ -20,12 +20,12 @@ import type {
   Reading,
 } from "../../domain/types";
 import { GaugeDial } from "../GaugeDial";
+import { useIsMobile } from "../ui/use-mobile";
 import { WaterDroplet } from "../WaterDroplet";
 import { SectionCard } from "./primitives";
 import { Timeline } from "./Timeline";
-import { useIsMobile } from "../ui/use-mobile";
-import { BORDER, CRIT, MUTED, NEUTRAL, OK, RUST, TEXT, WARN } from "./types";
-type StatusTone = typeof OK;
+
+type StatusTone = { fg: string; bg: string; ring: string };
 
 function SystemStatusTile({
   icon,
@@ -41,7 +41,10 @@ function SystemStatusTile({
   return (
     <div
       className="flex min-h-[50px] sm:min-h-16 items-center gap-2 sm:gap-3 rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3"
-      style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
+      style={{
+        backgroundColor: "var(--surface-porcelain)",
+        border: `1px solid var(--border-default)`,
+      }}
     >
       <span
         aria-hidden="true"
@@ -54,7 +57,7 @@ function SystemStatusTile({
         <p
           className="truncate"
           style={{
-            color: MUTED,
+            color: "var(--text-secondary)",
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-label)",
             fontWeight: "var(--weight-bold)",
@@ -67,7 +70,7 @@ function SystemStatusTile({
         <p
           className="tabular-nums truncate font-bold text-(length:--type-caption) sm:text-(length:--type-body-sm)"
           style={{
-            color: TEXT,
+            color: "var(--text-primary)",
             fontFamily: "var(--font-body)",
             lineHeight: "var(--leading-normal)",
           }}
@@ -112,16 +115,23 @@ function ExtremumTile({
   return (
     <div
       className="rounded-xl px-3 py-2 sm:px-3.5 sm:py-3"
-      style={{ backgroundColor: "#FCFAF6", border: `1px solid ${BORDER}` }}
+      style={{
+        backgroundColor: "var(--surface-porcelain)",
+        border: `1px solid var(--border-default)`,
+      }}
     >
       <div className="flex items-center gap-1.5 sm:gap-2">
-        <span aria-hidden="true" className="shrink-0" style={{ color: RUST }}>
+        <span
+          aria-hidden="true"
+          className="shrink-0"
+          style={{ color: "var(--brand-primary)" }}
+        >
           {icon}
         </span>
         <span
           className="min-w-0"
           style={{
-            color: MUTED,
+            color: "var(--text-secondary)",
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-label)",
             fontWeight: "var(--weight-bold)",
@@ -136,7 +146,7 @@ function ExtremumTile({
       <p
         className="mt-1.5 tabular-nums text-(length:--type-heading-sm) sm:mt-2 sm:text-(length:--type-heading-lg)"
         style={{
-          color: TEXT,
+          color: "var(--text-primary)",
           fontFamily: "var(--font-display)",
           fontWeight: "var(--weight-bold)",
           lineHeight: "var(--leading-tight)",
@@ -145,7 +155,7 @@ function ExtremumTile({
         {value}
         <span
           style={{
-            color: MUTED,
+            color: "var(--text-secondary)",
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-caption)",
             fontWeight: "var(--weight-semibold)",
@@ -159,7 +169,7 @@ function ExtremumTile({
       <p
         className="mt-1 truncate sm:mt-1.5"
         style={{
-          color: MUTED,
+          color: "var(--text-secondary)",
           fontFamily: "var(--font-body)",
           fontSize: "var(--type-label)",
           fontWeight: "var(--weight-regular)",
@@ -236,8 +246,13 @@ function EnvironmentalSummary({
         <button
           type="button"
           onClick={onViewTrends}
-          className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[#F5EFE6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
-          style={{ color: RUST, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-bold)" }}
+          className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[var(--surface-track)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+          style={{
+            color: "var(--brand-primary)",
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-caption)",
+            fontWeight: "var(--weight-bold)",
+          }}
         >
           Full trends <ArrowUpRight size={14} aria-hidden="true" />
         </button>
@@ -245,7 +260,10 @@ function EnvironmentalSummary({
     >
       <details
         className="group scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-2xl"
-        style={{ border: `1px solid ${BORDER}`, backgroundColor: "#FCFAF6" }}
+        style={{
+          border: `1px solid var(--border-default)`,
+          backgroundColor: "var(--surface-porcelain)",
+        }}
         onToggle={(e) => {
           // Expanding pushes content below the fold behind the bottom nav —
           // glide the revealed region into view (same pattern as the
@@ -265,12 +283,24 @@ function EnvironmentalSummary({
       >
         <summary className="cursor-pointer list-none rounded-2xl px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
           <div className="flex items-center justify-between gap-3">
-            <p style={{ color: TEXT, fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)" }}>
+            <p
+              style={{
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-body-sm)",
+                fontWeight: "var(--weight-bold)",
+              }}
+            >
               {hasExceptions ? "Cycle exceptions" : "Cycle stability"}
             </p>
             <span
               className="inline-flex shrink-0 items-center gap-1.5"
-              style={{ color: RUST, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-bold)" }}
+              style={{
+                color: "var(--brand-primary)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-bold)",
+              }}
             >
               Review history
               <ChevronDown
@@ -283,7 +313,11 @@ function EnvironmentalSummary({
 
           <p
             className="mt-1 grid gap-1 tabular-nums"
-            style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)" }}
+            style={{
+              color: "var(--text-secondary)",
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-caption)",
+            }}
           >
             <span className="inline-flex items-center gap-1">
               <Thermometer size={13} aria-hidden="true" />
@@ -300,7 +334,10 @@ function EnvironmentalSummary({
           </p>
         </summary>
 
-        <div className="border-t p-4" style={{ borderColor: BORDER }}>
+        <div
+          className="border-t p-4"
+          style={{ borderColor: "var(--border-default)" }}
+        >
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-4">
             <ExtremumTile
               label="Highest temperature"
@@ -332,11 +369,24 @@ function EnvironmentalSummary({
             />
           </div>
 
-          <div className="mt-4 border-t pt-3" style={{ borderColor: BORDER }}>
-            <p style={{ color: TEXT, fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)" }}>
+          <div
+            className="mt-4 border-t pt-3"
+            style={{ borderColor: "var(--border-default)" }}
+          >
+            <p
+              style={{
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-body-sm)",
+                fontWeight: "var(--weight-bold)",
+              }}
+            >
               Recent readings
             </p>
-            <div className="mt-1 divide-y" style={{ borderColor: BORDER }}>
+            <div
+              className="mt-1 divide-y"
+              style={{ borderColor: "var(--border-default)" }}
+            >
               {latest.map((reading) => {
                 const stamp = readingStamp(reading.ts);
                 return (
@@ -347,25 +397,39 @@ function EnvironmentalSummary({
                     <div>
                       <p
                         className="tabular-nums"
-                        style={{ color: TEXT, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-bold)" }}
+                        style={{
+                          color: "var(--text-primary)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-caption)",
+                          fontWeight: "var(--weight-bold)",
+                        }}
                       >
                         {stamp.date} at {stamp.time}
                       </p>
                     </div>
                     <div
                       className="flex items-center gap-3 tabular-nums"
-                      style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-semibold)" }}
+                      style={{
+                        color: "var(--text-secondary)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-caption)",
+                        fontWeight: "var(--weight-semibold)",
+                      }}
                     >
                       <span className="inline-flex items-center gap-1">
                         <Thermometer
                           size={13}
-                          color={RUST}
+                          color={"var(--brand-primary)"}
                           aria-hidden="true"
                         />
                         {reading.temp.toFixed(1)}°C
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <Droplets size={13} color={RUST} aria-hidden="true" />
+                        <Droplets
+                          size={13}
+                          color={"var(--brand-primary)"}
+                          aria-hidden="true"
+                        />
                         {reading.humidity.toFixed(1)}%
                       </span>
                     </div>
@@ -418,7 +482,10 @@ export function LiveMonitorTab({
           candled={effectiveCandled}
           labelSize={9}
         />
-        <div className="my-2.5 sm:my-4" style={{ height: 1, backgroundColor: BORDER }} />
+        <div
+          className="my-2.5 sm:my-4"
+          style={{ height: 1, backgroundColor: "var(--border-default)" }}
+        />
         <div className="grid grid-cols-3 items-start gap-2 sm:gap-6">
           <GaugeDial
             value={unit.temp}
@@ -451,19 +518,55 @@ export function LiveMonitorTab({
             icon={<Flame size={18} />}
             label="Heating element"
             value={heaterOn ? "Heating" : "Standby"}
-            tone={heaterOn ? WARN : NEUTRAL}
+            tone={
+              heaterOn
+                ? {
+                    fg: "var(--status-warning-fg)",
+                    bg: "var(--status-warning-bg)",
+                    ring: "var(--status-warning-fg)",
+                  }
+                : {
+                    fg: "var(--text-secondary)",
+                    bg: "var(--surface-subtle)",
+                    ring: "var(--border-default)",
+                  }
+            }
           />
           <SystemStatusTile
             icon={<Waves size={18} />}
             label="Mist maker"
             value={mistOn ? "Misting" : "Off"}
-            tone={mistOn ? OK : NEUTRAL}
+            tone={
+              mistOn
+                ? {
+                    fg: "var(--status-success-fg)",
+                    bg: "var(--status-success-bg)",
+                    ring: "var(--status-success-fg)",
+                  }
+                : {
+                    fg: "var(--text-secondary)",
+                    bg: "var(--surface-subtle)",
+                    ring: "var(--border-default)",
+                  }
+            }
           />
           <SystemStatusTile
             icon={<Fan size={18} />}
             label="Circulation fan"
             value={fanOn ? "Active" : "Off"}
-            tone={fanOn ? OK : NEUTRAL}
+            tone={
+              fanOn
+                ? {
+                    fg: "var(--status-success-fg)",
+                    bg: "var(--status-success-bg)",
+                    ring: "var(--status-success-fg)",
+                  }
+                : {
+                    fg: "var(--text-secondary)",
+                    bg: "var(--surface-subtle)",
+                    ring: "var(--border-default)",
+                  }
+            }
           />
           <SystemStatusTile
             icon={<Zap size={18} />}
@@ -471,7 +574,19 @@ export function LiveMonitorTab({
             value={
               unit.powerSource === "battery" ? "Battery power" : "Grid power"
             }
-            tone={unit.powerSource === "battery" ? WARN : OK}
+            tone={
+              unit.powerSource === "battery"
+                ? {
+                    fg: "var(--status-warning-fg)",
+                    bg: "var(--status-warning-bg)",
+                    ring: "var(--status-warning-fg)",
+                  }
+                : {
+                    fg: "var(--status-success-fg)",
+                    bg: "var(--status-success-bg)",
+                    ring: "var(--status-success-fg)",
+                  }
+            }
           />
           <SystemStatusTile
             icon={
@@ -483,7 +598,19 @@ export function LiveMonitorTab({
             }
             label="Connection"
             value={unit.paired ? "Connected" : "Offline"}
-            tone={unit.paired ? OK : CRIT}
+            tone={
+              unit.paired
+                ? {
+                    fg: "var(--status-success-fg)",
+                    bg: "var(--status-success-bg)",
+                    ring: "var(--status-success-fg)",
+                  }
+                : {
+                    fg: "var(--status-danger-fg)",
+                    bg: "var(--status-danger-bg)",
+                    ring: "var(--status-danger-fg)",
+                  }
+            }
           />
           <SystemStatusTile
             icon={<BatteryPlus size={18} />}
@@ -493,7 +620,19 @@ export function LiveMonitorTab({
                 ? `${unit.batteryPct}% · Low`
                 : `${unit.batteryPct}%`
             }
-            tone={unit.batteryPct <= 25 ? CRIT : OK}
+            tone={
+              unit.batteryPct <= 25
+                ? {
+                    fg: "var(--status-danger-fg)",
+                    bg: "var(--status-danger-bg)",
+                    ring: "var(--status-danger-fg)",
+                  }
+                : {
+                    fg: "var(--status-success-fg)",
+                    bg: "var(--status-success-bg)",
+                    ring: "var(--status-success-fg)",
+                  }
+            }
           />
         </div>
       </SectionCard>

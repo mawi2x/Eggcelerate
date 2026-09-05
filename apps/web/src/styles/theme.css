@@ -42,7 +42,6 @@
   --brand-primary: #ad3a1d;
   --brand-primary-hover: #8b3a1c;
   --brand-primary-soft: #fce4d6;
-  --brand-primary-soft-hover: #f2d4c5;
   --on-brand: #ffffff;
 
   --text-primary: #1a1a1a;
@@ -97,6 +96,182 @@
   --local-nav-selected-fg: var(--brand-primary-hover);
   --nav-hover-bg: #fff7ed;
   --nav-hover-border: #e7d0b8;
+  /* Type additions — role-named, rem-based. */
+  --type-body-lg: 0.9375rem; /* 15px — Banner lg description only */
+
+  /* Radii — card/dialog/chip roles. Tailwind rounded-full stays for pills. */
+  --radius-chip: 0.375rem; /* 6px — chips, badges, mini controls */
+  --radius-compact: 0.625rem; /* 10px — small control rounding (alert bell) */
+  --radius-dialog: 0.75rem; /* 12px — dialogs, popovers */
+  --radius-card: 1rem; /* 16px — cards, sheets */
+  --radius-pill: 9999px;
+  --radius-bar: 0.1875rem; /* 3px — meter bars */
+
+  /* Shadows — elevation roles. */
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.04);
+  --shadow-lift: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-toast: 0 8px 16px rgba(26, 21, 16, 0.32);
+  --shadow-accent: 0 2px 6px rgba(173, 58, 29, 0.28);
+  --shadow-edge: 0 2px 6px rgba(45, 36, 30, 0.12);
+  --shadow-dot: 0 1px 2px rgba(139, 58, 28, 0.18);
+
+  /* Borders — hairline stays 1px crisp, never scales with font. */
+  --border-width-hairline: 1px;
+  --border-divider: #f0ede6;
+  --border-accent: #c9b182; /* calibration/dashed accents */
+  --tile-border-warning: #fcd34d;
+  --tile-border-critical: #fca5a5;
+
+  /* Surfaces — creams beyond the core page/card/subtle/muted set. */
+  --surface-app: #faf6f0; /* app canvas, popover hover wash */
+  --surface-tile: #f2eee5; /* healthy tile, clear-egg tone */
+  --surface-input: #faf7f2; /* editable field fill */
+  --surface-note: #faf9f6; /* note/journal card */
+  --surface-selected: #fff8f5; /* selected option tint */
+  --surface-illustration: #fffdf9; /* illustration-adjacent card (exception zone) */
+  --border-illustration: #f5e6cc; /* illustration-adjacent card edge (exception zone) */
+  --surface-warn-tile: #fffbeb; /* warning tile */
+  --surface-pending: #fff4d6; /* awaiting-finish tint */
+  --surface-action-hover: #fff5f2; /* action hover wash */
+  --surface-track: #f5efe6; /* preset/mode badge */
+  --surface-count: #f4e6d5; /* day-count badge */
+  --surface-slate: #f1f5f9; /* neutral slate chip */
+  --surface-neutral: var(--status-info-bg);
+  --surface-tooltip: #1a1a1a; /* dark chart-tooltip fill */
+
+  /* Text — earth tones beyond the core primary/secondary/muted set. */
+  --text-strong: #3d3228; /* dense chip/neutral-strong text */
+  --text-farm: #6e6259; /* warm secondary copy */
+  --text-note: #44403c; /* journal note prose */
+  --text-clay: #5c4636; /* clamped preview text */
+  --text-faint: #a8a29e; /* calendar placeholder */
+  --text-earth: #713016; /* day-count on cream */
+  --text-amber-deep: #92400e; /* uncertain/stopped on amber */
+  --text-amber-soft: #9a6700; /* awaiting-finish on pending */
+  --text-slate: #334155; /* clear-egg on slate */
+  --text-slate-soft: #475569; /* slate secondary */
+  --text-taupe: #8a6b52; /* info/reminder accent */
+  --text-brand-soft: #b04e27; /* warning alert accent */
+  --text-toast: #f5f0e8; /* toast message */
+  --text-toast-dim: #c9beb0; /* toast secondary */
+  --text-on-dark-muted: rgba(255, 255, 255, 0.75); /* chart tooltip subtext */
+  --icon-info: #0284c7; /* water/info glyph accent */
+
+  /* Status — deep/strong variants beyond the core fg/bg pairs. */
+  --status-success-deep: #166534; /* fertile/legend green on light */
+  --status-success-strong: #065f46; /* completed on mint */
+  --status-danger-strong: #991b1b; /* stopped-early on red */
+  --status-offline-fg: #c5221f;
+  --status-offline-bg: #fce8e6;
+  --badge-alert-bg: #d92b0f; /* notification count badge */
+
+  /* Tracks — meter/gauge rails. */
+  --track-gauge: #ece6d9;
+  --track-battery: #e3dccc;
+
+  /* Toast — dark charcoal surface system. */
+  --toast-bg: #1a1510;
+  --toast-success: #93b58c;
+  --toast-neutral: var(--text-toast-dim);
+
+  /* Overlay — photo viewer / dark scrim system (overlay exception zone). */
+  --overlay-bg: #141210;
+  --overlay-border: rgba(255, 255, 255, 0.12);
+  --overlay-fg: #e7e5e4; /* stone-200 equivalent */
+  --overlay-muted: var(--text-faint);
+
+  /* Control sizes — square targets beyond the height roles. */
+  --control-size-xs: 1.75rem; /* 28px — edge toggles */
+  --control-size-sm: 2rem; /* 32px — dots, compact toggles */
+  --control-size-nav: 2.5rem; /* 40px — nav items */
+  --control-size-lg: 3.25rem; /* 52px — alert bells */
+  --control-height-pill: 1.5rem; /* 24px — status pills */
+  --progress-thickness: 0.375rem; /* 6px — linear meters */
+  --battery-bar-height: 0.875rem; /* 14px — segmented battery bars */
+
+  /* Dialog/popover widths — repeated layout constraints. */
+  --dialog-width-narrow: 25rem; /* 400px */
+  --dialog-width-wide: 37.5rem; /* 600px */
+  --dialog-height-max: 88vh;
+  --control-size-photo: 3.5rem; /* 56px photo thumbnails */
+  --wash-checkbox: rgba(138, 107, 82, 0.4); /* unchecked selector wash */
+  --auth-card-width: 27.5rem; /* 440px */
+  /* Tint layer — one-off washes/tints promoted to tokens so no raw hex or
+     raw alpha wash remains in components. Values preserve exact computed
+     colors; names describe the originating role. */
+  --progress-stroke: #c27b4a;
+  --text-bark: #9a4a2a;
+  --text-neutral-cool: #6b7280;
+  --text-neutral-deep: #525252;
+  --text-ember: #c2410c;
+  --text-slate-cool: #64748b;
+  --text-caramel: #8a4b08;
+  --text-amber-strong: #713f12;
+  --accent-gold: #f2c94c;
+  --icon-earth: #9e8b72;
+  --legend-amber: #d97706;
+  --legend-green: #16a34a;
+  --surface-peach: #fdf0e6;
+  --border-peach: #e8d5c2;
+  --surface-mint: #f0fdf4;
+  --border-mint: #bbf7d0;
+  --surface-blush: #fef2f2;
+  --border-blush: #fecaca;
+  --surface-mist: #f8faf9;
+  --border-mist: #dce7e2;
+  --surface-slate-light: #f8fafc;
+  --border-slate-light: #e2e8f0;
+  --border-amber-soft: #fde68a;
+  --surface-honey: #fff8e1;
+  --surface-amber-pale: #fff8e7;
+  --surface-amber-wash: #fff0d6;
+  --surface-porcelain: #fcfaf6;
+  --surface-oat: #f4ece1;
+  --border-oat: #e5dacb;
+  --border-clay: rgba(120, 53, 15, 0.2);
+  --surface-stone: #e4dcd3;
+  --border-stone: #d1c7bd;
+  --surface-fog: #f5f4f0;
+  --surface-paper: #fafaf9;
+  --surface-hover-cream: #faf6ee;
+  --surface-import: #fbf6e7;
+  --border-preview: #e9ded1;
+  --border-sand: #efe9dc;
+  --swatch-clay: #e3a16f;
+  --swatch-sand: #e9c27e;
+  --chart-grid: #ece9e2;
+  --wash-brand-soft: rgba(173, 58, 29, 0.12);
+  --wash-brand-10: rgba(200, 90, 50, 0.1);
+  --wash-brand-12: rgba(200, 90, 50, 0.12);
+  --wash-white-60: rgba(255, 255, 255, 0.6);
+  --tint-on-brand: rgba(255, 255, 255, 0.18);
+  --border-ink-soft: rgba(0, 0, 0, 0.08);
+  --scrim-card: rgba(255, 255, 255, 0.92);
+  --radius-mini: 0.25rem; /* 4px */
+  --dot-size: 0.375rem; /* 6px page dots */
+  --measure-auth: 21.25rem; /* 340px auth paragraph measure */
+  --status-success-pale: #d1fae5; /* completed badge on mint */
+  --border-ink: rgba(0, 0, 0, 0.12);
+  --wash-alert: rgba(203, 96, 54, 0.12);
+  --wash-taupe: rgba(138, 107, 82, 0.12);
+  --dot-idle: #d5cabe;
+  --dot-width-current: 1rem; /* 16px current page dot */
+  --status-hatch-bg: #e6f4ea; /* incubating green */
+  --status-hatch-fg: #137333;
+  --status-flight-bg: #e8f0fe; /* hatching blue */
+  --status-flight-fg: #1967d2;
+  --status-idle-bg: #f1f3f4; /* ready gray */
+  --status-idle-fg: #5f6368;
+  --text-gray-cool: #9ca3af; /* ready-branch secondary */
+  --surface-help: #fff8f1; /* help panel washes */
+  --surface-help-hover: #f2e8dc;
+  --border-help: #e8ded1;
+  --border-help-soft: #efe7dc;
+  --border-help-row: #eae2d8;
+  --text-help: #3f342c;
+  --shadow-float: 0 18px 45px rgba(45, 26, 14, 0.18);
+  --shadow-bubble: 0 8px 24px rgba(45, 26, 14, 0.18);
 
   /* shadcn/Tailwind aliases */
   --background: var(--surface-page);
@@ -105,28 +280,43 @@
   --card-foreground: var(--text-primary);
   --popover: var(--surface-card);
   --popover-foreground: var(--text-primary);
+  /* Motion — interactive color transitions. */
+  --transition-interactive:
+    border-color 0.15s ease, background-color 0.15s ease;
+  /* Danger outline action (Stop Cycle): border + text roles. */
+  --button-danger-border: #c2410c;
+  --button-danger-fg: #9a3412;
+  /* Elevation order — stacking rungs, lowest first. */
+  --z-sunken: 2;
+  --z-low: 3;
+  --z-raised: 5;
+  --z-above: 10;
+  --z-overlay: 20;
+  --z-top: 30;
+  /* Shared recipes. */
+  --pill-padding: 0.25rem 0.625rem; /* 4px 10px status/chip pill */
+  --list-row-padding: 1rem 1.25rem 1rem 1rem; /* alert list rows */
   --primary: var(--brand-primary);
   --primary-foreground: var(--on-brand);
   --secondary: #efe1b7;
-  --secondary-foreground: #2d1a0e;
+  --secondary-foreground: #2d1a0e; /* canonical dark-brown; --accent-foreground aliases this */
   --muted: var(--surface-muted);
   --muted-foreground: var(--text-secondary);
   --accent: #d8be65;
-  --accent-foreground: #2d1a0e;
+  --accent-foreground: var(--secondary-foreground);
   --destructive: var(--status-danger-fg);
   --destructive-foreground: var(--on-brand);
-  --border: rgba(173, 58, 29, 0.12);
+  --border: var(--wash-brand-soft);
   --input: transparent;
   --input-background: var(--surface-muted);
   --switch-background: #d8c9a0;
-  --font-weight-medium: 600;
-  --font-weight-normal: 400;
-  --ring: #cb6036;
-  --chart-1: #ad3a1d;
-  --chart-2: #cb6036;
-  --chart-3: #d8be65;
-  --chart-4: #3d9970;
-  --chart-5: #8a6b52;
+  --ring: #cb6036; /* canonical signal-orange; --sidebar-ring aliases this */
+  --chart-1: var(--chart-series-1);
+  --chart-2: var(--chart-series-2);
+  --chart-3: var(--chart-series-3);
+  --chart-4: var(--chart-series-4);
+  --chart-5: var(--chart-series-5);
+  --chart-target-band: var(--legend-green);
   --radius: 1rem;
   --sidebar: var(--surface-card);
   --sidebar-foreground: var(--text-primary);
@@ -134,8 +324,23 @@
   --sidebar-primary-foreground: var(--on-brand);
   --sidebar-accent: var(--surface-muted);
   --sidebar-accent-foreground: var(--text-primary);
-  --sidebar-border: rgba(173, 58, 29, 0.12);
-  --sidebar-ring: #cb6036;
+  --sidebar-border: var(--wash-brand-soft);
+  --sidebar-ring: var(--ring);
+  /* Categorical chamber-series palette (chart exception zone): 12
+     distinguishable data-ink colors consumed by TrendsScreen via
+     getComputedStyle (recharts SVG props take attributes, not CSS). */
+  --chart-series-1: #3e5c76;
+  --chart-series-2: #4f7c82;
+  --chart-series-3: #7b5d78;
+  --chart-series-4: #675a8c;
+  --chart-series-5: #9a6b50;
+  --chart-series-6: #66806a;
+  --chart-series-7: #466b8a;
+  --chart-series-8: #6f8488;
+  --chart-series-9: #936d85;
+  --chart-series-10: #7f74a8;
+  --chart-series-11: #a0826b;
+  --chart-series-12: #77906f;
 }
 
 /* Mobile type step-down — one scale, not a second one. Below Tailwind's
@@ -164,43 +369,6 @@
     --control-size-icon: 2.75rem; /* 44px target, glyph stays 18–22px */
     --control-segment-height: 2.75rem; /* 44px */
   }
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
 }
 
 @theme inline {
@@ -278,43 +446,43 @@
 
   h1 {
     font-size: var(--type-page-title);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-semibold);
     line-height: 1.5;
   }
 
   h2 {
     font-size: var(--type-heading-lg);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-semibold);
     line-height: 1.5;
   }
 
   h3 {
     font-size: var(--type-heading-md);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-semibold);
     line-height: 1.5;
   }
 
   h4 {
     font-size: var(--type-heading-sm);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-semibold);
     line-height: 1.5;
   }
 
   label {
     font-size: var(--type-body);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-semibold);
     line-height: 1.5;
   }
 
   button {
     font-size: var(--type-body);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-semibold);
     line-height: 1.5;
   }
 
   input {
     font-size: var(--type-control-value);
-    font-weight: var(--font-weight-normal);
+    font-weight: var(--weight-regular);
     line-height: 1.5;
   }
 }

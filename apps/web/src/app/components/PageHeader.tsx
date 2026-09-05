@@ -88,7 +88,7 @@ export function PageHeader({
             <button
               type="button"
               onClick={onBack}
-              className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+              className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
               style={{
                 color: RUST,
                 fontFamily: "var(--font-body)",
@@ -157,14 +157,14 @@ export function PageHeader({
               <button
                 type="button"
                 onClick={onBack}
-                className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                 style={{
-                color: RUST,
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body)",
-                fontWeight: "var(--weight-medium)",
-                minHeight: "var(--control-hit-area-icon)",
-              }}
+                  color: RUST,
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body)",
+                  fontWeight: "var(--weight-medium)",
+                  minHeight: "var(--control-hit-area-icon)",
+                }}
               >
                 <ArrowLeft size={16} className="shrink-0" />
                 <span className="min-w-0 truncate">{backLabel}</span>
@@ -228,7 +228,7 @@ export function PageHeader({
             <button
               type="button"
               onClick={onBack}
-              className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[#F5EDD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+              className="-ml-2 inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
               style={{
                 color: RUST,
                 fontFamily: "var(--font-body)",

@@ -54,8 +54,8 @@ export function LiveDateTime({ compact = false }: { compact?: boolean } = {}) {
       >
         <span
           style={{
-            fontSize: 12,
-            fontWeight: 500,
+            fontSize: "var(--type-caption)",
+            fontWeight: "var(--weight-medium)",
             color: "var(--text-muted)",
             lineHeight: 1.2,
             whiteSpace: "nowrap",
@@ -77,11 +77,11 @@ export function LiveDateTime({ compact = false }: { compact?: boolean } = {}) {
       {/* Date — emphasized (weekday prominent), no card/border */}
       <span
         style={{
-          fontSize: 14,
-          fontWeight: 600,
+          fontSize: "var(--type-body)",
+          fontWeight: "var(--weight-semibold)",
           color: "var(--text-primary)",
           lineHeight: 1.2,
-          letterSpacing: "-0.01em",
+          letterSpacing: "var(--tracking-tight)",
           whiteSpace: "nowrap",
         }}
       >
@@ -89,8 +89,8 @@ export function LiveDateTime({ compact = false }: { compact?: boolean } = {}) {
       </span>
       <span
         style={{
-          fontSize: 13,
-          fontWeight: 500,
+          fontSize: "var(--type-body-sm)",
+          fontWeight: "var(--weight-medium)",
           color: "var(--text-muted)",
           lineHeight: 1.2,
           marginTop: 2,

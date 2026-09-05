@@ -31,8 +31,8 @@ export function FieldCounterLabel({
         aria-live="polite"
         style={{
           color: atLimit ? CRIT : MUTED,
-          fontSize: 12,
-          fontWeight: 600,
+          fontSize: "var(--type-caption)",
+          fontWeight: "var(--weight-semibold)",
           whiteSpace: "nowrap",
         }}
       >

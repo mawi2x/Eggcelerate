@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsScreen } from "../app/components/screens/SettingsScreen";
 import { validateNotificationPreferences } from "../app/components/settings/NotificationsPanel";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
@@ -16,6 +16,17 @@ const actEnvironment = globalThis as typeof globalThis & {
 actEnvironment.IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("settings contracts", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
   it("saves and reloads an isolated repository settings snapshot", async () => {
     const repository = new InMemoryEggcelerateRepository();
     const next = structuredClone(initialSettings);

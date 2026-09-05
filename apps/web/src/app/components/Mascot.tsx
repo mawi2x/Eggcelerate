@@ -1,4 +1,6 @@
 // Cheerful cracked-egg chick mascot, used sparingly (empty states + brand accent).
+// Illustration exception zone (color-guidelines.md "Intentional exceptions"):
+// fills/strokes below are bespoke artwork values, intentionally unthemed.
 
 interface MascotProps {
   size?: number;

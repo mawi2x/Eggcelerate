@@ -178,7 +178,7 @@ export function SettingsScreen({
         <div
           className="sticky bottom-[var(--mobile-bottom-nav-clearance)] z-30 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl px-6 py-3.5 md:bottom-0"
           style={{
-            backgroundColor: "rgba(255,255,255,0.92)",
+            backgroundColor: "var(--scrim-card)",
             backdropFilter: "blur(8px)",
             borderTop: `1px solid ${BORDER}`,
           }}
@@ -210,7 +210,7 @@ export function SettingsScreen({
               className="rounded-xl px-6"
               style={{
                 backgroundColor: RUST,
-                color: "#fff",
+                color: "var(--on-brand)",
                 minHeight: "var(--control-height-toolbar)",
               }}
               disabled={!isDirty || isSaving}

@@ -27,14 +27,14 @@ const HEADING = "var(--text-primary)";
 
 const conditionRowStyle = `
 .condition-row{position:relative;background:var(--surface-card);border:1px solid var(--border-default);border-radius:12px;transition:background-color 0.2s ease-in-out, border-color 0.2s ease-in-out}
-.condition-row:hover{background:#FFF7ED;border-color:#E7D0B8}
+.condition-row:hover{background:var(--nav-hover-bg);border-color:var(--nav-hover-border)}
 `;
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "var(--surface-subtle)",
   borderColor: "var(--border-default)",
-  borderRadius: 16,
-  boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+  borderRadius: "var(--radius-card)",
+  boxShadow: "var(--shadow-card)",
 };
 
 interface KpiPill {
@@ -111,7 +111,7 @@ function KpiCard({
         </div>
         {pill && (
           <span
-            className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+            className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-(length:--type-label) font-semibold"
             style={{
               backgroundColor:
                 pill.tone === "neutral"
@@ -139,14 +139,14 @@ function KpiCard({
         {footer && (
           <div className="mt-2">
             <div
-              className="flex items-center gap-1 text-[11px] font-semibold"
+              className="flex items-center gap-1 text-(length:--type-label) font-semibold"
               style={{ color: "var(--text-primary)" }}
             >
               {footer.primary}
             </div>
             {footer.secondary && (
               <div
-                className="text-[11px]"
+                className="text-(length:--type-label)"
                 style={{ color: "var(--text-muted)" }}
               >
                 {footer.secondary}
@@ -159,8 +159,8 @@ function KpiCard({
   );
 }
 
-// Ring stroke — progress-only (not health). Single soft clay from primary #AD3A1D.
-const PROGRESS_STROKE = "#C27B4A";
+// Ring stroke — progress-only (not health). Single soft clay derived from primary.
+const PROGRESS_STROKE = "var(--progress-stroke)";
 
 type OffTargetDir = "high" | "low" | "ok";
 
@@ -231,12 +231,12 @@ function OffTargetRow({
     ? "var(--text-primary)"
     : isUrgent
       ? "var(--status-danger-fg)"
-      : "#9A4A2A";
+      : "var(--text-bark)";
   const statusColor = !isOff
-    ? "#6B7280"
+    ? "var(--text-neutral-cool)"
     : isUrgent
       ? "var(--status-danger-fg)"
-      : "#C2410C";
+      : "var(--text-ember)";
 
   return (
     <>
@@ -253,15 +253,15 @@ function OffTargetRow({
             style={{
               backgroundColor: isOff
                 ? isUrgent
-                  ? "#FEE2E2"
-                  : "#FDF0E6"
-                : "#F0FDF4",
+                  ? "var(--status-danger-bg)"
+                  : "var(--surface-peach)"
+                : "var(--surface-mint)",
               color: isOff
                 ? isUrgent
                   ? "var(--status-danger-fg)"
-                  : "#9A4A2A"
+                  : "var(--text-bark)"
                 : "var(--status-success-fg)",
-              border: `1px solid ${isOff ? (isUrgent ? "#FECACA" : "#E8D5C2") : "#BBF7D0"}`,
+              border: `1px solid ${isOff ? (isUrgent ? "var(--border-blush)" : "var(--border-peach)") : "var(--border-mint)"}`,
             }}
           >
             {rank}
@@ -286,7 +286,7 @@ function OffTargetRow({
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-medium)",
                 lineHeight: "var(--leading-snug)",
-                color: "#6E6259",
+                color: "var(--text-farm)",
                 whiteSpace: "normal",
                 wordBreak: "break-word",
               }}
@@ -326,7 +326,7 @@ function OffTargetRow({
           <ChevronRight
             size={14}
             className="shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-            style={{ color: "#C27B4A" }}
+            style={{ color: "var(--progress-stroke)" }}
             aria-hidden
           />
         </div>
@@ -385,7 +385,7 @@ function MiniCard({
           <ChevronRight
             size={14}
             className="mt-0.5 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 hidden sm:block"
-            style={{ color: "#C27B4A" }}
+            style={{ color: "var(--progress-stroke)" }}
             aria-hidden
           />
         </div>
@@ -409,7 +409,7 @@ function MiniCard({
             fontSize: "var(--type-caption)",
             fontWeight: "var(--weight-regular)",
             lineHeight: "var(--leading-normal)",
-            color: "#6E6259",
+            color: "var(--text-farm)",
             marginTop: 2,
           }}
           title={`Progress: Day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
@@ -475,7 +475,6 @@ export function OverviewScreen({
     [modes],
   );
   const [carouselPage, setCarouselPage] = useState(0);
-  const [conditionTab, setConditionTab] = useState<"temp" | "humidity">("temp");
   const carouselRef = useRef<HTMLDivElement>(null);
   const handleCarouselScroll = () => {
     const el = carouselRef.current;
@@ -483,6 +482,7 @@ export function OverviewScreen({
     const page = Math.round(el.scrollLeft / el.clientWidth);
     setCarouselPage(page);
   };
+  const [conditionTab, setConditionTab] = useState<"temp" | "humidity">("temp");
   const stats = useMemo(() => {
     const count = (s: UnitStatus) => units.filter((u) => u.status === s).length;
     const connected = units.filter(
@@ -648,7 +648,7 @@ export function OverviewScreen({
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-regular)",
                 lineHeight: "var(--leading-normal)",
-                color: "#6E6259",
+                color: "var(--text-farm)",
                 marginTop: 2,
               }}
             >
@@ -658,7 +658,7 @@ export function OverviewScreen({
           <button
             type="button"
             onClick={onManageAll}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-xl border bg-white px-3 py-1.5 text-xs font-semibold transition-colors duration-200 hover:bg-[#FFF7ED] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:px-4 sm:py-2 sm:text-sm"
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-xl border bg-[var(--surface-card)] px-3 py-1.5 text-xs font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:px-4 sm:py-2 sm:text-sm"
             style={{ borderColor: RUST, color: RUST }}
             aria-label="View all incubators"
           >
@@ -668,7 +668,7 @@ export function OverviewScreen({
         </div>
         <div
           className="my-3 h-px w-full sm:my-4"
-          style={{ backgroundColor: "#EFE9DC" }}
+          style={{ backgroundColor: "var(--border-sand)" }}
         />
         <div
           ref={carouselRef}
@@ -703,8 +703,12 @@ export function OverviewScreen({
                 }}
                 className="h-1.5 rounded-full transition-all cursor-pointer"
                 style={{
-                  width: carouselPage === page ? 16 : 6,
-                  backgroundColor: carouselPage === page ? RUST : "#D5CABE",
+                  width:
+                    carouselPage === page
+                      ? "var(--dot-width-current)"
+                      : "var(--dot-size)",
+                  backgroundColor:
+                    carouselPage === page ? RUST : "var(--dot-idle)",
                 }}
                 aria-label={`Go to slide ${page + 1}`}
               />
@@ -739,7 +743,7 @@ export function OverviewScreen({
               fontSize: "var(--type-caption)",
               fontWeight: "var(--weight-regular)",
               lineHeight: "var(--leading-normal)",
-              color: "#6E6259",
+              color: "var(--text-farm)",
               marginTop: 2,
             }}
           >
@@ -771,7 +775,7 @@ export function OverviewScreen({
                   ? "var(--brand-primary)"
                   : "var(--text-secondary)",
               boxShadow:
-                conditionTab === "temp" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                conditionTab === "temp" ? "var(--shadow-lift)" : "none",
             }}
           >
             <Thermometer size={14} className="shrink-0" aria-hidden="true" />
@@ -784,8 +788,11 @@ export function OverviewScreen({
                   backgroundColor:
                     conditionTab === "temp"
                       ? "var(--brand-primary)"
-                      : "#E4DCD3",
-                  color: conditionTab === "temp" ? "#FFFFFF" : "#6E6259",
+                      : "var(--surface-stone)",
+                  color:
+                    conditionTab === "temp"
+                      ? "var(--on-brand)"
+                      : "var(--text-farm)",
                 }}
               >
                 {offTarget.temp.length}
@@ -809,9 +816,7 @@ export function OverviewScreen({
                   ? "var(--brand-primary)"
                   : "var(--text-secondary)",
               boxShadow:
-                conditionTab === "humidity"
-                  ? "0 1px 3px rgba(0,0,0,0.08)"
-                  : "none",
+                conditionTab === "humidity" ? "var(--shadow-lift)" : "none",
             }}
           >
             <Droplets size={14} className="shrink-0" aria-hidden="true" />
@@ -824,8 +829,11 @@ export function OverviewScreen({
                   backgroundColor:
                     conditionTab === "humidity"
                       ? "var(--brand-primary)"
-                      : "#E4DCD3",
-                  color: conditionTab === "humidity" ? "#FFFFFF" : "#6E6259",
+                      : "var(--surface-stone)",
+                  color:
+                    conditionTab === "humidity"
+                      ? "var(--on-brand)"
+                      : "var(--text-farm)",
                 }}
               >
                 {offTarget.humidity.length}
@@ -835,7 +843,7 @@ export function OverviewScreen({
         </fieldset>
         <div
           className="mb-4 h-px w-full hidden lg:block"
-          style={{ backgroundColor: "#EFE9DC" }}
+          style={{ backgroundColor: "var(--border-sand)" }}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -861,7 +869,10 @@ export function OverviewScreen({
               {offTarget.temp.length === 0 ? (
                 <div
                   className="flex items-center gap-2 rounded-xl border px-3 py-4"
-                  style={{ borderColor: BORDER, backgroundColor: "#FBFAF7" }}
+                  style={{
+                    borderColor: BORDER,
+                    backgroundColor: "var(--surface-page)",
+                  }}
                 >
                   <Check
                     size={16}
@@ -915,7 +926,10 @@ export function OverviewScreen({
               {offTarget.humidity.length === 0 ? (
                 <div
                   className="flex items-center gap-2 rounded-xl border px-3 py-4"
-                  style={{ borderColor: BORDER, backgroundColor: "#FBFAF7" }}
+                  style={{
+                    borderColor: BORDER,
+                    backgroundColor: "var(--surface-page)",
+                  }}
                 >
                   <Check
                     size={16}

@@ -82,11 +82,22 @@ const OK = "var(--status-success-fg)";
 const OK_BG = "var(--status-success-bg)";
 const WARN = "var(--status-warning-fg)";
 const WARN_BG = "var(--status-warning-bg)";
-const TARGET_BAND_COLOR = "#16A34A";
+// Target-range band accent resolves from --chart-target-band (chart exception
+// zone): recharts SVG fill takes an attribute, which cannot resolve var(),
+// so the token is read once here instead of inlining hex.
+const TARGET_BAND_COLOR = getComputedStyle(document.documentElement)
+  .getPropertyValue("--chart-target-band")
+  .trim();
 const TARGET_BAND_OPACITY = 0.045;
-const inputStyle = { borderColor: "#D8D0C0", backgroundColor: "#F2EEE5" };
+const inputStyle = {
+  borderColor: "var(--input-border)",
+  backgroundColor: "var(--surface-tile)",
+};
 // Framed white control used inside the trends toolbar.
-const toolbarInputStyle = { borderColor: "#D8D0C0", backgroundColor: SURFACE };
+const toolbarInputStyle = {
+  borderColor: "var(--input-border)",
+  backgroundColor: SURFACE,
+};
 // One typographic voice for every control in the trends toolbar.
 const CONTROL_FONT: React.CSSProperties = {
   fontFamily: "var(--font-body)",
@@ -105,21 +116,13 @@ const ranges: { key: RangeKey; label: string; hours: number | null }[] = [
 type TrendView = "environmental" | "hatch";
 type Metric = "temp" | "humidity";
 
-// Muted chamber-identity colors, distinct from the semantic status colors.
-const CHAMBER_COLORS = [
-  "#3E5C76",
-  "#4F7C82",
-  "#7B5D78",
-  "#675A8C",
-  "#9A6B50",
-  "#66806A",
-  "#466B8A",
-  "#6F8488",
-  "#936D85",
-  "#7F74A8",
-  "#A0826B",
-  "#77906F",
-];
+// Chamber-identity series resolve from --chart-series-1..12 (theme.css chart
+// exception zone): same attribute constraint as the target band above.
+const CHAMBER_COLORS = Array.from({ length: 12 }, (_, i) =>
+  getComputedStyle(document.documentElement)
+    .getPropertyValue(`--chart-series-${i + 1}`)
+    .trim(),
+);
 
 const metricInfo: Record<
   Metric,
@@ -206,8 +209,8 @@ function ChartTooltip({
       <div
         className="flex items-baseline gap-2 rounded-full px-3 py-1.5 shadow-lg"
         style={{
-          backgroundColor: "var(--text-primary)",
-          color: "#FFFFFF",
+          backgroundColor: "var(--surface-tooltip)",
+          color: "var(--on-brand)",
           fontFamily: "var(--font-body)",
         }}
       >
@@ -226,7 +229,7 @@ function ChartTooltip({
               fontSize: "var(--type-label)",
               fontWeight: "var(--weight-semibold)",
               letterSpacing: "var(--tracking-label)",
-              color: "rgba(255, 255, 255, 0.75)",
+              color: "var(--text-on-dark-muted)",
             }}
           >
             {formatXTick(timestamp, range)}
@@ -238,7 +241,7 @@ function ChartTooltip({
 
   return (
     <div
-      className="min-w-[196px] rounded-xl border bg-white p-3.5 shadow-lg"
+      className="min-w-[196px] rounded-xl border bg-[var(--surface-card)] p-3.5 shadow-lg"
       style={{
         borderColor: BORDER,
         color: TEXT,
@@ -251,10 +254,20 @@ function ChartTooltip({
           className="h-0.5 w-4 shrink-0 rounded-full"
           style={{ backgroundColor: reading.color }}
         />
-        <p style={{ fontSize: 13, fontWeight: 700 }}>{reading.name}</p>
+        <p
+          style={{
+            fontSize: "var(--type-body-sm)",
+            fontWeight: "var(--weight-bold)",
+          }}
+        >
+          {reading.name}
+        </p>
       </div>
       {typeof timestamp === "number" && (
-        <p className="mt-0.5" style={{ color: MUTED, fontSize: 12 }}>
+        <p
+          className="mt-0.5"
+          style={{ color: MUTED, fontSize: "var(--type-caption)" }}
+        >
           {formatTooltipTime(timestamp)}
         </p>
       )}
@@ -263,17 +276,30 @@ function ChartTooltip({
         style={{ borderColor: BORDER }}
       >
         <div className="flex items-baseline justify-between gap-5">
-          <span style={{ color: MUTED, fontSize: 12 }}>
+          <span style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
             {info?.metricLabel ?? "Reading"}
           </span>
-          <span style={{ fontSize: 14, fontWeight: 700 }}>
+          <span
+            style={{
+              fontSize: "var(--type-body)",
+              fontWeight: "var(--weight-bold)",
+            }}
+          >
             {formatMeasurement(reading.value, unit)}
           </span>
         </div>
         {info && (
           <div className="flex items-baseline justify-between gap-5">
-            <span style={{ color: MUTED, fontSize: 12 }}>Target</span>
-            <span style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>
+            <span style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
+              Target
+            </span>
+            <span
+              style={{
+                color: MUTED,
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-semibold)",
+              }}
+            >
               {info.band.min} to {info.band.max}
               {unit}
             </span>
@@ -515,12 +541,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
     { key: "environmental", label: "Environmental Trends", Icon: LineChart },
     { key: "hatch", label: "Hatch History", Icon: Egg },
   ];
-
   const cardStyle = {
     backgroundColor: CARD,
     borderColor: BORDER,
-    borderRadius: 16,
-    boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+    borderRadius: "var(--radius-card)",
+    boxShadow: "var(--shadow-card)",
   };
 
   return (
@@ -808,7 +833,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         and reuses their keys, so unkeyed siblings collide. */}
                     <CartesianGrid
                       key="grid"
-                      stroke="#ECE9E2"
+                      stroke="var(--chart-grid)"
                       strokeWidth={1}
                     />
                     <XAxis
@@ -825,7 +850,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         fontWeight: "var(--weight-medium)",
                       }}
                       tickFormatter={(_, index) => xTickLabels[index] ?? ""}
-                      axisLine={{ stroke: "#D8D0C0" }}
+                      axisLine={{ stroke: "var(--input-border)" }}
                       tickLine={false}
                       tickMargin={10}
                       interval={0}
@@ -864,7 +889,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     />
                     <Tooltip
                       key="tooltip"
-                      cursor={{ stroke: "#D8D0C0", strokeWidth: 1 }}
+                      cursor={{ stroke: "var(--input-border)", strokeWidth: 1 }}
                       wrapperStyle={{ outline: "none" }}
                       position={isMobile ? { y: 0 } : undefined}
                       allowEscapeViewBox={{ x: false, y: true }}
@@ -1040,7 +1065,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <Table>
                   <TableHeader
                     className="sticky top-0 z-10"
-                    style={{ backgroundColor: "#F2EEE5" }}
+                    style={{ backgroundColor: "var(--surface-tile)" }}
                   >
                     <TableRow>
                       {["CHAMBER", "MODE", "DATES"].map((h) => (
@@ -1083,17 +1108,22 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       const good = h.pct !== null && h.pct >= 80;
                       return (
                         <TableRow key={h.id} className="hover:bg-amber-50/60">
-                          <TableCell style={{ fontWeight: 700, color: TEXT }}>
+                          <TableCell
+                            style={{
+                              fontWeight: "var(--weight-bold)",
+                              color: TEXT,
+                            }}
+                          >
                             {h.chamber}
                           </TableCell>
                           <TableCell>
                             <span
                               className="rounded-full px-2 py-0.5"
                               style={{
-                                backgroundColor: "rgba(173,58,29,0.12)",
+                                backgroundColor: "var(--wash-brand-soft)",
                                 color: RUST,
-                                fontWeight: 600,
-                                fontSize: 13,
+                                fontWeight: "var(--weight-semibold)",
+                                fontSize: "var(--type-body-sm)",
                               }}
                             >
                               {h.modeName}
@@ -1114,8 +1144,8 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                               style={{
                                 backgroundColor: good ? OK_BG : WARN_BG,
                                 color: good ? OK : WARN,
-                                fontWeight: 700,
-                                fontSize: 13,
+                                fontWeight: "var(--weight-bold)",
+                                fontSize: "var(--type-body-sm)",
                               }}
                             >
                               {h.pct === null ? "Not available" : `${h.pct}%`}
@@ -1178,7 +1208,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             <Table>
               <TableHeader
                 className="sticky top-0 z-10"
-                style={{ backgroundColor: "#F2EEE5" }}
+                style={{ backgroundColor: "var(--surface-tile)" }}
               >
                 <TableRow>
                   <TableHead>Timestamp</TableHead>
@@ -1223,7 +1253,11 @@ function KpiCard({
       <CardContent className="p-5">
         <div
           className="flex items-center gap-2"
-          style={{ color: MUTED, fontSize: 13, fontWeight: 600 }}
+          style={{
+            color: MUTED,
+            fontSize: "var(--type-body-sm)",
+            fontWeight: "var(--weight-semibold)",
+          }}
         >
           <Icon size={16} /> {label}
         </div>

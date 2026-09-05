@@ -11,10 +11,10 @@ export function UtilityHeader({ alertCount, onViewAlerts }: Props) {
     <button
       type="button"
       onClick={onViewAlerts}
-      className="relative flex shrink-0 cursor-pointer items-center justify-center rounded-2xl border transition-colors hover:bg-[#F5EDD8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+      className="relative flex shrink-0 cursor-pointer items-center justify-center rounded-2xl border transition-colors hover:bg-[var(--surface-muted)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       style={{
-        height: 52,
-        width: 52,
+        height: "var(--control-size-lg)",
+        width: "var(--control-size-lg)",
         backgroundColor: "var(--surface-card)",
         borderColor: "var(--border-default)",
         color: "var(--text-secondary)",
@@ -32,11 +32,11 @@ export function UtilityHeader({ alertCount, onViewAlerts }: Props) {
             height: 22,
             minWidth: 22,
             padding: "0 5px",
-            backgroundColor: "#D92B0F",
-            color: "#FFFFFF",
-            fontSize: 12,
-            fontWeight: 700,
-            border: "2px solid #FAF6F0",
+            backgroundColor: "var(--badge-alert-bg)",
+            color: "var(--on-brand)",
+            fontSize: "var(--type-caption)",
+            fontWeight: "var(--weight-bold)",
+            border: "2px solid var(--surface-app)",
           }}
         >
           {alertCount}

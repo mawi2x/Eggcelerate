@@ -59,7 +59,7 @@ export function SegmentedControlItem({
         lineHeight: "var(--leading-normal)",
         backgroundColor: active ? "var(--surface-card)" : "transparent",
         color: active ? "var(--brand-primary)" : "var(--text-secondary)",
-        boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+        boxShadow: active ? "var(--shadow-lift)" : "none",
         ...style,
       }}
       data-state={active ? "on" : "off"}

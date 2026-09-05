@@ -55,7 +55,7 @@ export function FarmAccountPanel({
       {/* Identity strip */}
       <div
         className="flex items-center gap-3.5 py-5"
-        style={{ borderBottom: `1px solid ${BORDER}` }}
+        style={{ borderBottom: `var(--border-width-hairline) solid ${BORDER}` }}
       >
         <span
           className="flex shrink-0 items-center justify-center rounded-full"
@@ -63,9 +63,9 @@ export function FarmAccountPanel({
             width: 56,
             height: 56,
             backgroundColor: RUST,
-            color: "#FFFFFF",
-            fontSize: 20,
-            fontWeight: 700,
+            color: "var(--on-brand)",
+            fontSize: "var(--type-heading-lg)",
+            fontWeight: "var(--weight-bold)",
           }}
         >
           {accountInitials(account)}
@@ -73,11 +73,18 @@ export function FarmAccountPanel({
         <div className="min-w-0">
           <p
             className="truncate"
-            style={{ fontSize: 16, fontWeight: 700, color: TEXT }}
+            style={{
+              fontSize: "var(--type-heading-sm)",
+              fontWeight: "var(--weight-bold)",
+              color: TEXT,
+            }}
           >
             {resolveDisplayName(account)}
           </p>
-          <p className="truncate" style={{ fontSize: 13, color: MUTED }}>
+          <p
+            className="truncate"
+            style={{ fontSize: "var(--type-body-sm)", color: MUTED }}
+          >
             {account.farmName}
           </p>
         </div>

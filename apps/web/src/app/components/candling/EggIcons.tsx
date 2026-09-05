@@ -89,16 +89,21 @@ export const fertilityTones: Record<
   { bg: string; text: string; icon: string; label: string }
 > = {
   fertile: {
-    bg: "#DCFCE7",
-    text: "#166534",
-    icon: "#16A34A",
+    bg: "var(--status-success-bg)",
+    text: "var(--status-success-deep)",
+    icon: "var(--legend-green)",
     label: "Fertile",
   },
-  clear: { bg: "#F2EEE5", text: "#334155", icon: "#475569", label: "Clear" },
+  clear: {
+    bg: "var(--surface-tile)",
+    text: "var(--text-slate)",
+    icon: "var(--text-slate-soft)",
+    label: "Clear",
+  },
   uncertain: {
-    bg: "#FEF3C7",
-    text: "#92400E",
-    icon: "#D97706",
+    bg: "var(--status-warning-bg)",
+    text: "var(--text-amber-deep)",
+    icon: "var(--legend-amber)",
     label: "Uncertain",
   },
 };
@@ -135,13 +140,15 @@ export function FertilityPill({
       style={{
         backgroundColor: tone.bg,
         color: tone.text,
-        fontSize: 12,
-        fontWeight: 700,
+        fontSize: "var(--type-caption)",
+        fontWeight: "var(--weight-bold)",
       }}
     >
       <FertilityIcon kind={kind} size={14} />
       {value} {tone.label}
-      {suffix ? <span style={{ fontWeight: 600 }}>({suffix})</span> : null}
+      {suffix ? (
+        <span style={{ fontWeight: "var(--weight-semibold)" }}>({suffix})</span>
+      ) : null}
     </span>
   );
 }

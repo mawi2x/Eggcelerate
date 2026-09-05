@@ -73,15 +73,18 @@ const CARD = "var(--surface-subtle)";
 const BORDER = "var(--border-default)";
 const MUTED = "var(--text-secondary)";
 const TEXT = "var(--text-primary)";
-const INPUT_BORDER = "#D8D0C0";
+const INPUT_BORDER = "var(--input-border)";
 
 type Filter = "all" | UnitStatus;
 
-const inputStyle = { borderColor: INPUT_BORDER, backgroundColor: "#F2EEE5" };
+const inputStyle = {
+  borderColor: INPUT_BORDER,
+  backgroundColor: "var(--surface-tile)",
+};
 
 // Framed white control matching the toolbar spec.
 const sortTriggerStyle = {
-  backgroundColor: "#FFFFFF",
+  backgroundColor: "var(--surface-card)",
   borderColor: "var(--border-subtle)",
   color: "var(--text-primary)",
   fontFamily: "var(--font-body)",
@@ -387,8 +390,8 @@ export function IncubatorsScreen({
             setConnectError(null);
             setOpen(true);
           }}
-          className="shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[#8B3A1C] focus-visible:outline-none focus-visible:ring-2 sm:px-5"
-          style={{ backgroundColor: RUST, color: "#fff" }}
+          className="shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 sm:px-5"
+          style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
           aria-label="Add incubator"
         >
           <Plus size={18} />
@@ -430,7 +433,7 @@ export function IncubatorsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
+              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-(length:--type-body-sm) sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
               style={sortTriggerStyle}
               aria-label="Filter by incubation mode"
             >
@@ -456,7 +459,7 @@ export function IncubatorsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-[13px] sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
+              className="min-w-0 flex-1 rounded-xl px-2.5 text-xs sm:text-(length:--type-body-sm) sm:w-auto sm:min-w-[140px] sm:flex-initial sm:px-3"
               style={sortTriggerStyle}
               aria-label="Sort chambers"
             >
@@ -501,10 +504,16 @@ export function IncubatorsScreen({
           className="rounded-2xl px-5 py-12 text-center"
           style={{ backgroundColor: CARD, border: `1px dashed ${BORDER}` }}
         >
-          <p style={{ fontWeight: 700, color: TEXT }}>
+          <p style={{ fontWeight: "var(--weight-bold)", color: TEXT }}>
             No chambers match your filters
           </p>
-          <p style={{ color: MUTED, fontSize: 13, marginTop: 4 }}>
+          <p
+            style={{
+              color: MUTED,
+              fontSize: "var(--type-body-sm)",
+              marginTop: 4,
+            }}
+          >
             Try a different search term or filter.
           </p>
           {(search || filter !== "all" || modeFilter !== "all") && (
@@ -516,7 +525,11 @@ export function IncubatorsScreen({
                 setModeFilter("all");
               }}
               className="mt-3 cursor-pointer rounded-xl px-3 py-1.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
-              style={{ color: RUST, fontWeight: 600, fontSize: 13 }}
+              style={{
+                color: RUST,
+                fontWeight: "var(--weight-semibold)",
+                fontSize: "var(--type-body-sm)",
+              }}
             >
               Clear filters
             </button>
@@ -574,7 +587,7 @@ export function IncubatorsScreen({
                         height: isActive ? 12 : 2.5,
                         backgroundColor: isActive
                           ? "var(--brand-primary)"
-                          : "rgba(138, 107, 82, 0.4)",
+                          : "var(--wash-checkbox)",
                       }}
                     />
                   </button>
@@ -677,19 +690,24 @@ export function IncubatorsScreen({
                           onOpenUnit(unit.id);
                         }
                       }}
-                      className="group cursor-pointer transition-colors duration-200 hover:bg-[#FFF7ED] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                      className="group cursor-pointer transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                     >
-                      <TableCell style={{ fontWeight: 700, color: TEXT }}>
+                      <TableCell
+                        style={{
+                          fontWeight: "var(--weight-bold)",
+                          color: TEXT,
+                        }}
+                      >
                         {unit.name}
                       </TableCell>
                       <TableCell>
                         <span
                           className="rounded-full px-2 py-0.5"
                           style={{
-                            backgroundColor: "rgba(173,58,29,0.12)",
+                            backgroundColor: "var(--wash-brand-soft)",
                             color: RUST,
-                            fontWeight: 700,
-                            fontSize: 12,
+                            fontWeight: "var(--weight-bold)",
+                            fontSize: "var(--type-caption)",
                           }}
                         >
                           {mode.name}
@@ -702,7 +720,7 @@ export function IncubatorsScreen({
                         className="text-right"
                         style={{
                           color: readingStateColors[tempSt],
-                          fontWeight: 700,
+                          fontWeight: "var(--weight-bold)",
                         }}
                       >
                         {unit.temp}°C
@@ -711,7 +729,7 @@ export function IncubatorsScreen({
                         className="text-right"
                         style={{
                           color: readingStateColors[humSt],
-                          fontWeight: 700,
+                          fontWeight: "var(--weight-bold)",
                         }}
                       >
                         {unit.humidity}%
@@ -720,7 +738,7 @@ export function IncubatorsScreen({
                         className="text-right"
                         style={{
                           color: readingStateColors[waterSt],
-                          fontWeight: 700,
+                          fontWeight: "var(--weight-bold)",
                         }}
                       >
                         {unit.waterOk ? "Normal" : "Low"}
@@ -784,8 +802,8 @@ export function IncubatorsScreen({
               <div
                 className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
                 style={{
-                  backgroundColor: "#FEE2E2",
-                  border: "1px solid #FECACA",
+                  backgroundColor: "var(--status-danger-bg)",
+                  border: "1px solid var(--border-blush)",
                 }}
                 role="alert"
               >
@@ -796,14 +814,18 @@ export function IncubatorsScreen({
                 />
                 <div>
                   <p
-                    style={{ fontSize: 13, fontWeight: 700, color: "#B91C1C" }}
+                    style={{
+                      fontSize: "var(--type-body-sm)",
+                      fontWeight: "var(--weight-bold)",
+                      color: "var(--status-danger-fg)",
+                    }}
                   >
                     Connection Failed
                   </p>
                   <p
                     style={{
-                      fontSize: 12,
-                      color: "#B91C1C",
+                      fontSize: "var(--type-caption)",
+                      color: "var(--status-danger-fg)",
                       lineHeight: 1.45,
                       marginTop: 2,
                     }}
@@ -848,7 +870,11 @@ export function IncubatorsScreen({
               {connecting && (
                 <p
                   className="mt-2 flex items-center gap-1.5"
-                  style={{ fontSize: 12, color: "#8B3A1C", fontWeight: 600 }}
+                  style={{
+                    fontSize: "var(--type-caption)",
+                    color: "var(--brand-primary-hover)",
+                    fontWeight: "var(--weight-semibold)",
+                  }}
                 >
                   <Loader2 size={13} className="animate-spin" /> Verifying
                   hardware ID and establishing connection...
@@ -889,7 +915,7 @@ export function IncubatorsScreen({
               disabled={connecting || isAddingIncubator}
               aria-busy={connecting || isAddingIncubator}
               onClick={() => void handleAdd()}
-              style={{ backgroundColor: RUST, color: "#fff" }}
+              style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
             >
               {connecting || isAddingIncubator ? (
                 <>

@@ -13,14 +13,14 @@ export const severityStyle: Record<
     label: "Urgent",
   },
   warning: {
-    color: "#B04E27",
-    bg: "rgba(203,96,54,0.12)",
+    color: "var(--text-brand-soft)",
+    bg: "var(--wash-alert)",
     Icon: AlertTriangle,
     label: "Needs Attention",
   },
   info: {
-    color: "#8A6B52",
-    bg: "rgba(138,107,82,0.12)",
+    color: "var(--text-taupe)",
+    bg: "var(--wash-taupe)",
     Icon: Info,
     label: "Reminder",
   },

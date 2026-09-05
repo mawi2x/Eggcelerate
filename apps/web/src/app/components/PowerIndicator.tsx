@@ -30,8 +30,12 @@ export function PowerIndicator({
     ? "var(--status-success-fg)"
     : critical
       ? "var(--status-danger-fg)"
-      : "#3D3228";
-  const bg = charging ? "#DCFCE7" : critical ? "#FEE2E2" : "#F2EEE5";
+      : "var(--text-strong)";
+  const bg = charging
+    ? "var(--status-success-bg)"
+    : critical
+      ? "var(--status-danger-bg)"
+      : "var(--surface-tile)";
   const state = charging
     ? "Charging"
     : critical
@@ -42,11 +46,11 @@ export function PowerIndicator({
     <span
       className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1"
       style={{
-        height: 24,
+        height: "var(--control-height-pill)",
         backgroundColor: bg,
         color,
-        fontSize: 11,
-        fontWeight: 700,
+        fontSize: "var(--type-label)",
+        fontWeight: "var(--weight-bold)",
         whiteSpace: "nowrap",
       }}
       title={`${state}: ${battery}%`}

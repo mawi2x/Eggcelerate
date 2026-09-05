@@ -32,14 +32,17 @@ export function StatusBadge({ status }: { status: UnitStatus }) {
       style={{
         backgroundColor: bg,
         color: fg,
-        height: 24,
-        padding: "4px 10px",
+        height: "var(--control-height-pill)",
+        padding: "var(--pill-padding)",
       }}
     >
       <Icon size={13} strokeWidth={2.5} />
       <span
         className="whitespace-nowrap"
-        style={{ fontWeight: 600, fontSize: "0.75rem" }}
+        style={{
+          fontWeight: "var(--weight-semibold)",
+          fontSize: "var(--type-caption)",
+        }}
       >
         {statusLabels[status]}
       </span>

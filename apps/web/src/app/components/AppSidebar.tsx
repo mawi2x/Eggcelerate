@@ -305,17 +305,17 @@ export function AppSidebar({
       onBlur={() => setHoverEdge(false)}
       className="absolute z-50 flex cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       style={{
-        width: 28,
-        height: 28,
+        width: "var(--control-size-xs)",
+        height: "var(--control-size-xs)",
         top: "50%",
         right: -14,
         transform: "translateY(-50%)",
         backgroundColor: hoverEdge
           ? "var(--brand-primary)"
           : "var(--surface-card)",
-        border: `1px solid ${hoverEdge ? "var(--brand-primary)" : "var(--border-subtle)"}`,
+        border: `var(--border-width-hairline) solid ${hoverEdge ? "var(--brand-primary)" : "var(--border-subtle)"}`,
         color: hoverEdge ? "var(--on-brand)" : "var(--text-secondary)",
-        boxShadow: "0 2px 6px rgba(45,36,30,0.12)",
+        boxShadow: "var(--shadow-edge)",
       }}
       title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -344,7 +344,7 @@ export function AppSidebar({
         onClick={() => onNavigate(id)}
         className={`relative flex cursor-pointer items-center gap-3 rounded-xl border px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${isActive ? "border-[var(--global-nav-selected-bg)] bg-[var(--global-nav-selected-bg)] text-[var(--global-nav-selected-fg)]" : "border-transparent bg-transparent text-[var(--text-secondary)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"}`}
         style={{
-          height: 40,
+          height: "var(--control-size-nav)",
           width: "100%",
           fontFamily: "var(--font-body)",
           fontSize: "var(--type-body)",
@@ -385,7 +385,8 @@ export function AppSidebar({
         style={{
           width: RAIL_W,
           backgroundColor: "var(--surface-card)",
-          borderRight: "1px solid var(--border-subtle)",
+          borderRight:
+            "var(--border-width-hairline) solid var(--border-subtle)",
         }}
       >
         <EdgeToggle />
@@ -401,8 +402,8 @@ export function AppSidebar({
             onBlur={() => setHoverToggle(false)}
             className="relative flex cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
-              width: 36,
-              height: 36,
+              width: "var(--control-size-icon)",
+              height: "var(--control-size-icon)",
               backgroundColor: hoverToggle
                 ? "var(--surface-muted)"
                 : "transparent",
@@ -417,8 +418,8 @@ export function AppSidebar({
               alt="Eggcelerate logo"
               className="absolute transition-opacity duration-150"
               style={{
-                width: 32,
-                height: 32,
+                width: "var(--control-size-sm)",
+                height: "var(--control-size-sm)",
                 objectFit: "cover",
                 opacity: hoverToggle ? 0 : 1,
               }}
@@ -447,8 +448,8 @@ export function AppSidebar({
                 onClick={() => onNavigate(id)}
                 className="relative flex cursor-pointer items-center justify-center rounded-xl transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: "var(--control-size-nav)",
+                  height: "var(--control-size-nav)",
                   backgroundColor: isActive
                     ? "var(--global-nav-selected-bg)"
                     : "transparent",
@@ -487,8 +488,8 @@ export function AppSidebar({
             onClick={() => onNavigate("settings")}
             className="relative flex cursor-pointer items-center justify-center rounded-xl transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
-              width: 40,
-              height: 40,
+              width: "var(--control-size-nav)",
+              height: "var(--control-size-nav)",
               backgroundColor:
                 activeTab === "settings"
                   ? "var(--global-nav-selected-bg)"
@@ -512,8 +513,8 @@ export function AppSidebar({
           <span
             className="flex shrink-0 items-center justify-center rounded-full"
             style={{
-              width: 32,
-              height: 32,
+              width: "var(--control-size-sm)",
+              height: "var(--control-size-sm)",
               backgroundColor: "var(--brand-primary)",
               color: "var(--on-brand)",
               fontFamily: "var(--font-body)",
@@ -549,7 +550,10 @@ export function AppSidebar({
           src={logoApp}
           alt="Eggcelerate logo"
           className="shrink-0 object-cover"
-          style={{ width: 32, height: 32 }}
+          style={{
+            width: "var(--control-size-sm)",
+            height: "var(--control-size-sm)",
+          }}
         />
         {/* Sized to its own content so the brand never clips. */}
         <span
@@ -568,7 +572,11 @@ export function AppSidebar({
           type="button"
           onClick={onToggleCollapsed}
           className="flex shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-          style={{ width: 32, height: 32, color: "var(--text-secondary)" }}
+          style={{
+            width: "var(--control-size-sm)",
+            height: "var(--control-size-sm)",
+            color: "var(--text-secondary)",
+          }}
           title="Collapse sidebar"
           aria-label="Collapse sidebar"
           aria-expanded
@@ -606,8 +614,8 @@ export function AppSidebar({
         <span
           className="flex shrink-0 items-center justify-center rounded-full"
           style={{
-            width: 36,
-            height: 36,
+            width: "var(--control-size-icon)",
+            height: "var(--control-size-icon)",
             backgroundColor: "var(--brand-primary)",
             color: "var(--on-brand)",
             fontFamily: "var(--font-body)",

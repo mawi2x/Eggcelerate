@@ -27,7 +27,7 @@ const ZOOM_MAX = 400;
 const ZOOM_STEP = 25;
 
 const VIEWER_SHELL_CLASS =
-  "border-none p-0 overflow-hidden shadow-2xl bg-[#141210]/95 backdrop-blur-xl text-white transition-all duration-300";
+  "border-none p-0 overflow-hidden shadow-2xl bg-[var(--overlay-bg)]/95 backdrop-blur-xl text-white transition-all duration-300";
 const VIEWER_SHELL_FULLSCREEN =
   "h-[88vh] grid-rows-[auto_1fr] gap-0 rounded-2xl";
 const VIEWER_SHELL_NORMAL = "w-[92vw] rounded-3xl";
@@ -271,7 +271,9 @@ export function PhotoLightboxModal({
           VIEWER_SHELL_CLASS,
           fullscreen ? VIEWER_SHELL_FULLSCREEN : VIEWER_SHELL_NORMAL,
         )}
-        style={{ border: "1px solid rgba(255,255,255,0.12)" }}
+        style={{
+          border: "var(--border-width-hairline) solid var(--overlay-border)",
+        }}
       >
         <DialogTitle className="sr-only">Candling Photo Viewer</DialogTitle>
         <DialogDescription className="sr-only">
@@ -280,14 +282,14 @@ export function PhotoLightboxModal({
 
         {/* Top Header Bar with Single Unified Close Button */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3 select-none sm:flex-nowrap sm:px-6 sm:py-4">
-          <span className="shrink-0 text-sm font-semibold text-stone-200">
+          <span className="shrink-0 text-sm font-semibold text-[var(--overlay-fg)]">
             Photo {safeIndex + 1} of {total}
           </span>
           <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1 sm:gap-2">
             <Button
               size="sm"
               variant="ghost"
-              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-stone-200 hover:bg-white/10 hover:text-white sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
+              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-[var(--overlay-fg)] hover:bg-white/10 hover:text-white sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
               onClick={toggleFullscreen}
               title={
                 fullscreen ? "Exit Fullscreen (Esc)" : "Enlarge / Fullscreen"
@@ -302,7 +304,7 @@ export function PhotoLightboxModal({
             <Button
               size="sm"
               variant="ghost"
-              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-stone-200 hover:bg-white/10 hover:text-white sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
+              className="h-11 w-11 min-h-11 min-w-11 rounded-full p-0 text-[var(--overlay-fg)] hover:bg-white/10 hover:text-white sm:h-8 sm:w-auto sm:min-h-0 sm:min-w-0 sm:px-3"
               onClick={handleDownload}
               title="Download photo"
               aria-label="Download photo"
@@ -395,11 +397,14 @@ export function PhotoLightboxModal({
             />
           ) : (
             <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-white/5 border border-white/10 text-stone-300">
-              <Camera size={48} className="mb-3 text-stone-400 opacity-70" />
-              <p className="text-base font-semibold text-stone-200">
+              <Camera
+                size={48}
+                className="mb-3 text-[var(--overlay-muted)] opacity-70"
+              />
+              <p className="text-(length:--type-heading-sm) font-semibold text-[var(--overlay-fg)]">
                 Image could not be loaded
               </p>
-              <p className="text-xs text-stone-400 mt-1">
+              <p className="text-xs text-[var(--overlay-muted)] mt-1">
                 The photo format or source is unavailable
               </p>
             </div>
@@ -427,19 +432,19 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={zoomOut}
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-[var(--overlay-fg)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                 aria-label="Zoom out"
                 title="Zoom out (-)"
               >
                 <ZoomOut size={16} />
               </button>
-              <span className="min-w-[54px] text-center text-xs font-semibold text-stone-200 tabular-nums">
+              <span className="min-w-[54px] text-center text-xs font-semibold text-[var(--overlay-fg)] tabular-nums">
                 {zoom === 0 ? "Fit" : `${zoom}%`}
               </span>
               <button
                 type="button"
                 onClick={zoomIn}
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-[var(--overlay-fg)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                 aria-label="Zoom in"
                 title="Zoom in (+)"
               >
@@ -449,7 +454,7 @@ export function PhotoLightboxModal({
               <button
                 type="button"
                 onClick={resetView}
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-stone-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-[var(--overlay-fg)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 sm:h-8 sm:w-8"
                 aria-label="Fit to screen"
                 title="Fit to screen (0)"
               >

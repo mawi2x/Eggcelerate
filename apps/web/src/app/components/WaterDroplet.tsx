@@ -3,7 +3,7 @@ import { DropHalfBottom, DropSimple } from "@phosphor-icons/react";
 // Binary water sensor styled as a sibling to GaugeDial. The float switch only
 // gives us sufficient/low, so the two arc halves communicate state rather than
 // pretending to report an exact percentage.
-const TRACK = "#ECE6D9";
+const TRACK = "var(--track-gauge)";
 const OK = "var(--status-success-fg)";
 const ALERT = "var(--status-danger-fg)";
 const TEXT = "var(--text-primary)";
@@ -104,7 +104,7 @@ export function WaterDroplet({ ok, size = 120 }: WaterDropletProps) {
               color: MUTED,
               fontFamily: "var(--font-body)",
               fontSize: size >= 120 ? 11 : Math.max(9, Math.round(size * 0.07)),
-              fontWeight: 600,
+              fontWeight: "var(--weight-semibold)",
               lineHeight: 1.1,
               marginTop: 1,
             }}

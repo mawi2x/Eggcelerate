@@ -16,7 +16,7 @@ import {
 import { Switch } from "../ui/switch";
 import { KeyValue } from "./primitives";
 import { StopCycleModal } from "./StopCycleModal";
-import { BORDER, CRIT, MUTED, OK, relTime, SURFACE, TEXT } from "./types";
+import { relTime } from "./types";
 
 interface DeviceSettingsTabProps {
   unit: Incubator;
@@ -95,7 +95,7 @@ export function DeviceSettingsTab({
       <nav
         className="w-full max-w-none shrink-0 rounded-2xl p-1.5 sm:p-2 border border-[var(--border-default)] bg-[var(--surface-card)] lg:sticky lg:top-6 lg:max-w-[240px] lg:p-4"
         style={{
-          borderRadius: 16,
+          borderRadius: "var(--radius-card)",
         }}
         aria-label="Device settings"
       >
@@ -133,7 +133,8 @@ export function DeviceSettingsTab({
                   }`}
                   style={{
                     height: "var(--control-height-toolbar)",
-                    fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-body-sm)",
                     fontWeight: "var(--weight-bold)",
                     whiteSpace: "nowrap",
                   }}
@@ -163,7 +164,7 @@ export function DeviceSettingsTab({
         className="min-w-0 flex-1 rounded-2xl"
         style={{
           backgroundColor: "var(--surface-card)",
-          borderRadius: 16,
+          borderRadius: "var(--radius-card)",
           padding: 24,
           border: "1px solid var(--border-default)",
         }}
@@ -187,7 +188,12 @@ export function DeviceSettingsTab({
               </h2>
               <p
                 className="mt-1"
-                style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-regular)", color: "#6E6259" }}
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-regular)",
+                  color: "var(--text-farm)",
+                }}
               >
                 View target temperature, humidity, and candling schedule for the
                 active species preset.
@@ -197,25 +203,35 @@ export function DeviceSettingsTab({
               <div
                 className="flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between"
                 style={{
-                  backgroundColor: "#FCFAF6",
-                  border: `1px solid ${BORDER}`,
+                  backgroundColor: "var(--surface-porcelain)",
+                  border: `1px solid var(--border-default)`,
                 }}
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <span
                     aria-hidden="true"
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                    style={{ backgroundColor: "#F4ECE1", color: "#8B3A1C" }}
+                    style={{
+                      backgroundColor: "var(--surface-oat)",
+                      color: "var(--brand-primary-hover)",
+                    }}
                   >
                     <Egg
                       size={20}
-                      color="#8B3A1C"
+                      color="var(--brand-primary-hover)"
                       weight="fill"
                       aria-hidden="true"
                     />
                   </span>
                   <div className="min-w-0">
-                    <p style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-label)", fontWeight: "var(--weight-bold)" }}>
+                    <p
+                      style={{
+                        color: "var(--text-secondary)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                      }}
+                    >
                       Active preset
                     </p>
                     <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
@@ -225,7 +241,7 @@ export function DeviceSettingsTab({
                           fontSize: "var(--type-heading-sm)",
                           fontWeight: "var(--weight-extrabold)",
                           lineHeight: "var(--leading-snug)",
-                          color: TEXT,
+                          color: "var(--text-primary)",
                           whiteSpace: "normal",
                           wordBreak: "break-word",
                         }}
@@ -235,10 +251,11 @@ export function DeviceSettingsTab({
                       <span
                         className="shrink-0 rounded-full px-2 py-0.5"
                         style={{
-                          fontFamily: "var(--font-body)", fontSize: "var(--type-label)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-label)",
                           fontWeight: "var(--weight-bold)",
-                          backgroundColor: "#F5EFE6",
-                          color: "#8B3A1C",
+                          backgroundColor: "var(--surface-track)",
+                          color: "var(--brand-primary-hover)",
                         }}
                       >
                         {mode.builtIn ? "Built-in" : "Custom"}
@@ -259,9 +276,10 @@ export function DeviceSettingsTab({
                       aria-label="Choose incubation mode"
                       className="h-10 w-full rounded-xl sm:w-[180px]"
                       style={{
-                        borderColor: "#D8D0C0",
-                        backgroundColor: "#FFFFFF",
-                        fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)",
+                        borderColor: "var(--input-border)",
+                        backgroundColor: "var(--surface-card)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-body-sm)",
                         fontWeight: "var(--weight-bold)",
                       }}
                     >
@@ -279,9 +297,10 @@ export function DeviceSettingsTab({
                   <span
                     className="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-full px-3 sm:self-auto"
                     style={{
-                      backgroundColor: "#EFE9DC",
-                      color: MUTED,
-                      fontFamily: "var(--font-body)", fontSize: "var(--type-caption)",
+                      backgroundColor: "var(--border-sand)",
+                      color: "var(--text-secondary)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-caption)",
                       fontWeight: "var(--weight-bold)",
                     }}
                   >
@@ -294,7 +313,11 @@ export function DeviceSettingsTab({
               {!isReady && (
                 <p
                   className="flex items-start gap-2"
-                  style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: MUTED }}
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-caption)",
+                    color: "var(--text-secondary)",
+                  }}
                 >
                   <LockKeyhole
                     size={14}
@@ -309,8 +332,8 @@ export function DeviceSettingsTab({
               <dl
                 className="grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-2"
                 style={{
-                  border: `1px solid ${BORDER}`,
-                  backgroundColor: "#FFFFFF",
+                  border: `1px solid var(--border-default)`,
+                  backgroundColor: "var(--surface-card)",
                 }}
               >
                 {[
@@ -335,11 +358,19 @@ export function DeviceSettingsTab({
                     key={item.label}
                     className={`p-4 ${index < 3 ? "border-b" : ""} ${index % 2 === 0 ? "sm:border-r" : ""} ${index >= 2 ? "sm:border-b-0" : ""}`}
                     style={{
-                      backgroundColor: "#FCFAF6",
-                      borderColor: BORDER,
+                      backgroundColor: "var(--surface-porcelain)",
+                      borderColor: "var(--border-default)",
                     }}
                   >
-                    <dt style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)" }}>{item.label}</dt>
+                    <dt
+                      style={{
+                        color: "var(--text-secondary)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-caption)",
+                      }}
+                    >
+                      {item.label}
+                    </dt>
                     <dd
                       className="mt-1 tabular-nums"
                       style={{
@@ -347,7 +378,7 @@ export function DeviceSettingsTab({
                         fontSize: "var(--type-body)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-normal)",
-                        color: TEXT,
+                        color: "var(--text-primary)",
                       }}
                     >
                       {item.value}
@@ -364,7 +395,11 @@ export function DeviceSettingsTab({
                   })
                 }
                 className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg px-1 text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2"
-                style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)" }}
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-semibold)",
+                }}
               >
                 Edit preset for future cycles{" "}
                 <ChevronRight size={14} aria-hidden="true" />
@@ -375,7 +410,10 @@ export function DeviceSettingsTab({
 
         {settingTab === "turning" && (
           <>
-            <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
+            <div
+              className="pb-5"
+              style={{ borderBottom: "1px solid var(--border-oat)" }}
+            >
               <h2
                 style={{
                   fontFamily: "var(--font-display)",
@@ -389,7 +427,12 @@ export function DeviceSettingsTab({
               </h2>
               <p
                 className="mt-1"
-                style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-regular)", color: "#6E6259" }}
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-regular)",
+                  color: "var(--text-farm)",
+                }}
               >
                 Configure automatic egg rotation intervals and manual turning
                 controls.
@@ -398,10 +441,23 @@ export function DeviceSettingsTab({
             <div className="pt-5 space-y-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p style={{ fontWeight: "var(--weight-semibold)", fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", color: TEXT }}>
+                  <p
+                    style={{
+                      fontWeight: "var(--weight-semibold)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-body-sm)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
                     Automatic turning
                   </p>
-                  <p style={{ color: MUTED, fontFamily: "var(--font-body)", fontSize: "var(--type-caption)" }}>
+                  <p
+                    style={{
+                      color: "var(--text-secondary)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-caption)",
+                    }}
+                  >
                     Turn eggs on schedule automatically.
                   </p>
                 </div>
@@ -412,12 +468,25 @@ export function DeviceSettingsTab({
                 />
               </div>
               {turningStopped && (
-                <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: MUTED }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-caption)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
                   Turning is stopped during Lockdown and hatch phases.
                 </p>
               )}
               <div className="flex items-center justify-between gap-2">
-                <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)", color: TEXT }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-body-sm)",
+                    fontWeight: "var(--weight-semibold)",
+                    color: "var(--text-primary)",
+                  }}
+                >
                   Turn every
                 </span>
                 <Select
@@ -430,9 +499,10 @@ export function DeviceSettingsTab({
                   <SelectTrigger
                     className="h-9 w-[110px] rounded-xl"
                     style={{
-                      borderColor: "rgba(120,53,15,0.20)",
-                      backgroundColor: SURFACE,
-                      fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)",
+                      borderColor: "var(--border-clay)",
+                      backgroundColor: "var(--surface-card)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-body-sm)",
                     }}
                   >
                     <SelectValue />
@@ -450,8 +520,11 @@ export function DeviceSettingsTab({
                 <span
                   className="min-w-0 truncate"
                   style={{
-                    fontFamily: "var(--font-body)", fontSize: "var(--type-caption)",
-                    color: next.overdue ? CRIT.fg : MUTED,
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-caption)",
+                    color: next.overdue
+                      ? "var(--status-danger-fg)"
+                      : "var(--text-secondary)",
                   }}
                 >
                   Next: {next.text} • Last: {relTime(unit.lastTurned)}
@@ -475,7 +548,10 @@ export function DeviceSettingsTab({
 
         {settingTab === "device" && (
           <>
-            <div className="pb-5" style={{ borderBottom: "1px solid #E5DACB" }}>
+            <div
+              className="pb-5"
+              style={{ borderBottom: "1px solid var(--border-oat)" }}
+            >
               <h2
                 style={{
                   fontFamily: "var(--font-display)",
@@ -489,7 +565,12 @@ export function DeviceSettingsTab({
               </h2>
               <p
                 className="mt-1"
-                style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-regular)", color: "#6E6259" }}
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-regular)",
+                  color: "var(--text-farm)",
+                }}
               >
                 Manage chamber hardware pairing, connectivity status, and power
                 telemetry.
@@ -499,7 +580,11 @@ export function DeviceSettingsTab({
               <KeyValue label="Device ID" value={unit.deviceId} />
               <KeyValue
                 label="Connection Status"
-                accent={unit.paired ? OK.fg : CRIT.fg}
+                accent={
+                  unit.paired
+                    ? "var(--status-success-fg)"
+                    : "var(--status-danger-fg)"
+                }
                 value={
                   <span className="flex items-center gap-1.5">
                     {unit.paired ? (
@@ -532,17 +617,29 @@ export function DeviceSettingsTab({
               <div
                 className="rounded-xl p-3.5"
                 style={{
-                  backgroundColor: SURFACE,
-                  border: `1px solid ${BORDER}`,
+                  backgroundColor: "var(--surface-card)",
+                  border: `1px solid var(--border-default)`,
                 }}
               >
                 <div className="flex items-center justify-between">
-                  <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: MUTED }}>Battery</p>
+                  <p
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-caption)",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    Battery
+                  </p>
                   <span
                     style={{
-                      fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-body-sm)",
                       fontWeight: "var(--weight-bold)",
-                      color: unit.batteryPct <= 25 ? CRIT.fg : TEXT,
+                      color:
+                        unit.batteryPct <= 25
+                          ? "var(--status-danger-fg)"
+                          : "var(--text-primary)",
                     }}
                   >
                     {unit.batteryPct}%
@@ -553,14 +650,28 @@ export function DeviceSettingsTab({
               <div
                 className="rounded-xl p-4"
                 style={{
-                  backgroundColor: "#FFF8E7",
-                  border: "1px solid #F2C94C",
+                  backgroundColor: "var(--surface-amber-pale)",
+                  border: "1px solid var(--accent-gold)",
                 }}
               >
-                <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body)", fontWeight: "var(--weight-bold)", color: TEXT }}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-body)",
+                    fontWeight: "var(--weight-bold)",
+                    color: "var(--text-primary)",
+                  }}
+                >
                   Advanced
                 </p>
-                <p className="mt-1" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", color: MUTED }}>
+                <p
+                  className="mt-1"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-caption)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
                   Stop the current cycle early if the batch must be removed
                   before the expected hatch period.
                 </p>
@@ -575,9 +686,9 @@ export function DeviceSettingsTab({
                   }
                   onClick={() => setStopCycleOpen(true)}
                   style={{
-                    borderColor: "#C2410C",
-                    color: "#9A3412",
-                    backgroundColor: "#FFFFFF",
+                    borderColor: "var(--button-danger-border)",
+                    color: "var(--button-danger-fg)",
+                    backgroundColor: "var(--surface-card)",
                   }}
                 >
                   Stop Cycle

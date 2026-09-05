@@ -221,14 +221,18 @@ export function NotificationsPanel({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <section
               className="rounded-2xl p-4"
-              style={{ border: `1px solid ${BORDER}` }}
+              style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
               aria-labelledby="sms-delivery-title"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h3
                     id="sms-delivery-title"
-                    style={{ fontSize: 14, fontWeight: 700, color: TEXT }}
+                    style={{
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-bold)",
+                      color: TEXT,
+                    }}
                   >
                     SMS alerts
                   </h3>
@@ -266,7 +270,11 @@ export function NotificationsPanel({
                   {phoneErr && (
                     <p
                       className="mt-1.5"
-                      style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}
+                      style={{
+                        color: CRIT,
+                        fontSize: "var(--type-caption)",
+                        fontWeight: "var(--weight-semibold)",
+                      }}
                     >
                       {phoneErr}
                     </p>
@@ -277,14 +285,18 @@ export function NotificationsPanel({
 
             <section
               className="rounded-2xl p-4"
-              style={{ border: `1px solid ${BORDER}` }}
+              style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
               aria-labelledby="email-delivery-title"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h3
                     id="email-delivery-title"
-                    style={{ fontSize: 14, fontWeight: 700, color: TEXT }}
+                    style={{
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-bold)",
+                      color: TEXT,
+                    }}
                   >
                     Email alerts
                   </h3>
@@ -322,7 +334,11 @@ export function NotificationsPanel({
                   {emailErr && (
                     <p
                       className="mt-1.5"
-                      style={{ color: CRIT, fontSize: 12, fontWeight: 600 }}
+                      style={{
+                        color: CRIT,
+                        fontSize: "var(--type-caption)",
+                        fontWeight: "var(--weight-semibold)",
+                      }}
                     >
                       {emailErr}
                     </p>
@@ -332,7 +348,10 @@ export function NotificationsPanel({
             </section>
           </div>
 
-          <p className="pt-4" style={{ color: MUTED, fontSize: 12 }}>
+          <p
+            className="pt-4"
+            style={{ color: MUTED, fontSize: "var(--type-caption)" }}
+          >
             SMS and email delivery are provisional in this research demo.
           </p>
         </div>
@@ -348,7 +367,9 @@ export function NotificationsPanel({
               <section
                 key={group.id}
                 className={`rounded-2xl p-4 ${group.id === "schedule" ? "md:col-span-2" : ""}`}
-                style={{ border: `1px solid ${BORDER}` }}
+                style={{
+                  border: `var(--border-width-hairline) solid ${BORDER}`,
+                }}
               >
                 <GroupLabel>{group.title}</GroupLabel>
                 <div className="mt-1">
@@ -377,7 +398,10 @@ export function NotificationsPanel({
             ))}
           </div>
 
-          <p className="pt-4" style={{ color: MUTED, fontSize: 12 }}>
+          <p
+            className="pt-4"
+            style={{ color: MUTED, fontSize: "var(--type-caption)" }}
+          >
             Critical environment alerts always push to the in-app bell,
             regardless of the delivery methods you choose.
           </p>

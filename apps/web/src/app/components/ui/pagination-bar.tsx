@@ -11,7 +11,10 @@ import { cn } from "./utils";
 
 const BORDER = "var(--border-default)";
 const MUTED = "var(--text-secondary)";
-const INPUT_STYLE = { borderColor: "#D8D0C0", backgroundColor: "#F2EEE5" };
+const INPUT_STYLE = {
+  borderColor: "var(--input-border)",
+  backgroundColor: "var(--surface-tile)",
+};
 
 interface PaginationBarProps {
   page: number;
@@ -50,14 +53,19 @@ export function PaginationBar({
       )}
       style={{ borderColor: BORDER }}
     >
-      <span aria-live="polite" style={{ color: MUTED, fontSize: 13 }}>
+      <span
+        aria-live="polite"
+        style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}
+      >
         Showing {rangeStart} to {rangeEnd} of {totalItems} {itemLabel}
       </span>
 
       <div className="flex flex-wrap items-center gap-4">
         {showPageSize && (
           <div className="flex items-center gap-2">
-            <span style={{ color: MUTED, fontSize: 13 }}>Items per page:</span>
+            <span style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}>
+              Items per page:
+            </span>
             <Select
               value={String(safePageSize)}
               onValueChange={(value) => onPageSizeChange?.(Number(value))}
@@ -92,7 +100,7 @@ export function PaginationBar({
           >
             <ChevronLeft size={16} aria-hidden="true" />
           </Button>
-          <span style={{ color: MUTED, fontSize: 13 }}>
+          <span style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}>
             Page {safePage} of {totalPages}
           </span>
           <Button

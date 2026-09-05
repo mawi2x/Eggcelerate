@@ -1,6 +1,6 @@
 import { ExclamationIcon } from "./icons";
 
-const TRACK = "#E3DCCC";
+const TRACK = "var(--track-battery)";
 
 /**
  * Solid lightning bolt. Drawn as a filled path rather than a stroked icon so it
@@ -32,7 +32,7 @@ function barCount(pct: number): number {
 
 // Three operational states drive both the leading glyph and the colour.
 const CHARGING = "var(--status-success-fg)";
-const NEUTRAL = "#44403C";
+const NEUTRAL = "var(--text-note)";
 const LOW = "var(--status-danger-fg)";
 
 /**
@@ -69,7 +69,12 @@ export function SegmentedBattery({
       {showLabel && (
         <span
           className="inline-flex items-center whitespace-nowrap"
-          style={{ gap: 3, fontSize: 12, fontWeight: 700, color }}
+          style={{
+            gap: 3,
+            fontSize: "var(--type-caption)",
+            fontWeight: "var(--weight-bold)",
+            color,
+          }}
         >
           {charging ? (
             <Bolt color={color} />
@@ -91,8 +96,8 @@ export function SegmentedBattery({
             key={i}
             style={{
               width: 6,
-              height: 14,
-              borderRadius: 3,
+              height: "var(--battery-bar-height)",
+              borderRadius: "var(--radius-bar)",
               backgroundColor: i < bars ? color : TRACK,
             }}
           />
