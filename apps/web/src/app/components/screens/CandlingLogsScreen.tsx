@@ -576,7 +576,6 @@ export function CandlingLogsScreen({
             ariaLabel="Candling log filter"
             variant="segmented"
             fitToScreenOnMobile
-            textTransform="uppercase"
             value={filter}
             onChange={(key) => setFilter(key as RowFilter)}
             options={[
@@ -591,7 +590,7 @@ export function CandlingLogsScreen({
         <div className="flex w-full items-center justify-end gap-2 lg:w-auto">
           <Select value={modeFilter} onValueChange={setModeFilter}>
             <SelectTrigger
-              size="toolbar"
+              size="filter"
               className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 backgroundColor: SURFACE,
@@ -618,7 +617,7 @@ export function CandlingLogsScreen({
             onValueChange={(value) => setSort(value as SortKey)}
           >
             <SelectTrigger
-              size="toolbar"
+              size="filter"
               className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 backgroundColor: SURFACE,
@@ -640,7 +639,7 @@ export function CandlingLogsScreen({
           <button
             type="button"
             onClick={() => setSortAsc(!sortAsc)}
-            className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:rounded-xl"
+            className="flex h-[var(--control-height-default)] w-[var(--control-height-default)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)] md:rounded-xl"
             style={{
               backgroundColor: SURFACE,
               borderColor: CARD_BORDER,

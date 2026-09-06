@@ -285,7 +285,7 @@ function EnvironmentalSummary({
         }}
       >
         <summary className="cursor-pointer list-none rounded-2xl px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 max-[19rem]:justify-start">
             <p
               style={{
                 color: "var(--text-primary)",

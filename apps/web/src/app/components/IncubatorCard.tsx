@@ -559,7 +559,7 @@ export function IncubatorCard({
                 style={{ marginBottom: 6 }}
               >
                 <span
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap max-[19rem]:whitespace-normal"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-body-sm)",
@@ -571,7 +571,7 @@ export function IncubatorCard({
                   Day {unit.dayOfIncubation} of {mode.incubationDays}
                 </span>
                 <span
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap max-[19rem]:whitespace-normal"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-caption)",

@@ -49,8 +49,8 @@ describe("typography tokens", () => {
     const btn = fs.readFileSync("src/app/components/ui/button.tsx", "utf-8");
     // allow Tailwind text-sm (0.875rem = var(--type-body)) or var(--type-body)
     expect(btn).toMatch(/text-sm|var\(--type-body\)/);
-    // Form values ride --type-control-value (14px desktop, 16px on phones
-    // for legibility + iOS zoom stability), not --type-body.
+    // Form values ride --type-control-value (14px desktop, 12px on phones
+    // per blanket decrease), not --type-body.
     const input = fs.readFileSync("src/app/components/ui/input.tsx", "utf-8");
     expect(input).toContain("var(--type-control-value)");
     expect(input).toContain("var(--font-body)");
@@ -71,7 +71,7 @@ describe("typography tokens", () => {
     expect(sb).toContain("var(--weight-bold)");
     expect(sb).not.toMatch(/fontFamily:\s*"Baloo 2, sans-serif"/);
   });
-  it("uses selective phone type overrides", () => {
+  it("uses blanket phone decrease", () => {
     const css = fs.readFileSync("src/styles/theme.css", "utf-8");
     expect(css).toMatch(
       /@media\s*\(\s*max-width:\s*39\.9375rem\s*\)[\s\S]*?--type-page-title:\s*1\.25rem/,
@@ -79,7 +79,10 @@ describe("typography tokens", () => {
     expect(css).toMatch(
       /@media\s*\(\s*max-width:\s*39\.9375rem\s*\)[\s\S]*?--type-panel-title:\s*1\.125rem/,
     );
-    expect(css).toContain("--type-control-value: 1rem");
+    expect(css).toMatch(
+      /@media\s*\(\s*max-width:\s*39\.9375rem\s*\)[\s\S]*?--type-body:\s*0\.75rem/,
+    );
+    expect(css).toContain("--type-control-value: 0.75rem");
     expect(css).not.toContain("max-width: 25rem");
   });
 });

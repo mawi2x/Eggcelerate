@@ -12,6 +12,8 @@
   --type-heading-sm: 1rem; /* 16px */
   --type-body: 0.875rem; /* 14px */
   --type-control-value: 0.875rem; /* 14px desktop; 16px on phones (legibility + suppresses iOS focus auto-zoom) */
+  --type-filter-value: var(--type-control-value); /* [EXPERIMENTAL] 14px desktop; 12px tablet; 11px mobile */
+  --type-filter-label: var(--type-label); /* [EXPERIMENTAL] 11px desktop/tablet; 10px mobile */
   --type-body-sm: 0.8125rem; /* 13px */
   --type-caption: 0.75rem; /* 12px */
   --type-label: 0.6875rem; /* 11px — system minimum, do not go below globally */
@@ -349,15 +351,40 @@
   --chart-series-12: #77906f;
 }
 
-/* Phone type adjustments are selective. Titles may step down to preserve
-   hierarchy, while ordinary body text stays readable and editable values
-   step up to the 16px iOS focus-zoom floor. There is intentionally no
-   second <=400px scale: narrower screens reflow or wrap instead. */
+/* Blanket phone decrease (user-approved 2026-09-06): every mobile token steps
+   below desktop. Reverses the prior selective scale — control-value no longer
+   steps UP to the 16px iOS focus-zoom floor, body/label floors drop 2px, and
+   a new 8px micro floor appears. See typography-experimental.md. */
 @media (max-width: 39.9375rem) {
   :root {
     --type-page-title: 1.25rem; /* 20px */
     --type-panel-title: 1.125rem; /* 18px */
-    --type-control-value: 1rem; /* 16px */
+    --type-heading-lg: 1.125rem; /* 18px */
+    --type-heading-md: 1rem; /* 16px */
+    --type-heading-sm: 0.875rem; /* 14px */
+    --type-body-lg: 0.8125rem; /* 13px */
+    --type-body: 0.75rem; /* 12px */
+    --type-control-value: 0.75rem; /* 12px — below iOS 16px focus-zoom floor by request */
+    --type-body-sm: 0.6875rem; /* 11px */
+    --type-caption: 0.625rem; /* 10px */
+    --type-label: 0.5625rem; /* 9px */
+    --type-label-compact: 0.5rem; /* 8px — new micro floor by request */
+    --type-label-micro: 0.5rem; /* 8px — merged with compact by request */
+  }
+}
+
+/* [EXPERIMENTAL] Filter dropdown labels use a tighter tablet tier. */
+@media (min-width: 48rem) and (max-width: 63.9375rem) {
+  :root {
+    --type-filter-value: 0.75rem; /* 12px */
+  }
+}
+
+/* [EXPERIMENTAL] Filter dropdown labels use the compact label tier on mobile. */
+@media (max-width: 47.9375rem) {
+  :root {
+    --type-filter-value: var(--type-label); /* 11px */
+    --type-filter-label: var(--type-label-compact); /* 10px */
   }
 }
 
@@ -418,6 +445,7 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    overflow-x: clip;
   }
 
   h1,

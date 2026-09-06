@@ -142,7 +142,7 @@ export function AppSidebar({
                 aria-current={isActive ? "page" : undefined}
               >
                 <div
-                  className="flex h-8 w-11 items-center justify-center rounded-2xl transition-all duration-200"
+                  className="flex h-8 w-11 max-[19rem]:w-8 items-center justify-center rounded-2xl transition-all duration-200"
                   style={{
                     backgroundColor: isActive
                       ? "var(--global-nav-selected-bg)"
@@ -156,6 +156,7 @@ export function AppSidebar({
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 </div>
                 <span
+                  className="max-[19rem]:hidden"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-label)",
@@ -201,7 +202,7 @@ export function AppSidebar({
             aria-controls="mobile-more-menu"
           >
             <div
-              className="flex h-8 w-11 items-center justify-center rounded-2xl transition-all duration-200"
+              className="flex h-8 w-11 max-[19rem]:w-8 items-center justify-center rounded-2xl transition-all duration-200"
               style={{
                 backgroundColor:
                   moreActive || mobileMoreOpen
@@ -223,6 +224,7 @@ export function AppSidebar({
               />
             </div>
             <span
+              className="max-[19rem]:hidden"
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",

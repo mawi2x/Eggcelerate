@@ -10,6 +10,7 @@ export interface FilterBarOption {
   mobileLabel?: string;
   compactMobileLabel?: string;
   count?: number;
+  icon?: React.ReactNode;
 }
 
 interface FilterBarProps {
@@ -37,6 +38,11 @@ function FilterOptionContent({
 
   return (
     <>
+      {option.icon && (
+        <span className="flex shrink-0" aria-hidden="true">
+          {option.icon}
+        </span>
+      )}
       {hasResponsiveLabel ? (
         <>
           <span
@@ -58,8 +64,16 @@ function FilterOptionContent({
         option.label
       )}
       {typeof option.count === "number" && (
-        <span style={{ opacity: active ? 0.9 : 0.75 }}>
-          {" "}({option.count})
+        <span
+          className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-(length:--type-label) font-bold"
+          style={{
+            backgroundColor: active
+              ? "var(--brand-primary)"
+              : "var(--surface-stone)",
+            color: active ? "var(--on-brand)" : "var(--text-farm)",
+          }}
+        >
+          {option.count}
         </span>
       )}
     </>
@@ -133,6 +147,7 @@ export function FilterBar({
       return (
         <SegmentedControlItem
           key={option.key}
+          flush
           size="default"
           active={active}
           aria-pressed={active}
@@ -141,7 +156,7 @@ export function FilterBar({
           className={cn(equalTrackClass, fitsMobile && "px-2 md:px-4")}
           style={{
             fontFamily: "var(--font-body)",
-            fontSize: "var(--type-label)",
+            fontSize: "var(--type-filter-label)",
             fontWeight: "var(--weight-bold)",
             lineHeight: "var(--leading-snug)",
             letterSpacing: "var(--tracking-label)",
@@ -227,6 +242,7 @@ export function FilterBar({
         {isSegmented ? (
           <SegmentedControl
             role="presentation"
+            flush
             className={cn(
               "w-max shrink-0",
               fitToScreenOnMobile && "w-full min-w-0",

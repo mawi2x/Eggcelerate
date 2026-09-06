@@ -16,7 +16,7 @@ describe("mobile typography tokens", () => {
     expect(css()).toContain("--type-control-value: 0.875rem");
   });
 
-  it("uses selective phone type overrides without a second scale", () => {
+  it("uses blanket phone decrease: every mobile token steps below desktop", () => {
     const c = css();
     const phone = c.match(
       /@media\s*\(\s*max-width:\s*39\.9375rem\s*\)\s*\{[\s\S]*?:root\s*\{([\s\S]*?)\}\s*\}/,
@@ -25,10 +25,18 @@ describe("mobile typography tokens", () => {
     const block = phone?.[1] ?? "";
     expect(block).toContain("--type-page-title: 1.25rem");
     expect(block).toContain("--type-panel-title: 1.125rem");
-    expect(block).toContain("--type-control-value: 1rem");
-    expect(block).not.toMatch(/--type-(body|body-sm|caption|label):/);
+    expect(block).toContain("--type-heading-lg: 1.125rem");
+    expect(block).toContain("--type-heading-md: 1rem");
+    expect(block).toContain("--type-heading-sm: 0.875rem");
+    expect(block).toContain("--type-body-lg: 0.8125rem");
+    expect(block).toContain("--type-body: 0.75rem");
+    expect(block).toContain("--type-control-value: 0.75rem");
+    expect(block).toContain("--type-body-sm: 0.6875rem");
+    expect(block).toContain("--type-caption: 0.625rem");
+    expect(block).toContain("--type-label: 0.5625rem");
+    expect(block).toContain("--type-label-compact: 0.5rem");
+    expect(block).toContain("--type-label-micro: 0.5rem");
     expect(c).not.toContain("max-width: 25rem");
-    expect(c).not.toMatch(/--type-[^:]+:\s*0\.(4375|5)rem/);
   });
   it("keeps mobile visual controls compact and leaves hit areas explicit", () => {
     const c = css();
@@ -37,6 +45,17 @@ describe("mobile typography tokens", () => {
     expect(c).toContain("--control-size-icon: 2.25rem");
     expect(c).toContain("--control-segment-height: 2.25rem");
     expect(c).toContain("--control-hit-area-icon: 2.75rem");
+    expect(c).toContain("--type-filter-value: var(--type-control-value)");
+    expect(c).toContain("--type-filter-value: 0.75rem");
+    expect(c).toContain("--type-filter-value: var(--type-label)");
+    expect(c).toContain("--type-filter-label: var(--type-label)");
+    expect(c).toContain("--type-filter-label: var(--type-label-compact)");
+    expect(c).toMatch(
+      /@media\s*\(\s*min-width:\s*48rem\s*\)\s*and\s*\(\s*max-width:\s*63\.9375rem\s*\)[\s\S]*--type-filter-value:\s*0\.75rem/,
+    );
+    expect(c).toMatch(
+      /@media\s*\(\s*max-width:\s*47\.9375rem\s*\)[\s\S]*--type-filter-value:\s*var\(--type-label\)[\s\S]*--type-filter-label:\s*var\(--type-label-compact\)/,
+    );
     expect(c).not.toMatch(
       /@media\s*\(\s*max-width:\s*47\.9375rem\s*\)\s*\{[\s\S]*--control-(?:height-default|height-toolbar|size-icon|segment-height):/,
     );
@@ -61,13 +80,19 @@ describe("mobile form primitives", () => {
     expect(s).not.toContain("md:text-sm");
   });
 
-  it("SelectTrigger uses the control-value role", () => {
+  it("SelectTrigger uses control values and compact mobile filter geometry", () => {
     const s = src("src/app/components/ui/select.tsx");
     expect(s).toContain("var(--type-control-value)");
+    expect(s).toContain(
+      '"h-[var(--control-height-default)] px-3 py-2 text-sm md:h-[var(--control-height-toolbar)]"',
+    );
+    expect(s).toContain('fontSize: "var(--type-filter-value)"');
+    expect(s).toContain("size === \"filter\"");
   });
-  it("every focusable text entry surface uses control-value (no iOS zoom)", () => {
-    // Raw <input>/<textarea> must not pin 14px body or 13px body-sm: values
-    // below 16px trigger iOS focus auto-zoom on phones.
+  it("every focusable text entry surface uses control-value (blanket decrease)", () => {
+    // Blanket decrease: control-value is 12px on phones (below the 16px iOS
+    // focus-zoom floor by request). Surfaces must still share the role var —
+    // raw body/body-sm pins are the bug, not the floor.
     const form = src("src/app/components/auth/FormInput.tsx");
     expect(form).toContain("var(--type-control-value)");
     expect(form).not.toMatch(/fontSize: "var\(--type-body\)"/);
@@ -128,15 +153,19 @@ describe("mobile touch targets", () => {
     expect(candling).not.toContain("h-11 w-11 cursor-pointer");
   });
 
-  it("sort and readings actions use the shared target contract", () => {
+  it("sort actions use compact mobile geometry and shared target contract", () => {
     const incubators = src("src/app/components/screens/IncubatorsScreen.tsx");
     const candling = src("src/app/components/screens/CandlingLogsScreen.tsx");
     const trends = src("src/app/components/screens/TrendsScreen.tsx");
+    const compactSortButton =
+      "h-[var(--control-height-default)] w-[var(--control-height-default)]";
+    expect(incubators).toContain(compactSortButton);
+    expect(candling).toContain(compactSortButton);
     expect(incubators).toContain(
-      "h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)]",
+      "md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)]",
     );
     expect(candling).toContain(
-      "h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)]",
+      "md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)]",
     );
     expect(trends).toContain("md:min-h-[var(--control-height-compact)]");
     expect(trends).toContain('fontSize: "var(--type-body-sm)"');

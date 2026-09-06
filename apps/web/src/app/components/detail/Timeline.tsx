@@ -41,7 +41,9 @@ export function Timeline({
 
   return (
     <div>
-      <div className="relative mx-1 overflow-visible pt-9 pb-12 md:pt-11 md:pb-14">
+      <div className="max-w-full overflow-x-auto scrollbar-none">
+        <div className="min-w-[18rem]">
+          <div className="relative mx-1 overflow-visible pt-9 pb-12 md:pt-11 md:pb-14">
         {/* Track frame — the axis line, centered vertically in the container. */}
         <div
           className="absolute left-0 right-0"
@@ -250,8 +252,8 @@ export function Timeline({
             </div>
           );
         })}
-      </div>
-      <div className="mx-1 flex justify-between">
+          </div>
+          <div className="mx-1 flex justify-between">
         <span
           className="md:hidden"
           style={{
@@ -308,6 +310,8 @@ export function Timeline({
         >
           DAY {totalDays}
         </span>
+          </div>
+        </div>
       </div>
     </div>
   );

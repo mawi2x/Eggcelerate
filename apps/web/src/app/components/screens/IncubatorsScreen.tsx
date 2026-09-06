@@ -398,7 +398,6 @@ export function IncubatorsScreen({
             ariaLabel="Incubator status filter"
             variant="segmented"
             fitToScreenOnMobile
-            textTransform="uppercase"
             value={filter}
             onChange={(key) => {
               setFilter(key as typeof filter);
@@ -423,7 +422,7 @@ export function IncubatorsScreen({
             }}
           >
             <SelectTrigger
-              size="toolbar"
+              size="filter"
               className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 ...sortTriggerStyle,
@@ -451,7 +450,7 @@ export function IncubatorsScreen({
             }}
           >
             <SelectTrigger
-              size="toolbar"
+              size="filter"
               className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 ...sortTriggerStyle,
@@ -476,7 +475,7 @@ export function IncubatorsScreen({
               setSortAsc((v) => !v);
               setPage(1);
             }}
-            className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:rounded-xl"
+            className="flex h-[var(--control-height-default)] w-[var(--control-height-default)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)] md:rounded-xl"
             style={{
               backgroundColor: "var(--surface-card)",
               borderColor: "var(--border-subtle)",

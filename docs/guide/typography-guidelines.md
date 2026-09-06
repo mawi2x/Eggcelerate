@@ -228,8 +228,14 @@ Raw `px` may remain when it expresses physical UI detail, not typographic scale:
 
 Every exception should have a nearby comment or be an obvious chart/illustration prop. Do not add raw `fontSize` for new prose.
 
-## Mobile type and visual control geometry (one scale, three tiers)
+## Mobile type and visual control geometry — SUPERSEDED 2026-09-06
 
+> Blanket phone decrease (user-approved) replaces the selective scale below.
+> Source of truth is now `typography-experimental.md` + `theme.css` phone block
+> (all tokens step down; `control-value` 14→12; 8px micro floor). This section
+> is kept for history and will be rewritten or removed on promotion.
+
+## Mobile type and visual control geometry (one scale, three tiers) [HISTORICAL]
 There is a single type scale. Default `:root` is the 1440/desktop scale.
 Below 640px, only page/panel titles step down selectively while form values
 step up to 16px for legibility (values below 16px trigger iOS auto-zoom on
@@ -298,3 +304,47 @@ Standardized via 2 SDD runs (`fff9c75..cb67abe` Phase 1-2 + `0caa6fa..bca3846` P
 - `pnpm test` `11/11` (`typography-tokens` `batch-a/b/c`) `typecheck` PASS `build` `index 298.76kB + vendor 183.88kB + Trends 409.58kB` <500kB `bca3846`
 
 Light-theme token system is the supported implementation. Dark-mode `oklch()` values in `theme.css` remain generic, not brand-approved — do not expand without a separate dark-mode review (`color-guidelines.md` current scope).
+
+## [EXPERIMENTAL] Responsive filter-value scale
+
+> **EXPERIMENTAL — not part of the baseline type scale.** This rule is being
+> trialed for compact filter dropdowns and may be revised or removed after
+> rendered desktop/tablet/mobile review.
+
+Scope: `SelectTrigger size="filter"` only. It does not change ordinary
+selects, body copy, prose, headings, or the segmented status-bar labels.
+
+| Viewport tier | CSS range | `--type-filter-value` | Computed size |
+|---|---|---|---:|
+| Desktop | `min-width: 64rem` (1024px) | `var(--type-control-value)` | 14px |
+| Tablet | `48rem`–`63.9375rem` (768–1023px) | `0.75rem` | 12px |
+| Mobile | below `48rem` (under 768px) | `var(--type-label)` | 11px |
+
+Implementation lives in `apps/web/src/styles/theme.css` and is consumed by
+`apps/web/src/app/components/ui/select.tsx`. The `filter` control geometry
+remains 36px on mobile and 40px at `md` and above; only the filter-value
+typography changes by viewport tier.
+
+The 11px mobile tier is intentionally compact and must be checked at 320px,
+375px, 200% zoom, keyboard focus, and with long option names. Do not reuse
+`--type-filter-value` for prose or essential body text. If the compact tier
+fails legibility or focus review, revert this experimental scale to the
+standard `--type-control-value` role.
+
+### [EXPERIMENTAL] Mobile segmented-filter labels
+
+> **EXPERIMENTAL — visual trial only.** This is a compact mobile treatment
+> for short, uppercase segmented-filter labels. It is not a new general
+> purpose body or prose size.
+
+Scope: `FilterBar` controls with `variant="segmented"`.
+
+| Viewport tier | `--type-filter-label` | Computed size |
+|---|---|---:|
+| Desktop and tablet | `var(--type-label)` | 11px |
+| Mobile below `48rem` (768px) | `var(--type-label-compact)` | 10px |
+
+Counts remain on the existing `var(--type-label)` tier so the badge numbers
+remain legible. Review this trial at 320px/375px, 200% zoom, keyboard focus,
+and with longer translated filter labels before promoting it to the baseline
+scale.

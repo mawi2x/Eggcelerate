@@ -23,12 +23,18 @@ function SelectValue({
 }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
-const triggerSizeClasses: Record<"micro" | "sm" | "default" | "toolbar", string> = {
+const triggerSizeClasses: Record<
+  "micro" | "sm" | "default" | "toolbar" | "filter",
+  string
+> = {
   micro:
     "h-[var(--control-height-default)] px-2 py-0.5 text-sm md:h-7 md:text-xs",
   sm: "h-[var(--control-height-default)] px-2.5 md:h-[var(--control-height-compact)]",
   default: "h-[var(--control-height-default)] px-3 py-2 text-sm",
   toolbar: "h-[var(--control-height-toolbar)] px-3 py-2 text-sm",
+  // Filter controls stay compact on phones and retain toolbar density on desktop.
+  filter:
+    "h-[var(--control-height-default)] px-3 py-2 text-sm md:h-[var(--control-height-toolbar)]",
 };
 
 function SelectTrigger({
@@ -38,7 +44,7 @@ function SelectTrigger({
   style,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  size?: "micro" | "sm" | "default" | "toolbar";
+  size?: "micro" | "sm" | "default" | "toolbar" | "filter";
 }) {
   return (
     <SelectPrimitive.Trigger
@@ -55,6 +61,9 @@ function SelectTrigger({
         fontWeight: "var(--weight-regular)",
         lineHeight: "var(--leading-normal)",
         ...style,
+        ...(size === "filter" && {
+          fontSize: "var(--type-filter-value)",
+        }),
       }}
       {...props}
     >

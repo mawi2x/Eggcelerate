@@ -14,15 +14,17 @@ const itemSizeClasses: Record<SegmentedControlSize, string> = {
 export function SegmentedControl({
   className,
   children,
+  flush = false,
   role = "group",
   style,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { flush?: boolean }) {
   return (
     <div
       role={role}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full p-1",
+        "inline-flex items-center rounded-full border border-[var(--border-subtle)]",
+        flush ? "h-[var(--control-segment-height)] gap-0 p-0" : "gap-1 p-1",
         className,
       )}
       style={{ backgroundColor: "var(--surface-muted)", ...style }}
@@ -37,12 +39,14 @@ export function SegmentedControlItem({
   active = false,
   className,
   children,
+  flush = false,
   size = "default",
   style,
   type = "button",
   ...props
 }: React.ComponentProps<"button"> & {
   active?: boolean;
+  flush?: boolean;
   size?: SegmentedControlSize;
 }) {
   return (
@@ -50,7 +54,7 @@ export function SegmentedControlItem({
       type={type}
       className={cn(
         "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
-        itemSizeClasses[size],
+        flush ? "h-full min-h-0 py-0 gap-1.5" : itemSizeClasses[size],
         className,
       )}
       style={{

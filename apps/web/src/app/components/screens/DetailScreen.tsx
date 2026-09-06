@@ -96,7 +96,7 @@ function SubTabNav({
       <SegmentedControl
         role="tablist"
         aria-label="Incubator detail sections"
-        className="w-full md:w-max md:shrink-0"
+        className="w-full max-[19rem]:w-max md:w-max md:shrink-0"
       >
         {tabs.map((t) => {
           const isActive = active === t.id;
@@ -104,7 +104,7 @@ function SubTabNav({
             <SegmentedControlItem
               key={t.id}
               size="toolbar"
-              className="min-w-0 flex-1 px-2 md:flex-none md:px-4"
+              className="min-w-0 flex-1 max-[19rem]:min-w-[6rem] max-[19rem]:flex-none px-2 md:flex-none md:px-4"
               active={isActive}
               role="tab"
               aria-selected={isActive}

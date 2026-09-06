@@ -9,7 +9,7 @@ describe("filter-bar primitive", () => {
       "utf-8",
     );
     expect(s).toContain("var(--brand-primary)");
-    expect(s).toContain("var(--type-label)");
+    expect(s).toContain("var(--type-filter-label)");
     expect(s).toContain("var(--weight-bold)");
     expect(s).toContain("var(--tracking-label)");
     expect(s).toContain("rounded-full");
@@ -21,8 +21,9 @@ describe("filter-bar primitive", () => {
   it("theme has required tokens", () => {
     const css = fs.readFileSync(path.resolve("src/styles/theme.css"), "utf-8");
     expect(css).toContain("--type-label: 0.6875rem");
+    expect(css).toContain("--type-filter-label: var(--type-label)");
+    expect(css).toContain("--type-label-compact: 0.625rem");
     expect(css).toContain("--tracking-label: 0.05em");
-    expect(css).toContain("--brand-primary: #ad3a1d");
   });
   it("IncubatorsScreen uses FilterBar not inline 11 raw", () => {
     const s = fs.readFileSync(

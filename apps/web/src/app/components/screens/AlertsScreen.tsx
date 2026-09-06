@@ -170,7 +170,7 @@ export function AlertsScreen({
             }}
           >
             <SelectTrigger
-              size="toolbar"
+              size="filter"
               className="min-w-0 flex-[1_1_100%] rounded-lg px-2 min-[23rem]:flex-1 md:w-[165px] md:flex-none md:rounded-xl md:px-3"
               style={{
                 borderColor: BORDER,
@@ -399,7 +399,7 @@ export function AlertsScreen({
 
                           {/* Column 3 — severity pill above timestamp + quick actions */}
                           <div
-                            className="col-start-2 row-start-2 flex w-full items-start justify-between gap-3 md:col-start-3 md:row-start-1 md:w-[116px] md:flex-col md:items-end md:gap-1.5"
+                            className="col-start-2 row-start-2 flex w-full flex-wrap items-start justify-between gap-2 max-[19rem]:flex-col md:col-start-3 md:row-start-1 md:w-[116px] md:flex-nowrap md:items-end md:gap-1.5"
                             style={{ minHeight: 44 }}
                           >
                             <span
@@ -418,7 +418,7 @@ export function AlertsScreen({
                               {s.label}
                             </span>
 
-                            <div className="flex flex-col items-end gap-1 md:relative md:h-8 md:w-full">
+                            <div className="flex w-full flex-col items-end gap-1 max-[19rem]:items-end md:relative md:h-8 md:w-full">
                               <span
                                 className="whitespace-nowrap transition-opacity md:absolute md:inset-0 md:flex md:items-center md:justify-end md:group-focus-within:opacity-0 md:group-hover:opacity-0"
                                 style={{

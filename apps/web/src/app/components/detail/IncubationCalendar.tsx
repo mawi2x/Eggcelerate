@@ -318,7 +318,7 @@ export function IncubationCalendar({
 
       {/* One-line legend */}
       <div
-        className="mt-3 flex items-center justify-center gap-x-2 whitespace-nowrap border-t pt-2.5"
+        className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 border-t pt-2.5"
         style={{ borderColor: "var(--border-sand)" }}
       >
         {[

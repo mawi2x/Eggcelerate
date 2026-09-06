@@ -1,7 +1,6 @@
 import {
   ChevronDown,
   Download,
-  Egg,
   Layers,
   LineChart,
   Percent,
@@ -112,7 +111,7 @@ type RangeKey = ReadingWindow;
 const ranges: { key: RangeKey; label: string; hours: number | null }[] = [
   { key: "24h", label: "LAST 24H", hours: 24 },
   { key: "7d", label: "LAST 7 DAYS", hours: 24 * 7 },
-  { key: "full", label: "FULL INCUBATION", hours: null },
+  { key: "full", label: "FULL CYCLE", hours: null },
 ];
 
 type TrendView = "environmental" | "hatch";
@@ -541,10 +540,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   const viewOptions: {
     key: TrendView;
     label: string;
-    Icon: typeof LineChart;
   }[] = [
-    { key: "environmental", label: "Environmental Trends", Icon: LineChart },
-    { key: "hatch", label: "Hatch History", Icon: Egg },
+    { key: "environmental", label: "Environmental Trends" },
+    { key: "hatch", label: "Hatch History" },
   ];
   const cardStyle = {
     backgroundColor: CARD,
@@ -556,18 +554,31 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-start gap-4">
-        <SegmentedControl aria-label="Trend view" className="w-full md:w-auto">
-          {viewOptions.map(({ key, label, Icon }) => {
+        <SegmentedControl
+          flush
+          aria-label="Trend view"
+          className="w-full md:w-auto"
+        >
+          {viewOptions.map(({ key, label }) => {
             const active = trendView === key;
             return (
               <SegmentedControlItem
                 key={key}
+                flush
                 active={active}
-                className="min-w-0 flex-1 !h-auto min-h-[var(--control-segment-height)] whitespace-normal px-3 py-2 text-center md:flex-none md:px-4"
+                className="min-w-0 flex-1 px-3 md:flex-none md:px-4"
                 aria-pressed={active}
                 onClick={() => setTrendView(key)}
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: "var(--leading-snug)",
+                  letterSpacing: "var(--tracking-label)",
+                  textTransform: "uppercase",
+                }}
               >
-                <Icon size={16} aria-hidden="true" /> {label}
+                {label}
               </SegmentedControlItem>
             );
           })}
@@ -590,7 +601,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               {!compare ? (
                 <Select value={unitId} onValueChange={setUnitId}>
                   <SelectTrigger
-                    size="toolbar"
+                    size="filter"
                     className="min-w-0 flex-1 rounded-xl md:w-[240px] md:shrink-0"
                     style={{
                       ...toolbarInputStyle,
@@ -816,17 +827,29 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 </div>
 
                 {/* Metric segmented toggle — lives with the chart it drives. */}
-                <SegmentedControl className="self-end" aria-label="Metric">
+                <SegmentedControl
+                  flush
+                  className="self-end max-w-full overflow-x-auto scrollbar-none"
+                  aria-label="Metric"
+                >
                   {(Object.keys(metricInfo) as Metric[]).map((mk) => {
                     const active = metric === mk;
                     return (
                       <SegmentedControlItem
                         key={mk}
-                        size="compact"
+                        flush
                         active={active}
                         aria-pressed={active}
                         onClick={() => setMetric(mk)}
-                        style={{ color: active ? TEXT : MUTED }}
+                        className="px-3"
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-label)",
+                          fontWeight: "var(--weight-bold)",
+                          lineHeight: "var(--leading-snug)",
+                          letterSpacing: "var(--tracking-label)",
+                          textTransform: "uppercase",
+                        }}
                       >
                         {metricInfo[mk].label}
                       </SegmentedControlItem>
@@ -1089,7 +1112,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 }}
               >
                 <SelectTrigger
-                  size="toolbar"
+                  size="filter"
                   className="w-full rounded-xl"
                   style={{ ...toolbarInputStyle, ...CONTROL_FONT, color: TEXT }}
                 >

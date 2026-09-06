@@ -157,7 +157,7 @@ export default function App() {
   if (farmDataError) {
     return (
       <div
-        className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center"
+        className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center gap-4 px-6 text-center"
         role="alert"
       >
         <div>
@@ -186,7 +186,7 @@ export default function App() {
   if (modes.length === 0 || incubators.length === 0) {
     return (
       <div
-        className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center"
+        className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center gap-4 px-6 text-center"
         role="status"
       >
         <div>
@@ -407,7 +407,7 @@ export default function App() {
   return (
     <RequireAuth>
       <div
-        className="min-h-screen w-full"
+        className="min-h-dvh w-full overflow-x-clip"
         style={{ backgroundColor: "var(--surface-app)" }}
       >
         <AppSidebar

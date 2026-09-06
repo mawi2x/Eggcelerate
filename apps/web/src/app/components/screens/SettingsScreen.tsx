@@ -223,17 +223,17 @@ export function SettingsScreen({
               ? " Mode library actions save individually."
               : ""}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2 max-[19rem]:w-full">
             <Button
               variant="outline"
-              className="rounded-xl"
+              className="rounded-xl max-[19rem]:w-full max-[19rem]:whitespace-normal"
               disabled={!isDirty || isSaving}
               onClick={discard}
             >
               Discard
             </Button>
             <Button
-              className="rounded-xl px-6"
+              className="rounded-xl px-4 md:px-6 max-[19rem]:w-full max-[19rem]:whitespace-normal"
               style={{
                 backgroundColor: RUST,
                 color: "var(--on-brand)",
