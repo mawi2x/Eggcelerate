@@ -112,7 +112,7 @@ export function IncubationCalendar({
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
-          className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] cursor-pointer items-center justify-center rounded-full text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-track)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+          className="flex h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] cursor-pointer items-center justify-center rounded-full text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-track)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-[var(--control-size-icon)] md:w-[var(--control-size-icon)]"
           aria-label="Previous month"
         >
           <ChevronLeft size={15} />
@@ -131,7 +131,7 @@ export function IncubationCalendar({
         <button
           type="button"
           onClick={() => shiftMonth(1)}
-          className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] cursor-pointer items-center justify-center rounded-full text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-track)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+          className="flex h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] cursor-pointer items-center justify-center rounded-full text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-track)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-[var(--control-size-icon)] md:w-[var(--control-size-icon)]"
           aria-label="Next month"
         >
           <ChevronRight size={15} />

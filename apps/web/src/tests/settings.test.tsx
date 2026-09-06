@@ -131,4 +131,34 @@ describe("settings contracts", () => {
 
     await act(async () => root.unmount());
   });
+  it("keeps settings category labels concise on mobile navigation", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () =>
+      root.render(
+        <SettingsScreen
+          modes={[]}
+          onUpdateMode={async () => true}
+          onAddMode={async () => true}
+          onDeleteMode={async () => true}
+          settings={structuredClone(initialSettings)}
+          onSaveSettings={async () => true}
+          isSaving={false}
+          units={[]}
+        />,
+      ),
+    );
+
+    const navigation = container.querySelector(
+      'nav[aria-label="Settings categories"]',
+    );
+    if (!navigation) throw new Error("Missing settings category navigation");
+    expect(navigation.textContent).toContain("Modes");
+    expect(navigation.textContent).toContain("Alerts");
+    expect(navigation.textContent).toContain("Account");
+    expect(navigation.textContent).toContain("Hardware");
+
+    await act(async () => root.unmount());
+  });
 });

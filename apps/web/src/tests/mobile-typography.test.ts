@@ -132,10 +132,14 @@ describe("mobile touch targets", () => {
     const incubators = src("src/app/components/screens/IncubatorsScreen.tsx");
     const candling = src("src/app/components/screens/CandlingLogsScreen.tsx");
     const trends = src("src/app/components/screens/TrendsScreen.tsx");
-    expect(incubators).toContain("var(--control-size-icon)");
-    expect(candling).toContain("var(--control-size-icon)");
+    expect(incubators).toContain(
+      "h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)]",
+    );
+    expect(candling).toContain(
+      "h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)]",
+    );
     expect(trends).toContain("md:min-h-[var(--control-height-compact)]");
-    expect(trends).toContain("fontSize: \"var(--type-body-sm)\"");
+    expect(trends).toContain('fontSize: "var(--type-body-sm)"');
   });
 
   it("Overview count badges use the 11px label minimum, not 10px", () => {

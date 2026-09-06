@@ -164,11 +164,10 @@ export function DeviceSettingsTab({
 
       {/* Right Content Card */}
       <section
-        className="min-w-0 flex-1 rounded-2xl"
+        className="min-w-0 flex-1 rounded-2xl p-4 md:p-6"
         style={{
           backgroundColor: "var(--surface-card)",
           borderRadius: "var(--radius-card)",
-          padding: 24,
           border: "1px solid var(--border-default)",
         }}
       >

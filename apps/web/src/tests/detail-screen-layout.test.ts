@@ -16,4 +16,25 @@ describe("detail screen layout", () => {
     expect(subTabNav).toContain("justify-start");
     expect(subTabNav).not.toContain("lg:justify-end");
   });
+  it("uses phone-sized detail padding and touch-sized calendar navigation", () => {
+    const settings = fs.readFileSync(
+      path.resolve("src/app/components/detail/DeviceSettingsTab.tsx"),
+      "utf-8",
+    );
+    const calendar = fs.readFileSync(
+      path.resolve("src/app/components/detail/IncubationCalendar.tsx"),
+      "utf-8",
+    );
+
+    expect(settings).toContain(
+      'className="min-w-0 flex-1 rounded-2xl p-4 md:p-6"',
+    );
+    expect(settings).not.toContain("padding: 24");
+    expect(calendar).toContain(
+      "h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)]",
+    );
+    expect(calendar).toContain(
+      "md:h-[var(--control-size-icon)] md:w-[var(--control-size-icon)]",
+    );
+  });
 });

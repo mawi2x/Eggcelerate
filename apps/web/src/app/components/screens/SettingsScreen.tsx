@@ -30,11 +30,31 @@ interface Props {
 
 type CategoryId = "modes" | "notifications" | "account" | "hardware";
 
-const categories: { id: CategoryId; label: string; Icon: typeof Package }[] = [
-  { id: "modes", label: "MODE LIBRARY", Icon: Package },
-  { id: "notifications", label: "NOTIFICATIONS", Icon: Bell },
-  { id: "account", label: "FARM & ACCOUNT", Icon: Tractor },
-  { id: "hardware", label: "HARDWARE & DEVICES", Icon: Zap },
+const categories: {
+  id: CategoryId;
+  label: string;
+  mobileLabel: string;
+  Icon: typeof Package;
+}[] = [
+  { id: "modes", label: "MODE LIBRARY", mobileLabel: "Modes", Icon: Package },
+  {
+    id: "notifications",
+    label: "NOTIFICATIONS",
+    mobileLabel: "Alerts",
+    Icon: Bell,
+  },
+  {
+    id: "account",
+    label: "FARM & ACCOUNT",
+    mobileLabel: "Account",
+    Icon: Tractor,
+  },
+  {
+    id: "hardware",
+    label: "HARDWARE & DEVICES",
+    mobileLabel: "Hardware",
+    Icon: Zap,
+  },
 ];
 
 export function SettingsScreen({
@@ -91,7 +111,7 @@ export function SettingsScreen({
         aria-label="Settings categories"
       >
         <ul className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
-          {categories.map(({ id, label, Icon }) => {
+          {categories.map(({ id, label, mobileLabel, Icon }) => {
             const isActive = category === id;
             return (
               <li key={id} className="min-w-0 shrink-0 lg:shrink lg:w-full">
@@ -114,7 +134,13 @@ export function SettingsScreen({
                     className="shrink-0"
                     aria-hidden="true"
                   />
-                  <span className="min-w-0 whitespace-nowrap" title={label}>
+                  <span className="min-w-0 whitespace-nowrap lg:hidden">
+                    {mobileLabel}
+                  </span>
+                  <span
+                    className="hidden min-w-0 whitespace-nowrap lg:inline"
+                    title={label}
+                  >
                     {label}
                   </span>
                 </button>

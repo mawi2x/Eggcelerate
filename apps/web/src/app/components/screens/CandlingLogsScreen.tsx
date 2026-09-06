@@ -640,7 +640,7 @@ export function CandlingLogsScreen({
           <button
             type="button"
             onClick={() => setSortAsc(!sortAsc)}
-            className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:rounded-xl"
+            className="flex h-[var(--control-height-toolbar)] w-[var(--control-height-toolbar)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:rounded-xl"
             style={{
               backgroundColor: SURFACE,
               borderColor: CARD_BORDER,
