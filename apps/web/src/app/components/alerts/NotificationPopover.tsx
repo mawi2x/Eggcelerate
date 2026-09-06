@@ -66,7 +66,7 @@ export function NotificationPopover({
                 minWidth: isMobile ? 18 : 22,
                 padding: "0 4px",
                 backgroundColor: "var(--badge-alert-bg)",
-                color: "var(--surface-card)",
+                color: "var(--on-brand)",
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
                 fontWeight: "var(--weight-bold)",

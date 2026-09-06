@@ -99,6 +99,9 @@
   --local-nav-selected-fg: var(--brand-primary-hover);
   --nav-hover-bg: #fff7ed;
   --nav-hover-border: #e7d0b8;
+
+  /* Overview secondary action — compact visual control on phones. */
+  --overview-action-height-mobile: var(--control-height-default); /* 36px */
   /* Type additions — role-named, rem-based. */
   --type-body-lg: 0.9375rem; /* 15px — Banner lg description only */
 
@@ -397,6 +400,14 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 @layer base {

@@ -66,7 +66,7 @@ export function SectionCard({
     >
       <CardContent className="p-4 sm:p-5">
         <div
-          className={`flex items-start justify-between gap-3 min-h-[32px] ${divider ? "mb-3 border-b pb-3" : "mb-4"}`}
+          className={`flex items-start justify-between gap-3 min-h-[var(--control-height-compact)] ${divider ? "mb-3 border-b pb-3" : "mb-4"}`}
           style={{
             ...(centered
               ? { justifyContent: "center", textAlign: "center" }

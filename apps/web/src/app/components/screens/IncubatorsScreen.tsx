@@ -257,9 +257,9 @@ export function IncubatorsScreen({
     label: string;
     count: number;
   }[] = [
-    { key: "all", label: "ALL", count: counts.all },
-    { key: "optimal", label: "OPTIMAL", count: counts.optimal },
-    { key: "issues", label: "ISSUES", count: counts.issues },
+    { key: "all", label: "All", count: counts.all },
+    { key: "optimal", label: "Normal", count: counts.optimal },
+    { key: "issues", label: "Alerts", count: counts.issues },
   ];
 
   // Pagination for the list view.
@@ -398,6 +398,7 @@ export function IncubatorsScreen({
             ariaLabel="Incubator status filter"
             variant="segmented"
             fitToScreenOnMobile
+            textTransform="uppercase"
             value={filter}
             onChange={(key) => {
               setFilter(key as typeof filter);
@@ -423,7 +424,7 @@ export function IncubatorsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5 md:text-sm"
+              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 ...sortTriggerStyle,
               }}
@@ -451,7 +452,7 @@ export function IncubatorsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5 md:text-sm"
+              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 ...sortTriggerStyle,
               }}
@@ -498,7 +499,7 @@ export function IncubatorsScreen({
           className="rounded-2xl px-5 py-12 text-center"
           style={{ backgroundColor: CARD, border: `1px dashed ${BORDER}` }}
         >
-          <p style={{ fontWeight: "var(--weight-bold)", color: TEXT }}>
+          <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", lineHeight: "var(--leading-snug)", fontWeight: "var(--weight-bold)", color: TEXT }}>
             No chambers match your filters
           </p>
           <p

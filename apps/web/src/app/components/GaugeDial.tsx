@@ -52,7 +52,7 @@ export function GaugeDial({
   const stroke = Math.max(9, Math.round(size * 0.08));
   const r = size / 2 - stroke / 2 - 4;
   const valueFont = Math.round(size * 0.19);
-  const unitFont = Math.round(size * 0.088);
+  const unitFont = Math.max(9, Math.round(size * 0.088));
   const labelFont = size >= 120 ? 11 : Math.max(10, Math.round(size * 0.072));
 
   const START = 225; // bottom-left

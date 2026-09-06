@@ -140,23 +140,30 @@ function KpiCard({
         {footer && (
           <div className="mt-2">
             <div
-              className="flex items-center gap-1 text-(length:--type-label) font-semibold"
-              style={{ color: "var(--text-primary)" }}
+              className="flex items-center gap-1 font-semibold"
+              style={{
+                color: "var(--text-primary)",
+                fontSize: "var(--type-label)",
+              }}
             >
               {footer.primary}
             </div>
             {footer.secondary && (
               <div
-                className="text-(length:--type-label)"
-                style={{ color: "var(--text-muted)" }}
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "var(--type-label)",
+                }}
               >
                 {footer.secondary}
               </div>
             )}
             {footer.tertiary && (
               <div
-                className="text-(length:--type-label)"
-                style={{ color: "var(--text-muted)" }}
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "var(--type-label)",
+                }}
               >
                 {footer.tertiary}
               </div>
@@ -253,7 +260,7 @@ function OffTargetRow({
       <button
         type="button"
         onClick={() => onOpen(unit.id)}
-      className="condition-row group flex min-h-[var(--control-height-default)] w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 md:min-h-0"
+        className="condition-row group flex min-h-[var(--control-height-default)] w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 md:min-h-0"
         title={`${unit.name} · ${displayValue}${unitLabel}`}
       >
         <div className="flex min-w-0 items-center gap-3">
@@ -492,6 +499,22 @@ export function OverviewScreen({
     setCarouselPage(page);
   };
   const [conditionTab, setConditionTab] = useState<"temp" | "humidity">("temp");
+  const conditionCarouselRef = useRef<HTMLDivElement>(null);
+  const selectConditionTab = (tab: "temp" | "humidity") => {
+    setConditionTab(tab);
+    const el = conditionCarouselRef.current;
+    if (!el) return;
+    el.scrollTo({
+      left: (tab === "humidity" ? 1 : 0) * el.clientWidth,
+      behavior: "smooth",
+    });
+  };
+  const handleConditionCarouselScroll = () => {
+    const el = conditionCarouselRef.current;
+    if (!el || el.clientWidth === 0) return;
+    const page = Math.round(el.scrollLeft / el.clientWidth);
+    setConditionTab(page > 0 ? "humidity" : "temp");
+  };
   const stats = useMemo(() => {
     const count = (s: UnitStatus) => units.filter((u) => u.status === s).length;
     const connected = units.filter(
@@ -671,7 +694,7 @@ export function OverviewScreen({
           <button
             type="button"
             onClick={onManageAll}
-            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-xl border bg-[var(--surface-card)] px-3 py-1.5 text-sm font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:px-4 md:py-2"
+            className="inline-flex min-h-[var(--overview-action-height-mobile)] shrink-0 cursor-pointer items-center gap-1 rounded-xl border bg-[var(--surface-card)] px-3 py-1.5 text-sm font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:min-h-11 md:px-4 md:py-2"
             style={{ borderColor: RUST, color: RUST }}
             aria-label="View all incubators"
           >
@@ -761,9 +784,13 @@ export function OverviewScreen({
               marginTop: 2,
             }}
           >
-            Incubators with temperature or humidity that may need attention.
+            Incubators with temperature or humidity concerns.
           </p>
         </div>
+        <div
+          className="mb-4 h-px w-full"
+          style={{ backgroundColor: "var(--border-sand)" }}
+        />
 
         {/* Mobile toggle between Temperature and Humidity */}
         <fieldset
@@ -776,11 +803,11 @@ export function OverviewScreen({
         >
           <button
             type="button"
-            onClick={() => setConditionTab("temp")}
+            onClick={() => selectConditionTab("temp")}
             aria-pressed={conditionTab === "temp"}
             aria-controls="condition-temp-panel"
             aria-label={`Temperature, ${offTarget.temp.length} need attention`}
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
               backgroundColor:
                 conditionTab === "temp" ? "var(--surface-card)" : "transparent",
@@ -815,11 +842,11 @@ export function OverviewScreen({
           </button>
           <button
             type="button"
-            onClick={() => setConditionTab("humidity")}
+            onClick={() => selectConditionTab("humidity")}
             aria-pressed={conditionTab === "humidity"}
             aria-controls="condition-humidity-panel"
             aria-label={`Humidity, ${offTarget.humidity.length} need attention`}
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
               backgroundColor:
                 conditionTab === "humidity"
@@ -855,16 +882,16 @@ export function OverviewScreen({
             )}
           </button>
         </fieldset>
-        <div
-          className="mb-4 h-px w-full hidden lg:block"
-          style={{ backgroundColor: "var(--border-sand)" }}
-        />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div
+          ref={conditionCarouselRef}
+          onScroll={handleConditionCarouselScroll}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto scrollbar-none lg:grid lg:grid-cols-2 lg:gap-6 lg:overflow-visible"
+        >
           {/* Column 1: temperature */}
           <div
             id="condition-temp-panel"
-            className={`min-w-0 ${conditionTab === "temp" ? "block" : "hidden"} lg:block`}
+            className="min-w-full shrink-0 snap-start lg:min-w-0 lg:shrink"
           >
             <div className="mb-3 hidden lg:block">
               <h3
@@ -921,7 +948,7 @@ export function OverviewScreen({
           {/* Column 2: humidity */}
           <div
             id="condition-humidity-panel"
-            className={`min-w-0 ${conditionTab === "humidity" ? "block" : "hidden"} lg:block`}
+            className="min-w-full shrink-0 snap-start lg:min-w-0 lg:shrink"
           >
             <div className="mb-3 hidden lg:block">
               <h3

@@ -576,11 +576,12 @@ export function CandlingLogsScreen({
             ariaLabel="Candling log filter"
             variant="segmented"
             fitToScreenOnMobile
+            textTransform="uppercase"
             value={filter}
             onChange={(key) => setFilter(key as RowFilter)}
             options={[
               { key: "all", label: "All", count: summaries.length },
-              { key: "todo", label: "To Do", count: counts.todo },
+              { key: "todo", label: "To Log", count: counts.todo },
               { key: "done", label: "Done", count: counts.done },
             ]}
             className="md:!w-full lg:!w-auto"
@@ -591,7 +592,7 @@ export function CandlingLogsScreen({
           <Select value={modeFilter} onValueChange={setModeFilter}>
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5 md:text-sm"
+              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
@@ -618,7 +619,7 @@ export function CandlingLogsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5 md:text-sm"
+              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
@@ -662,7 +663,7 @@ export function CandlingLogsScreen({
             className="rounded-2xl border border-dashed px-5 py-12 text-center"
             style={{ backgroundColor: SUBTLE, borderColor: BORDER }}
           >
-            <p style={{ color: TEXT, fontWeight: "var(--weight-bold)" }}>
+            <p style={{ color: TEXT, fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)" }}>
               No candling logs match these filters
             </p>
             <p
@@ -788,10 +789,6 @@ export function CandlingLogsScreen({
                         backgroundColor: SUBTLE,
                         borderBottom: `1px solid ${BORDER}`,
                         color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                        textTransform: "uppercase",
                       }}
                     >
                       CHAMBER
@@ -802,10 +799,6 @@ export function CandlingLogsScreen({
                         backgroundColor: SUBTLE,
                         borderBottom: `1px solid ${BORDER}`,
                         color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                        textTransform: "uppercase",
                       }}
                     >
                       NEXT CHECK
@@ -816,10 +809,6 @@ export function CandlingLogsScreen({
                         backgroundColor: SUBTLE,
                         borderBottom: `1px solid ${BORDER}`,
                         color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                        textTransform: "uppercase",
                       }}
                     >
                       LAST LOGGED
@@ -830,10 +819,6 @@ export function CandlingLogsScreen({
                         backgroundColor: SUBTLE,
                         borderBottom: `1px solid ${BORDER}`,
                         color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                        textTransform: "uppercase",
                       }}
                     >
                       STATUS
@@ -844,10 +829,6 @@ export function CandlingLogsScreen({
                         backgroundColor: SUBTLE,
                         borderBottom: `1px solid ${BORDER}`,
                         color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                        textTransform: "uppercase",
                       }}
                     >
                       ACTIONS

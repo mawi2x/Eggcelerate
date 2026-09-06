@@ -74,6 +74,7 @@ export function FarmAccountPanel({
           <p
             className="max-w-full break-words"
             style={{
+              fontFamily: "var(--font-display)",
               fontSize: "var(--type-heading-sm)",
               fontWeight: "var(--weight-bold)",
               color: TEXT,

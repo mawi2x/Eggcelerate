@@ -586,7 +586,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             }}
           >
             {/* ROW 1 — chamber selection and metric. */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col items-stretch gap-3 md:flex-row md:flex-wrap md:items-center">
               {!compare ? (
                 <Select value={unitId} onValueChange={setUnitId}>
                   <SelectTrigger

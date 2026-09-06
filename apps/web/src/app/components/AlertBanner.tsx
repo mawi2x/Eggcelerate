@@ -67,7 +67,13 @@ export function AlertBanner({ criticalUnits, modes, onView }: Props) {
         </p>
         <p
           className="break-words"
-          style={{ opacity: 0.9, overflowWrap: "anywhere" }}
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--type-body-lg)",
+            lineHeight: "var(--leading-normal)",
+            opacity: 0.9,
+            overflowWrap: "anywhere",
+          }}
         >
           {detail}
         </p>

@@ -171,7 +171,7 @@ export function AlertsScreen({
           >
             <SelectTrigger
               size="toolbar"
-              className="min-w-0 flex-[1_1_100%] rounded-lg px-2 min-[23rem]:flex-1 md:w-[165px] md:flex-none md:rounded-xl md:px-3 md:text-sm"
+              className="min-w-0 flex-[1_1_100%] rounded-lg px-2 min-[23rem]:flex-1 md:w-[165px] md:flex-none md:rounded-xl md:px-3"
               style={{
                 borderColor: BORDER,
                 backgroundColor: "var(--surface-card)",
@@ -189,7 +189,7 @@ export function AlertsScreen({
           </Select>
           <Button
             size="toolbar"
-            className="min-w-0 flex-1 rounded-lg md:flex-none md:rounded-xl md:px-4 md:text-sm"
+            className="min-w-0 flex-1 rounded-lg md:flex-none md:rounded-xl md:px-4"
             style={{
               backgroundColor: RUST,
               color: "var(--on-brand)",
@@ -211,7 +211,7 @@ export function AlertsScreen({
           <Button
             size="toolbar"
             variant="outline"
-            className="min-w-0 flex-1 rounded-lg md:flex-none md:rounded-xl md:px-4 md:text-sm"
+            className="min-w-0 flex-1 rounded-lg md:flex-none md:rounded-xl md:px-4"
             style={{
               borderColor: BORDER,
             }}

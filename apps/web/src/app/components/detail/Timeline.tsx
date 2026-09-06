@@ -79,7 +79,7 @@ export function Timeline({
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
-                fontWeight: "var(--weight-extrabold)",
+                fontWeight: "var(--weight-bold)",
                 letterSpacing: "var(--tracking-label)",
                 lineHeight: "var(--leading-snug)",
                 backgroundColor: "var(--brand-primary)",

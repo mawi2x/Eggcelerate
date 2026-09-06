@@ -34,7 +34,7 @@ export function UtilityHeader({ alertCount, onViewAlerts }: Props) {
             padding: "0 5px",
             backgroundColor: "var(--badge-alert-bg)",
             color: "var(--on-brand)",
-            fontSize: "var(--type-caption)",
+            fontSize: "var(--type-label)",
             fontWeight: "var(--weight-bold)",
             border: "2px solid var(--surface-app)",
           }}

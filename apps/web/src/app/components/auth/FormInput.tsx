@@ -68,8 +68,7 @@ export function FormInput({
       {error && (
         <p
           id={`${id}-error`}
-          className="text-xs"
-          style={{ color: "var(--status-danger-fg)" }}
+          style={{ fontSize: "var(--type-caption)", color: "var(--status-danger-fg)" }}
         >
           {error}
         </p>

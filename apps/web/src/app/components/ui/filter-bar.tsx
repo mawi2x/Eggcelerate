@@ -21,6 +21,7 @@ interface FilterBarProps {
   variant?: "chips" | "segmented";
   equalWidthOnMobile?: boolean;
   fitToScreenOnMobile?: boolean;
+  textTransform?: "none" | "uppercase";
 }
 
 function FilterOptionContent({
@@ -74,6 +75,7 @@ export function FilterBar({
   variant = "chips",
   equalWidthOnMobile = false,
   fitToScreenOnMobile = false,
+  textTransform = "uppercase",
 }: FilterBarProps) {
   const isSegmented = variant === "segmented";
   const fitsMobile = fitToScreenOnMobile || equalWidthOnMobile;
@@ -143,7 +145,7 @@ export function FilterBar({
             fontWeight: "var(--weight-bold)",
             lineHeight: "var(--leading-snug)",
             letterSpacing: "var(--tracking-label)",
-            textTransform: "uppercase",
+            textTransform,
           }}
         >
           <FilterOptionContent option={option} active={active} />
@@ -177,7 +179,7 @@ export function FilterBar({
           fontWeight: "var(--weight-bold)",
           lineHeight: "var(--leading-snug)",
           letterSpacing: "var(--tracking-label)",
-          textTransform: "uppercase",
+          textTransform,
         }}
       >
         <FilterOptionContent option={option} active={active} />

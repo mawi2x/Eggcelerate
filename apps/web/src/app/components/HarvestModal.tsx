@@ -71,7 +71,7 @@ export function HarvestModal({
       }}
     >
       <DialogContent
-        className="w-[90vw] max-w-[460px] max-h-[88vh] overflow-y-auto p-0 shadow-2xl [&>[data-slot=dialog-close]]:hidden"
+        className="w-[90vw] max-w-[var(--dialog-width-narrow)] max-h-[88vh] overflow-y-auto p-0 shadow-2xl [&>[data-slot=dialog-close]]:hidden"
         style={{
           backgroundColor: "var(--surface-subtle)",
           border: `1px solid var(--border-default)`,

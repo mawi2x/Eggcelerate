@@ -236,7 +236,7 @@ export function NotificationsPanel({
                   >
                     SMS alerts
                   </h3>
-                  <p className="mt-1 text-xs" style={{ color: MUTED }}>
+                  <p className="mt-1" style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
                     Critical alerts only.
                   </p>
                 </div>
@@ -300,7 +300,7 @@ export function NotificationsPanel({
                   >
                     Email alerts
                   </h3>
-                  <p className="mt-1 text-xs" style={{ color: MUTED }}>
+                  <p className="mt-1" style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
                     Full digest, including non-critical events.
                   </p>
                 </div>

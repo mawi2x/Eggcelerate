@@ -90,7 +90,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <GroupLabel>Paired Devices</GroupLabel>
             {units.length > 0 && (
-              <span className="text-xs" style={{ color: MUTED }}>
+              <span style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
                 {
                   units.filter(
                     (unit) =>
@@ -189,7 +189,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                   border: `var(--border-width-hairline) dashed ${BORDER}`,
                 }}
               >
-                <p style={{ fontWeight: "var(--weight-bold)", color: TEXT }}>
+                <p style={{ fontWeight: "var(--weight-bold)", color: TEXT, fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", lineHeight: "var(--leading-snug)" }}>
                   No devices paired yet
                 </p>
               </div>

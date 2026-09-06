@@ -181,8 +181,8 @@ export function OnboardingStep2({
         </div>
         {error && (
           <p
-            className="mt-2 text-xs"
-            style={{ color: "var(--status-danger-fg)" }}
+            className="mt-2"
+            style={{ fontSize: "var(--type-caption)", color: "var(--status-danger-fg)" }}
             role="alert"
           >
             {error}

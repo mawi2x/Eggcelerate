@@ -1,4 +1,4 @@
-import { Check } from "@phosphor-icons/react";
+import { Check, CheckCircle } from "@phosphor-icons/react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -220,7 +220,7 @@ export function JournalEntryCard({
               {entry.checks.map((c) => (
                 <span
                   key={c}
-                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1"
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1"
                   style={{
                     backgroundColor: "var(--surface-card)",
                     border: `1px solid var(--border-default)`,
@@ -229,8 +229,8 @@ export function JournalEntryCard({
                     fontWeight: "var(--weight-semibold)",
                   }}
                 >
-                  <Check
-                    size={12}
+                  <CheckCircle
+                    size={14}
                     color={"var(--status-success-fg)"}
                     weight="fill"
                   />{" "}
@@ -791,7 +791,7 @@ function LogModalBody({
             ? `Edit Inspection Log: Day ${form.targetDay}`
             : "Candling Journal"}
         </DialogTitle>
-        <DialogDescription className="text-xs font-medium space-y-0.5">
+        <DialogDescription className="font-medium space-y-0.5" style={{ fontSize: "var(--type-caption)" }}>
           <span className="block" style={{ color: "var(--text-primary)" }}>
             {chamberName}
           </span>
@@ -2260,7 +2260,7 @@ export function CandlingJournalTab({
                               : "var(--text-secondary)",
                         fontSize: "var(--type-label)",
                         fontWeight: "var(--weight-bold)",
-                        letterSpacing: "0.02em",
+                        letterSpacing: "var(--tracking-label)",
                       }}
                     >
                       {checkpointTiming}
@@ -2272,7 +2272,7 @@ export function CandlingJournalTab({
                 <Button
                   onClick={openNewInspection}
                   className="w-full rounded-full md:w-auto"
-                  style={{ ...rustBtn, fontSize: "var(--type-body-sm)" }}
+                  style={{ ...rustBtn }}
                 >
                   <Plus size={14} /> Log Inspection
                 </Button>
@@ -2335,7 +2335,7 @@ export function CandlingJournalTab({
                             : "var(--text-secondary)",
                       fontSize: "var(--type-label)",
                       fontWeight: "var(--weight-bold)",
-                      letterSpacing: "0.02em",
+                      letterSpacing: "var(--tracking-label)",
                     }}
                   >
                     {checkpointTiming}
@@ -2350,7 +2350,6 @@ export function CandlingJournalTab({
                 className="w-full rounded-full md:w-auto"
                 style={{
                   ...rustBtn,
-                  fontSize: "var(--type-body-sm)",
                   fontWeight: "var(--weight-bold)",
                 }}
               >
@@ -2451,8 +2450,8 @@ export function CandlingJournalTab({
                       <span
                         className="flex items-center justify-center rounded-full"
                         style={{
-                          width: 32,
-                          height: 32,
+                          width: "var(--control-size-sm)",
+                          height: "var(--control-size-sm)",
                           backgroundColor: "var(--brand-primary)",
                           color: "var(--surface-card)",
                           fontSize: "var(--type-body-sm)",
@@ -2467,7 +2466,7 @@ export function CandlingJournalTab({
                     <div className="flex-1 min-w-0 pl-3">
                       <div
                         className="flex flex-wrap items-center justify-between gap-2"
-                        style={{ minHeight: 32 }}
+                        style={{ minHeight: "var(--control-height-compact)" }}
                       >
                         <button
                           type="button"
@@ -2564,7 +2563,7 @@ export function CandlingJournalTab({
                     return (
                       <li
                         key={`cp-${n.day}`}
-                        className="relative flex items-center min-h-[32px]"
+                        className="relative flex items-center min-h-[var(--control-height-compact)]"
                       >
                         <div
                           className="shrink-0 flex justify-center relative z-10"
@@ -2573,8 +2572,8 @@ export function CandlingJournalTab({
                           <span
                             className="flex items-center justify-center rounded-full"
                             style={{
-                              width: 32,
-                              height: 32,
+                              width: "var(--control-size-sm)",
+                              height: "var(--control-size-sm)",
                               backgroundColor: "var(--surface-card)",
                               border: isDue
                                 ? "2px solid var(--status-warning-fg)"

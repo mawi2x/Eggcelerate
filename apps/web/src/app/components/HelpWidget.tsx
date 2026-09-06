@@ -251,7 +251,7 @@ export function HelpWidget() {
                   color: "var(--text-taupe)",
                   fontFamily: "var(--font-body)",
                   fontSize: "var(--type-label)",
-                  fontWeight: "var(--weight-extrabold)",
+                  fontWeight: "var(--weight-bold)",
                   letterSpacing: "var(--tracking-label)",
                   lineHeight: "var(--leading-snug)",
                   textTransform: "uppercase",
@@ -327,7 +327,7 @@ export function HelpWidget() {
             border: "2px solid var(--surface-card)",
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-label)",
-            fontWeight: "var(--weight-extrabold)",
+            fontWeight: "var(--weight-bold)",
             lineHeight: "var(--leading-snug)",
             letterSpacing: "var(--tracking-label)",
           }}

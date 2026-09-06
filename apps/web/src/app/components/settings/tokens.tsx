@@ -16,6 +16,7 @@ export const inputStyle = {
   borderColor: "var(--input-border)",
   backgroundColor: SURFACE,
   color: TEXT,
+  fontSize: "var(--type-control-value)",
 };
 export const labelStyle = {
   color: "var(--status-info-fg)",

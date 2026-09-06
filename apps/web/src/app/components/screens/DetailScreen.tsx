@@ -283,7 +283,7 @@ export function DetailScreen({
         >
           <div className="flex min-w-0 items-center gap-3">
             <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
               style={{
                 backgroundColor: "var(--brand-primary-soft)",
                 color: "var(--brand-primary-hover)",
@@ -393,8 +393,8 @@ export function DetailScreen({
                   Incubation mode
                 </Label>
                 <p
-                  className="mt-0.5 text-xs"
-                  style={{ color: "var(--text-secondary)" }}
+                  className="mt-0.5"
+                  style={{ color: "var(--text-secondary)", fontSize: "var(--type-caption)" }}
                 >
                   Select the species profile for this batch.
                 </p>
@@ -455,8 +455,9 @@ export function DetailScreen({
                 />
                 <p
                   id="setup-eggs-help"
-                  className="mt-1.5 text-xs"
+                  className="mt-1.5"
                   style={{
+                    fontSize: "var(--type-caption)",
                     color:
                       setupEggs !== "" && !setupEggsValid
                         ? "var(--status-danger-fg)"
@@ -490,15 +491,16 @@ export function DetailScreen({
                         {setupMode.name} profile
                       </p>
                       <p
-                        className="mt-0.5 text-xs"
-                        style={{ color: "var(--text-secondary)" }}
+                        className="mt-0.5"
+                        style={{ color: "var(--text-secondary)", fontSize: "var(--type-caption)" }}
                       >
                         These targets will be applied when the cycle starts.
                       </p>
                     </div>
                     <span
-                      className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold"
+                      className="shrink-0 rounded-full px-2.5 py-1 font-bold"
                       style={{
+                        fontSize: "var(--type-label)",
                         backgroundColor: "var(--surface-count)",
                         color: "var(--text-earth)",
                       }}
