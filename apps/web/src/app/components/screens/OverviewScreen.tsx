@@ -97,10 +97,9 @@ function KpiCard({
           {label}
         </div>
         <div
-          className="mt-1"
+          className="mt-1 text-(length:--type-heading-sm) lg:text-(length:--type-panel-title)"
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: "var(--type-panel-title)",
             fontWeight: "var(--weight-extrabold)",
             lineHeight: "var(--leading-tight)",
             color: "var(--text-primary)",
@@ -284,9 +283,9 @@ function OffTargetRow({
           </span>
           <div className="min-w-0">
             <div
+              className="text-(length:--type-caption) lg:text-(length:--type-body-sm)"
               style={{
                 fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body-sm)",
                 fontWeight: "var(--weight-bold)",
                 lineHeight: "var(--leading-normal)",
                 color: TEXT,
@@ -314,9 +313,9 @@ function OffTargetRow({
         <div className="flex shrink-0 items-center gap-2">
           <div className="flex flex-col items-end gap-0.5">
             <span
+              className="text-(length:--type-caption) lg:text-(length:--type-body-sm)"
               style={{
                 fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body-sm)",
                 fontWeight: "var(--weight-bold)",
                 lineHeight: "var(--leading-normal)",
                 color: valueColor,
@@ -386,10 +385,9 @@ function MiniCard({
       <div className="w-full min-w-0 text-left">
         <div className="flex items-start justify-between gap-1">
           <span
-            className="block min-w-0 flex-1 break-words"
+            className="block min-w-0 flex-1 break-words text-(length:--type-body) lg:text-(length:--type-heading-sm)"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "var(--type-heading-sm)",
               fontWeight: "var(--weight-semibold)",
               lineHeight: "var(--leading-snug)",
               color: "var(--text-primary)",
@@ -406,10 +404,9 @@ function MiniCard({
           />
         </div>
         <span
-          className="block min-w-0 break-words"
+          className="block min-w-0 break-words text-(length:--type-caption) lg:text-(length:--type-body-sm)"
           style={{
             fontFamily: "var(--font-body)",
-            fontSize: "var(--type-body-sm)",
             fontWeight: "var(--weight-semibold)",
             lineHeight: "var(--leading-normal)",
             color: "var(--text-primary)",
@@ -668,9 +665,9 @@ export function OverviewScreen({
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2
+              className="text-(length:--type-heading-sm) lg:text-(length:--type-heading-md)"
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "var(--type-heading-md)",
                 fontWeight: "var(--weight-semibold)",
                 lineHeight: "var(--leading-snug)",
                 color: HEADING,
@@ -764,9 +761,9 @@ export function OverviewScreen({
       >
         <div style={{ marginBottom: 16 }}>
           <h2
+            className="text-(length:--type-heading-sm) lg:text-(length:--type-heading-md)"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "var(--type-heading-md)",
               fontWeight: "var(--weight-semibold)",
               lineHeight: "var(--leading-snug)",
               color: HEADING,
@@ -920,9 +917,9 @@ export function OverviewScreen({
                     style={{ color: "var(--status-success-fg)" }}
                   />
                   <span
+                    className="text-(length:--type-caption) lg:text-(length:--type-body-sm)"
                     style={{
                       fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-body-sm)",
                       fontWeight: "var(--weight-medium)",
                       lineHeight: "var(--leading-normal)",
                       color: "var(--text-secondary)",
@@ -977,9 +974,9 @@ export function OverviewScreen({
                     style={{ color: "var(--status-success-fg)" }}
                   />
                   <span
+                    className="text-(length:--type-caption) lg:text-(length:--type-body-sm)"
                     style={{
                       fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-body-sm)",
                       fontWeight: "var(--weight-medium)",
                       lineHeight: "var(--leading-normal)",
                       color: "var(--text-secondary)",

@@ -7,7 +7,9 @@ describe("Overview batch", () => {
       "src/app/components/screens/OverviewScreen.tsx",
       "utf-8",
     );
-    expect(s).toContain("var(--type-panel-title)");
+    expect(s).toMatch(
+      /var\(--type-panel-title\)|text-\(length:--type-panel-title\)/,
+    );
     expect(s).toContain("var(--font-display)");
     expect(s).not.toMatch(/fontSize:\s*22[^r]/);
   });
