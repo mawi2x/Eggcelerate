@@ -791,7 +791,7 @@ export function OverviewScreen({
 
         {/* Mobile toggle between Temperature and Humidity */}
         <fieldset
-          className="mb-4 flex rounded-full border p-1 lg:hidden"
+          className="mb-4 flex h-[var(--control-segment-height)] rounded-full border p-0 lg:hidden"
           style={{
             backgroundColor: "var(--surface-muted)",
             borderColor: "var(--border-subtle)",
@@ -804,7 +804,7 @@ export function OverviewScreen({
             aria-pressed={conditionTab === "temp"}
             aria-controls="condition-temp-panel"
             aria-label={`Temperature, ${offTarget.temp.length} need attention`}
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+            className="flex h-full min-h-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-0 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
               backgroundColor:
                 conditionTab === "temp" ? "var(--surface-card)" : "transparent",
@@ -843,7 +843,7 @@ export function OverviewScreen({
             aria-pressed={conditionTab === "humidity"}
             aria-controls="condition-humidity-panel"
             aria-label={`Humidity, ${offTarget.humidity.length} need attention`}
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+            className="flex h-full min-h-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-0 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
             style={{
               backgroundColor:
                 conditionTab === "humidity"
