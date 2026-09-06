@@ -538,7 +538,7 @@ export function CandlingLogsScreen({
   };
 
   return (
-    <div className="space-y-6" style={{ color: TEXT }}>
+    <div className="space-y-2 md:space-y-6" style={{ color: TEXT }}>
       {/* Row 1: Search + ViewToggle (desktop only) */}
       <div className="flex items-center gap-2.5 md:gap-3">
         <div className="relative min-w-0 flex-1">
@@ -557,7 +557,7 @@ export function CandlingLogsScreen({
             maxLength={50}
             placeholder="Search incubators..."
             aria-label="Search candling logs"
-            className="rounded-xl pl-9"
+            className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
             style={inputStyle}
           />
         </div>
@@ -568,8 +568,7 @@ export function CandlingLogsScreen({
 
       {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
       <div
-        className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
-        style={{ marginTop: 16 }}
+        className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between"
       >
         <div className="min-w-0 flex-1 lg:flex-initial">
           <FilterBar
@@ -595,7 +594,7 @@ export function CandlingLogsScreen({
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
-                color: TEXT,
+                color: "var(--brand-primary)",
                 fontWeight: "var(--weight-medium)",
               }}
               aria-label="Filter by incubation mode"
@@ -622,7 +621,7 @@ export function CandlingLogsScreen({
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
-                color: TEXT,
+                color: "var(--brand-primary)",
                 fontWeight: "var(--weight-medium)",
               }}
               aria-label="Sort candling logs"
@@ -695,7 +694,7 @@ export function CandlingLogsScreen({
           <>
             {/* Reserve a small mobile gutter so the fixed chamber index never
                 sits on top of the card edge. */}
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3 pr-4 md:pr-0">
+            <div className="grid grid-cols-1 gap-2 md:gap-5 lg:grid-cols-2 xl:grid-cols-3 pr-4 md:pr-0">
               {rows.map((row, idx) => (
                 <div
                   key={row.unit.id}

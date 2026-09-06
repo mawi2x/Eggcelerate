@@ -22,7 +22,7 @@ const card = () =>
 describe("incubator grid responsive contracts", () => {
   it("collapses columns 1 -> 2 -> 3 across lg/xl breakpoints", () => {
     expect(screen()).toContain(
-      "grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3",
+      "grid grid-cols-1 gap-2 md:gap-5 lg:grid-cols-2 xl:grid-cols-3",
     );
   });
 

@@ -2,8 +2,7 @@
 
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
-import type * as React from "react";
-
+import * as React from "react";
 import { cn } from "./utils";
 
 function Select({
@@ -23,6 +22,12 @@ function SelectValue({
 }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
+
+type SelectTriggerSize = "micro" | "sm" | "default" | "toolbar" | "filter";
+
+const SelectTriggerSizeContext =
+  React.createContext<SelectTriggerSize>("default");
+
 const triggerSizeClasses: Record<
   "micro" | "sm" | "default" | "toolbar" | "filter",
   string
@@ -44,9 +49,10 @@ function SelectTrigger({
   style,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  size?: "micro" | "sm" | "default" | "toolbar" | "filter";
+  size?: SelectTriggerSize;
 }) {
   return (
+    <SelectTriggerSizeContext.Provider value={size}>
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
@@ -63,6 +69,7 @@ function SelectTrigger({
         ...style,
         ...(size === "filter" && {
           fontSize: "var(--type-filter-value)",
+          fontWeight: "var(--weight-bold)",
         }),
       }}
       {...props}
@@ -74,6 +81,7 @@ function SelectTrigger({
         />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
+    </SelectTriggerSizeContext.Provider>
   );
 }
 
@@ -128,15 +136,30 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  style,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  const triggerSize = React.useContext(SelectTriggerSizeContext);
+  const isFilter = triggerSize === "filter";
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex min-h-[var(--control-height-default)] w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 md:min-h-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex min-h-[var(--control-height-default)] w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 md:min-h-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        !isFilter && "text-sm",
         className,
       )}
+      style={{
+        fontFamily: "var(--font-body)",
+        fontSize: isFilter
+          ? "var(--type-filter-label)"
+          : "var(--type-control-value)",
+        fontWeight: isFilter
+          ? "var(--weight-bold)"
+          : "var(--weight-regular)",
+        lineHeight: isFilter ? "var(--leading-snug)" : "var(--leading-normal)",
+        ...style,
+      }}
       {...props}
     >
       <span className="absolute right-2 flex size-3.5 items-center justify-center">

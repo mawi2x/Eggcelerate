@@ -47,14 +47,14 @@ describe("mobile typography tokens", () => {
     expect(c).toContain("--control-hit-area-icon: 2.75rem");
     expect(c).toContain("--type-filter-value: var(--type-control-value)");
     expect(c).toContain("--type-filter-value: 0.75rem");
-    expect(c).toContain("--type-filter-value: var(--type-label)");
+    expect(c).toContain("--type-filter-value: 0.625rem");
     expect(c).toContain("--type-filter-label: var(--type-label)");
-    expect(c).toContain("--type-filter-label: var(--type-label-compact)");
+    expect(c).toContain("--type-filter-label: 0.625rem");
     expect(c).toMatch(
       /@media\s*\(\s*min-width:\s*48rem\s*\)\s*and\s*\(\s*max-width:\s*63\.9375rem\s*\)[\s\S]*--type-filter-value:\s*0\.75rem/,
     );
     expect(c).toMatch(
-      /@media\s*\(\s*max-width:\s*47\.9375rem\s*\)[\s\S]*--type-filter-value:\s*var\(--type-label\)[\s\S]*--type-filter-label:\s*var\(--type-label-compact\)/,
+      /@media\s*\(\s*max-width:\s*47\.9375rem\s*\)[\s\S]*--type-filter-value:\s*0\.625rem[\s\S]*--type-filter-label:\s*0\.625rem/,
     );
     expect(c).not.toMatch(
       /@media\s*\(\s*max-width:\s*47\.9375rem\s*\)\s*\{[\s\S]*--control-(?:height-default|height-toolbar|size-icon|segment-height):/,

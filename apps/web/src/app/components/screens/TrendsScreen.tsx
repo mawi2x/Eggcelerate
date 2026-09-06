@@ -552,7 +552,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 md:space-y-6">
       <div className="flex flex-wrap items-center justify-start gap-4">
         <SegmentedControl
           flush
@@ -606,7 +606,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     style={{
                       ...toolbarInputStyle,
                       ...CONTROL_FONT,
-                      color: TEXT,
+                      color: RUST,
                     }}
                   >
                     <SelectValue />
@@ -634,7 +634,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         ...toolbarInputStyle,
                         ...CONTROL_FONT,
                         border: `1px solid ${toolbarInputStyle.borderColor}`,
-                        color: TEXT,
+                        color: RUST,
                       }}
                     >
                       {compareIds.length} of {units.length} Chambers
@@ -1057,27 +1057,27 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
         </>
       ) : (
         <>
-          {/* KPI summary row. */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {/* KPI summary row: 3 cards in 1 row across viewports */}
+          <div className="grid grid-cols-3 gap-2 md:gap-4">
             <KpiCard
               Icon={Layers}
               label="Completed Cycles"
-              value={`${kpis.cycles} Cycles`}
+              value={`${kpis.cycles}`}
+              unit="Cycles"
               cardStyle={cardStyle}
             />
             <KpiCard
               Icon={Percent}
               label="Average Hatchability"
-              value={
-                kpis.avgRate === null ? "Not available" : `${kpis.avgRate}%`
-              }
+              value={kpis.avgRate === null ? "N/A" : `${kpis.avgRate}%`}
               accent={OK}
               cardStyle={cardStyle}
             />
             <KpiCard
               Icon={TrendingUp}
               label="Total Chicks Hatched"
-              value={`${kpis.hatched} Hatched`}
+              value={`${kpis.hatched}`}
+              unit="Hatched"
               cardStyle={cardStyle}
             />
           </div>
@@ -1099,7 +1099,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 }}
                 maxLength={50}
                 placeholder="Filter hatch history..."
-                className="rounded-xl pl-9"
+                className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
                 style={inputStyle}
               />
             </div>
@@ -1114,7 +1114,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <SelectTrigger
                   size="filter"
                   className="w-full rounded-xl"
-                  style={{ ...toolbarInputStyle, ...CONTROL_FONT, color: TEXT }}
+                  style={{ ...toolbarInputStyle, ...CONTROL_FONT, color: RUST }}
                 >
                   <SelectValue placeholder="Species: All" />
                 </SelectTrigger>
@@ -1227,7 +1227,14 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                               {h.modeName}
                             </span>
                           </TableCell>
-                          <TableCell style={{ color: MUTED }}>
+                          <TableCell
+                            style={{
+                              color: MUTED,
+                              fontFamily: "var(--font-body)",
+                              fontSize: "var(--type-body-sm)",
+                              lineHeight: "var(--leading-normal)",
+                            }}
+                          >
                             {formatDate(h.startDate)} to {formatDate(h.endDate)}
                           </TableCell>
                           <TableCell className="text-right">
@@ -1337,41 +1344,48 @@ function KpiCard({
   Icon,
   label,
   value,
+  unit,
   accent,
   cardStyle,
 }: {
   Icon: typeof LineChart;
   label: string;
   value: string;
+  unit?: string;
   accent?: string;
   cardStyle: React.CSSProperties;
 }) {
   return (
-    <Card style={cardStyle}>
-      <CardContent className="p-5">
+    <Card style={cardStyle} className="h-full">
+      <CardContent className="flex h-full flex-col justify-between p-2.5 sm:p-3 md:p-5">
         <div
-          className="flex items-center gap-2"
+          className="flex items-center gap-1 md:gap-2"
           style={{
             color: MUTED,
-            fontSize: "var(--type-body-sm)",
             fontWeight: "var(--weight-semibold)",
           }}
         >
-          <Icon size={16} /> {label}
+          <Icon size={14} className="shrink-0 md:size-4" />
+          <span className="text-[11px] leading-tight md:text-(length:--type-body-sm)">
+            {label}
+          </span>
         </div>
         <div
-          className="mt-2 tracking-tight"
+          className="mt-1.5 flex flex-wrap items-baseline gap-1 tracking-tight md:mt-2"
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: "var(--type-panel-title)",
-            fontWeight: "var(--weight-extrabold)",
             lineHeight: "var(--leading-tight)",
             color: accent ?? TEXT,
-            whiteSpace: "normal",
-            wordBreak: "break-word",
           }}
         >
-          {value}
+          <span className="text-base font-extrabold sm:text-lg md:text-(length:--type-panel-title)">
+            {value}
+          </span>
+          {unit && (
+            <span className="text-[11px] font-semibold text-[var(--text-farm)] sm:text-xs md:text-sm">
+              {unit}
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>

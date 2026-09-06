@@ -88,7 +88,7 @@ const inputStyle = {
 const sortTriggerStyle = {
   backgroundColor: "var(--surface-card)",
   borderColor: "var(--border-default)",
-  color: "var(--text-primary)",
+  color: "var(--brand-primary)",
   fontWeight: "var(--weight-medium)",
 };
 
@@ -346,7 +346,7 @@ export function IncubatorsScreen({
   };
 
   return (
-    <div className="space-y-6" style={{ color: TEXT }}>
+    <div className="space-y-2 md:space-y-6" style={{ color: TEXT }}>
       {/* Row 1: Search + ViewToggle (desktop) + Add Button */}
       <div className="flex items-center gap-2.5 md:gap-3">
         <div className="relative min-w-0 flex-1">
@@ -365,8 +365,8 @@ export function IncubatorsScreen({
             maxLength={50}
             placeholder="Search incubators..."
             aria-label="Search incubators"
-            className="rounded-xl pl-9"
-            style={inputStyle}
+            className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
+            style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
           />
         </div>
         <div className="hidden md:block">
@@ -378,8 +378,12 @@ export function IncubatorsScreen({
             setConnectError(null);
             setOpen(true);
           }}
-          className="shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 md:px-5"
-          style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
+          className="h-[34px] shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[var(--brand-primary-hover)] focus-visible:outline-none md:h-[var(--control-height-toolbar)] md:px-5"
+          style={{
+            backgroundColor: RUST,
+            color: "var(--on-brand)",
+            fontSize: "var(--type-filter-value)",
+          }}
           aria-label="Add incubator"
         >
           <Plus size={18} />
@@ -390,8 +394,7 @@ export function IncubatorsScreen({
 
       {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
       <div
-        className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
-        style={{ marginTop: 16 }}
+        className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between"
       >
         <div className="min-w-0 flex-1 lg:flex-initial">
           <FilterBar
@@ -423,7 +426,7 @@ export function IncubatorsScreen({
           >
             <SelectTrigger
               size="filter"
-              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+              className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 ...sortTriggerStyle,
               }}
@@ -451,7 +454,7 @@ export function IncubatorsScreen({
           >
             <SelectTrigger
               size="filter"
-              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+              className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 ...sortTriggerStyle,
               }}
@@ -475,7 +478,7 @@ export function IncubatorsScreen({
               setSortAsc((v) => !v);
               setPage(1);
             }}
-            className="flex h-[var(--control-height-default)] w-[var(--control-height-default)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)] md:rounded-xl"
+            className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)] md:rounded-xl"
             style={{
               backgroundColor: "var(--surface-card)",
               borderColor: "var(--border-subtle)",
@@ -533,7 +536,7 @@ export function IncubatorsScreen({
         <>
           {/* Reserve a small mobile gutter so the fixed chamber index never
               sits on top of the card edge. */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3 pr-4 md:pr-0">
+          <div className="grid grid-cols-1 gap-2 md:gap-5 lg:grid-cols-2 xl:grid-cols-3 pr-4 md:pr-0">
             {sorted.map((unit, idx) => (
               <div
                 key={unit.id}

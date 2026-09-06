@@ -62,10 +62,13 @@ function KpiCard({
 }) {
   return (
     <Card
-      className="relative overflow-hidden"
+      className={`relative overflow-hidden ${
+        pill || footer
+          ? "min-h-[6.3125rem] sm:min-h-[5.875rem] lg:min-h-[7.25rem]"
+          : "min-h-[5.625rem]"
+      }`}
       style={{
         ...cardStyle,
-        minHeight: pill || footer ? "7.25rem" : "5.625rem",
         height: "auto",
       }}
     >
@@ -82,7 +85,7 @@ function KpiCard({
         }}
         strokeWidth={1.5}
       />
-      <CardContent className="relative flex flex-col p-4">
+      <CardContent className="relative flex flex-col p-3 sm:p-4">
         <div
           style={{
             color: "var(--text-muted)",
@@ -624,9 +627,9 @@ export function OverviewScreen({
   })();
 
   return (
-    <div className="flex flex-col" style={{ gap: 32 }}>
+    <div className="flex flex-col gap-2 md:gap-8">
       {/* Section 2: executive KPI summary — strict 1-row compact cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
         {/* Layers reads as stacked multi-tier incubator cabinets. */}
         <KpiCard
           Icon={Layers}
@@ -691,7 +694,7 @@ export function OverviewScreen({
           <button
             type="button"
             onClick={onManageAll}
-            className="inline-flex min-h-[var(--overview-action-height-mobile)] shrink-0 cursor-pointer items-center gap-1 rounded-xl border bg-[var(--surface-card)] px-3 py-1.5 text-sm font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:min-h-11 md:px-4 md:py-2"
+            className="inline-flex min-h-[var(--overview-action-height-mobile)] shrink-0 cursor-pointer items-center gap-0.5 rounded-xl border bg-[var(--surface-card)] px-1.5 py-0.5 text-(length:--type-body-sm) font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:min-h-11 md:px-4 md:py-2 md:text-sm"
             style={{ borderColor: RUST, color: RUST }}
             aria-label="View all incubators"
           >

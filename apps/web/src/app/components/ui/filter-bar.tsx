@@ -65,7 +65,7 @@ function FilterOptionContent({
       )}
       {typeof option.count === "number" && (
         <span
-          className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-(length:--type-label) font-bold"
+          className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-(length:--type-filter-label) font-bold"
           style={{
             backgroundColor: active
               ? "var(--brand-primary)"

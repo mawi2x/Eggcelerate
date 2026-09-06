@@ -103,7 +103,7 @@
   --nav-hover-border: #e7d0b8;
 
   /* Overview secondary action — compact visual control on phones. */
-  --overview-action-height-mobile: var(--control-height-default); /* 36px */
+  --overview-action-height-mobile: calc(var(--control-height-default) * 0.75); /* 27px — 25% below the 36px default */
   /* Type additions — role-named, rem-based. */
   --type-body-lg: 0.9375rem; /* 15px — Banner lg description only */
 
@@ -383,8 +383,8 @@
 /* [EXPERIMENTAL] Filter dropdown labels use the compact label tier on mobile. */
 @media (max-width: 47.9375rem) {
   :root {
-    --type-filter-value: var(--type-label); /* 11px */
-    --type-filter-label: var(--type-label-compact); /* 10px */
+    --type-filter-value: 0.625rem; /* 10px */
+    --type-filter-label: 0.625rem; /* 10px */
   }
 }
 

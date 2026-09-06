@@ -311,25 +311,28 @@ Light-theme token system is the supported implementation. Dark-mode `oklch()` va
 > trialed for compact filter dropdowns and may be revised or removed after
 > rendered desktop/tablet/mobile review.
 
-Scope: `SelectTrigger size="filter"` only. It does not change ordinary
-selects, body copy, prose, headings, or the segmented status-bar labels.
+Scope: compact filter controls: `SelectTrigger size="filter"` plus the
+Incubators overview search/Add controls. It does not change ordinary selects,
+body copy, prose, or headings.
 
 | Viewport tier | CSS range | `--type-filter-value` | Computed size |
 |---|---|---|---:|
 | Desktop | `min-width: 64rem` (1024px) | `var(--type-control-value)` | 14px |
 | Tablet | `48rem`–`63.9375rem` (768–1023px) | `0.75rem` | 12px |
-| Mobile | below `48rem` (under 768px) | `var(--type-label)` | 11px |
+| Mobile | below `48rem` (under 768px) | `0.625rem` | 10px |
 
-Implementation lives in `apps/web/src/styles/theme.css` and is consumed by
-`apps/web/src/app/components/ui/select.tsx`. The `filter` control geometry
-remains 36px on mobile and 40px at `md` and above; only the filter-value
-typography changes by viewport tier.
+Implementation lives in `apps/web/src/styles/theme.css`,
+`apps/web/src/app/components/ui/select.tsx`, and the mobile controls in
+`IncubatorsScreen.tsx`. The filter control geometry remains 36px on mobile and
+40px at `md` and above; only the mobile filter-control text trial changes the
+typography.
 
-The 11px mobile tier is intentionally compact and must be checked at 320px,
+The 10px mobile tier is intentionally compact and must be checked at 320px,
 375px, 200% zoom, keyboard focus, and with long option names. Do not reuse
 `--type-filter-value` for prose or essential body text. If the compact tier
 fails legibility or focus review, revert this experimental scale to the
 standard `--type-control-value` role.
+
 
 ### [EXPERIMENTAL] Mobile segmented-filter labels
 
@@ -342,9 +345,9 @@ Scope: `FilterBar` controls with `variant="segmented"`.
 | Viewport tier | `--type-filter-label` | Computed size |
 |---|---|---:|
 | Desktop and tablet | `var(--type-label)` | 11px |
-| Mobile below `48rem` (768px) | `var(--type-label-compact)` | 10px |
+| Mobile below `48rem` (768px) | `0.625rem` | 10px |
 
-Counts remain on the existing `var(--type-label)` tier so the badge numbers
-remain legible. Review this trial at 320px/375px, 200% zoom, keyboard focus,
-and with longer translated filter labels before promoting it to the baseline
-scale.
+Counts use the same `var(--type-filter-label)` tier, so labels and count
+badges share the 10px mobile trial. Review this trial at 320px/375px, 200%
+zoom, keyboard focus, and with longer translated filter labels before promoting
+it to the baseline scale.
