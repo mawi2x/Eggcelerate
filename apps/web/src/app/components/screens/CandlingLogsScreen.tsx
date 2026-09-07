@@ -235,7 +235,7 @@ function JournalCard({
   return (
     <article
       className={cn(
-        "group flex h-full min-w-0 flex-col justify-between rounded-2xl border p-5 transition-colors duration-200",
+        "group flex h-full min-h-[var(--mobile-chamber-card-min-height)] min-w-0 flex-col justify-between rounded-2xl border p-5 transition-colors duration-200 md:min-h-0",
         highlighted
           ? "border-[var(--nav-hover-border)] bg-[var(--nav-hover-bg)] shadow-md"
           : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[var(--shadow-card)]",
@@ -558,7 +558,7 @@ export function CandlingLogsScreen({
             placeholder="Search incubators..."
             aria-label="Search candling logs"
             className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
-            style={inputStyle}
+            style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
           />
         </div>
         <div className="hidden md:block">
@@ -567,9 +567,7 @@ export function CandlingLogsScreen({
       </div>
 
       {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
-      <div
-        className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between"
-      >
+      <div className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1 lg:flex-initial">
           <FilterBar
             ariaLabel="Candling log filter"
@@ -590,7 +588,7 @@ export function CandlingLogsScreen({
           <Select value={modeFilter} onValueChange={setModeFilter}>
             <SelectTrigger
               size="filter"
-              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+              className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
@@ -617,7 +615,7 @@ export function CandlingLogsScreen({
           >
             <SelectTrigger
               size="filter"
-              className="min-w-0 flex-1 rounded-lg px-2 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+              className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
@@ -638,7 +636,7 @@ export function CandlingLogsScreen({
           <button
             type="button"
             onClick={() => setSortAsc(!sortAsc)}
-            className="flex h-[var(--control-height-default)] w-[var(--control-height-default)] shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)] md:rounded-xl"
+            className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)] md:rounded-xl"
             style={{
               backgroundColor: SURFACE,
               borderColor: CARD_BORDER,

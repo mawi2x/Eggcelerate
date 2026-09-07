@@ -93,6 +93,7 @@
   );
   --control-segment-height: 2.25rem; /* 36px default segmented item */
   --control-height-filter-row: 2.75rem; /* 44px — outer filter/toolbar row */
+  --mobile-chamber-card-min-height: 18.015625rem; /* 288.25px — shared mobile chamber-card baseline */
 
   /* Component semantics preserve navigation hierarchy. */
   --global-nav-selected-bg: var(--brand-primary);

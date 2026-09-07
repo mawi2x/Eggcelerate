@@ -491,12 +491,15 @@ export function OverviewScreen({
     [modes],
   );
   const [carouselPage, setCarouselPage] = useState(0);
+  const [carouselProgress, setCarouselProgress] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const handleCarouselScroll = () => {
     const el = carouselRef.current;
     if (!el) return;
     const page = Math.round(el.scrollLeft / el.clientWidth);
     setCarouselPage(page);
+    const max = el.scrollWidth - el.clientWidth;
+    setCarouselProgress(max > 0 ? el.scrollLeft / max : 0);
   };
   const [conditionTab, setConditionTab] = useState<"temp" | "humidity">("temp");
   const conditionCarouselRef = useRef<HTMLDivElement>(null);
@@ -751,6 +754,22 @@ export function OverviewScreen({
               />
             ))}
           </div>
+        )}
+        {priorityUnits.length > 2 && (
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round(carouselProgress * 100)}
+            onChange={(e) => {
+              const el = carouselRef.current;
+              if (!el) return;
+              const max = el.scrollWidth - el.clientWidth;
+              el.scrollTo({ left: (Number(e.target.value) / 100) * max });
+            }}
+            aria-label="Slide through chambers"
+            className="mt-2 flex h-8 w-full cursor-pointer items-center accent-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:hidden"
+          />
         )}
       </section>
 

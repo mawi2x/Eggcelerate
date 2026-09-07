@@ -470,10 +470,16 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   }, [activeUnits, metric, modeOf]);
 
   // One target-range label when every active chamber shares a band, otherwise a hint.
+  // Short forms fit the one-line header slot beside the metric toggle (~25 chars
+  // at caption/10px); full text stays on `title` as a supplement.
   const targetRangeLabel =
     bands.length === 1
       ? `Target Safe Range is ${bands[0].min} to ${bands[0].max}${metricInfo[metric].unit}`
       : "Target Safe Range varies by incubation mode";
+  const targetRangeShort =
+    bands.length === 1
+      ? `Safe range ${bands[0].min}–${bands[0].max}${metricInfo[metric].unit}`
+      : "Varies by incubation mode";
   // Never allow the selection to drop below two chambers — that would blank the chart.
 
   const toggleCompareId = (id: string) =>
@@ -629,10 +635,13 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="flex h-[var(--control-height-toolbar)] min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 rounded-xl px-4 transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:w-[240px] md:shrink-0"
+                      className="flex h-[var(--control-height-default)] min-w-0 flex-1 cursor-pointer items-center justify-between gap-1.5 rounded-xl border px-3 py-2 whitespace-nowrap transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-[var(--control-height-toolbar)] md:w-[240px] md:shrink-0"
                       style={{
                         ...toolbarInputStyle,
-                        ...CONTROL_FONT,
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-filter-value)",
+                        fontWeight: "var(--weight-bold)",
+                        lineHeight: "var(--leading-normal)",
                         border: `1px solid ${toolbarInputStyle.borderColor}`,
                         color: RUST,
                       }}
@@ -704,6 +713,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 </Popover>
               )}
 
+              <div className="flex w-full items-center justify-between gap-2 md:w-auto md:flex-1">
               <div
                 className="flex shrink-0 cursor-pointer items-center gap-2"
                 style={{ ...CONTROL_FONT, color: compare ? TEXT : MUTED }}
@@ -714,6 +724,23 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   aria-label="Compare Chambers"
                 />
                 Compare Chambers
+              </div>
+              {!compare && (
+                <button
+                  type="button"
+                  onClick={() => setReadingsOpen(true)}
+                  className="flex min-h-[var(--control-height-default)] shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-[var(--control-height-compact)]"
+                  style={{
+                    color: "var(--brand-primary)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-body-sm)",
+                    fontWeight: "var(--weight-bold)",
+                  }}
+                >
+                  <TableProperties size={16} aria-hidden="true" /> See all
+                  readings
+                </button>
+              )}
               </div>
 
             </div>
@@ -730,30 +757,15 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 onChange={(key) => setRange(key as RangeKey)}
                 options={ranges.map((r) => ({ key: r.key, label: r.label }))}
               />
-              {!compare && (
-                <button
-                  type="button"
-                  onClick={() => setReadingsOpen(true)}
-                  className="ml-auto flex min-h-[var(--control-height-default)] cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-[var(--control-height-compact)]"
-                  style={{
-                    color: "var(--brand-primary)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-body-sm)",
-                    fontWeight: "var(--weight-bold)",
-                  }}
-                >
-                  <TableProperties size={16} aria-hidden="true" /> See all
-                  readings
-                </button>
-              )}
             </div>
           </div>
 
           <Card style={{ ...cardStyle, backgroundColor: SURFACE }}>
             <CardContent className="p-4 md:p-6">
               <div className="flex min-w-0 flex-col gap-3">
-                <div className="flex min-w-0 flex-col items-start gap-3 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0">
+                <div className="flex min-w-0 flex-col gap-2">
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
                   <h2
                     id="environmental-chart-title"
                     style={{
@@ -774,62 +786,16 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       fontSize: "var(--type-caption)",
                       fontWeight: "var(--weight-semibold)",
                       lineHeight: "var(--leading-normal)",
+                      whiteSpace: "nowrap",
                     }}
+                    title={targetRangeLabel}
                   >
-                    {targetRangeLabel}
+                    {targetRangeShort}
                   </p>
                 </div>
-
-                <fieldset
-                  aria-label="Chart legend"
-                  className="m-0 flex max-h-[44px] min-w-0 w-full flex-wrap items-center justify-start gap-x-2.5 gap-y-0.5 overflow-y-auto border-0 p-0 pr-1 text-left md:w-auto md:justify-end md:text-right lg:max-w-[76%]"
-                  style={{
-                    color: TEXT,
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-semibold)",
-                    letterSpacing: "var(--tracking-label)",
-                    lineHeight: "var(--leading-snug)",
-                  }}
-                >
-                  {activeUnits.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      aria-label={`Highlight ${u.name} series`}
-                      onMouseEnter={() => setHighlightedUnitId(u.id)}
-                      onMouseLeave={() => setHighlightedUnitId(null)}
-                      onFocus={() => setHighlightedUnitId(u.id)}
-                      onBlur={() => setHighlightedUnitId(null)}
-                      className="flex min-h-[var(--control-height-default)] cursor-pointer items-center gap-1 rounded-md px-0.5 transition-[background-color,opacity] duration-150 hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none md:min-h-4"
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-semibold)",
-                        letterSpacing: "var(--tracking-label)",
-                        lineHeight: "var(--leading-snug)",
-                        opacity:
-                          activeHighlightedUnitId &&
-                          activeHighlightedUnitId !== u.id
-                            ? 0.48
-                            : 1,
-                      }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="h-0.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: colorFor(u.id) }}
-                      />
-                      {u.name}
-                    </button>
-                  ))}
-                </fieldset>
-                </div>
-
-                {/* Metric segmented toggle — lives with the chart it drives. */}
                 <SegmentedControl
                   flush
-                  className="self-end max-w-full overflow-x-auto scrollbar-none"
+                  className="max-w-full shrink-0 self-start overflow-x-auto scrollbar-none"
                   aria-label="Metric"
                 >
                   {(Object.keys(metricInfo) as Metric[]).map((mk) => {
@@ -856,6 +822,53 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     );
                   })}
                 </SegmentedControl>
+                </div>
+                <fieldset
+                  aria-label="Chart legend"
+                  className="m-0 flex min-w-0 w-full flex-nowrap items-center justify-start gap-x-2.5 overflow-x-auto border-0 p-0 pr-1 text-left scrollbar-none md:w-auto md:justify-end md:text-right lg:max-w-[76%]"
+                  style={{
+                    color: TEXT,
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-semibold)",
+                    letterSpacing: "var(--tracking-label)",
+                    lineHeight: "var(--leading-snug)",
+                  }}
+                >
+                  {activeUnits.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      aria-label={`Highlight ${u.name} series`}
+                      onMouseEnter={() => setHighlightedUnitId(u.id)}
+                      onMouseLeave={() => setHighlightedUnitId(null)}
+                      onFocus={() => setHighlightedUnitId(u.id)}
+                      onBlur={() => setHighlightedUnitId(null)}
+                      className="flex min-h-[var(--control-height-default)] shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded-md px-0.5 transition-[background-color,opacity] duration-150 hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none md:min-h-4"
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-semibold)",
+                        letterSpacing: "var(--tracking-label)",
+                        lineHeight: "var(--leading-snug)",
+                        opacity:
+                          activeHighlightedUnitId &&
+                          activeHighlightedUnitId !== u.id
+                            ? 0.48
+                            : 1,
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="h-0.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: colorFor(u.id) }}
+                      />
+                      {u.name}
+                    </button>
+                  ))}
+                </fieldset>
+                </div>
+
               </div>
 
               <div

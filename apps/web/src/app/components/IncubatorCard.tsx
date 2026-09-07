@@ -387,7 +387,7 @@ export function IncubatorCard({
   return (
     <Card
       className={cn(
-        "group h-full cursor-pointer overflow-hidden border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        "group h-full min-h-[var(--mobile-chamber-card-min-height)] cursor-pointer overflow-hidden border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:min-h-0",
         highlighted
           ? "border-[var(--nav-hover-border)] bg-[var(--nav-hover-bg)] shadow-md"
           : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[var(--shadow-card)]",
@@ -404,7 +404,7 @@ export function IncubatorCard({
         }
       }}
     >
-      <CardContent className="flex h-full flex-col px-5 pb-5 pt-3">
+      <CardContent className="flex h-full flex-col px-5 pb-5 pt-5">
         {/* Header — name and mode on the left; power and urgent severity pill on the right. */}
         <div className="mb-3 min-w-0">
           <div className="flex min-w-0 items-center justify-between gap-3">

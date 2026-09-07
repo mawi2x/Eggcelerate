@@ -158,7 +158,7 @@ describe("mobile touch targets", () => {
     const candling = src("src/app/components/screens/CandlingLogsScreen.tsx");
     const trends = src("src/app/components/screens/TrendsScreen.tsx");
     const compactSortButton =
-      "h-[var(--control-height-default)] w-[var(--control-height-default)]";
+      "h-[34px] w-[34px]";
     expect(incubators).toContain(compactSortButton);
     expect(candling).toContain(compactSortButton);
     expect(incubators).toContain(

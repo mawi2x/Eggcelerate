@@ -393,9 +393,7 @@ export function IncubatorsScreen({
       </div>
 
       {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
-      <div
-        className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between"
-      >
+      <div className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1 lg:flex-initial">
           <FilterBar
             ariaLabel="Incubator status filter"
