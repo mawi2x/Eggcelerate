@@ -213,9 +213,7 @@ export function AppSidebar({
                     ? "var(--global-nav-selected-fg)"
                     : "var(--text-secondary)",
                 boxShadow:
-                  moreActive || mobileMoreOpen
-                    ? "var(--shadow-lift)"
-                    : "none",
+                  moreActive || mobileMoreOpen ? "var(--shadow-lift)" : "none",
               }}
             >
               <MoreHorizontal
@@ -414,7 +412,7 @@ export function AppSidebar({
   // ── Slim 56px icon-rail layout ──────────────────────────────────────────────
   if (collapsed) {
     return (
-      <aside
+      <div
         className="fixed left-0 top-0 z-40 flex h-full flex-col transition-all duration-200"
         style={{
           width: RAIL_W,
@@ -472,7 +470,11 @@ export function AppSidebar({
         </div>
 
         {/* ② Nav icons — 16px gap */}
-        <nav className="mt-8 flex flex-col items-center" style={{ gap: 16 }}>
+        <nav
+          aria-label="Primary navigation"
+          className="mt-8 flex flex-col items-center"
+          style={{ gap: 16 }}
+        >
           {mainItems.map(({ id, label, Icon }) => {
             const isActive = activeTab === id;
             return (
@@ -562,13 +564,13 @@ export function AppSidebar({
             {accountInitials(account)}
           </span>
         </div>
-      </aside>
+      </div>
     );
   }
 
   // ── Full 256px expanded panel ───────────────────────────────────────────────
   return (
-    <aside
+    <div
       className="fixed left-0 top-0 z-40 flex h-full flex-col border-r transition-all duration-200"
       style={{
         backgroundColor: "var(--surface-card)",
@@ -620,7 +622,10 @@ export function AppSidebar({
       </div>
 
       {/* Primary navigation */}
-      <nav className="mt-6 flex flex-col gap-1.5 px-3">
+      <nav
+        aria-label="Primary navigation"
+        className="mt-6 flex flex-col gap-1.5 px-3"
+      >
         {mainItems.map(({ id, label, Icon }) =>
           expandedNavButton(
             id,
@@ -691,6 +696,6 @@ export function AppSidebar({
           </span>
         </span>
       </div>
-    </aside>
+    </div>
   );
 }

@@ -245,7 +245,7 @@ export function IncubatorsScreen({
         behavior: reduceMotion ? "auto" : "smooth",
         block: "center",
       });
-      el.querySelector<HTMLElement>('[role="button"]')?.focus({
+      el.querySelector<HTMLElement>("button")?.focus({
         preventScroll: true,
       });
       setActiveCardIndex(index);
@@ -416,6 +416,7 @@ export function IncubatorsScreen({
         <div className="flex w-full items-center justify-end gap-2 lg:w-auto">
           {/* Incubation Mode Select */}
           <Select
+            size="filter"
             value={modeFilter}
             onValueChange={(v) => {
               setModeFilter(v);
@@ -444,6 +445,7 @@ export function IncubatorsScreen({
 
           {/* Sort Key Select */}
           <Select
+            size="filter"
             value={sort}
             onValueChange={(v) => {
               setSort(v as SortKey);
@@ -494,278 +496,279 @@ export function IncubatorsScreen({
         </div>
       </div>
 
-      {sorted.length === 0 ? (
-        <div
-          className="rounded-2xl px-5 py-12 text-center"
-          style={{ backgroundColor: CARD, border: `1px dashed ${BORDER}` }}
-        >
-          <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", lineHeight: "var(--leading-snug)", fontWeight: "var(--weight-bold)", color: TEXT }}>
-            No chambers match your filters
-          </p>
-          <p
-            style={{
-              color: MUTED,
-              fontSize: "var(--type-body-sm)",
-              marginTop: 4,
-            }}
+      <section aria-label="Chamber list">
+        {sorted.length === 0 ? (
+          <div
+            className="rounded-2xl px-5 py-12 text-center"
+            style={{ backgroundColor: CARD, border: `1px dashed ${BORDER}` }}
           >
-            Try a different search term or filter.
-          </p>
-          {(search || filter !== "all" || modeFilter !== "all") && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearch("");
-                setFilter("all");
-                setModeFilter("all");
-              }}
-              className="mt-3 min-h-[var(--control-height-default)] cursor-pointer rounded-xl px-3 py-1.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-8"
+            <p
               style={{
-                color: RUST,
-                fontWeight: "var(--weight-semibold)",
-                fontSize: "var(--type-body-sm)",
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-page-title)",
+                lineHeight: "var(--leading-snug)",
+                fontWeight: "var(--weight-bold)",
+                color: TEXT,
               }}
             >
-              Clear filters
-            </button>
-          )}
-        </div>
-      ) : view === "grid" ? (
-        <>
-          {/* Reserve a small mobile gutter so the fixed chamber index never
-              sits on top of the card edge. */}
-          <div className="grid grid-cols-1 gap-2 md:gap-5 lg:grid-cols-2 xl:grid-cols-3 pr-4 md:pr-0">
-            {sorted.map((unit, idx) => (
-              <div
-                key={unit.id}
-                ref={(el) => {
-                  cardRefs.current[idx] = el;
-                }}
-                data-chamber-idx={idx}
-                className="scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-2xl"
-              >
-                <IncubatorCard
-                  unit={unit}
-                  mode={modeOf(unit.modeId)}
-                  onOpen={onOpenUnit}
-                  cta="Configure"
-                  onHarvest={(u) => setHarvestUnit(u)}
-                  highlighted={isMobile && activeCardIndex === idx}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Empty spacer on mobile to allow scrolling the last card completely above the mascot FAB */}
-          <div className="h-16 md:hidden" aria-hidden="true" />
-
-          {/* Floating Vertical Dot Track on Mobile (shows incubator count and scroll position) */}
-          {sorted.length > 1 && (
-            <div
-              className="scrollbar-none pointer-events-auto fixed right-1.5 top-1/2 z-20 m-0 flex h-fit max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] w-3 min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto bg-transparent max-[20rem]:hidden md:hidden"
-              role="group"
-              aria-label={`Chamber list index. Showing ${sorted.length} chambers.`}
+              No chambers match your filters
+            </p>
+            <p
+              style={{
+                color: MUTED,
+                fontSize: "var(--type-body-sm)",
+                marginTop: 4,
+              }}
             >
-              {sorted.map((unit, idx) => {
-                const isActive = activeCardIndex === idx;
-                return (
-                  <button
-                    key={unit.id}
-                    type="button"
-                    onClick={() => scrollToChamber(idx)}
-                    className="flex h-3 w-2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                    aria-label={`Scroll to ${unit.name} (${idx + 1} of ${sorted.length})`}
-                    title={`${unit.name} (${idx + 1} of ${sorted.length})`}
-                    aria-current={isActive ? "true" : undefined}
-                  >
-                    <span
-                      className="rounded-full transition-all duration-200 motion-reduce:transition-none"
-                      style={{
-                        width: isActive ? 4 : 2.5,
-                        height: isActive ? 12 : 2.5,
-                        backgroundColor: isActive
-                          ? "var(--brand-primary)"
-                          : "var(--wash-checkbox)",
-                      }}
-                    />
-                  </button>
-                );
-              })}
+              Try a different search term or filter.
+            </p>
+            {(search || filter !== "all" || modeFilter !== "all") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setFilter("all");
+                  setModeFilter("all");
+                }}
+                className="mt-3 min-h-[var(--control-height-default)] cursor-pointer rounded-xl px-3 py-1.5 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-8"
+                style={{
+                  color: RUST,
+                  fontWeight: "var(--weight-semibold)",
+                  fontSize: "var(--type-body-sm)",
+                }}
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+        ) : view === "grid" ? (
+          <>
+            {/* Reserve a small mobile gutter so the fixed chamber index never
+              sits on top of the card edge. */}
+            <div className="grid grid-cols-1 gap-2 md:gap-5 lg:grid-cols-2 xl:grid-cols-3 pr-4 md:pr-0">
+              {sorted.map((unit, idx) => (
+                <div
+                  key={unit.id}
+                  ref={(el) => {
+                    cardRefs.current[idx] = el;
+                  }}
+                  data-chamber-idx={idx}
+                  className="scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-2xl"
+                >
+                  <IncubatorCard
+                    unit={unit}
+                    mode={modeOf(unit.modeId)}
+                    onOpen={onOpenUnit}
+                    cta="Configure"
+                    onHarvest={(u) => setHarvestUnit(u)}
+                    highlighted={isMobile && activeCardIndex === idx}
+                  />
+                </div>
+              ))}
             </div>
-          )}
-        </>
-      ) : (
-        <div
-          className="overflow-hidden rounded-2xl"
-          style={{ border: `1px solid ${BORDER}`, backgroundColor: CARD }}
-        >
-          <PaginationBar
-            className="border-b border-t-0"
-            page={clampedPage}
-            pageSize={rowsPerPage}
-            totalItems={sorted.length}
-            itemLabel="incubators"
-            pageSizeOptions={[10, 20, 50]}
-            onPageSizeChange={(value) => {
-              setRowsPerPage(value);
-              setPage(1);
-            }}
-            onPageChange={setPage}
-          />
-          <div className="h-[560px] overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  {["CHAMBER", "MODE", "DAY"].map((h) => (
-                    <TableHead
-                      key={h}
-                      className="sticky top-0 z-10"
-                      style={{
-                        backgroundColor: CARD,
-                        borderBottom: `1px solid ${BORDER}`,
-                        color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {h}
-                    </TableHead>
-                  ))}
-                  {["TEMP", "HUMIDITY", "WATER"].map((h) => (
-                    <TableHead
-                      key={h}
-                      className="sticky top-0 z-10 text-right"
-                      style={{
-                        backgroundColor: CARD,
-                        borderBottom: `1px solid ${BORDER}`,
-                        color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {h}
-                    </TableHead>
-                  ))}
-                  {["STATUS", "ACTIONS"].map((h) => (
-                    <TableHead
-                      key={h}
-                      className="sticky top-0 z-10"
-                      style={{
-                        backgroundColor: CARD,
-                        borderBottom: `1px solid ${BORDER}`,
-                        color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {h}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paged.map((unit) => {
-                  const mode = modeOf(unit.modeId);
-                  const tempSt = rangeState(unit.temp, mode.targetTemp);
-                  const humSt = rangeState(unit.humidity, mode.targetHumidity);
-                  const waterSt = waterState(unit.waterOk);
+
+            {/* Empty spacer on mobile to allow scrolling the last card completely above the mascot FAB */}
+            <div className="h-16 md:hidden" aria-hidden="true" />
+
+            {/* Floating Vertical Dot Track on Mobile (shows incubator count and scroll position) */}
+            {sorted.length > 1 && (
+              <div
+                className="scrollbar-none pointer-events-auto fixed right-1.5 top-1/2 z-20 m-0 flex h-fit max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] w-3 min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto bg-transparent max-[20rem]:hidden md:hidden"
+                role="group"
+                aria-label={`Chamber list index. Showing ${sorted.length} chambers.`}
+              >
+                {sorted.map((unit, idx) => {
+                  const isActive = activeCardIndex === idx;
                   return (
-                    <TableRow
+                    <button
                       key={unit.id}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`View incubator ${unit.name} — click to open details`}
-                      onClick={() => onOpenUnit(unit.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          onOpenUnit(unit.id);
-                        }
-                      }}
-                      className="group cursor-pointer transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                      type="button"
+                      onClick={() => scrollToChamber(idx)}
+                      className="flex h-3 w-2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                      aria-label={`Scroll to ${unit.name} (${idx + 1} of ${sorted.length})`}
+                      title={`${unit.name} (${idx + 1} of ${sorted.length})`}
+                      aria-current={isActive ? "true" : undefined}
                     >
-                      <TableCell
+                      <span
+                        className="rounded-full transition-all duration-200 motion-reduce:transition-none"
                         style={{
-                          fontWeight: "var(--weight-bold)",
-                          color: TEXT,
+                          width: isActive ? 4 : 2.5,
+                          height: isActive ? 12 : 2.5,
+                          backgroundColor: isActive
+                            ? "var(--brand-primary)"
+                            : "var(--wash-checkbox)",
                         }}
-                      >
-                        {unit.name}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className="rounded-full px-2 py-0.5"
-                          style={{
-                            backgroundColor: "var(--wash-brand-soft)",
-                            color: RUST,
-                            fontWeight: "var(--weight-bold)",
-                            fontSize: "var(--type-caption)",
-                          }}
-                        >
-                          {mode.name}
-                        </span>
-                      </TableCell>
-                      <TableCell style={{ color: MUTED }}>
-                        {unit.dayOfIncubation} of {mode.incubationDays}
-                      </TableCell>
-                      <TableCell
-                        className="text-right"
-                        style={{
-                          color: readingStateColors[tempSt],
-                          fontWeight: "var(--weight-bold)",
-                        }}
-                      >
-                        {unit.temp}°C
-                      </TableCell>
-                      <TableCell
-                        className="text-right"
-                        style={{
-                          color: readingStateColors[humSt],
-                          fontWeight: "var(--weight-bold)",
-                        }}
-                      >
-                        {unit.humidity}%
-                      </TableCell>
-                      <TableCell
-                        className="text-right"
-                        style={{
-                          color: readingStateColors[waterSt],
-                          fontWeight: "var(--weight-bold)",
-                        }}
-                      >
-                        {unit.waterOk ? "Normal" : "Low"}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={unit.status} />
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="rounded-xl"
-                          style={{ borderColor: BORDER, color: RUST }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenUnit(unit.id);
-                          }}
-                        >
-                          Configure
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                      />
+                    </button>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+            )}
+          </>
+        ) : (
+          <div
+            className="overflow-hidden rounded-2xl"
+            style={{ border: `1px solid ${BORDER}`, backgroundColor: CARD }}
+          >
+            <PaginationBar
+              className="border-b border-t-0"
+              page={clampedPage}
+              pageSize={rowsPerPage}
+              totalItems={sorted.length}
+              itemLabel="incubators"
+              pageSizeOptions={[10, 20, 50]}
+              onPageSizeChange={(value) => {
+                setRowsPerPage(value);
+                setPage(1);
+              }}
+              onPageChange={setPage}
+            />
+            <div className="h-[560px] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    {["CHAMBER", "MODE", "DAY"].map((h) => (
+                      <TableHead
+                        key={h}
+                        className="sticky top-0 z-10"
+                        style={{
+                          backgroundColor: CARD,
+                          borderBottom: `1px solid ${BORDER}`,
+                          color: "var(--text-muted)",
+                          fontSize: "var(--type-label)",
+                          fontWeight: "var(--weight-bold)",
+                          letterSpacing: "var(--tracking-label)",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {h}
+                      </TableHead>
+                    ))}
+                    {["TEMP", "HUMIDITY", "WATER"].map((h) => (
+                      <TableHead
+                        key={h}
+                        className="sticky top-0 z-10 text-right"
+                        style={{
+                          backgroundColor: CARD,
+                          borderBottom: `1px solid ${BORDER}`,
+                          color: "var(--text-muted)",
+                          fontSize: "var(--type-label)",
+                          fontWeight: "var(--weight-bold)",
+                          letterSpacing: "var(--tracking-label)",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {h}
+                      </TableHead>
+                    ))}
+                    {["STATUS", "ACTIONS"].map((h) => (
+                      <TableHead
+                        key={h}
+                        className="sticky top-0 z-10"
+                        style={{
+                          backgroundColor: CARD,
+                          borderBottom: `1px solid ${BORDER}`,
+                          color: "var(--text-muted)",
+                          fontSize: "var(--type-label)",
+                          fontWeight: "var(--weight-bold)",
+                          letterSpacing: "var(--tracking-label)",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {h}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((unit) => {
+                    const mode = modeOf(unit.modeId);
+                    const tempSt = rangeState(unit.temp, mode.targetTemp);
+                    const humSt = rangeState(
+                      unit.humidity,
+                      mode.targetHumidity,
+                    );
+                    const waterSt = waterState(unit.waterOk);
+                    return (
+                      <TableRow
+                        key={unit.id}
+                        className="group transition-colors duration-200 hover:bg-[var(--nav-hover-bg)]"
+                      >
+                        <TableCell
+                          style={{
+                            fontWeight: "var(--weight-bold)",
+                            color: TEXT,
+                          }}
+                        >
+                          {unit.name}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className="rounded-full px-2 py-0.5"
+                            style={{
+                              backgroundColor: "var(--wash-brand-soft)",
+                              color: RUST,
+                              fontWeight: "var(--weight-bold)",
+                              fontSize: "var(--type-caption)",
+                            }}
+                          >
+                            {mode.name}
+                          </span>
+                        </TableCell>
+                        <TableCell style={{ color: MUTED }}>
+                          {unit.dayOfIncubation} of {mode.incubationDays}
+                        </TableCell>
+                        <TableCell
+                          className="text-right"
+                          style={{
+                            color: readingStateColors[tempSt],
+                            fontWeight: "var(--weight-bold)",
+                          }}
+                        >
+                          {unit.temp}°C
+                        </TableCell>
+                        <TableCell
+                          className="text-right"
+                          style={{
+                            color: readingStateColors[humSt],
+                            fontWeight: "var(--weight-bold)",
+                          }}
+                        >
+                          {unit.humidity}%
+                        </TableCell>
+                        <TableCell
+                          className="text-right"
+                          style={{
+                            color: readingStateColors[waterSt],
+                            fontWeight: "var(--weight-bold)",
+                          }}
+                        >
+                          {unit.waterOk ? "Normal" : "Low"}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={unit.status} />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="cursor-pointer rounded-xl"
+                            style={{ borderColor: BORDER, color: RUST }}
+                            onClick={() => onOpenUnit(unit.id)}
+                            aria-label={`Configure ${unit.name}`}
+                          >
+                            Configure
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </section>
 
       {/* Add incubator dialog */}
       <Dialog

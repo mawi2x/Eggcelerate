@@ -424,7 +424,9 @@ export function ModeLibraryPanel({
           className={iconBtn}
           style={{ borderColor: BORDER, color: TEXT }}
           title={m.builtIn ? "View / customize" : "Edit"}
-          aria-label={m.builtIn ? "View or customize mode" : "Edit mode"}
+          aria-label={
+            m.builtIn ? `View or customize ${m.name}` : `Edit ${m.name}`
+          }
         >
           <Pencil size={14} />
         </button>
@@ -435,7 +437,7 @@ export function ModeLibraryPanel({
           className={iconBtn}
           style={{ borderColor: BORDER, color: TEXT }}
           title="Duplicate"
-          aria-label="Duplicate mode"
+          aria-label={`Duplicate ${m.name}`}
         >
           <Copy size={14} />
         </button>
@@ -445,7 +447,7 @@ export function ModeLibraryPanel({
           className={iconBtn}
           style={{ borderColor: BORDER, color: TEXT }}
           title="Share / export"
-          aria-label="Share or export mode"
+          aria-label={`Share or export ${m.name}`}
         >
           <Share2 size={14} />
         </button>
@@ -460,7 +462,7 @@ export function ModeLibraryPanel({
               backgroundColor: CRIT_BG,
             }}
             title="Delete"
-            aria-label="Delete mode"
+            aria-label={`Delete ${m.name}`}
           >
             <Trash2 size={14} />
           </button>
@@ -529,6 +531,7 @@ export function ModeLibraryPanel({
   return (
     <div>
       <PanelHeader
+        id="settings-panel-modes"
         title="Mode Library"
         description="Incubation presets: temperature, humidity, duration, and how often eggs turn for each species."
       />
@@ -635,7 +638,8 @@ export function ModeLibraryPanel({
                 }}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p
+                  <h3
+                    id={`mode-card-${m.id}`}
                     className="min-w-0 break-words"
                     style={{
                       fontFamily: "var(--font-body)",
@@ -646,7 +650,7 @@ export function ModeLibraryPanel({
                     }}
                   >
                     {m.name}
-                  </p>
+                  </h3>
                   {badge(m)}
                 </div>
                 <div

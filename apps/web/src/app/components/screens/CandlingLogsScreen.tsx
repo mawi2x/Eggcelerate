@@ -26,6 +26,11 @@ import {
   selectCandlingFilterCounts,
 } from "../../features/candling/selectors";
 import { ExclamationIcon } from "../icons";
+import {
+  ChamberCardFooter,
+  ChamberCardHeader,
+  ChamberCardShell,
+} from "../ChamberCardShell";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { Button } from "../ui/button";
 import { FilterBar } from "../ui/filter-bar";
@@ -48,7 +53,6 @@ import {
   TableRow,
 } from "../ui/table";
 import { useIsMobile } from "../ui/use-mobile";
-import { cn } from "../ui/utils";
 import { type ViewMode, ViewToggle } from "../ViewToggle";
 
 const RUST = "var(--brand-primary)";
@@ -233,49 +237,20 @@ function JournalCard({
     row.latestLog?.note.trim() || "No note recorded for this inspection.";
 
   return (
-    <article
-      className={cn(
-        "group flex h-full min-h-[var(--mobile-chamber-card-min-height)] min-w-0 flex-col justify-between rounded-2xl border p-5 transition-colors duration-200 md:min-h-0",
-        highlighted
-          ? "border-[var(--nav-hover-border)] bg-[var(--nav-hover-bg)] shadow-md"
-          : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[var(--shadow-card)]",
-      )}
+    <ChamberCardShell
+      labelledBy={`candling-card-${row.unit.id}`}
+      highlighted={highlighted}
     >
-      <div>
-        <div className="flex min-w-0 items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h3
-              className="max-w-full break-words"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--type-heading-sm)",
-                fontWeight: "var(--weight-semibold)",
-                lineHeight: "var(--leading-snug)",
-                color: TEXT,
-                overflowWrap: "anywhere",
-              }}
-              title={row.unit.name}
-            >
-              {row.unit.name}
-            </h3>
-            <p
-              className="mt-0.5 max-w-full break-words"
-              style={{
-                color: MUTED,
-                fontSize: "var(--type-body-sm)",
-                lineHeight: "var(--leading-normal)",
-                overflowWrap: "anywhere",
-              }}
-              title={row.mode.name}
-            >
-              {row.mode.name}
-            </p>
-          </div>
-          <StatusTag status={row.status} />
-        </div>
+      <ChamberCardHeader
+        titleId={`candling-card-${row.unit.id}`}
+        title={row.unit.name}
+        subtitle={row.mode.name}
+        trailing={<StatusTag status={row.status} />}
+      />
+      <div className="flex-1">
 
         <div
-          className="mt-4 flex min-h-[116px] flex-col justify-between rounded-2xl border p-3.5"
+          className="flex min-h-[116px] flex-col justify-between rounded-2xl border p-3.5"
           style={{
             backgroundColor: TILE,
             borderColor: BORDER,
@@ -323,13 +298,7 @@ function JournalCard({
         </div>
       </div>
 
-      <div
-        className="mt-4 flex items-center justify-between gap-2 rounded-full p-1.5"
-        style={{
-          backgroundColor: "var(--surface-track)",
-          border: `1px solid ${BORDER}`,
-        }}
-      >
+      <ChamberCardFooter>
         <div className="flex min-w-0 items-center gap-2 pl-1.5">
           <StatusIconBadge
             size="sm"
@@ -369,10 +338,7 @@ function JournalCard({
 
         <Button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpen(row.unit.id);
-          }}
+          onClick={() => onOpen(row.unit.id)}
           size="sm"
           className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
           aria-label={`Open candling log for ${row.unit.name}`}
@@ -390,8 +356,8 @@ function JournalCard({
         >
           Open log <ArrowRight size={15} aria-hidden="true" />
         </Button>
-      </div>
-    </article>
+      </ChamberCardFooter>
+    </ChamberCardShell>
   );
 }
 
@@ -585,7 +551,11 @@ export function CandlingLogsScreen({
         </div>
 
         <div className="flex w-full items-center justify-end gap-2 lg:w-auto">
-          <Select value={modeFilter} onValueChange={setModeFilter}>
+          <Select
+            size="filter"
+            value={modeFilter}
+            onValueChange={setModeFilter}
+          >
             <SelectTrigger
               size="filter"
               className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
@@ -610,6 +580,7 @@ export function CandlingLogsScreen({
           </Select>
 
           <Select
+            size="filter"
             value={sort}
             onValueChange={(value) => setSort(value as SortKey)}
           >
@@ -659,7 +630,15 @@ export function CandlingLogsScreen({
             className="rounded-2xl border border-dashed px-5 py-12 text-center"
             style={{ backgroundColor: SUBTLE, borderColor: BORDER }}
           >
-            <p style={{ color: TEXT, fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)" }}>
+            <p
+              style={{
+                color: TEXT,
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-page-title)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+              }}
+            >
               No candling logs match these filters
             </p>
             <p

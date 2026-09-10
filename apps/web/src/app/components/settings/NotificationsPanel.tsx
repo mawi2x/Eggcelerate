@@ -176,6 +176,7 @@ export function NotificationsPanel({
   return (
     <div>
       <PanelHeader
+        id="settings-panel-notifications"
         title="Notifications & Alerts"
         description="Choose how you're reached and which events are worth interrupting you for."
       />
@@ -236,7 +237,10 @@ export function NotificationsPanel({
                   >
                     SMS alerts
                   </h3>
-                  <p className="mt-1" style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
+                  <p
+                    className="mt-1"
+                    style={{ color: MUTED, fontSize: "var(--type-caption)" }}
+                  >
                     Critical alerts only.
                   </p>
                 </div>
@@ -300,7 +304,10 @@ export function NotificationsPanel({
                   >
                     Email alerts
                   </h3>
-                  <p className="mt-1" style={{ color: MUTED, fontSize: "var(--type-caption)" }}>
+                  <p
+                    className="mt-1"
+                    style={{ color: MUTED, fontSize: "var(--type-caption)" }}
+                  >
                     Full digest, including non-critical events.
                   </p>
                 </div>
@@ -366,12 +373,15 @@ export function NotificationsPanel({
             {triggerGroups.map((group) => (
               <section
                 key={group.id}
+                aria-labelledby={`notification-rule-${group.id}`}
                 className={`rounded-2xl p-4 ${group.id === "schedule" ? "md:col-span-2" : ""}`}
                 style={{
                   border: `var(--border-width-hairline) solid ${BORDER}`,
                 }}
               >
-                <GroupLabel>{group.title}</GroupLabel>
+                <GroupLabel id={`notification-rule-${group.id}`}>
+                  {group.title}
+                </GroupLabel>
                 <div className="mt-1">
                   {group.triggers.map((trigger) => (
                     <SettingRow

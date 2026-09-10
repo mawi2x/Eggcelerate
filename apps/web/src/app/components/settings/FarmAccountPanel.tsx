@@ -48,6 +48,7 @@ export function FarmAccountPanel({
   return (
     <div>
       <PanelHeader
+        id="settings-panel-account"
         title="Farm & Account"
         description="Who you are, what your farm is called, and how units read."
       />

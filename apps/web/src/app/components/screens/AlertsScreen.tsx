@@ -163,6 +163,7 @@ export function AlertsScreen({
 
         <div className="flex w-full flex-wrap items-center justify-end gap-2 lg:w-auto lg:flex-nowrap">
           <Select
+            size="filter"
             value={sort}
             onValueChange={(value) => {
               setSort(value as SortKey);
@@ -226,7 +227,8 @@ export function AlertsScreen({
       </div>
 
       {/* ── One unified feed container ──────────────────────────────────── */}
-      <div
+      <section
+        aria-label="Notifications"
         className="-mx-3 overflow-hidden rounded-none shadow-sm md:mx-0 md:rounded-2xl"
         style={{
           backgroundColor: "var(--surface-card)",
@@ -240,7 +242,7 @@ export function AlertsScreen({
               alt="Eggcelerate logo"
               className="h-24 w-24 rounded-3xl object-cover"
             />
-            <h3
+            <h2
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: "var(--type-page-title)",
@@ -250,7 +252,7 @@ export function AlertsScreen({
               }}
             >
               All clear here!
-            </h3>
+            </h2>
             <p
               style={{
                 fontFamily: "var(--font-body)",
@@ -269,7 +271,7 @@ export function AlertsScreen({
             <ul>
               {groupedAlerts.map((g, gi) => (
                 <li key={g.group}>
-                  <p
+                  <h2
                     style={{
                       padding: `${gi === 0 ? "16px" : "10px"} 20px 8px`,
                       borderTop: gi === 0 ? "none" : `1px solid ${DIVIDER}`,
@@ -284,7 +286,7 @@ export function AlertsScreen({
                     }}
                   >
                     {g.group}
-                  </p>
+                  </h2>
                   <ul className="space-y-1.5 px-2 py-1.5 md:space-y-0 md:px-0 md:py-0">
                     {g.items.map((a) => {
                       const s = severityStyle[a.severity];
@@ -311,12 +313,7 @@ export function AlertsScreen({
                           >
                             <span
                               className="flex items-center justify-center rounded-lg"
-                              role="status"
-                              aria-label={
-                                a.acknowledged
-                                  ? "Read notification"
-                                  : "Unread notification"
-                              }
+                              aria-hidden="true"
                               style={{
                                 width: 36,
                                 height: 36,
@@ -329,6 +326,11 @@ export function AlertsScreen({
                                 weight="fill"
                                 aria-hidden="true"
                               />
+                            </span>
+                            <span className="sr-only">
+                              {a.acknowledged
+                                ? "Read notification"
+                                : "Unread notification"}
                             </span>
                           </div>
 
@@ -488,7 +490,7 @@ export function AlertsScreen({
             />
           </>
         )}
-      </div>
+      </section>
     </div>
   );
 }

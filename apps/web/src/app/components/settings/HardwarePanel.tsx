@@ -45,6 +45,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
   return (
     <div>
       <PanelHeader
+        id="settings-panel-hardware"
         title="Hardware & Devices"
         description="Paired controllers, sensor sampling, and calibration across every incubator."
       />
@@ -189,7 +190,15 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                   border: `var(--border-width-hairline) dashed ${BORDER}`,
                 }}
               >
-                <p style={{ fontWeight: "var(--weight-bold)", color: TEXT, fontFamily: "var(--font-display)", fontSize: "var(--type-page-title)", lineHeight: "var(--leading-snug)" }}>
+                <p
+                  style={{
+                    fontWeight: "var(--weight-bold)",
+                    color: TEXT,
+                    fontFamily: "var(--font-display)",
+                    fontSize: "var(--type-page-title)",
+                    lineHeight: "var(--leading-snug)",
+                  }}
+                >
                   No devices paired yet
                 </p>
               </div>
@@ -204,10 +213,13 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           className="grid grid-cols-1 gap-4 pt-5"
         >
           <section
+            aria-labelledby="hardware-group-sampling"
             className="rounded-2xl p-4"
             style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
           >
-            <GroupLabel>Sensor & Sampling</GroupLabel>
+            <GroupLabel id="hardware-group-sampling">
+              Sensor & Sampling
+            </GroupLabel>
             <div className="mt-1">
               <SettingRow
                 label="Sensor Sampling Interval"
@@ -259,10 +271,13 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           </section>
 
           <section
+            aria-labelledby="hardware-group-calibration"
             className="rounded-2xl p-4"
             style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
           >
-            <GroupLabel>Advanced and Calibration</GroupLabel>
+            <GroupLabel id="hardware-group-calibration">
+              Advanced and Calibration
+            </GroupLabel>
             <p
               className="mt-2"
               style={{
@@ -319,10 +334,13 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           </section>
 
           <section
+            aria-labelledby="hardware-group-display"
             className="rounded-2xl p-4"
             style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
           >
-            <GroupLabel>Hardware Display</GroupLabel>
+            <GroupLabel id="hardware-group-display">
+              Hardware Display
+            </GroupLabel>
             <div className="mt-1">
               <SettingRow
                 label="Status LED indicators"

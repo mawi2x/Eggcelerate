@@ -150,54 +150,62 @@ export function SettingsScreen({
         </ul>
       </nav>
 
-      <section
+      <div
         className="min-w-0 flex-1 rounded-2xl"
         style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
       >
         <div className="p-4 md:p-6">
           {category === "modes" && (
-            <ModeLibraryPanel
-              modes={modes}
-              onUpdateMode={onUpdateMode}
-              onAddMode={onAddMode}
-              onDeleteMode={onDeleteMode}
-            />
+            <section aria-labelledby="settings-panel-modes">
+              <ModeLibraryPanel
+                modes={modes}
+                onUpdateMode={onUpdateMode}
+                onAddMode={onAddMode}
+                onDeleteMode={onDeleteMode}
+              />
+            </section>
           )}
           {category === "notifications" && (
-            <NotificationsPanel
-              value={draft.notifications}
-              onChange={(notifications) =>
-                setDraft((current) => ({ ...current, notifications }))
-              }
-              view={notificationView}
-              onViewChange={setNotificationView}
-            />
+            <section aria-labelledby="settings-panel-notifications">
+              <NotificationsPanel
+                value={draft.notifications}
+                onChange={(notifications) =>
+                  setDraft((current) => ({ ...current, notifications }))
+                }
+                view={notificationView}
+                onViewChange={setNotificationView}
+              />
+            </section>
           )}
           {category === "account" && (
-            <FarmAccountPanel
-              account={draft.account}
-              onUpdateAccount={(patch) =>
-                setDraft((current) => ({
-                  ...current,
-                  account: { ...current.account, ...patch },
-                }))
-              }
-              temperatureUnit={draft.temperatureUnit}
-              timeZone={draft.timeZone}
-              onTemperatureUnitChange={(temperatureUnit) =>
-                setDraft((current) => ({ ...current, temperatureUnit }))
-              }
-              onTimeZoneChange={(timeZone) =>
-                setDraft((current) => ({ ...current, timeZone }))
-              }
-            />
+            <section aria-labelledby="settings-panel-account">
+              <FarmAccountPanel
+                account={draft.account}
+                onUpdateAccount={(patch) =>
+                  setDraft((current) => ({
+                    ...current,
+                    account: { ...current.account, ...patch },
+                  }))
+                }
+                temperatureUnit={draft.temperatureUnit}
+                timeZone={draft.timeZone}
+                onTemperatureUnitChange={(temperatureUnit) =>
+                  setDraft((current) => ({ ...current, temperatureUnit }))
+                }
+                onTimeZoneChange={(timeZone) =>
+                  setDraft((current) => ({ ...current, timeZone }))
+                }
+              />
+            </section>
           )}
           {category === "hardware" && (
-            <HardwarePanel
-              units={units}
-              view={hardwareView}
-              onViewChange={setHardwareView}
-            />
+            <section aria-labelledby="settings-panel-hardware">
+              <HardwarePanel
+                units={units}
+                view={hardwareView}
+                onViewChange={setHardwareView}
+              />
+            </section>
           )}
         </div>
 
@@ -247,7 +255,7 @@ export function SettingsScreen({
             </Button>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

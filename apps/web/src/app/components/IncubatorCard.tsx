@@ -16,7 +16,11 @@ import { SegmentedBattery } from "./SegmentedBattery";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
 import { getWaterStatusInfo, readingStateColors } from "./statusPresentation";
 import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
+import {
+  ChamberCardFooter,
+  ChamberCardHeader,
+  ChamberCardShell,
+} from "./ChamberCardShell";
 import { cn } from "./ui/utils";
 
 interface Props {
@@ -385,84 +389,51 @@ export function IncubatorCard({
   const cycleEnded = !ready && unit.dayOfIncubation >= mode.incubationDays;
 
   return (
-    <Card
-      className={cn(
-        "group h-full min-h-[var(--mobile-chamber-card-min-height)] cursor-pointer overflow-hidden border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:min-h-0",
-        highlighted
-          ? "border-[var(--nav-hover-border)] bg-[var(--nav-hover-bg)] shadow-md"
-          : "border-[var(--border-default)] bg-[var(--surface-subtle)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] shadow-[var(--shadow-card)]",
-      )}
-      style={{ borderRadius: "var(--radius-card)" }}
-      tabIndex={0}
-      role="button"
-      aria-label={`Open details for ${unit.name} — click to view`}
-      onClick={() => onOpen(unit.id)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen(unit.id);
-        }
-      }}
+    <ChamberCardShell
+      labelledBy={`incubator-card-${unit.id}`}
+      highlighted={highlighted}
     >
-      <CardContent className="flex h-full flex-col px-5 pb-5 pt-5">
-        {/* Header — name and mode on the left; power and urgent severity pill on the right. */}
-        <div className="mb-3 min-w-0">
-          <div className="flex min-w-0 items-center justify-between gap-3">
-            <h3
-              className="flex min-w-0 flex-1 items-center gap-1"
+      <ChamberCardHeader
+        titleId={`incubator-card-${unit.id}`}
+        title={
+          <>
+            <span
+              className="min-w-0"
               style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--type-heading-sm)",
-                fontWeight: "var(--weight-semibold)",
-                lineHeight: "var(--leading-snug)",
-                color: "var(--text-primary)",
-              }}
-            >
-              <span
-                className="min-w-0"
-                style={{
-                  whiteSpace: "normal",
-                  wordBreak: "break-word",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {unit.name}
-              </span>
-              <ChevronRight
-                size={14}
-                className={cn(
-                  "shrink-0 transition-opacity duration-200",
-                  highlighted
-                    ? "opacity-100"
-                    : "opacity-60 md:opacity-0 group-hover:opacity-100",
-                )}
-                style={{ color: "var(--progress-stroke)" }}
-                aria-hidden
-              />
-            </h3>
-            <div className="shrink-0">
-              <SegmentedBattery
-                battery={unit.batteryPct}
-                charging={unit.powerSource !== "battery"}
-                showLabel
-              />
-            </div>
-          </div>
-          <div className="mt-1.5 flex min-w-0 items-center justify-between gap-2">
-            <p
-              className="min-w-0 flex-1 break-words"
-              style={{
-                color: ready ? "var(--text-gray-cool)" : "var(--text-farm)",
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body-sm)",
-                fontWeight: "var(--weight-medium)",
-                lineHeight: "var(--leading-normal)",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
                 overflowWrap: "anywhere",
               }}
             >
-              {ready ? "Unassigned" : mode.name}
-            </p>
-            {unit.conditionSeverity !== "info" && (
+              {unit.name}
+            </span>
+            <ChevronRight
+              size={14}
+              className={cn(
+                "shrink-0 transition-opacity duration-200",
+                highlighted
+                  ? "opacity-100"
+                  : "opacity-60 md:opacity-0 group-hover:opacity-100",
+              )}
+              style={{ color: "var(--progress-stroke)" }}
+              aria-hidden
+            />
+          </>
+        }
+        titleClassName="flex min-w-0 items-center gap-1"
+        subtitle={ready ? "Unassigned" : mode.name}
+        subtitleStyle={{
+          color: ready ? "var(--text-gray-cool)" : "var(--text-farm)",
+          fontWeight: "var(--weight-medium)",
+        }}
+        trailing={
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <SegmentedBattery
+              battery={unit.batteryPct}
+              charging={unit.powerSource !== "battery"}
+              showLabel
+            />
+            {unit.conditionSeverity !== "info" ? (
               <span
                 className="inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5"
                 style={{
@@ -484,9 +455,10 @@ export function IncubatorCard({
               >
                 {conditionDisplayLabels[unit.conditionSeverity]}
               </span>
-            )}
+            ) : undefined}
           </div>
-        </div>
+        }
+      />
 
         {ready ? (
           /* Ready chamber — no cycle running yet, prompt the farmer to set up. */
@@ -609,11 +581,9 @@ export function IncubatorCard({
         )}
 
         {/* Footer — full-width status oval containing the status icon, label, and configure button. */}
-        <div
-          className="mt-4 flex items-center justify-between gap-2 rounded-full p-1.5"
+        <ChamberCardFooter
           style={{
             backgroundColor: status.bg,
-            border: `1px solid ${status.fg}22`,
           }}
         >
           <div className="flex min-w-0 items-center gap-2 pl-1.5">
@@ -653,10 +623,8 @@ export function IncubatorCard({
             <Button
               type="button"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onHarvest?.(unit);
-              }}
+              onClick={() => onHarvest?.(unit)}
+              aria-label={`Finish cycle for ${unit.name}`}
               className="cursor-pointer rounded-full shadow-sm transition-colors hover:brightness-110"
               style={{
                 backgroundColor: RUST,
@@ -675,10 +643,10 @@ export function IncubatorCard({
             <Button
               type="button"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpen(unit.id);
-              }}
+              onClick={() => onOpen(unit.id)}
+              aria-label={
+                ready ? `Start setup for ${unit.name}` : `${cta} ${unit.name}`
+              }
               className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
               style={{
                 backgroundColor: "var(--surface-card)",
@@ -695,8 +663,7 @@ export function IncubatorCard({
               {ready ? "Start Setup" : cta} <ChevronRight size={15} />
             </Button>
           )}
-        </div>
-      </CardContent>
-    </Card>
+        </ChamberCardFooter>
+    </ChamberCardShell>
   );
 }

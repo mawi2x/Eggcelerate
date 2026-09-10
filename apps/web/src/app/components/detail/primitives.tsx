@@ -45,6 +45,8 @@ export function SectionCard({
   centered = false,
   titleSize = 16,
   divider = false,
+  titleId,
+  section = false,
 }: {
   title: string;
   subtitle?: string;
@@ -53,9 +55,13 @@ export function SectionCard({
   centered?: boolean;
   titleSize?: number;
   divider?: boolean;
+  /** Heading id used as the labelled-section name when `section` is true. */
+  titleId?: string;
+  /** Wraps the card in a labelled `<section>` for meaningful page sections. */
+  section?: boolean;
 }) {
   void titleSize;
-  return (
+  const card = (
     <Card
       style={{
         backgroundColor: "var(--surface-card)",
@@ -78,6 +84,7 @@ export function SectionCard({
             <Typography
               as="h3"
               variant="headingSmall"
+              id={titleId}
               style={{ color: "var(--text-primary)" }}
             >
               {title}
@@ -96,6 +103,11 @@ export function SectionCard({
         {children}
       </CardContent>
     </Card>
+  );
+  return section && titleId ? (
+    <section aria-labelledby={titleId}>{card}</section>
+  ) : (
+    card
   );
 }
 

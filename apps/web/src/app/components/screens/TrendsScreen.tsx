@@ -2,7 +2,6 @@ import {
   ChevronDown,
   Download,
   Layers,
-  LineChart,
   Percent,
   Search,
   TableProperties,
@@ -25,6 +24,7 @@ import { toast } from "sonner";
 import type { ReadingWindow } from "../../data/repositories/repository";
 import type { HatchRecord, Incubator, Mode } from "../../domain/types";
 import { useIncubatorReadingMap } from "../../features/farm/use-incubator-readings";
+import { KpiCard } from "../KpiCard";
 import {
   dedupeTickLabels,
   formatXTick,
@@ -105,6 +105,10 @@ const CONTROL_FONT: React.CSSProperties = {
   fontSize: "var(--type-body-sm)",
   fontWeight: "var(--weight-semibold)",
   lineHeight: "var(--leading-normal)",
+};
+const COMPARE_FONT: React.CSSProperties = {
+  ...CONTROL_FONT,
+  fontSize: "var(--type-filter-value)",
 };
 
 type RangeKey = ReadingWindow;
@@ -577,7 +581,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 onClick={() => setTrendView(key)}
                 style={{
                   fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-label)",
+                  fontSize: "var(--type-filter-label)",
                   fontWeight: "var(--weight-bold)",
                   lineHeight: "var(--leading-snug)",
                   letterSpacing: "var(--tracking-label)",
@@ -605,7 +609,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             {/* ROW 1 — chamber selection and metric. */}
             <div className="flex flex-col items-stretch gap-3 md:flex-row md:flex-wrap md:items-center">
               {!compare ? (
-                <Select value={unitId} onValueChange={setUnitId}>
+                <Select
+                  size="filter"
+                  value={unitId}
+                  onValueChange={setUnitId}
+                >
                   <SelectTrigger
                     size="filter"
                     className="min-w-0 flex-1 rounded-xl md:w-[240px] md:shrink-0"
@@ -622,7 +630,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       <SelectItem
                         key={u.id}
                         value={u.id}
-                        style={{ ...CONTROL_FONT, color: TEXT }}
+                        style={{ color: TEXT }}
                       >
                         {u.name}
                       </SelectItem>
@@ -653,16 +661,16 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   <PopoverContent
                     className="w-64 p-0"
                     align="start"
-                    style={CONTROL_FONT}
+                    style={COMPARE_FONT}
                   >
                     <div
                       className="px-3 py-2"
                       style={{ borderBottom: `1px solid ${BORDER}` }}
                     >
-                      <span style={{ ...CONTROL_FONT, color: TEXT }}>
+                      <span style={{ ...COMPARE_FONT, color: TEXT }}>
                         Select chambers
                       </span>
-                      <p style={{ ...CONTROL_FONT, color: MUTED }}>
+                      <p style={{ ...COMPARE_FONT, color: MUTED }}>
                         Keep at least two selected.
                       </p>
                     </div>
@@ -698,7 +706,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                             <span
                               className="min-w-0 break-words"
                               style={{
-                                ...CONTROL_FONT,
+                                ...COMPARE_FONT,
                                 color: TEXT,
                                 overflowWrap: "anywhere",
                               }}
@@ -714,35 +722,34 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               )}
 
               <div className="flex w-full items-center justify-between gap-2 md:w-auto md:flex-1">
-              <div
-                className="flex shrink-0 cursor-pointer items-center gap-2"
-                style={{ ...CONTROL_FONT, color: compare ? TEXT : MUTED }}
-              >
-                <Switch
-                  checked={compare}
-                  onCheckedChange={handleCompareChange}
-                  aria-label="Compare Chambers"
-                />
-                Compare Chambers
-              </div>
-              {!compare && (
-                <button
-                  type="button"
-                  onClick={() => setReadingsOpen(true)}
-                  className="flex min-h-[var(--control-height-default)] shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-[var(--control-height-compact)]"
-                  style={{
-                    color: "var(--brand-primary)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-body-sm)",
-                    fontWeight: "var(--weight-bold)",
-                  }}
+                <div
+                  className="flex shrink-0 cursor-pointer items-center gap-2"
+                  style={{ ...CONTROL_FONT, color: compare ? TEXT : MUTED }}
                 >
-                  <TableProperties size={16} aria-hidden="true" /> See all
-                  readings
-                </button>
-              )}
+                  <Switch
+                    checked={compare}
+                    onCheckedChange={handleCompareChange}
+                    aria-label="Compare Chambers"
+                  />
+                  Compare Chambers
+                </div>
+                {!compare && (
+                  <button
+                    type="button"
+                    onClick={() => setReadingsOpen(true)}
+                    className="flex min-h-[var(--control-height-default)] shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-[var(--control-height-compact)]"
+                    style={{
+                      color: "var(--brand-primary)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-caption)",
+                      fontWeight: "var(--weight-bold)",
+                    }}
+                  >
+                    <TableProperties size={16} aria-hidden="true" /> See all
+                    readings
+                  </button>
+                )}
               </div>
-
             </div>
 
             <div
@@ -764,119 +771,121 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             <CardContent className="p-4 md:p-6">
               <div className="flex min-w-0 flex-col gap-3">
                 <div className="flex min-w-0 flex-col gap-2">
-                <div className="flex min-w-0 items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <h2
-                    id="environmental-chart-title"
+                  <div className="flex min-w-0 items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h2
+                        id="environmental-chart-title"
+                        style={{
+                          color: TEXT,
+                          fontFamily: "var(--font-display)",
+                          fontSize: "var(--type-heading-md)",
+                          fontWeight: "var(--weight-bold)",
+                          lineHeight: "var(--leading-snug)",
+                        }}
+                      >
+                        {metricInfo[metric].label} History
+                      </h2>
+                      <p
+                        className="mt-0.5"
+                        style={{
+                          color: MUTED,
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-caption)",
+                          fontWeight: "var(--weight-semibold)",
+                          lineHeight: "var(--leading-normal)",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={targetRangeLabel}
+                      >
+                        {targetRangeShort}
+                      </p>
+                    </div>
+                    <SegmentedControl
+                      flush
+                      className="max-w-full shrink-0 self-start overflow-x-auto scrollbar-none"
+                      aria-label="Chart metric"
+                    >
+                      {(Object.keys(metricInfo) as Metric[]).map((mk) => {
+                        const active = metric === mk;
+                        return (
+                          <SegmentedControlItem
+                            key={mk}
+                            flush
+                            active={active}
+                            aria-pressed={active}
+                            onClick={() => setMetric(mk)}
+                            className="px-3"
+                            style={{
+                              fontFamily: "var(--font-body)",
+                              fontSize: "var(--type-filter-label)",
+                              fontWeight: "var(--weight-bold)",
+                              lineHeight: "var(--leading-snug)",
+                              letterSpacing: "var(--tracking-label)",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {metricInfo[mk].label}
+                          </SegmentedControlItem>
+                        );
+                      })}
+                    </SegmentedControl>
+                  </div>
+                  <fieldset
+                    aria-label="Chart legend"
+                    className="m-0 flex min-w-0 w-full flex-nowrap items-center justify-start gap-x-2.5 overflow-x-auto border-0 p-0 pr-1 text-left scrollbar-none md:w-auto md:justify-end md:text-right lg:max-w-[76%]"
                     style={{
                       color: TEXT,
-                      fontFamily: "var(--font-display)",
-                      fontSize: "var(--type-heading-md)",
-                      fontWeight: "var(--weight-bold)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-semibold)",
+                      letterSpacing: "var(--tracking-label)",
                       lineHeight: "var(--leading-snug)",
                     }}
                   >
-                    {metricInfo[metric].label} History
-                  </h2>
-                  <p
-                    className="mt-0.5"
-                    style={{
-                      color: MUTED,
-                      fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-caption)",
-                      fontWeight: "var(--weight-semibold)",
-                      lineHeight: "var(--leading-normal)",
-                      whiteSpace: "nowrap",
-                    }}
-                    title={targetRangeLabel}
-                  >
-                    {targetRangeShort}
-                  </p>
-                </div>
-                <SegmentedControl
-                  flush
-                  className="max-w-full shrink-0 self-start overflow-x-auto scrollbar-none"
-                  aria-label="Metric"
-                >
-                  {(Object.keys(metricInfo) as Metric[]).map((mk) => {
-                    const active = metric === mk;
-                    return (
-                      <SegmentedControlItem
-                        key={mk}
-                        flush
-                        active={active}
-                        aria-pressed={active}
-                        onClick={() => setMetric(mk)}
-                        className="px-3"
+                    {activeUnits.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        aria-label={`Highlight ${u.name} series`}
+                        onMouseEnter={() => setHighlightedUnitId(u.id)}
+                        onMouseLeave={() => setHighlightedUnitId(null)}
+                        onFocus={() => setHighlightedUnitId(u.id)}
+                        onBlur={() => setHighlightedUnitId(null)}
+                        className="flex min-h-[var(--control-height-default)] shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded-md px-0.5 transition-[background-color,opacity] duration-150 hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none md:min-h-4"
                         style={{
                           fontFamily: "var(--font-body)",
                           fontSize: "var(--type-label)",
-                          fontWeight: "var(--weight-bold)",
-                          lineHeight: "var(--leading-snug)",
+                          fontWeight: "var(--weight-semibold)",
                           letterSpacing: "var(--tracking-label)",
-                          textTransform: "uppercase",
+                          lineHeight: "var(--leading-snug)",
+                          opacity:
+                            activeHighlightedUnitId &&
+                            activeHighlightedUnitId !== u.id
+                              ? 0.48
+                              : 1,
                         }}
                       >
-                        {metricInfo[mk].label}
-                      </SegmentedControlItem>
-                    );
-                  })}
-                </SegmentedControl>
+                        <span
+                          aria-hidden="true"
+                          className="h-0.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: colorFor(u.id) }}
+                        />
+                        {u.name}
+                      </button>
+                    ))}
+                  </fieldset>
                 </div>
-                <fieldset
-                  aria-label="Chart legend"
-                  className="m-0 flex min-w-0 w-full flex-nowrap items-center justify-start gap-x-2.5 overflow-x-auto border-0 p-0 pr-1 text-left scrollbar-none md:w-auto md:justify-end md:text-right lg:max-w-[76%]"
-                  style={{
-                    color: TEXT,
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-semibold)",
-                    letterSpacing: "var(--tracking-label)",
-                    lineHeight: "var(--leading-snug)",
-                  }}
-                >
-                  {activeUnits.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      aria-label={`Highlight ${u.name} series`}
-                      onMouseEnter={() => setHighlightedUnitId(u.id)}
-                      onMouseLeave={() => setHighlightedUnitId(null)}
-                      onFocus={() => setHighlightedUnitId(u.id)}
-                      onBlur={() => setHighlightedUnitId(null)}
-                      className="flex min-h-[var(--control-height-default)] shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded-md px-0.5 transition-[background-color,opacity] duration-150 hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none md:min-h-4"
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-semibold)",
-                        letterSpacing: "var(--tracking-label)",
-                        lineHeight: "var(--leading-snug)",
-                        opacity:
-                          activeHighlightedUnitId &&
-                          activeHighlightedUnitId !== u.id
-                            ? 0.48
-                            : 1,
-                      }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="h-0.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: colorFor(u.id) }}
-                      />
-                      {u.name}
-                    </button>
-                  ))}
-                </fieldset>
-                </div>
-
               </div>
 
+              <p id="environmental-chart-desc" className="sr-only">
+                {`${metricInfo[metric].label} readings for ${activeUnits.map((u) => u.name).join(", ")}`}
+              </p>
               <div
                 className="mt-3 h-[260px] w-full border-t pt-3 md:mt-4 md:h-[420px] md:pt-4 lg:h-[440px]"
                 style={{ borderColor: BORDER }}
                 role="img"
                 aria-labelledby="environmental-chart-title"
-                aria-label={`${metricInfo[metric].label} readings for ${activeUnits.map((u) => u.name).join(", ")}`}
+                aria-describedby="environmental-chart-desc"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
@@ -1021,7 +1030,9 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                     {bands[0] && (
                       <ReferenceLine
                         key="target-reference-line"
-                        y={Number(((bands[0].min + bands[0].max) / 2).toFixed(1))}
+                        y={Number(
+                          ((bands[0].min + bands[0].max) / 2).toFixed(1),
+                        )}
                         stroke="var(--chart-target-band)"
                         strokeDasharray="4 4"
                         strokeWidth={1.5}
@@ -1069,34 +1080,32 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
           </Card>
         </>
       ) : (
-        <>
+        <section aria-label="Hatch history">
           {/* KPI summary row: 3 cards in 1 row across viewports */}
           <div className="grid grid-cols-3 gap-2 md:gap-4">
             <KpiCard
               Icon={Layers}
               label="Completed Cycles"
-              value={`${kpis.cycles}`}
-              unit="Cycles"
-              cardStyle={cardStyle}
+              value={`${kpis.cycles} Cycles`}
+              minHeight="standard"
             />
             <KpiCard
               Icon={Percent}
               label="Average Hatchability"
               value={kpis.avgRate === null ? "N/A" : `${kpis.avgRate}%`}
               accent={OK}
-              cardStyle={cardStyle}
+              minHeight="standard"
             />
             <KpiCard
               Icon={TrendingUp}
               label="Total Chicks Hatched"
-              value={`${kpis.hatched}`}
-              unit="Hatched"
-              cardStyle={cardStyle}
+              value={`${kpis.hatched} Hatched`}
+              minHeight="standard"
             />
           </div>
 
           {/* Control bar: search + species filter dropdown */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="mt-2 flex flex-wrap items-center gap-3 md:mt-6">
             <div className="relative min-w-0 w-full flex-1 md:min-w-[220px]">
               <Search
                 size={16}
@@ -1112,12 +1121,14 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 }}
                 maxLength={50}
                 placeholder="Filter hatch history..."
+                aria-label="Filter hatch history"
                 className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
-                style={inputStyle}
+                style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
               />
             </div>
             <div className="w-full shrink-0 md:w-[200px]">
               <Select
+                size="filter"
                 value={species}
                 onValueChange={(val) => {
                   setSpecies(val);
@@ -1127,7 +1138,11 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                 <SelectTrigger
                   size="filter"
                   className="w-full rounded-xl"
-                  style={{ ...toolbarInputStyle, ...CONTROL_FONT, color: RUST }}
+                  style={{
+                    ...toolbarInputStyle,
+                    ...CONTROL_FONT,
+                    color: RUST,
+                  }}
                 >
                   <SelectValue placeholder="Species: All" />
                 </SelectTrigger>
@@ -1141,7 +1156,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                       <SelectItem
                         key={s}
                         value={s}
-                        style={{ ...CONTROL_FONT, color: TEXT }}
+                        style={{ color: TEXT }}
                       >
                         {s === "All"
                           ? `All Species (${count})`
@@ -1154,7 +1169,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             </div>
           </div>
 
-          <Card style={cardStyle}>
+          <Card style={cardStyle} className="mt-2 md:mt-6">
             <CardContent className="p-5">
               <PaginationBar
                 className="mb-4 border-b border-t-0 px-0 pt-0"
@@ -1221,6 +1236,8 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         <TableRow key={h.id} className="hover:bg-amber-50/60">
                           <TableCell
                             style={{
+                              fontSize: "var(--type-body)",
+                              lineHeight: "var(--leading-normal)",
                               fontWeight: "var(--weight-bold)",
                               color: TEXT,
                             }}
@@ -1250,10 +1267,22 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                           >
                             {formatDate(h.startDate)} to {formatDate(h.endDate)}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell
+                            className="text-right"
+                            style={{
+                              fontSize: "var(--type-body)",
+                              lineHeight: "var(--leading-normal)",
+                            }}
+                          >
                             {h.totalEggs}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell
+                            className="text-right"
+                            style={{
+                              fontSize: "var(--type-body)",
+                              lineHeight: "var(--leading-normal)",
+                            }}
+                          >
                             {h.hatchedEggs}
                           </TableCell>
                           <TableCell className="text-right">
@@ -1277,7 +1306,10 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         <TableCell
                           colSpan={6}
                           className="py-8 text-center"
-                          style={{ color: MUTED }}
+                          style={{
+                            color: MUTED,
+                            fontSize: "var(--type-body-sm)",
+                          }}
                         >
                           No cycles match your filters.
                         </TableCell>
@@ -1288,37 +1320,54 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               </div>
             </CardContent>
           </Card>
-        </>
+        </section>
       )}
 
       {/* Raw readings modal */}
       <Dialog open={readingsOpen} onOpenChange={setReadingsOpen}>
         <DialogContent className="rounded-2xl md:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--type-heading-md)",
-                fontWeight: "var(--weight-bold)",
-                lineHeight: "var(--leading-snug)",
-              }}
-            >
-              Raw readings: {unit.name}
-            </DialogTitle>
-            <DialogDescription>
-              {singleReadings.length} data points for{" "}
-              {ranges.find((r) => r.key === range)?.label.toLowerCase() ?? ""}.
-            </DialogDescription>
+          <DialogHeader className="gap-0 pt-10 text-left">
+            <div className="flex items-start justify-between gap-1">
+              <div className="min-w-0">
+                <DialogTitle
+                  className="min-w-0 whitespace-nowrap text-left"
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "var(--type-heading-md)",
+                    fontWeight: "var(--weight-bold)",
+                    lineHeight: "var(--leading-snug)",
+                  }}
+                >
+                  {unit.name} Readings
+                </DialogTitle>
+                <DialogDescription
+                  className="text-left"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-caption)",
+                    lineHeight: "var(--leading-normal)",
+                  }}
+                >
+                  <strong style={{ fontWeight: "var(--weight-bold)" }}>
+                    {singleReadings.length}
+                  </strong>{" "}
+                  readings recorded for this chamber
+                </DialogDescription>
+              </div>
+              <Button
+                className="shrink-0 gap-1 rounded-xl px-2"
+                style={{
+                  backgroundColor: RUST,
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-caption)",
+                  lineHeight: "var(--leading-normal)",
+                }}
+                onClick={exportCsv}
+              >
+                <Download size={16} /> Export as CSV
+              </Button>
+            </div>
           </DialogHeader>
-          <div className="mb-3 flex justify-end">
-            <Button
-              className="rounded-xl"
-              style={{ backgroundColor: RUST }}
-              onClick={exportCsv}
-            >
-              <Download size={16} /> Export as CSV
-            </Button>
-          </div>
           <div
             className="max-h-[50vh] overflow-y-auto rounded-2xl border"
             style={{ borderColor: BORDER }}
@@ -1337,11 +1386,33 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
               <TableBody>
                 {singleReadings.map((p) => (
                   <TableRow key={p.ts}>
-                    <TableCell style={{ color: MUTED }}>
+                    <TableCell
+                      style={{
+                        color: MUTED,
+                        fontSize: "var(--type-body)",
+                        lineHeight: "var(--leading-normal)",
+                      }}
+                    >
                       {new Date(p.ts).toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right">{p.temp}°C</TableCell>
-                    <TableCell className="text-right">{p.humidity}%</TableCell>
+                    <TableCell
+                      className="text-right"
+                      style={{
+                        fontSize: "var(--type-body)",
+                        lineHeight: "var(--leading-normal)",
+                      }}
+                    >
+                      {p.temp}°C
+                    </TableCell>
+                    <TableCell
+                      className="text-right"
+                      style={{
+                        fontSize: "var(--type-body)",
+                        lineHeight: "var(--leading-normal)",
+                      }}
+                    >
+                      {p.humidity}%
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1353,54 +1424,3 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
   );
 }
 
-function KpiCard({
-  Icon,
-  label,
-  value,
-  unit,
-  accent,
-  cardStyle,
-}: {
-  Icon: typeof LineChart;
-  label: string;
-  value: string;
-  unit?: string;
-  accent?: string;
-  cardStyle: React.CSSProperties;
-}) {
-  return (
-    <Card style={cardStyle} className="h-full">
-      <CardContent className="flex h-full flex-col justify-between p-2.5 sm:p-3 md:p-5">
-        <div
-          className="flex items-center gap-1 md:gap-2"
-          style={{
-            color: MUTED,
-            fontWeight: "var(--weight-semibold)",
-          }}
-        >
-          <Icon size={14} className="shrink-0 md:size-4" />
-          <span className="text-[11px] leading-tight md:text-(length:--type-body-sm)">
-            {label}
-          </span>
-        </div>
-        <div
-          className="mt-1.5 flex flex-wrap items-baseline gap-1 tracking-tight md:mt-2"
-          style={{
-            fontFamily: "var(--font-display)",
-            lineHeight: "var(--leading-tight)",
-            color: accent ?? TEXT,
-          }}
-        >
-          <span className="text-base font-extrabold sm:text-lg md:text-(length:--type-panel-title)">
-            {value}
-          </span>
-          {unit && (
-            <span className="text-[11px] font-semibold text-[var(--text-farm)] sm:text-xs md:text-sm">
-              {unit}
-            </span>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}

@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 
-describe("Overview batch", () => {
+describe("Shared KPI batch", () => {
   it("KPI uses panel-title token", () => {
     const s = fs.readFileSync(
-      "src/app/components/screens/OverviewScreen.tsx",
+      "src/app/components/KpiCard.tsx",
       "utf-8",
     );
     expect(s).toMatch(

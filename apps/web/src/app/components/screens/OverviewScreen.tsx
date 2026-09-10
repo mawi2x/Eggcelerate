@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Incubator, Mode, UnitStatus } from "../../domain/types";
-import { Card, CardContent } from "../ui/card";
+import { KpiCard, type KpiFooter } from "../KpiCard";
 
 interface Props {
   units: Incubator[];
@@ -30,152 +30,6 @@ const conditionRowStyle = `
 .condition-row:hover{background:var(--nav-hover-bg);border-color:var(--nav-hover-border)}
 `;
 
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "var(--surface-card)",
-  borderColor: "var(--border-default)",
-  borderRadius: "var(--radius-card)",
-  boxShadow: "var(--shadow-card)",
-};
-
-interface KpiPill {
-  text: string;
-  tone: "neutral" | "positive" | "negative" | "warning";
-}
-interface KpiFooter {
-  primary: string;
-  secondary?: string;
-  tertiary?: string;
-}
-
-function KpiCard({
-  Icon,
-  label,
-  value,
-  pill,
-  footer,
-}: {
-  Icon: typeof Layers;
-  label: string;
-  value: string;
-  pill?: KpiPill;
-  footer?: KpiFooter;
-}) {
-  return (
-    <Card
-      className={`relative overflow-hidden ${
-        pill || footer
-          ? "min-h-[6.3125rem] sm:min-h-[5.875rem] lg:min-h-[7.25rem]"
-          : "min-h-[5.625rem]"
-      }`}
-      style={{
-        ...cardStyle,
-        height: "auto",
-      }}
-    >
-      {/* Decorative watermark — cropped, tilted, low-opacity so text stays legible. */}
-      <Icon
-        aria-hidden
-        className="pointer-events-none absolute -bottom-3 -right-3"
-        style={{
-          width: 80,
-          height: 80,
-          color: "var(--brand-primary)",
-          opacity: 0.12,
-          transform: "rotate(-12deg)",
-        }}
-        strokeWidth={1.5}
-      />
-      <CardContent className="relative flex flex-col p-3 sm:p-4">
-        <div
-          style={{
-            color: "var(--text-muted)",
-            fontFamily: "var(--font-body)",
-            fontSize: "var(--type-label)",
-            fontWeight: "var(--weight-bold)",
-            letterSpacing: "var(--tracking-label)",
-            lineHeight: "var(--leading-snug)",
-            textTransform: "uppercase",
-          }}
-        >
-          {label}
-        </div>
-        <div
-          className="mt-1 text-(length:--type-heading-sm) lg:text-(length:--type-panel-title)"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: "var(--weight-extrabold)",
-            lineHeight: "var(--leading-tight)",
-            color: "var(--text-primary)",
-            whiteSpace: "normal",
-            wordBreak: "break-word",
-          }}
-        >
-          {value}
-        </div>
-        {pill && (
-          <span
-            className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-(length:--type-label) font-semibold"
-            style={{
-              backgroundColor:
-                pill.tone === "neutral"
-                  ? "var(--status-info-bg)"
-                  : pill.tone === "positive"
-                    ? "var(--status-success-bg)"
-                    : pill.tone === "negative"
-                      ? "var(--status-danger-bg)"
-                      : "var(--status-warning-bg)",
-              color:
-                pill.tone === "neutral"
-                  ? "var(--status-info-fg)"
-                  : pill.tone === "positive"
-                    ? "var(--status-success-fg)"
-                    : pill.tone === "negative"
-                      ? "var(--status-danger-fg)"
-                      : "var(--status-warning-fg)",
-              borderColor: "var(--border-default)",
-            }}
-          >
-            {pill.tone === "positive" && "↗"} {pill.tone === "negative" && "↘"}{" "}
-            {pill.text}
-          </span>
-        )}
-        {footer && (
-          <div className="mt-2">
-            <div
-              className="flex items-center gap-1 font-semibold"
-              style={{
-                color: "var(--text-primary)",
-                fontSize: "var(--type-label)",
-              }}
-            >
-              {footer.primary}
-            </div>
-            {footer.secondary && (
-              <div
-                style={{
-                  color: "var(--text-muted)",
-                  fontSize: "var(--type-label)",
-                }}
-              >
-                {footer.secondary}
-              </div>
-            )}
-            {footer.tertiary && (
-              <div
-                style={{
-                  color: "var(--text-muted)",
-                  fontSize: "var(--type-label)",
-                }}
-              >
-                {footer.tertiary}
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 // Ring stroke — progress-only (not health). Single soft clay derived from primary.
 const PROGRESS_STROKE = "var(--progress-stroke)";
@@ -259,12 +113,7 @@ function OffTargetRow({
   return (
     <>
       <style>{conditionRowStyle}</style>
-      <button
-        type="button"
-        onClick={() => onOpen(unit.id)}
-        className="condition-row group flex min-h-[var(--control-height-default)] w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 md:min-h-0"
-        title={`${unit.name} · ${displayValue}${unitLabel}`}
-      >
+      <div className="condition-row group flex min-h-[var(--control-height-default)] w-full items-center justify-between gap-3 px-3 py-3 text-left md:min-h-0">
         <div className="flex min-w-0 items-center gap-3">
           <span
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
@@ -341,14 +190,16 @@ function OffTargetRow({
               {statusText}
             </span>
           </div>
-          <ChevronRight
-            size={14}
-            className="shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-            style={{ color: "var(--progress-stroke)" }}
-            aria-hidden
-          />
+          <button
+            type="button"
+            onClick={() => onOpen(unit.id)}
+            aria-label={`Open details for ${unit.name}`}
+            className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
+          >
+            <ChevronRight size={16} aria-hidden="true" />
+          </button>
         </div>
-      </button>
+      </div>
     </>
   );
 }
@@ -378,16 +229,15 @@ function MiniCard({
   const circumference = 2 * Math.PI * r;
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(unit.id)}
-      className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:rounded-2xl md:p-4"
-      title={`${unit.name} · Day ${unit.dayOfIncubation} of ${mode.incubationDays} — click to view`}
+    <article
+      aria-labelledby={`mini-card-${unit.id}`}
+      className="group flex h-full w-full flex-col justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] md:rounded-2xl md:p-4"
     >
       {/* Top-left header stack — name over mode over progress. */}
-      <div className="w-full min-w-0 text-left">
-        <div className="flex items-start justify-between gap-1">
-          <span
+      <div className="relative w-full min-w-0 text-left">
+        <div className="flex min-w-0 items-start pr-10">
+          <h3
+            id={`mini-card-${unit.id}`}
             className="block min-w-0 flex-1 break-words text-(length:--type-body) lg:text-(length:--type-heading-sm)"
             style={{
               fontFamily: "var(--font-display)",
@@ -398,14 +248,16 @@ function MiniCard({
             title={unit.name}
           >
             {unit.name}
-          </span>
-          <ChevronRight
-            size={14}
-            className="mt-0.5 hidden shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:block"
-            style={{ color: "var(--progress-stroke)" }}
-            aria-hidden
-          />
+          </h3>
         </div>
+        <button
+          type="button"
+          onClick={() => onOpen(unit.id)}
+          aria-label={`Open details for ${unit.name}`}
+          className="absolute right-0 top-0 inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
+        >
+          <ChevronRight size={16} aria-hidden="true" />
+        </button>
         <span
           className="block min-w-0 break-words text-(length:--type-caption) lg:text-(length:--type-body-sm)"
           style={{
@@ -476,7 +328,7 @@ function MiniCard({
           </span>
         </div>
       </div>
-    </button>
+    </article>
   );
 }
 
@@ -491,15 +343,12 @@ export function OverviewScreen({
     [modes],
   );
   const [carouselPage, setCarouselPage] = useState(0);
-  const [carouselProgress, setCarouselProgress] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const handleCarouselScroll = () => {
     const el = carouselRef.current;
     if (!el) return;
     const page = Math.round(el.scrollLeft / el.clientWidth);
     setCarouselPage(page);
-    const max = el.scrollWidth - el.clientWidth;
-    setCarouselProgress(max > 0 ? el.scrollLeft / max : 0);
   };
   const [conditionTab, setConditionTab] = useState<"temp" | "humidity">("temp");
   const conditionCarouselRef = useRef<HTMLDivElement>(null);
@@ -662,6 +511,7 @@ export function OverviewScreen({
 
       {/* Section 3: chamber status grid, wrapped in one white container */}
       <section
+        aria-labelledby="active-incubators-title"
         className="rounded-2xl border p-3 md:p-6"
         style={{
           backgroundColor: "var(--surface-card)",
@@ -671,6 +521,7 @@ export function OverviewScreen({
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2
+              id="active-incubators-title"
               className="text-(length:--type-heading-sm) lg:text-(length:--type-heading-md)"
               style={{
                 fontFamily: "var(--font-display)",
@@ -755,26 +606,11 @@ export function OverviewScreen({
             ))}
           </div>
         )}
-        {priorityUnits.length > 2 && (
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={Math.round(carouselProgress * 100)}
-            onChange={(e) => {
-              const el = carouselRef.current;
-              if (!el) return;
-              const max = el.scrollWidth - el.clientWidth;
-              el.scrollTo({ left: (Number(e.target.value) / 100) * max });
-            }}
-            aria-label="Slide through chambers"
-            className="mt-2 flex h-8 w-full cursor-pointer items-center accent-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:hidden"
-          />
-        )}
       </section>
 
       {/* Section 4: Conditions to Check — 1 container, 2 columns on desktop, tabs on mobile */}
       <section
+        aria-labelledby="conditions-to-check-title"
         className="rounded-2xl border p-4 md:p-6"
         style={{
           backgroundColor: "var(--surface-card)",
@@ -783,6 +619,7 @@ export function OverviewScreen({
       >
         <div style={{ marginBottom: 16 }}>
           <h2
+            id="conditions-to-check-title"
             className="text-(length:--type-heading-sm) lg:text-(length:--type-heading-md)"
             style={{
               fontFamily: "var(--font-display)",

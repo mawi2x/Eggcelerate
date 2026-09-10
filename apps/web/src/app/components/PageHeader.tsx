@@ -82,7 +82,7 @@ export function PageHeader({
   // Title + subtitle on the left, notifications bell on the right
   if (isMobile) {
     return (
-      <div>
+      <header>
         {onBack ? (
           <div className="mb-2">
             <button
@@ -123,7 +123,11 @@ export function PageHeader({
                 </div>
                 <Typography
                   className="min-w-0 max-w-full break-words"
-                  style={{ color: MUTED, marginTop: 2, overflowWrap: "anywhere" }}
+                  style={{
+                    color: MUTED,
+                    marginTop: 2,
+                    overflowWrap: "anywhere",
+                  }}
                 >
                   {subtitle}
                 </Typography>
@@ -142,7 +146,7 @@ export function PageHeader({
             />
           </div>
         </div>
-      </div>
+      </header>
     );
   }
 

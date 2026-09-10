@@ -477,7 +477,11 @@ export function LiveMonitorTab({
 
   return (
     <div className="space-y-5">
-      <SectionCard title="Incubation Timeline">
+      <SectionCard
+        title="Incubation Timeline"
+        titleId="incubation-timeline-title"
+        section
+      >
         <Timeline
           currentDay={currentDay}
           totalDays={totalDays}
@@ -486,7 +490,7 @@ export function LiveMonitorTab({
           labelSize={9}
         />
         <div
-        className="my-2.5 md:my-4"
+          className="my-2.5 md:my-4"
           style={{ height: 1, backgroundColor: "var(--border-default)" }}
         />
         <div className="grid grid-cols-3 items-start gap-2 md:gap-6">
@@ -515,6 +519,8 @@ export function LiveMonitorTab({
       <SectionCard
         title="Chamber status"
         subtitle="Live systems, power, and connectivity"
+        titleId="chamber-status-title"
+        section
       >
         <div className="grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-3">
           <SystemStatusTile

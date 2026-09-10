@@ -48,74 +48,73 @@ export function PaginationBar({
     <nav
       aria-label={`${itemLabel} pagination`}
       className={cn(
-        "flex flex-col gap-3 border-t px-4 py-3 md:flex-row md:items-center md:justify-between",
+        "flex flex-wrap items-center gap-x-4 gap-y-3 border-t px-4 py-3 md:justify-between",
         className,
       )}
       style={{ borderColor: BORDER }}
     >
       <span
         aria-live="polite"
+        className="shrink-0"
         style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}
       >
         Showing {rangeStart} to {rangeEnd} of {totalItems} {itemLabel}
       </span>
 
-      <div className="flex flex-wrap items-center gap-4">
-        {showPageSize && (
-          <div className="flex items-center gap-2">
-            <span style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}>
-              Items per page:
-            </span>
-            <Select
-              value={String(safePageSize)}
-              onValueChange={(value) => onPageSizeChange?.(Number(value))}
-            >
-              <SelectTrigger
-                size="default"
-                className="h-[var(--control-height-default)] w-[72px] rounded-lg md:h-8"
-                style={INPUT_STYLE}
-                aria-label={`Items per page for ${itemLabel}`}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pageSizeOptions?.map((option) => (
-                  <SelectItem key={option} value={String(option)}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] rounded-lg p-0 md:h-8 md:w-8"
-            style={{ borderColor: BORDER }}
-            disabled={safePage <= 1}
-            onClick={() => onPageChange(Math.max(1, safePage - 1))}
-            aria-label="Previous page"
-          >
-            <ChevronLeft size={16} aria-hidden="true" />
-          </Button>
+      {showPageSize && (
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <span style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}>
-            Page {safePage} of {totalPages}
+            Items per page:
           </span>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] rounded-lg p-0 md:h-8 md:w-8"
-            style={{ borderColor: BORDER }}
-            disabled={safePage >= totalPages}
-            onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
-            aria-label="Next page"
+          <Select
+            value={String(safePageSize)}
+            onValueChange={(value) => onPageSizeChange?.(Number(value))}
           >
-            <ChevronRight size={16} aria-hidden="true" />
-          </Button>
+            <SelectTrigger
+              size="default"
+              className="h-[var(--control-height-default)] w-[72px] rounded-full md:h-8"
+              style={INPUT_STYLE}
+              aria-label={`Items per page for ${itemLabel}`}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {pageSizeOptions?.map((option) => (
+                <SelectItem key={option} value={String(option)}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+      )}
+
+      <div className="flex shrink-0 items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] rounded-lg p-0 md:h-8 md:w-8"
+          style={{ borderColor: BORDER }}
+          disabled={safePage <= 1}
+          onClick={() => onPageChange(Math.max(1, safePage - 1))}
+          aria-label="Previous page"
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+        </Button>
+        <span style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}>
+          Page {safePage} of {totalPages}
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] rounded-lg p-0 md:h-8 md:w-8"
+          style={{ borderColor: BORDER }}
+          disabled={safePage >= totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+          aria-label="Next page"
+        >
+          <ChevronRight size={16} aria-hidden="true" />
+        </Button>
       </div>
     </nav>
   );

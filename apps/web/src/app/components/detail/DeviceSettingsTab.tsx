@@ -164,6 +164,13 @@ export function DeviceSettingsTab({
 
       {/* Right Content Card */}
       <section
+        aria-labelledby={
+          settingTab === "mode"
+            ? "device-settings-mode-title"
+            : settingTab === "turning"
+              ? "device-settings-turning-title"
+              : "device-settings-device-title"
+        }
         className="min-w-0 flex-1 rounded-2xl p-4 md:p-6"
         style={{
           backgroundColor: "var(--surface-card)",
@@ -178,6 +185,7 @@ export function DeviceSettingsTab({
               style={{ borderBottom: "1px solid var(--border-default)" }}
             >
               <h2
+                id="device-settings-mode-title"
                 style={{
                   fontFamily: "var(--font-display)",
                   fontSize: "var(--type-heading-lg)",
@@ -306,8 +314,8 @@ export function DeviceSettingsTab({
                       fontWeight: "var(--weight-bold)",
                     }}
                   >
-                    <Lock size={14} weight="fill" aria-hidden="true" /> Locked during
-                    cycle
+                    <Lock size={14} weight="fill" aria-hidden="true" /> Locked
+                    during cycle
                   </span>
                 )}
               </div>
@@ -417,6 +425,7 @@ export function DeviceSettingsTab({
               style={{ borderBottom: "1px solid var(--border-oat)" }}
             >
               <h2
+                id="device-settings-turning-title"
                 style={{
                   fontFamily: "var(--font-display)",
                   fontSize: "var(--type-heading-lg)",
@@ -556,6 +565,7 @@ export function DeviceSettingsTab({
               style={{ borderBottom: "1px solid var(--border-oat)" }}
             >
               <h2
+                id="device-settings-device-title"
                 style={{
                   fontFamily: "var(--font-display)",
                   fontSize: "var(--type-heading-lg)",

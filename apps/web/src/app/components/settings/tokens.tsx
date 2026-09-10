@@ -25,9 +25,15 @@ export const labelStyle = {
 };
 
 /** Uppercase micro-heading that opens a group of rows. */
-export function GroupLabel({ children }: { children: React.ReactNode }) {
+export function GroupLabel({
+  children,
+  id,
+}: {
+  children: React.ReactNode;
+  id?: string;
+}) {
   return (
-    <Typography variant="label" style={{ color: MUTED }}>
+    <Typography as="h3" variant="label" id={id} style={{ color: MUTED }}>
       {children}
     </Typography>
   );
@@ -37,16 +43,18 @@ export function GroupLabel({ children }: { children: React.ReactNode }) {
 export function PanelHeader({
   title,
   description,
+  id,
 }: {
   title: string;
   description: string;
+  id?: string;
 }) {
   return (
     <div
       className="pb-5"
       style={{ borderBottom: `var(--border-width-hairline) solid ${DIVIDER}` }}
     >
-      <Typography as="h2" variant="panelTitle" style={{ color: TEXT }}>
+      <Typography as="h2" id={id} variant="panelTitle" style={{ color: TEXT }}>
         {title}
       </Typography>
       <Typography variant="bodySmall" className="mt-1" style={{ color: MUTED }}>
