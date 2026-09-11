@@ -1,16 +1,12 @@
-import {
-  Check,
-  ChevronRight,
-  Clock,
-  Droplets,
-  Egg,
-  Layers,
-  Thermometer,
-  TriangleAlert,
-} from "lucide-react";
+import { Check, ChevronRight, Clock, Egg } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Incubator, Mode, UnitStatus } from "../../domain/types";
+import { ExclamationIcon, IncubatorDeviceIcon } from "../icons";
 import { KpiCard, type KpiFooter } from "../KpiCard";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "../ui/segmented-control";
 
 interface Props {
   units: Incubator[];
@@ -29,7 +25,6 @@ const conditionRowStyle = `
 .condition-row{position:relative;background:var(--surface-card);border:1px solid var(--border-default);border-radius:12px;transition:background-color 0.2s ease-in-out, border-color 0.2s ease-in-out}
 .condition-row:hover{background:var(--nav-hover-bg);border-color:var(--nav-hover-border)}
 `;
-
 
 // Ring stroke — progress-only (not health). Single soft clay derived from primary.
 const PROGRESS_STROKE = "var(--progress-stroke)";
@@ -115,6 +110,11 @@ function OffTargetRow({
       <style>{conditionRowStyle}</style>
       <div className="condition-row group flex min-h-[var(--control-height-default)] w-full items-center justify-between gap-3 px-3 py-3 text-left md:min-h-0">
         <div className="flex min-w-0 items-center gap-3">
+          <span
+            aria-hidden="true"
+            className="w-1 shrink-0 self-stretch rounded-full"
+            style={{ backgroundColor: statusColor }}
+          />
           <span
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
             style={{
@@ -482,9 +482,9 @@ export function OverviewScreen({
     <div className="flex flex-col gap-2 md:gap-8">
       {/* Section 2: executive KPI summary — strict 1-row compact cards */}
       <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
-        {/* Layers reads as stacked multi-tier incubator cabinets. */}
+        {/* Same chamber-device glyph as the sidebar Incubators nav item. */}
         <KpiCard
-          Icon={Layers}
+          Icon={IncubatorDeviceIcon}
           label="INCUBATORS"
           value={`${units.length} Active`}
           footer={incubatorsFooter}
@@ -502,7 +502,7 @@ export function OverviewScreen({
           footer={upcomingFooter}
         />
         <KpiCard
-          Icon={TriangleAlert}
+          Icon={ExclamationIcon}
           label="NEEDS ATTENTION"
           value={`${stats.needsAttention}`}
           footer={needsAttentionFooter}
@@ -650,93 +650,49 @@ export function OverviewScreen({
 
         {/* Mobile toggle between Temperature and Humidity */}
         <fieldset
-          className="mb-4 flex h-[var(--control-segment-height)] rounded-full border p-0 lg:hidden"
-          style={{
-            backgroundColor: "var(--surface-muted)",
-            borderColor: "var(--border-subtle)",
-          }}
+          className="mb-4 flex w-full min-w-0 border-0 p-0 lg:hidden"
           aria-label="Condition type to display"
         >
-          <button
-            type="button"
-            onClick={() => selectConditionTab("temp")}
-            aria-pressed={conditionTab === "temp"}
-            aria-controls="condition-temp-panel"
-            aria-label={`Temperature, ${offTarget.temp.length} need attention`}
-            className="flex h-full min-h-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-0 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-            style={{
-              backgroundColor:
-                conditionTab === "temp" ? "var(--surface-card)" : "transparent",
-              color:
-                conditionTab === "temp"
-                  ? "var(--brand-primary)"
-                  : "var(--text-secondary)",
-              boxShadow:
-                conditionTab === "temp" ? "var(--shadow-lift)" : "none",
-            }}
-          >
-            <Thermometer size={14} className="shrink-0" aria-hidden="true" />
-            <span>Temperature</span>
-            {offTarget.temp.length > 0 && (
-              // Count duplicates the button's aria-label; 11px label minimum.
-              <span
-                className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-(length:--type-label) font-bold"
-                style={{
-                  backgroundColor:
-                    conditionTab === "temp"
-                      ? "var(--brand-primary)"
-                      : "var(--surface-stone)",
-                  color:
-                    conditionTab === "temp"
-                      ? "var(--on-brand)"
-                      : "var(--text-farm)",
-                }}
-              >
-                {offTarget.temp.length}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => selectConditionTab("humidity")}
-            aria-pressed={conditionTab === "humidity"}
-            aria-controls="condition-humidity-panel"
-            aria-label={`Humidity, ${offTarget.humidity.length} need attention`}
-            className="flex h-full min-h-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-0 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-            style={{
-              backgroundColor:
-                conditionTab === "humidity"
-                  ? "var(--surface-card)"
-                  : "transparent",
-              color:
-                conditionTab === "humidity"
-                  ? "var(--brand-primary)"
-                  : "var(--text-secondary)",
-              boxShadow:
-                conditionTab === "humidity" ? "var(--shadow-lift)" : "none",
-            }}
-          >
-            <Droplets size={14} className="shrink-0" aria-hidden="true" />
-            <span>Humidity</span>
-            {offTarget.humidity.length > 0 && (
-              // Count duplicates the button's aria-label; 11px label minimum.
-              <span
-                className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-(length:--type-label) font-bold"
-                style={{
-                  backgroundColor:
-                    conditionTab === "humidity"
-                      ? "var(--brand-primary)"
-                      : "var(--surface-stone)",
-                  color:
-                    conditionTab === "humidity"
-                      ? "var(--on-brand)"
-                      : "var(--text-farm)",
-                }}
-              >
-                {offTarget.humidity.length}
-              </span>
-            )}
-          </button>
+          <SegmentedControl flush className="w-full">
+            <SegmentedControlItem
+              flush
+              active={conditionTab === "temp"}
+              aria-pressed={conditionTab === "temp"}
+              aria-controls="condition-temp-panel"
+              aria-label={`Temperature, ${offTarget.temp.length} need attention`}
+              onClick={() => selectConditionTab("temp")}
+              className="min-w-0 flex-1"
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-filter-label)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+                letterSpacing: "var(--tracking-label)",
+                textTransform: "uppercase",
+              }}
+            >
+              Temperature
+            </SegmentedControlItem>
+            <SegmentedControlItem
+              flush
+              active={conditionTab === "humidity"}
+              aria-pressed={conditionTab === "humidity"}
+              aria-controls="condition-humidity-panel"
+              aria-label={`Humidity, ${offTarget.humidity.length} need attention`}
+              onClick={() => selectConditionTab("humidity")}
+              className="min-w-0 flex-1"
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-filter-label)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-snug)",
+                letterSpacing: "var(--tracking-label)",
+                textTransform: "uppercase",
+              }}
+            >
+              Humidity
+            </SegmentedControlItem>
+          </SegmentedControl>
         </fieldset>
 
         <div

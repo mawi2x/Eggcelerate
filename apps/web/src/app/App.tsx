@@ -233,10 +233,23 @@ export default function App() {
           label: "Needs Attention",
         };
 
-  const detailBadges = (
-    <>
+  const detailHeader = (
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 md:flex md:flex-wrap">
+      <h1
+        className="min-w-0 max-w-full break-words md:basis-auto"
+        style={{
+          fontSize: "var(--type-page-title)",
+          fontWeight: "var(--weight-bold)",
+          color: "var(--text-primary)",
+          lineHeight: 1.25,
+          overflowWrap: "anywhere",
+        }}
+        title={activeUnit.name}
+      >
+        {activeUnit.name}
+      </h1>
       <span
-        className="shrink-0 rounded-full px-3 py-1"
+        className="shrink-0 justify-self-end rounded-full px-3 py-1"
         style={{
           backgroundColor: "var(--brand-primary)",
           color: "var(--on-brand)",
@@ -246,8 +259,20 @@ export default function App() {
       >
         Day {activeUnit.dayOfIncubation} of {activeMode.incubationDays}
       </span>
+      <p
+        className="min-w-0 max-w-full break-words md:order-3 md:mt-1 md:basis-full"
+        style={{
+          fontSize: "var(--type-heading-sm)",
+          fontWeight: "var(--weight-semibold)",
+          color: "var(--text-primary)",
+          lineHeight: 1.4,
+          overflowWrap: "anywhere",
+        }}
+      >
+        {activeMode.name}
+      </p>
       <span
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1"
+        className="inline-flex shrink-0 items-center justify-self-end gap-1.5 rounded-full px-3 py-1"
         style={{
           backgroundColor: statusTone.bg,
           color: statusTone.fg,
@@ -257,40 +282,6 @@ export default function App() {
       >
         {statusTone.label}
       </span>
-    </>
-  );
-
-  const detailHeader = (
-    <div className="flex min-w-0 flex-col">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1
-          className="min-w-0 max-w-full break-words"
-          style={{
-            fontSize: "var(--type-page-title)",
-            fontWeight: "var(--weight-bold)",
-            color: "var(--text-primary)",
-            lineHeight: 1.25,
-            overflowWrap: "anywhere",
-          }}
-          title={activeUnit.name}
-        >
-          {activeUnit.name}
-        </h1>
-        {detailBadges}
-      </div>
-      <p
-        className="max-w-full break-words"
-        style={{
-          fontSize: "var(--type-heading-sm)",
-          fontWeight: "var(--weight-semibold)",
-          color: "var(--text-primary)",
-          lineHeight: 1.4,
-          marginTop: 4,
-          overflowWrap: "anywhere",
-        }}
-      >
-        {activeMode.name}
-      </p>
     </div>
   );
 
@@ -311,7 +302,7 @@ export default function App() {
     },
     detail: {
       title: activeUnit.name,
-      subtitle: `Device ${activeUnit.deviceId} · ${activeMode.name}`,
+      subtitle: `Device ${activeUnit.deviceId} (${activeMode.name})`,
     },
     trends: {
       title: "Historical Trends",
@@ -404,6 +395,34 @@ export default function App() {
     );
   }
 
+  // Routes whose screen owns the header inside its sticky toolbar.
+  const headerInScreen =
+    screen === "candling" ||
+    screen === "incubators" ||
+    screen === "alerts" ||
+    screen === "trends";
+
+  // Single PageHeader node: the shell renders it directly, except on routes
+  // whose screen places it inside its own sticky toolbar (see headerInScreen).
+  const pageHeader = (
+    <PageHeader
+      title={headerCopy[screen].title}
+      subtitle={headerCopy[screen].subtitle}
+      titleHighlight={screen === "overview" ? `${overviewName}!` : undefined}
+      alertCount={unreadAlerts}
+      onViewAlerts={() => navigate("alerts")}
+      alerts={alerts}
+      onMarkAllRead={markAllAlertsRead}
+      onDismissAlert={dismissAlert}
+      pendingAlertId={actionState.pendingAlertId}
+      markingAllRead={actionState.markingAllAlertsRead}
+      onBack={screen === "detail" ? () => navigate("incubators") : undefined}
+      backLabel="Back to Incubators"
+      titleNode={screen === "detail" ? detailHeader : undefined}
+      showDateTime={screen === "overview"}
+    />
+  );
+
   return (
     <RequireAuth>
       <div
@@ -422,33 +441,18 @@ export default function App() {
         <main
           className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
         >
-          <div className="mx-auto max-w-6xl px-3 pb-44 sm:px-4 sm:pb-28 md:px-6 lg:px-8 lg:pb-20"
-            style={{ paddingTop: 24 }}
+          <div
+            className="mx-auto max-w-6xl px-3 pb-44 sm:px-4 sm:pb-28 md:px-6 lg:px-8 lg:pb-20"
+            // Sticky-toolbar routes carry their own top spacing inside the toolbar so the
+            // resting and stuck states share the same gap (no jump on scroll).
+            style={{ paddingTop: headerInScreen ? 0 : 24 }}
           >
             {/* Rows 1 and 2 — utility bar and page title bar. */}
-            <div className="mb-5">
-              <PageHeader
-                title={headerCopy[screen].title}
-                subtitle={headerCopy[screen].subtitle}
-                titleHighlight={
-                  screen === "overview" ? `${overviewName}!` : undefined
-                }
-                alertCount={unreadAlerts}
-                onViewAlerts={() => navigate("alerts")}
-                alerts={alerts}
-                onMarkAllRead={markAllAlertsRead}
-                onDismissAlert={dismissAlert}
-                pendingAlertId={actionState.pendingAlertId}
-                markingAllRead={actionState.markingAllAlertsRead}
-                onBack={
-                  screen === "detail" ? () => navigate("incubators") : undefined
-                }
-                backLabel="Back to Incubators"
-                badges={screen === "detail" ? detailBadges : undefined}
-                titleNode={screen === "detail" ? detailHeader : undefined}
-                showDateTime={screen === "overview"}
-              />
-            </div>
+            {!headerInScreen && (
+              <div className={screen === "detail" ? "mb-2 md:mb-5" : "mb-5"}>
+                {pageHeader}
+              </div>
+            )}
 
             <FarmDataStatus
               isRefreshing={farmDataRefreshing}
@@ -471,6 +475,7 @@ export default function App() {
                 onOpenUnit={openUnit}
                 onAddIncubator={addIncubator}
                 isAddingIncubator={actionState.addingIncubator}
+                header={pageHeader}
               />
             )}
             {screen === "candling" && (
@@ -481,6 +486,7 @@ export default function App() {
                   units={incubators}
                   modes={modes}
                   onOpenCandling={openCandling}
+                  header={pageHeader}
                 />
               </Suspense>
             )}
@@ -508,6 +514,7 @@ export default function App() {
                   modes={modes}
                   history={hatchRecords}
                   initialUnitId={selectedUnit ?? undefined}
+                  header={pageHeader}
                 />
               </Suspense>
             )}
@@ -525,6 +532,7 @@ export default function App() {
                   const target = incubators.find((u) => u.name === unitName);
                   if (target) openUnit(target.id);
                 }}
+                header={pageHeader}
               />
             )}
             {screen === "settings" && (

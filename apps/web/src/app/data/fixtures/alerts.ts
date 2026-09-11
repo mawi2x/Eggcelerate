@@ -1,8 +1,14 @@
 import type { AlertEntry } from "../../domain/types";
 
 export function createAlertFixtures(now = Date.now()): AlertEntry[] {
-  const iso = (minutesAgo: number) =>
+  const isoMinutesAgo = (minutesAgo: number) =>
     new Date(now - minutesAgo * 60_000).toISOString();
+  const isoDaysAgo = (daysAgo: number, hour: number, minute: number) => {
+    const date = new Date(now);
+    date.setDate(date.getDate() - daysAgo);
+    date.setHours(hour, minute, 0, 0);
+    return date.toISOString();
+  };
   return [
     {
       id: "a1",
@@ -11,7 +17,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       unit: "Chamber Three",
       message:
         "Temperature is 39.2°C, above the safe range. Check the heater and ventilation.",
-      timestamp: iso(12),
+      timestamp: isoMinutesAgo(12),
       acknowledged: false,
     },
     {
@@ -21,7 +27,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       unit: "Chamber Three",
       message:
         "Water reservoir low (12%). Refill the mist maker to keep humidity stable.",
-      timestamp: iso(25),
+      timestamp: isoMinutesAgo(25),
       acknowledged: false,
     },
     {
@@ -31,7 +37,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       unit: "Chamber Three",
       message:
         "Egg turning overdue by 40 minutes. Turn eggs to prevent sticking.",
-      timestamp: iso(40),
+      timestamp: isoMinutesAgo(40),
       acknowledged: false,
     },
     {
@@ -40,7 +46,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       severity: "warning",
       unit: "Chamber Three",
       message: "Running on battery with 23% remaining. Restore power soon.",
-      timestamp: iso(65),
+      timestamp: isoMinutesAgo(65),
       acknowledged: false,
     },
     {
@@ -49,7 +55,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       severity: "warning",
       unit: "Chamber Two",
       message: "Humidity is 51%, below the target. Add water to the reservoir.",
-      timestamp: iso(88),
+      timestamp: isoMinutesAgo(88),
       acknowledged: false,
     },
     {
@@ -58,7 +64,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       severity: "warning",
       unit: "Chamber Two",
       message: "Water reservoir is low. Top it up soon.",
-      timestamp: iso(110),
+      timestamp: isoDaysAgo(1, 18, 25),
       acknowledged: true,
     },
     {
@@ -67,7 +73,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       severity: "info",
       unit: "Chamber Two",
       message: "Candling reminder: second candling due today.",
-      timestamp: iso(130),
+      timestamp: isoDaysAgo(1, 14, 10),
       acknowledged: true,
     },
     {
@@ -76,7 +82,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       severity: "info",
       unit: "Chamber One",
       message: "Eggs turned successfully.",
-      timestamp: iso(160),
+      timestamp: isoDaysAgo(1, 9, 45),
       acknowledged: true,
     },
     {
@@ -85,7 +91,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       severity: "warning",
       unit: "Chamber Three",
       message: "Grid power was lost. The incubator switched to battery backup.",
-      timestamp: iso(200),
+      timestamp: isoDaysAgo(7, 16, 40),
       acknowledged: true,
     },
     {
@@ -94,7 +100,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       severity: "info",
       unit: "Chamber One",
       message: "Daily summary: all readings within safe range.",
-      timestamp: iso(300),
+      timestamp: isoDaysAgo(7, 11, 15),
       acknowledged: true,
     },
     {
@@ -103,7 +109,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       severity: "info",
       unit: "Chamber One",
       message: "Water reservoir refilled to 100%.",
-      timestamp: iso(360),
+      timestamp: isoDaysAgo(7, 8, 30),
       acknowledged: true,
     },
     {
@@ -112,7 +118,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       severity: "info",
       unit: "Chamber Three",
       message: "Hatch day is approaching. Expected hatch is in 3 days.",
-      timestamp: iso(500),
+      timestamp: isoDaysAgo(7, 6, 5),
       acknowledged: true,
     },
   ];

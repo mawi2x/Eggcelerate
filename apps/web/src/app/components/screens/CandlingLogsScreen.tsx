@@ -11,6 +11,7 @@ import {
   ArrowUpNarrowWide,
   Search,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { computeCandling } from "../../domain/candling";
 import type {
@@ -248,7 +249,6 @@ function JournalCard({
         trailing={<StatusTag status={row.status} />}
       />
       <div className="flex-1">
-
         <div
           className="flex min-h-[116px] flex-col justify-between rounded-2xl border p-3.5"
           style={{
@@ -281,7 +281,7 @@ function JournalCard({
               title={row.latestLog?.label ?? undefined}
             >
               {row.latestLog
-                ? `${formatLogDate(row.latestLog.date)} · ${row.latestLog.label}`
+                ? `${formatLogDate(row.latestLog.date)}, ${row.latestLog.label}`
                 : "No inspection recorded yet"}
             </p>
           </div>
@@ -365,10 +365,13 @@ export function CandlingLogsScreen({
   units,
   modes,
   onOpenCandling,
+  header,
 }: {
   units: Incubator[];
   modes: Mode[];
   onOpenCandling: (id: string) => void;
+  /** Shell page header rendered inside the sticky toolbar (candling route). */
+  header?: ReactNode;
 }) {
   const isMobile = useIsMobile();
   const [filter, setFilter] = useState<RowFilter>("all");
@@ -505,123 +508,133 @@ export function CandlingLogsScreen({
 
   return (
     <div className="space-y-2 md:space-y-6" style={{ color: TEXT }}>
-      {/* Row 1: Search + ViewToggle (desktop only) */}
-      <div className="flex items-center gap-2.5 md:gap-3">
-        <div className="relative min-w-0 flex-1">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2"
-            style={{ color: MUTED }}
-          />
-          <Input
-            size="toolbar"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            maxLength={50}
-            placeholder="Search incubators..."
-            aria-label="Search candling logs"
-            className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
-            style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
-          />
-        </div>
-        <div className="hidden md:block">
-          <ViewToggle view={view} onChange={setView} />
-        </div>
-      </div>
-
-      {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
-      <div className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1 lg:flex-initial">
-          <FilterBar
-            ariaLabel="Candling log filter"
-            variant="segmented"
-            fitToScreenOnMobile
-            value={filter}
-            onChange={(key) => setFilter(key as RowFilter)}
-            options={[
-              { key: "all", label: "All", count: summaries.length },
-              { key: "todo", label: "To Log", count: counts.todo },
-              { key: "done", label: "Done", count: counts.done },
-            ]}
-            className="md:!w-full lg:!w-auto"
-          />
+      {/* Sticky toolbar: page header + search + filters stay fixed while journal cards scroll underneath. */}
+      <div
+        className="sticky top-0 z-30 flex flex-col gap-2 md:gap-3"
+        style={{
+          backgroundColor: "var(--surface-app)",
+          paddingBottom: 4,
+          paddingTop: 24,
+        }}
+      >
+        {header}
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2"
+              style={{ color: MUTED }}
+            />
+            <Input
+              size="toolbar"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              maxLength={50}
+              placeholder="Search incubators..."
+              aria-label="Search candling logs"
+              className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-default)]"
+              style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
+            />
+          </div>
+          <div className="hidden md:block">
+            <ViewToggle view={view} onChange={setView} />
+          </div>
         </div>
 
-        <div className="flex w-full items-center justify-end gap-2 lg:w-auto">
-          <Select
-            size="filter"
-            value={modeFilter}
-            onValueChange={setModeFilter}
-          >
-            <SelectTrigger
+        {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
+        <div className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1 lg:flex-initial">
+            <FilterBar
+              ariaLabel="Candling log filter"
+              variant="segmented"
+              fitToScreenOnMobile
+              value={filter}
+              onChange={(key) => setFilter(key as RowFilter)}
+              options={[
+                { key: "all", label: "All", count: summaries.length },
+                { key: "todo", label: "To Log", count: counts.todo },
+                { key: "done", label: "Done", count: counts.done },
+              ]}
+              className="md:!w-full lg:!w-auto"
+            />
+          </div>
+
+          <div className="flex w-full items-center justify-end gap-2 lg:w-auto">
+            <Select
               size="filter"
-              className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+              value={modeFilter}
+              onValueChange={setModeFilter}
+            >
+              <SelectTrigger
+                size="filter"
+                className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                style={{
+                  backgroundColor: SURFACE,
+                  borderColor: CARD_BORDER,
+                  color: "var(--brand-primary)",
+                  fontWeight: "var(--weight-medium)",
+                }}
+                aria-label="Filter by incubation mode"
+              >
+                <SelectValue placeholder="All modes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All modes</SelectItem>
+                {modes.map((mode) => (
+                  <SelectItem key={mode.id} value={mode.id}>
+                    {mode.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              size="filter"
+              value={sort}
+              onValueChange={(value) => setSort(value as SortKey)}
+            >
+              <SelectTrigger
+                size="filter"
+                className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                style={{
+                  backgroundColor: SURFACE,
+                  borderColor: CARD_BORDER,
+                  color: "var(--brand-primary)",
+                  fontWeight: "var(--weight-medium)",
+                }}
+                aria-label="Sort candling logs"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="attention">Attention</SelectItem>
+                <SelectItem value="recent">Recent</SelectItem>
+                <SelectItem value="name">Name</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <button
+              type="button"
+              onClick={() => setSortAsc(!sortAsc)}
+              className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-default)] md:w-[var(--control-height-default)] md:rounded-xl"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
-                color: "var(--brand-primary)",
-                fontWeight: "var(--weight-medium)",
+                color: MUTED,
               }}
-              aria-label="Filter by incubation mode"
+              title={sortAsc ? "Sort ascending" : "Sort descending"}
+              aria-label={sortAsc ? "Sort ascending" : "Sort descending"}
             >
-              <SelectValue placeholder="All modes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All modes</SelectItem>
-              {modes.map((mode) => (
-                <SelectItem key={mode.id} value={mode.id}>
-                  {mode.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            size="filter"
-            value={sort}
-            onValueChange={(value) => setSort(value as SortKey)}
-          >
-            <SelectTrigger
-              size="filter"
-              className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
-              style={{
-                backgroundColor: SURFACE,
-                borderColor: CARD_BORDER,
-                color: "var(--brand-primary)",
-                fontWeight: "var(--weight-medium)",
-              }}
-              aria-label="Sort candling logs"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="attention">Attention</SelectItem>
-              <SelectItem value="recent">Recent</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <button
-            type="button"
-            onClick={() => setSortAsc(!sortAsc)}
-            className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)] md:rounded-xl"
-            style={{
-              backgroundColor: SURFACE,
-              borderColor: CARD_BORDER,
-              color: MUTED,
-            }}
-            title={sortAsc ? "Sort ascending" : "Sort descending"}
-            aria-label={sortAsc ? "Sort ascending" : "Sort descending"}
-          >
-            {sortAsc ? (
-              <ArrowUpNarrowWide size={16} className="md:size-[18px]" />
-            ) : (
-              <ArrowDownWideNarrow size={16} className="md:size-[18px]" />
-            )}
-          </button>
+              {sortAsc ? (
+                <ArrowUpNarrowWide size={16} className="md:size-[18px]" />
+              ) : (
+                <ArrowDownWideNarrow size={16} className="md:size-[18px]" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
       <section aria-label="Candling journal list">
@@ -883,7 +896,7 @@ export function CandlingLogsScreen({
                               }}
                             >
                               {row.nextCheckpoint
-                                ? `Day ${row.nextCheckpoint.day} · ${row.nextCheckpoint.dayRange}`
+                                ? `Day ${row.nextCheckpoint.day}, ${row.nextCheckpoint.dayRange}`
                                 : meta.description}
                             </p>
                           </div>

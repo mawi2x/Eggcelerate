@@ -710,7 +710,7 @@ export function ModeLibraryPanel({
                     color: MUTED,
                   }}
                 >
-                  Candling days · {candling.map((c) => c.day).join(" / ")}
+                  Candling days: {candling.map((c) => c.day).join(" / ")}
                 </p>
                 <div className="mt-4">
                   <ModeActions m={m} />

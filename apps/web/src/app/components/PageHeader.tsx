@@ -84,7 +84,7 @@ export function PageHeader({
     return (
       <header>
         {onBack ? (
-          <div className="mb-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={onBack}
@@ -100,6 +100,17 @@ export function PageHeader({
               <ArrowLeft size={16} className="shrink-0" />
               <span className="min-w-0 truncate">{backLabel}</span>
             </button>
+            <div className="shrink-0 pt-0.5">
+              <NotificationPopover
+                alerts={alerts}
+                unreadCount={alertCount}
+                onViewAll={onViewAlerts}
+                onMarkAllRead={onMarkAllRead}
+                onDismiss={onDismissAlert}
+                pendingAlertId={pendingAlertId}
+                markingAllRead={markingAllRead}
+              />
+            </div>
           </div>
         ) : null}
 
@@ -134,17 +145,19 @@ export function PageHeader({
               </>
             )}
           </div>
-          <div className="shrink-0 pt-0.5">
-            <NotificationPopover
-              alerts={alerts}
-              unreadCount={alertCount}
-              onViewAll={onViewAlerts}
-              onMarkAllRead={onMarkAllRead}
-              onDismiss={onDismissAlert}
-              pendingAlertId={pendingAlertId}
-              markingAllRead={markingAllRead}
-            />
-          </div>
+          {!onBack && (
+            <div className="shrink-0 pt-0.5">
+              <NotificationPopover
+                alerts={alerts}
+                unreadCount={alertCount}
+                onViewAll={onViewAlerts}
+                onMarkAllRead={onMarkAllRead}
+                onDismiss={onDismissAlert}
+                pendingAlertId={pendingAlertId}
+                markingAllRead={markingAllRead}
+              />
+            </div>
+          )}
         </div>
       </header>
     );
@@ -155,7 +168,7 @@ export function PageHeader({
   return (
     <div>
       {onBack ? (
-        <div className="mb-2">
+        <div className="mb-2 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={onBack}
@@ -171,6 +184,17 @@ export function PageHeader({
             <ArrowLeft size={16} className="shrink-0" />
             <span className="min-w-0 truncate">{backLabel}</span>
           </button>
+          <div className="shrink-0">
+            <NotificationPopover
+              alerts={alerts}
+              unreadCount={alertCount}
+              onViewAll={onViewAlerts}
+              onMarkAllRead={onMarkAllRead}
+              onDismiss={onDismissAlert}
+              pendingAlertId={pendingAlertId}
+              markingAllRead={markingAllRead}
+            />
+          </div>
         </div>
       ) : null}
 
@@ -199,18 +223,22 @@ export function PageHeader({
             </>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-3 pt-0.5">
-          {showDateTime ? <LiveDateTime /> : null}
-          <NotificationPopover
-            alerts={alerts}
-            unreadCount={alertCount}
-            onViewAll={onViewAlerts}
-            onMarkAllRead={onMarkAllRead}
-            onDismiss={onDismissAlert}
-            pendingAlertId={pendingAlertId}
-            markingAllRead={markingAllRead}
-          />
-        </div>
+        {(!onBack || showDateTime) && (
+          <div className="flex shrink-0 items-center gap-3 pt-0.5">
+            {showDateTime ? <LiveDateTime /> : null}
+            {!onBack && (
+              <NotificationPopover
+                alerts={alerts}
+                unreadCount={alertCount}
+                onViewAll={onViewAlerts}
+                onMarkAllRead={onMarkAllRead}
+                onDismiss={onDismissAlert}
+                pendingAlertId={pendingAlertId}
+                markingAllRead={markingAllRead}
+              />
+            )}
+          </div>
+        )}
       </header>
     </div>
   );

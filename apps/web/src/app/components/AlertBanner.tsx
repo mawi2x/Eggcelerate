@@ -29,7 +29,7 @@ export function AlertBanner({ criticalUnits, modes, onView }: Props) {
   const detail =
     criticalUnits.length === 1
       ? "Tap to open this chamber and resolve it."
-      : criticalUnits.map((u) => summarize(u, modeOf(u.modeId))).join(" · ");
+      : criticalUnits.map((u) => summarize(u, modeOf(u.modeId))).join("; ");
 
   return (
     <button

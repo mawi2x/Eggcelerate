@@ -7,6 +7,7 @@ import {
   TableProperties,
   TrendingUp,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useCallback, useMemo, useState } from "react";
 import {
   Area,
@@ -144,6 +145,8 @@ interface Props {
   modes: Mode[];
   history: HatchRecord[];
   initialUnitId?: string;
+  /** Shell page header rendered inside the sticky toolbar (trends route). */
+  header?: ReactNode;
 }
 
 // Per-chamber context the tooltip needs to judge each reading.
@@ -159,7 +162,7 @@ function formatTooltipTime(timestamp: number) {
     hour: "numeric",
     minute: "2-digit",
   });
-  return `${day} · ${time}`;
+  return `${day} at ${time}`;
 }
 
 function formatMeasurement(value: number, unit: string) {
@@ -326,7 +329,13 @@ function formatDate(iso: string) {
   });
 }
 
-export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
+export function TrendsScreen({
+  units,
+  modes,
+  history,
+  initialUnitId,
+  header,
+}: Props) {
   const [trendView, setTrendView] = useState<TrendView>("environmental");
   const [unitId, setUnitId] = useState(initialUnitId ?? units[0]?.id ?? "");
   const [range, setRange] = useState<RangeKey>("24h");
@@ -482,7 +491,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
       : "Target Safe Range varies by incubation mode";
   const targetRangeShort =
     bands.length === 1
-      ? `Safe range ${bands[0].min}–${bands[0].max}${metricInfo[metric].unit}`
+      ? `Safe range ${bands[0].min} to ${bands[0].max}${metricInfo[metric].unit}`
       : "Varies by incubation mode";
   // Never allow the selection to drop below two chambers — that would blank the chart.
 
@@ -563,36 +572,47 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
 
   return (
     <div className="space-y-2 md:space-y-6">
-      <div className="flex flex-wrap items-center justify-start gap-4">
-        <SegmentedControl
-          flush
-          aria-label="Trend view"
-          className="w-full md:w-auto"
-        >
-          {viewOptions.map(({ key, label }) => {
-            const active = trendView === key;
-            return (
-              <SegmentedControlItem
-                key={key}
-                flush
-                active={active}
-                className="min-w-0 flex-1 px-3 md:flex-none md:px-4"
-                aria-pressed={active}
-                onClick={() => setTrendView(key)}
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-filter-label)",
-                  fontWeight: "var(--weight-bold)",
-                  lineHeight: "var(--leading-snug)",
-                  letterSpacing: "var(--tracking-label)",
-                  textTransform: "uppercase",
-                }}
-              >
-                {label}
-              </SegmentedControlItem>
-            );
-          })}
-        </SegmentedControl>
+      {/* Sticky toolbar: page header + view tabs stay fixed while charts scroll underneath. */}
+      <div
+        className="sticky top-0 z-30 flex flex-col gap-2 md:gap-3"
+        style={{
+          backgroundColor: "var(--surface-app)",
+          paddingBottom: 4,
+          paddingTop: 24,
+        }}
+      >
+        {header}
+        <div className="flex flex-wrap items-center justify-start gap-4">
+          <SegmentedControl
+            flush
+            aria-label="Trend view"
+            className="w-full md:w-auto"
+          >
+            {viewOptions.map(({ key, label }) => {
+              const active = trendView === key;
+              return (
+                <SegmentedControlItem
+                  key={key}
+                  flush
+                  active={active}
+                  className="min-w-0 flex-1 px-3 md:flex-none md:px-4"
+                  aria-pressed={active}
+                  onClick={() => setTrendView(key)}
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-filter-label)",
+                    fontWeight: "var(--weight-bold)",
+                    lineHeight: "var(--leading-snug)",
+                    letterSpacing: "var(--tracking-label)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {label}
+                </SegmentedControlItem>
+              );
+            })}
+          </SegmentedControl>
+        </div>
       </div>
 
       {trendView === "environmental" ? (
@@ -609,11 +629,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             {/* ROW 1 — chamber selection and metric. */}
             <div className="flex flex-col items-stretch gap-3 md:flex-row md:flex-wrap md:items-center">
               {!compare ? (
-                <Select
-                  size="filter"
-                  value={unitId}
-                  onValueChange={setUnitId}
-                >
+                <Select size="filter" value={unitId} onValueChange={setUnitId}>
                   <SelectTrigger
                     size="filter"
                     className="min-w-0 flex-1 rounded-xl md:w-[240px] md:shrink-0"
@@ -783,7 +799,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                           lineHeight: "var(--leading-snug)",
                         }}
                       >
-                        {metricInfo[metric].label} History
+                        {metricInfo[metric].label} Trend
                       </h2>
                       <p
                         className="mt-0.5"
@@ -832,7 +848,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                   </div>
                   <fieldset
                     aria-label="Chart legend"
-                    className="m-0 flex min-w-0 w-full flex-nowrap items-center justify-start gap-x-2.5 overflow-x-auto border-0 p-0 pr-1 text-left scrollbar-none md:w-auto md:justify-end md:text-right lg:max-w-[76%]"
+                    className="m-0 flex min-w-0 w-full flex-nowrap items-center justify-start gap-x-2.5 overflow-x-auto border-0 p-0 pr-1 text-left scrollbar-none"
                     style={{
                       color: TEXT,
                       fontFamily: "var(--font-body)",
@@ -1085,12 +1101,14 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
           <div className="grid grid-cols-3 gap-2 md:gap-4">
             <KpiCard
               Icon={Layers}
+              hideIconOnMobile
               label="Completed Cycles"
               value={`${kpis.cycles} Cycles`}
               minHeight="standard"
             />
             <KpiCard
               Icon={Percent}
+              hideIconOnMobile
               label="Average Hatchability"
               value={kpis.avgRate === null ? "N/A" : `${kpis.avgRate}%`}
               accent={OK}
@@ -1098,6 +1116,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
             />
             <KpiCard
               Icon={TrendingUp}
+              hideIconOnMobile
               label="Total Chicks Hatched"
               value={`${kpis.hatched} Hatched`}
               minHeight="standard"
@@ -1153,11 +1172,7 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
                         ? withPct.length
                         : withPct.filter((h) => h.modeName === s).length;
                     return (
-                      <SelectItem
-                        key={s}
-                        value={s}
-                        style={{ color: TEXT }}
-                      >
+                      <SelectItem key={s} value={s} style={{ color: TEXT }}>
                         {s === "All"
                           ? `All Species (${count})`
                           : `${s} (${count})`}
@@ -1423,4 +1438,3 @@ export function TrendsScreen({ units, modes, history, initialUnitId }: Props) {
     </div>
   );
 }
-

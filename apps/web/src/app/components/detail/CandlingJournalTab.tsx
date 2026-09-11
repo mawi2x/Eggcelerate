@@ -791,7 +791,10 @@ function LogModalBody({
             ? `Edit Inspection Log: Day ${form.targetDay}`
             : "Candling Journal"}
         </DialogTitle>
-        <DialogDescription className="font-medium space-y-0.5" style={{ fontSize: "var(--type-caption)" }}>
+        <DialogDescription
+          className="font-medium space-y-0.5"
+          style={{ fontSize: "var(--type-caption)" }}
+        >
           <span className="block" style={{ color: "var(--text-primary)" }}>
             {chamberName}
           </span>
@@ -1779,6 +1782,13 @@ export function CandlingJournalTab({
           totalDays={totalDays}
           candling={candling}
           candled={effectiveCandled}
+          overdue={
+            pendingCheckpoint &&
+            checkpointDistance !== null &&
+            checkpointDistance < 0
+              ? { day: pendingCheckpoint.day, text: checkpointTiming }
+              : null
+          }
           labelSize={9}
         />
         <div
@@ -1810,7 +1820,7 @@ export function CandlingJournalTab({
                     marginTop: 2,
                   }}
                 >
-                  Day {latestCandlingEntry.day} · {latestCandlingEntry.label}
+                  Day {latestCandlingEntry.day}, {latestCandlingEntry.label}
                 </p>
                 <p
                   style={{
@@ -2239,39 +2249,41 @@ export function CandlingJournalTab({
                     }}
                   >
                     {pendingCheckpoint
-                      ? `${pendingCheckpoint.label} · Day ${pendingCheckpoint.day}`
+                      ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
                       : "All scheduled checks completed"}
                   </span>
-                  {pendingCheckpoint && checkpointDistance !== null && (
-                    <span
-                      className="inline-flex items-center rounded-full px-2.5 py-0.5"
-                      style={{
-                        backgroundColor:
-                          checkpointDistance < 0
-                            ? "var(--status-danger-bg)"
-                            : checkpointDistance === 0
-                              ? "var(--status-warning-bg)"
-                              : "var(--surface-muted)",
-                        color:
-                          checkpointDistance < 0
-                            ? "var(--status-danger-fg)"
-                            : checkpointDistance === 0
-                              ? "var(--status-warning-fg)"
-                              : "var(--text-secondary)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                      }}
-                    >
-                      {checkpointTiming}
-                    </span>
-                  )}
+                  {pendingCheckpoint &&
+                    checkpointDistance !== null &&
+                    checkpointDistance >= 0 && (
+                      <span
+                        className="inline-flex items-center rounded-full px-2.5 py-0.5"
+                        style={{
+                          backgroundColor:
+                            checkpointDistance < 0
+                              ? "var(--status-danger-bg)"
+                              : checkpointDistance === 0
+                                ? "var(--status-warning-bg)"
+                                : "var(--surface-muted)",
+                          color:
+                            checkpointDistance < 0
+                              ? "var(--status-danger-fg)"
+                              : checkpointDistance === 0
+                                ? "var(--status-warning-fg)"
+                                : "var(--text-secondary)",
+                          fontSize: "var(--type-label)",
+                          fontWeight: "var(--weight-bold)",
+                          letterSpacing: "var(--tracking-label)",
+                        }}
+                      >
+                        {checkpointTiming}
+                      </span>
+                    )}
                 </div>
               </div>
               {canLog ? (
                 <Button
                   onClick={openNewInspection}
-                  className="w-full rounded-full md:w-auto"
+                  className="h-[34px] w-full rounded-full md:h-[var(--control-height-default)] md:w-auto"
                   style={{ ...rustBtn }}
                 >
                   <Plus size={14} /> Log Inspection
@@ -2314,40 +2326,42 @@ export function CandlingJournalTab({
                   }}
                 >
                   {pendingCheckpoint
-                    ? `${pendingCheckpoint.label} · Day ${pendingCheckpoint.day}`
+                    ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
                     : "Candling checks scheduled"}
                 </span>
-                {pendingCheckpoint && checkpointDistance !== null && (
-                  <span
-                    className="inline-flex items-center rounded-full px-2.5 py-0.5"
-                    style={{
-                      backgroundColor:
-                        checkpointDistance < 0
-                          ? "var(--status-danger-bg)"
-                          : checkpointDistance === 0
-                            ? "var(--status-warning-bg)"
-                            : "var(--surface-muted)",
-                      color:
-                        checkpointDistance < 0
-                          ? "var(--status-danger-fg)"
-                          : checkpointDistance === 0
-                            ? "var(--status-warning-fg)"
-                            : "var(--text-secondary)",
-                      fontSize: "var(--type-label)",
-                      fontWeight: "var(--weight-bold)",
-                      letterSpacing: "var(--tracking-label)",
-                    }}
-                  >
-                    {checkpointTiming}
-                  </span>
-                )}
+                {pendingCheckpoint &&
+                  checkpointDistance !== null &&
+                  checkpointDistance >= 0 && (
+                    <span
+                      className="inline-flex items-center rounded-full px-2.5 py-0.5"
+                      style={{
+                        backgroundColor:
+                          checkpointDistance < 0
+                            ? "var(--status-danger-bg)"
+                            : checkpointDistance === 0
+                              ? "var(--status-warning-bg)"
+                              : "var(--surface-muted)",
+                        color:
+                          checkpointDistance < 0
+                            ? "var(--status-danger-fg)"
+                            : checkpointDistance === 0
+                              ? "var(--status-warning-fg)"
+                              : "var(--text-secondary)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                      }}
+                    >
+                      {checkpointTiming}
+                    </span>
+                  )}
               </div>
             </div>
             {canLog ? (
               <Button
                 onClick={openNewInspection}
                 disabled={isUpdating}
-                className="w-full rounded-full md:w-auto"
+                className="h-[34px] w-full rounded-full md:h-[var(--control-height-default)] md:w-auto"
                 style={{
                   ...rustBtn,
                   fontWeight: "var(--weight-bold)",
@@ -2395,7 +2409,7 @@ export function CandlingJournalTab({
           <div className="flex items-center justify-between gap-3">
             <p
               style={{
-                fontSize: "var(--type-heading-md)",
+                fontSize: "calc(var(--type-heading-md) - 2px)",
                 fontWeight: "var(--weight-semibold)",
                 color: "var(--text-primary)",
               }}
@@ -2480,7 +2494,7 @@ export function CandlingJournalTab({
                           }
                           className="flex min-h-[var(--control-height-default)] min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 md:min-h-8"
                           style={{
-                            fontSize: "var(--type-heading-sm)",
+                            fontSize: "calc(var(--type-heading-sm) - 2px)",
                             fontWeight: "var(--weight-bold)",
                             color: "var(--text-primary)",
                           }}

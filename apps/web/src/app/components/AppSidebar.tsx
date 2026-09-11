@@ -559,7 +559,7 @@ export function AppSidebar({
               lineHeight: "var(--leading-normal)",
               cursor: "default",
             }}
-            title={`${resolveDisplayName(account)} · ${account.farmName}`}
+            title={`${resolveDisplayName(account)}, ${account.farmName}`}
           >
             {accountInitials(account)}
           </span>

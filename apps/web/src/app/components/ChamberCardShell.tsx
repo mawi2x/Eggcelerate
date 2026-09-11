@@ -35,7 +35,7 @@ export function ChamberCardShell({
     <article
       aria-labelledby={labelledBy}
       className={cn(
-        "group flex h-full min-w-0 min-h-[var(--mobile-chamber-card-min-height)] flex-col overflow-hidden rounded-2xl border transition-all duration-200 md:min-h-0",
+        "group relative flex h-full min-w-0 min-h-[var(--mobile-chamber-card-min-height)] flex-col overflow-hidden rounded-2xl border transition-all duration-200 md:min-h-0",
         highlighted
           ? "border-[var(--nav-hover-border)] bg-[var(--nav-hover-bg)] shadow-md"
           : "border-[var(--border-default)] bg-[var(--surface-subtle)] shadow-[var(--shadow-card)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)]",

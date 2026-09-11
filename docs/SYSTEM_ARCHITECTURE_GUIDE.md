@@ -395,6 +395,18 @@ The UI should eventually distinguish loading, stale, reconnecting, cached-offlin
 
 Actuator-affecting controls need pending, acknowledged, rejected, timeout, and rollback states. A browser state update alone is not proof that a device command succeeded.
 
+### Service outage and recovery
+
+The ESP32 remains the local safety authority during Wi-Fi, MQTT, API, database, or full-server loss. Expected degraded behavior:
+
+- API unreachable: dashboard serves stale cached data with a visible offline warning; remote commands fail instead of pretending to succeed.
+- MQTT unreachable: devices continue local control on NVS setpoints; commands return `503 offline`; device health derives from `last_seen` freshness, since no LWT can arrive with the broker down.
+- Database unreachable: `/readyz` fails and actuator-affecting commands are rejected until audit persistence is restored (decided: fail closed — an un-auditable command is not executable).
+- Backend restart: devices start `unknown`/`stale`; resubscribing replays retained `state`, but a device returns to healthy only on fresh telemetry inside the live window — retained `online` alone is insufficient.
+- Commands in flight across a restart are reconciled by `command_id`: resume waiting inside the bounded ACK window, then mark `timeout`. Never blindly re-publish.
+- QoS 0 telemetry lost during an outage stays lost; gaps are expected unless a device-side store-and-forward buffer is specified later.
+
+
 ## 9. Cross-reference with the implementation plan
 
 The consolidated plan contains twelve tasks. Frontend restructuring is now active through the focused guide; the status below is based on the current repository rather than old unchecked plan boxes.

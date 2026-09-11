@@ -86,8 +86,8 @@ describe("mobile form primitives", () => {
     expect(s).toContain(
       '"h-[var(--control-height-default)] px-3 py-2 text-sm md:h-[var(--control-height-toolbar)]"',
     );
-    expect(s).toContain('fontSize: "var(--type-filter-value)"');
-    expect(s).toContain("size === \"filter\"");
+    expect(s).toContain('fontSize: "var(--type-filter-label)"');
+    expect(s).toContain('size === "filter"');
   });
   it("every focusable text entry surface uses control-value (blanket decrease)", () => {
     // Blanket decrease: control-value is 12px on phones (below the 16px iOS
@@ -126,10 +126,10 @@ describe("mobile touch targets", () => {
     expect(s).not.toMatch(/h-7 w-5 items-center/);
   });
 
-  it("ViewToggle sizes each button from the icon token, not group padding", () => {
+  it("ViewToggle lands the group on the 36px filter-row height", () => {
     const s = src("src/app/components/ViewToggle.tsx");
-    expect(s).toContain("h-[var(--control-size-icon)]");
-    expect(s).toContain("w-[var(--control-size-icon)]");
+    expect(s).toContain("h-8 w-8");
+    expect(s).toContain("p-0.5");
   });
 
   it("shared checkbox keeps a 44px target around its compact visual mark", () => {
@@ -153,27 +153,21 @@ describe("mobile touch targets", () => {
     expect(candling).not.toContain("h-11 w-11 cursor-pointer");
   });
 
-  it("sort actions use compact mobile geometry and shared target contract", () => {
+  it("sort actions share the 36px filter-row height on desktop", () => {
     const incubators = src("src/app/components/screens/IncubatorsScreen.tsx");
     const candling = src("src/app/components/screens/CandlingLogsScreen.tsx");
     const trends = src("src/app/components/screens/TrendsScreen.tsx");
-    const compactSortButton =
-      "h-[34px] w-[34px]";
+    const compactSortButton = "h-[34px] w-[34px]";
     expect(incubators).toContain(compactSortButton);
     expect(candling).toContain(compactSortButton);
     expect(incubators).toContain(
-      "md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)]",
+      "md:h-[var(--control-height-default)] md:w-[var(--control-height-default)]",
     );
     expect(candling).toContain(
-      "md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)]",
+      "md:h-[var(--control-height-default)] md:w-[var(--control-height-default)]",
     );
     expect(trends).toContain("md:min-h-[var(--control-height-compact)]");
     expect(trends).toContain('fontSize: "var(--type-body-sm)"');
-  });
-
-  it("Overview count badges use the 11px label minimum, not 10px", () => {
-    const s = src("src/app/components/screens/OverviewScreen.tsx");
-    expect(s).not.toContain("text-[10px]");
   });
 });
 

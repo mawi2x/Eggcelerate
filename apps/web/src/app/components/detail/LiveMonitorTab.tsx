@@ -626,7 +626,7 @@ export function LiveMonitorTab({
             label="Battery"
             value={
               unit.batteryPct <= 25
-                ? `${unit.batteryPct}% · Low`
+                ? `${unit.batteryPct}% (Low)`
                 : `${unit.batteryPct}%`
             }
             tone={

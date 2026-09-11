@@ -37,4 +37,27 @@ describe("alerts responsive row layout", () => {
       "absolute inset-0 flex items-center justify-end gap-1 opacity-0",
     );
   });
+
+  it("docks day headers flush under the sticky toolbar at every breakpoint", () => {
+    expect(source).toContain('className="space-y-0"');
+    // Day-header sticky tops must equal the toolbar heights per breakpoint
+    // (base/md/lg); any gap shoves the header down over the first row.
+    const lines = source.split("\n");
+    const toolbarLine =
+      lines.find((l) => l.includes("sticky top-0 z-30")) ?? "";
+    const dayLine = lines.find((l) => l.includes("sticky top-[")) ?? "";
+    const dims = (text: string, prop: string) => {
+      const out: Record<string, number> = {};
+      for (const m of text.matchAll(/(?:(md|lg):)?(h|top)-\[(\d+)px\]/g)) {
+        if (m[2] === prop) out[m[1] || "base"] = Number(m[3]);
+      }
+      return out;
+    };
+    const toolbar = dims(toolbarLine, "h");
+    const dayTop = dims(dayLine, "top");
+    expect(Object.keys(toolbar).sort()).toEqual(["base", "lg", "md"]);
+    expect(dayTop).toEqual(toolbar);
+    expect(source).not.toContain("toolbarHeight");
+    expect(source).not.toContain("ResizeObserver");
+  });
 });

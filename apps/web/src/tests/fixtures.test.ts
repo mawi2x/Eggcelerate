@@ -18,6 +18,34 @@ describe("fixture factories", () => {
     expect(createHatchRecordFixtures()).toHaveLength(12);
   });
 
+  it("seeds alerts across today, yesterday, and last week", () => {
+    const now = Date.UTC(2026, 8, 3, 12);
+    const alerts = createAlertFixtures(now);
+    const startOfDay = (value: number | string) => {
+      const date = new Date(value);
+      return new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+      ).getTime();
+    };
+    const alertsById = new Map(alerts.map((alert) => [alert.id, alert]));
+    const daysAgo = (id: string) => {
+      const alert = alertsById.get(id);
+      if (!alert) throw new Error(`Missing alert fixture: ${id}`);
+      return Math.round(
+        (startOfDay(now) - startOfDay(alert.timestamp)) / 86_400_000,
+      );
+    };
+
+    expect(daysAgo("a1")).toBe(0);
+    expect(daysAgo("a5")).toBe(0);
+    expect(daysAgo("a6")).toBe(1);
+    expect(daysAgo("a8")).toBe(1);
+    expect(daysAgo("a9")).toBe(7);
+    expect(daysAgo("a12")).toBe(7);
+  });
+
   it("returns fresh mutable copies without changing mode seeds", () => {
     const first = createModeFixtures();
     first[0].name = "Changed";

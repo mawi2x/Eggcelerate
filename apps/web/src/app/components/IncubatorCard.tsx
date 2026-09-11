@@ -393,6 +393,14 @@ export function IncubatorCard({
       labelledBy={`incubator-card-${unit.id}`}
       highlighted={highlighted}
     >
+      {/* Stretched open control: the whole card opens the chamber. Footer
+          actions sit above it (relative + z-index), so no click crutches. */}
+      <button
+        type="button"
+        onClick={() => onOpen(unit.id)}
+        aria-label={`Open details for ${unit.name}`}
+        className="absolute inset-0 z-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
+      />
       <ChamberCardHeader
         titleId={`incubator-card-${unit.id}`}
         title={
@@ -460,210 +468,210 @@ export function IncubatorCard({
         }
       />
 
-        {ready ? (
-          /* Ready chamber — no cycle running yet, prompt the farmer to set up. */
-          <div
-            className="flex flex-1 flex-col items-center justify-center rounded-2xl px-4 py-5 text-center"
-            style={{ backgroundColor: "var(--surface-subtle)" }}
-          >
-            <p
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--type-heading-sm)",
-                fontWeight: "var(--weight-bold)",
-                lineHeight: "var(--leading-snug)",
-                color: "var(--text-primary)",
-              }}
-            >
-              Incubator Ready
-            </p>
-            <p
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-caption)",
-                fontWeight: "var(--weight-regular)",
-                color: "var(--text-farm)",
-                lineHeight: "var(--leading-normal)",
-                marginTop: 4,
-              }}
-            >
-              Load eggs and choose a mode to begin incubation.
-            </p>
-          </div>
-        ) : (
-          <div className="flex-1">
-            <div className="grid grid-cols-3 gap-2">
-              <Reading
-                icon={<Thermometer size={15} />}
-                label="TEMP"
-                value={unit.temp}
-                unit="°C"
-                delta={unit.tempTrend}
-                state={tempSt}
-              />
-              <Reading
-                icon={<Droplets size={15} />}
-                label="HUMIDITY"
-                value={unit.humidity}
-                unit="%"
-                delta={unit.humidityTrend}
-                state={humSt}
-              />
-              <Reading
-                label="WATER"
-                value={unit.waterOk ? "Good" : "Low"}
-                state={waterSt}
-                valueColor={waterInfo.color}
-                valueSize={16}
-                subtextSize={11}
-                subtext={
-                  <span style={{ color: waterInfo.color }}>
-                    {unit.waterOk ? "Sufficient" : "Refill"}
-                  </span>
-                }
-              />
-            </div>
-
-            {/* Cycle progress — the day count gets its own high-visibility row. */}
-            <div style={{ marginTop: 12 }}>
-              <div
-                className="flex items-center justify-between gap-2"
-                style={{ marginBottom: 6 }}
-              >
-                <span
-                  className="whitespace-nowrap max-[19rem]:whitespace-normal"
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-body-sm)",
-                    fontWeight: "var(--weight-bold)",
-                    lineHeight: "var(--leading-normal)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  Day {unit.dayOfIncubation} of {mode.incubationDays}
-                </span>
-                <span
-                  className="whitespace-nowrap max-[19rem]:whitespace-normal"
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-caption)",
-                    fontWeight: "var(--weight-medium)",
-                    lineHeight: "var(--leading-normal)",
-                    color: MUTED,
-                  }}
-                >
-                  {progress}% Complete
-                </span>
-              </div>
-              <div
-                className="w-full overflow-hidden rounded-full"
-                style={{
-                  height: "var(--progress-thickness)",
-                  backgroundColor: BORDER,
-                }}
-                role="progressbar"
-                aria-valuenow={progress}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={`Incubation progress: day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
-              >
-                <div
-                  style={{
-                    width: `${progress}%`,
-                    height: "100%",
-                    backgroundColor: RUST,
-                    borderRadius: "var(--radius-pill)",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Footer — full-width status oval containing the status icon, label, and configure button. */}
-        <ChamberCardFooter
-          style={{
-            backgroundColor: status.bg,
-          }}
+      {ready ? (
+        /* Ready chamber — no cycle running yet, prompt the farmer to set up. */
+        <div
+          className="flex flex-1 flex-col items-center justify-center rounded-2xl px-4 py-5 text-center"
+          style={{ backgroundColor: "var(--surface-subtle)" }}
         >
-          <div className="flex min-w-0 items-center gap-2 pl-1.5">
-            {status.Icon ? (
-              <StatusIconBadge
-                size="sm"
-                backgroundColor={status.fg}
-                icon={
-                  <status.Icon
-                    size={statusIconBadgeGlyphSize("sm")}
-                    color="var(--status-icon-badge-fg)"
-                    strokeWidth={3}
-                  />
-                }
-              />
-            ) : (
-              <span
-                className="ml-1 h-3 w-3 shrink-0 rounded-full"
-                style={{ backgroundColor: status.fg }}
-              />
-            )}
-            <span
-              style={{
-                color: status.fg,
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body)",
-                fontWeight: "var(--weight-bold)",
-                lineHeight: "var(--leading-normal)",
-              }}
-            >
-              {status.label}
-            </span>
+          <p
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--type-heading-sm)",
+              fontWeight: "var(--weight-bold)",
+              lineHeight: "var(--leading-snug)",
+              color: "var(--text-primary)",
+            }}
+          >
+            Incubator Ready
+          </p>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-caption)",
+              fontWeight: "var(--weight-regular)",
+              color: "var(--text-farm)",
+              lineHeight: "var(--leading-normal)",
+              marginTop: 4,
+            }}
+          >
+            Load eggs and choose a mode to begin incubation.
+          </p>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <div className="grid grid-cols-3 gap-2">
+            <Reading
+              icon={<Thermometer size={15} />}
+              label="TEMP"
+              value={unit.temp}
+              unit="°C"
+              delta={unit.tempTrend}
+              state={tempSt}
+            />
+            <Reading
+              icon={<Droplets size={15} />}
+              label="HUMIDITY"
+              value={unit.humidity}
+              unit="%"
+              delta={unit.humidityTrend}
+              state={humSt}
+            />
+            <Reading
+              label="WATER"
+              value={unit.waterOk ? "Good" : "Low"}
+              state={waterSt}
+              valueColor={waterInfo.color}
+              valueSize={16}
+              subtextSize={11}
+              subtext={
+                <span style={{ color: waterInfo.color }}>
+                  {unit.waterOk ? "Sufficient" : "Refill"}
+                </span>
+              }
+            />
           </div>
 
-          {cycleEnded ? (
-            /* Hatch day reached — harvest & reset ends the overtime run. */
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onHarvest?.(unit)}
-              aria-label={`Finish cycle for ${unit.name}`}
-              className="cursor-pointer rounded-full shadow-sm transition-colors hover:brightness-110"
-              style={{
-                backgroundColor: RUST,
-                color: "var(--on-brand)",
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-caption)",
-                fontWeight: "var(--weight-bold)",
-                lineHeight: "var(--leading-normal)",
-                paddingLeft: 12,
-                paddingRight: 12,
-              }}
+          {/* Cycle progress — the day count gets its own high-visibility row. */}
+          <div style={{ marginTop: 12 }}>
+            <div
+              className="flex items-center justify-between gap-2"
+              style={{ marginBottom: 6 }}
             >
-              Finish Cycle
-            </Button>
-          ) : (
-            <Button
-              type="button"
+              <span
+                className="whitespace-nowrap max-[19rem]:whitespace-normal"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-bold)",
+                  lineHeight: "var(--leading-normal)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                Day {unit.dayOfIncubation} of {mode.incubationDays}
+              </span>
+              <span
+                className="whitespace-nowrap max-[19rem]:whitespace-normal"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--type-caption)",
+                  fontWeight: "var(--weight-medium)",
+                  lineHeight: "var(--leading-normal)",
+                  color: MUTED,
+                }}
+              >
+                {progress}% Complete
+              </span>
+            </div>
+            <div
+              className="w-full overflow-hidden rounded-full"
+              style={{
+                height: "var(--progress-thickness)",
+                backgroundColor: BORDER,
+              }}
+              role="progressbar"
+              aria-valuenow={progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Incubation progress: day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
+            >
+              <div
+                style={{
+                  width: `${progress}%`,
+                  height: "100%",
+                  backgroundColor: RUST,
+                  borderRadius: "var(--radius-pill)",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer — full-width status oval containing the status icon, label, and configure button. */}
+      <ChamberCardFooter
+        style={{
+          backgroundColor: status.bg,
+        }}
+      >
+        <div className="flex min-w-0 items-center gap-2 pl-1.5">
+          {status.Icon ? (
+            <StatusIconBadge
               size="sm"
-              onClick={() => onOpen(unit.id)}
-              aria-label={
-                ready ? `Start setup for ${unit.name}` : `${cta} ${unit.name}`
+              backgroundColor={status.fg}
+              icon={
+                <status.Icon
+                  size={statusIconBadgeGlyphSize("sm")}
+                  color="var(--status-icon-badge-fg)"
+                  strokeWidth={3}
+                />
               }
-              className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
-              style={{
-                backgroundColor: "var(--surface-card)",
-                color: CTA,
-                border: "1px solid var(--border-ink)",
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body-sm)",
-                fontWeight: "var(--weight-bold)",
-                lineHeight: "var(--leading-normal)",
-                paddingLeft: 12,
-                paddingRight: 10,
-              }}
-            >
-              {ready ? "Start Setup" : cta} <ChevronRight size={15} />
-            </Button>
+            />
+          ) : (
+            <span
+              className="ml-1 h-3 w-3 shrink-0 rounded-full"
+              style={{ backgroundColor: status.fg }}
+            />
           )}
-        </ChamberCardFooter>
+          <span
+            style={{
+              color: status.fg,
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-body)",
+              fontWeight: "var(--weight-bold)",
+              lineHeight: "var(--leading-normal)",
+            }}
+          >
+            {status.label}
+          </span>
+        </div>
+
+        {cycleEnded ? (
+          /* Hatch day reached — harvest & reset ends the overtime run. */
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onHarvest?.(unit)}
+            aria-label={`Finish cycle for ${unit.name}`}
+            className="relative z-10 cursor-pointer rounded-full shadow-sm transition-colors hover:brightness-110"
+            style={{
+              backgroundColor: RUST,
+              color: "var(--on-brand)",
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-caption)",
+              fontWeight: "var(--weight-bold)",
+              lineHeight: "var(--leading-normal)",
+              paddingLeft: 12,
+              paddingRight: 12,
+            }}
+          >
+            Finish Cycle
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onOpen(unit.id)}
+            aria-label={
+              ready ? `Start setup for ${unit.name}` : `${cta} ${unit.name}`
+            }
+            className="relative z-10 cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
+            style={{
+              backgroundColor: "var(--surface-card)",
+              color: CTA,
+              border: "1px solid var(--border-ink)",
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-body-sm)",
+              fontWeight: "var(--weight-bold)",
+              lineHeight: "var(--leading-normal)",
+              paddingLeft: 12,
+              paddingRight: 10,
+            }}
+          >
+            {ready ? "Start Setup" : cta} <ChevronRight size={15} />
+          </Button>
+        )}
+      </ChamberCardFooter>
     </ChamberCardShell>
   );
 }

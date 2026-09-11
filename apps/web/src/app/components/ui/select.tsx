@@ -38,7 +38,6 @@ function SelectValue({
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
 
-
 const triggerSizeClasses: Record<
   "micro" | "sm" | "default" | "toolbar" | "filter",
   string
@@ -78,7 +77,7 @@ function SelectTrigger({
         lineHeight: "var(--leading-normal)",
         ...style,
         ...(size === "filter" && {
-          fontSize: "var(--type-filter-value)",
+          fontSize: "var(--type-filter-label)",
           fontWeight: "var(--weight-bold)",
         }),
       }}
@@ -163,9 +162,7 @@ function SelectItem({
         fontSize: isFilter
           ? "var(--type-filter-label)"
           : "var(--type-control-value)",
-        fontWeight: isFilter
-          ? "var(--weight-bold)"
-          : "var(--weight-regular)",
+        fontWeight: isFilter ? "var(--weight-bold)" : "var(--weight-regular)",
         lineHeight: isFilter ? "var(--leading-snug)" : "var(--leading-normal)",
         ...style,
       }}

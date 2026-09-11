@@ -24,7 +24,6 @@ import { LiveMonitorTab } from "../detail/LiveMonitorTab";
 import { SectionCard, StatusCallout } from "../detail/primitives";
 import type { DetailTab } from "../detail/types";
 import { HarvestModal } from "../HarvestModal";
-import { ExclamationIcon } from "../icons";
 import { statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import {
   AlertDialog,
@@ -46,10 +45,7 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import {
-  SegmentedControl,
-  SegmentedControlItem,
-} from "../ui/segmented-control";
+import { FilterBar } from "../ui/filter-bar";
 import {
   Select,
   SelectContent,
@@ -65,66 +61,36 @@ function SubTabNav({
   active: DetailTab;
   onChange: (t: DetailTab) => void;
 }) {
-  const tabs: {
-    id: DetailTab;
-    label: string;
-    mobileLabel: string;
-    icon: React.ReactNode;
-  }[] = [
-    {
-      id: "monitor",
-      label: "Live Monitor",
-      mobileLabel: "Monitor",
-      icon: <Activity size={15} aria-hidden="true" />,
-    },
-    {
-      id: "candling",
-      label: "Candling & Inspection",
-      mobileLabel: "Candling",
-      icon: <Notepad size={15} aria-hidden="true" />,
-    },
-    {
-      id: "settings",
-      label: "Device Settings",
-      mobileLabel: "Settings",
-      icon: <Settings2 size={15} aria-hidden="true" />,
-    },
-  ];
-
   return (
     <div className="flex max-w-full justify-start overflow-x-auto pb-1">
-      <SegmentedControl
-        role="tablist"
-        aria-label="Incubator detail sections"
-        className="w-full max-[19rem]:w-max md:w-max md:shrink-0"
-      >
-        {tabs.map((t) => {
-          const isActive = active === t.id;
-          return (
-            <SegmentedControlItem
-              key={t.id}
-              size="toolbar"
-              className="min-w-0 flex-1 max-[19rem]:min-w-[6rem] max-[19rem]:flex-none px-2 md:flex-none md:px-4"
-              active={isActive}
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => onChange(t.id)}
-              style={{
-                color: isActive
-                  ? "var(--brand-primary)"
-                  : "var(--text-secondary)",
-                fontWeight: isActive
-                  ? "var(--weight-semibold)"
-                  : "var(--weight-medium)",
-              }}
-            >
-              {t.icon}
-              <span className="md:hidden">{t.mobileLabel}</span>
-              <span className="hidden md:inline">{t.label}</span>
-            </SegmentedControlItem>
-          );
-        })}
-      </SegmentedControl>
+      <FilterBar
+        ariaLabel="Incubator detail sections"
+        variant="segmented"
+        fitToScreenOnMobile
+        value={active}
+        onChange={(key) => onChange(key as DetailTab)}
+        options={[
+          {
+            key: "monitor",
+            label: "Live Monitor",
+            mobileLabel: "Monitor",
+            icon: <Activity size={15} aria-hidden="true" />,
+          },
+          {
+            key: "candling",
+            label: "Candling & Inspection",
+            mobileLabel: "Candling",
+            icon: <Notepad size={15} aria-hidden="true" />,
+          },
+          {
+            key: "settings",
+            label: "Device Settings",
+            mobileLabel: "Settings",
+            icon: <Settings2 size={15} aria-hidden="true" />,
+          },
+        ]}
+        className="md:w-max md:shrink-0"
+      />
     </div>
   );
 }
@@ -270,7 +236,10 @@ export function DetailScreen({
   };
 
   return (
-    <div className="space-y-5" style={{ color: "var(--text-primary)" }}>
+    <div
+      className="space-y-2 md:space-y-5"
+      style={{ color: "var(--text-primary)" }}
+    >
       {/* Ready Incubator — compact setup prompt */}
       {isReady && (
         <div
@@ -394,7 +363,10 @@ export function DetailScreen({
                 </Label>
                 <p
                   className="mt-0.5"
-                  style={{ color: "var(--text-secondary)", fontSize: "var(--type-caption)" }}
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontSize: "var(--type-caption)",
+                  }}
                 >
                   Select the species profile for this batch.
                 </p>
@@ -416,7 +388,7 @@ export function DetailScreen({
                   <SelectContent>
                     {modes.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
-                        {m.name} · {m.incubationDays} days
+                        {m.name} ({m.incubationDays} days)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -492,7 +464,10 @@ export function DetailScreen({
                       </p>
                       <p
                         className="mt-0.5"
-                        style={{ color: "var(--text-secondary)", fontSize: "var(--type-caption)" }}
+                        style={{
+                          color: "var(--text-secondary)",
+                          fontSize: "var(--type-caption)",
+                        }}
                       >
                         These targets will be applied when the cycle starts.
                       </p>
@@ -716,21 +691,17 @@ export function DetailScreen({
             border: `1px solid var(--border-default)`,
           }}
         >
+          <span
+            aria-hidden="true"
+            className="w-1.5 shrink-0 self-stretch rounded-full"
+            style={{ backgroundColor: "var(--status-warning-fg)" }}
+          />
           <div className="flex min-w-0 flex-1 items-start gap-3">
-            <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold"
-              style={{
-                backgroundColor: "var(--status-warning-bg)",
-                color: "var(--status-warning-fg)",
-              }}
-            >
-              <ExclamationIcon size={22} />
-            </span>
             <div className="min-w-0 flex-1">
               <p
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "var(--type-heading-sm)",
+                  fontSize: "calc(var(--type-heading-sm) - 1px)",
                   fontWeight: "var(--weight-extrabold)",
                   lineHeight: "var(--leading-snug)",
                   color: "var(--status-warning-fg)",
@@ -742,7 +713,7 @@ export function DetailScreen({
               </p>
               <p
                 style={{
-                  fontSize: "var(--type-body-sm)",
+                  fontSize: "calc(var(--type-body-sm) - 1px)",
                   color: "var(--status-warning-fg)",
                   marginTop: 2,
                 }}
@@ -764,6 +735,11 @@ export function DetailScreen({
             border: `1px solid var(--border-default)`,
           }}
         >
+          <span
+            aria-hidden="true"
+            className="w-1.5 shrink-0 self-stretch rounded-full"
+            style={{ backgroundColor: "var(--status-warning-fg)" }}
+          />
           <div className="min-w-0 flex-1">
             <p
               style={{

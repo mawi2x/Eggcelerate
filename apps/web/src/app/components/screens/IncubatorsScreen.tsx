@@ -7,6 +7,7 @@ import {
   Search,
   TriangleAlert,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CHAMBER_NAME_MAX } from "../../data/account";
@@ -67,6 +68,8 @@ interface Props {
   onOpenUnit: (id: string) => void;
   onAddIncubator: (unit: Incubator) => Promise<boolean>;
   isAddingIncubator: boolean;
+  /** Shell page header rendered inside the sticky toolbar (incubators route). */
+  header?: ReactNode;
 }
 
 // Design tokens.
@@ -105,6 +108,7 @@ export function IncubatorsScreen({
   onOpenUnit,
   onAddIncubator,
   isAddingIncubator,
+  header,
 }: Props) {
   const isMobile = useIsMobile();
   const { completeCycle } = useCycleHistoryActions();
@@ -348,151 +352,163 @@ export function IncubatorsScreen({
   return (
     <div className="space-y-2 md:space-y-6" style={{ color: TEXT }}>
       {/* Row 1: Search + ViewToggle (desktop) + Add Button */}
-      <div className="flex items-center gap-2.5 md:gap-3">
-        <div className="relative min-w-0 flex-1">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2"
-            style={{ color: MUTED }}
-          />
-          <Input
+      {/* Sticky toolbar: page header + search + filters stay fixed while chamber cards scroll underneath. */}
+      <div
+        className="sticky top-0 z-30 flex flex-col gap-2 md:gap-3"
+        style={{
+          backgroundColor: "var(--surface-app)",
+          paddingBottom: 4,
+          paddingTop: 24,
+        }}
+      >
+        {header}
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2"
+              style={{ color: MUTED }}
+            />
+            <Input
+              size="toolbar"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              maxLength={50}
+              placeholder="Search incubators..."
+              aria-label="Search incubators"
+              className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-default)]"
+              style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
+            />
+          </div>
+          <div className="hidden md:block">
+            <ViewToggle view={view} onChange={setView} />
+          </div>
+          <Button
             size="toolbar"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            maxLength={50}
-            placeholder="Search incubators..."
-            aria-label="Search incubators"
-            className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
-            style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
-          />
-        </div>
-        <div className="hidden md:block">
-          <ViewToggle view={view} onChange={setView} />
-        </div>
-        <Button
-          size="toolbar"
-          onClick={() => {
-            setConnectError(null);
-            setOpen(true);
-          }}
-          className="h-[34px] shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[var(--brand-primary-hover)] focus-visible:outline-none md:h-[var(--control-height-toolbar)] md:px-5"
-          style={{
-            backgroundColor: RUST,
-            color: "var(--on-brand)",
-            fontSize: "var(--type-filter-value)",
-          }}
-          aria-label="Add incubator"
-        >
-          <Plus size={18} />
-          <span className="md:hidden">Add</span>
-          <span className="hidden md:inline">Add Incubator</span>
-        </Button>
-      </div>
-
-      {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
-      <div className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1 lg:flex-initial">
-          <FilterBar
-            ariaLabel="Incubator status filter"
-            variant="segmented"
-            fitToScreenOnMobile
-            value={filter}
-            onChange={(key) => {
-              setFilter(key as typeof filter);
-              setPage(1);
-            }}
-            options={filterPills.map((p) => ({
-              key: p.key,
-              label: p.label,
-              count: p.count,
-            }))}
-            className="md:!w-full lg:!w-auto"
-          />
-        </div>
-
-        <div className="flex w-full items-center justify-end gap-2 lg:w-auto">
-          {/* Incubation Mode Select */}
-          <Select
-            size="filter"
-            value={modeFilter}
-            onValueChange={(v) => {
-              setModeFilter(v);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger
-              size="filter"
-              className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
-              style={{
-                ...sortTriggerStyle,
-              }}
-              aria-label="Filter by incubation mode"
-            >
-              <SelectValue placeholder="All modes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All modes</SelectItem>
-              {modes.map((mode) => (
-                <SelectItem key={mode.id} value={mode.id}>
-                  {mode.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Sort Key Select */}
-          <Select
-            size="filter"
-            value={sort}
-            onValueChange={(v) => {
-              setSort(v as SortKey);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger
-              size="filter"
-              className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
-              style={{
-                ...sortTriggerStyle,
-              }}
-              aria-label="Sort chambers"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((o) => (
-                <SelectItem key={o.key} value={o.key}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Sort Direction Toggle */}
-          <button
-            type="button"
             onClick={() => {
-              setSortAsc((v) => !v);
-              setPage(1);
+              setConnectError(null);
+              setOpen(true);
             }}
-            className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-toolbar)] md:w-[var(--control-height-toolbar)] md:rounded-xl"
+            className="h-[34px] shrink-0 rounded-xl px-3 transition-colors duration-200 hover:!bg-[var(--brand-primary-hover)] focus-visible:outline-none md:h-[var(--control-height-default)] md:px-5"
             style={{
-              backgroundColor: "var(--surface-card)",
-              borderColor: "var(--border-subtle)",
-              color: "var(--text-secondary)",
+              backgroundColor: RUST,
+              color: "var(--on-brand)",
+              fontSize: "var(--type-filter-label)",
+              fontWeight: "var(--weight-bold)",
             }}
-            title={sortAsc ? "Sort ascending" : "Sort descending"}
-            aria-label={`Sort direction: ${sortAsc ? "ascending" : "descending"}`}
+            aria-label="Add incubator"
           >
-            {sortAsc ? (
-              <ArrowUpNarrowWide size={16} className="md:size-[18px]" />
-            ) : (
-              <ArrowDownWideNarrow size={16} className="md:size-[18px]" />
-            )}
-          </button>
+            <Plus size={18} />
+            <span className="md:hidden">Add</span>
+            <span className="hidden md:inline">Add Incubator</span>
+          </Button>
+        </div>
+
+        {/* Row 2 on mobile: Status filter pills with scroll indicator / Row 2 on desktop: FilterBar + Dropdowns */}
+        <div className="flex flex-col gap-2 md:gap-3 md:!mt-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1 lg:flex-initial">
+            <FilterBar
+              ariaLabel="Incubator status filter"
+              variant="segmented"
+              fitToScreenOnMobile
+              value={filter}
+              onChange={(key) => {
+                setFilter(key as typeof filter);
+                setPage(1);
+              }}
+              options={filterPills.map((p) => ({
+                key: p.key,
+                label: p.label,
+                count: p.count,
+              }))}
+              className="md:!w-full lg:!w-auto"
+            />
+          </div>
+
+          <div className="flex w-full items-center justify-end gap-2 lg:w-auto">
+            {/* Incubation Mode Select */}
+            <Select
+              size="filter"
+              value={modeFilter}
+              onValueChange={(v) => {
+                setModeFilter(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger
+                size="filter"
+                className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                style={{
+                  ...sortTriggerStyle,
+                }}
+                aria-label="Filter by incubation mode"
+              >
+                <SelectValue placeholder="All modes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All modes</SelectItem>
+                {modes.map((mode) => (
+                  <SelectItem key={mode.id} value={mode.id}>
+                    {mode.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Sort Key Select */}
+            <Select
+              size="filter"
+              value={sort}
+              onValueChange={(v) => {
+                setSort(v as SortKey);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger
+                size="filter"
+                className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                style={{
+                  ...sortTriggerStyle,
+                }}
+                aria-label="Sort chambers"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((o) => (
+                  <SelectItem key={o.key} value={o.key}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Sort Direction Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                setSortAsc((v) => !v);
+                setPage(1);
+              }}
+              className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-default)] md:w-[var(--control-height-default)] md:rounded-xl"
+              style={{
+                backgroundColor: "var(--surface-card)",
+                borderColor: "var(--border-subtle)",
+                color: "var(--text-secondary)",
+              }}
+              title={sortAsc ? "Sort ascending" : "Sort descending"}
+              aria-label={`Sort direction: ${sortAsc ? "ascending" : "descending"}`}
+            >
+              {sortAsc ? (
+                <ArrowUpNarrowWide size={16} className="md:size-[18px]" />
+              ) : (
+                <ArrowDownWideNarrow size={16} className="md:size-[18px]" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

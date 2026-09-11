@@ -98,7 +98,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                       unit.paired && unit.connectionState === "connected",
                   ).length
                 }{" "}
-                online · {units.length} total
+                of {units.length} online
               </span>
             )}
           </div>

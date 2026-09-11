@@ -8,9 +8,9 @@ interface Props {
 }
 
 // Reusable grid/list segmented toggle, shared across screens for a consistent pattern.
-// Sizing comes from `--control-size-icon`: 36px desktop, 44px below the
-// 768px mobile-shell breakpoint (glyph stays 18px). Do not count the outer
-// `p-1` group padding as part of either button's target.
+// Compact 32px buttons in 4px group padding land the group on the shared 36px
+// filter-row height (glyph stays 18px). Do not count the outer padding as part
+// of either button's target.
 export function ViewToggle({ view, onChange }: Props) {
   const options: { key: ViewMode; Icon: typeof LayoutGrid; label: string }[] = [
     { key: "grid", Icon: LayoutGrid, label: "Grid view" },
@@ -19,7 +19,7 @@ export function ViewToggle({ view, onChange }: Props) {
 
   return (
     <div
-      className="flex items-center gap-1 rounded-full p-1"
+      className="flex items-center gap-1 rounded-full p-0.5"
       style={{ backgroundColor: "var(--surface-muted)" }}
     >
       {options.map(({ key, Icon, label }) => {
@@ -32,7 +32,7 @@ export function ViewToggle({ view, onChange }: Props) {
             aria-pressed={active}
             title={label}
             onClick={() => onChange(key)}
-            className={`flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] cursor-pointer items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${active ? "bg-[var(--surface-card)] text-[var(--brand-primary)]" : "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--wash-white-60)] hover:text-[var(--brand-primary)]"}`}
+            className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${active ? "bg-[var(--surface-card)] text-[var(--brand-primary)]" : "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--wash-white-60)] hover:text-[var(--brand-primary)]"}`}
             style={{
               boxShadow: active ? "var(--shadow-lift)" : "none",
             }}

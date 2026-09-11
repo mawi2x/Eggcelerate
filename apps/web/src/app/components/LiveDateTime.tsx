@@ -72,7 +72,7 @@ export function LiveDateTime({ compact = false }: { compact?: boolean } = {}) {
       className="flex shrink-0 flex-col items-end text-right leading-none"
       aria-live="polite"
       aria-atomic="true"
-      title={`${dateStr} · ${timeStr}`}
+      title={`${dateStr} at ${timeStr}`}
     >
       {/* Date — emphasized (weekday prominent), no card/border */}
       <span

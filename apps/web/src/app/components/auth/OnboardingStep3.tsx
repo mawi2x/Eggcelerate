@@ -106,7 +106,7 @@ export function OnboardingStep3({
                   color: "var(--text-primary)",
                 }}
               >
-                Chicken · Standard
+                Chicken (Standard)
               </span>
               <span
                 style={{
@@ -115,7 +115,7 @@ export function OnboardingStep3({
                   color: "var(--text-muted)",
                 }}
               >
-                {mode.targetTemp.min}°C · {mode.targetHumidity.min}% RH ·{" "}
+                {mode.targetTemp.min}°C, {mode.targetHumidity.min}% RH,{" "}
                 {mode.incubationDays}-day cycle
               </span>
             </div>

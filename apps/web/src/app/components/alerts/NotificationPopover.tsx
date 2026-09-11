@@ -198,7 +198,7 @@ export function NotificationPopover({
                         color: MUTED,
                       }}
                     >
-                      {a.unit} · {timeAgo(a.timestamp)}
+                      {a.unit}, {timeAgo(a.timestamp)}
                     </p>
                     {/* Snippet clamped to two lines so every item stays the same height. */}
                     <p
