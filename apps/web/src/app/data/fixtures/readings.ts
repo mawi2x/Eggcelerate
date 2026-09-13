@@ -24,7 +24,6 @@ export function createReadingFixtures(
     const noise = ((hash >>> 0) % 1000) / 1000 - 0.5;
     const temperatureWobble = Math.sin(index / 5) * 0.14 + noise * 0.1;
     const humidityWobble = Math.cos(index / 4) * 1.2 + noise * 0.8;
-    const water = 30 + ((index * 3) % 70);
     let temperature = baseTemp + temperatureWobble;
     let humidity = baseHumidity + humidityWobble;
 
@@ -39,7 +38,6 @@ export function createReadingFixtures(
           : date.toLocaleDateString([], { month: "short", day: "numeric" }),
       temp: Number(temperature.toFixed(2)),
       humidity: Number(humidity.toFixed(1)),
-      water: Number(water.toFixed(0)),
     });
   }
 

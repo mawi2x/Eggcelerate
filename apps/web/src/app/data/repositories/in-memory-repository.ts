@@ -9,6 +9,7 @@ import type { Result } from "../../domain/result";
 import type {
   AbortedCycleRecord,
   AlertEntry,
+  CandlingLogEntry,
   HatchRecord,
   Incubator,
   Mode,
@@ -21,13 +22,18 @@ import { createReadingFixtures } from "../fixtures/readings";
 import { initialSettings, type SettingsPreferences } from "../settings";
 import type {
   AbortedCycleInput,
+  CandlingEntryInput,
   CompleteCycleInput,
   EggcelerateRepository,
   HarvestInput,
   ReadingQuery,
   RepositoryFailureMode,
   RepositoryOperation,
+  StartCycleInput,
   StopCycleInput,
+  UpdateCandlingEntryInput,
+  UpdateIncubatorConfigurationInput,
+  UpdateIncubatorProfileInput,
 } from "./repository";
 
 export interface InMemoryRepositoryOptions {
@@ -157,6 +163,14 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
           `Mode ${unit.modeId} is not available for this incubator.`,
         );
       }
+      if (
+        this.incubators.some(
+          (candidate) =>
+            candidate.deviceId.toUpperCase() === unit.deviceId.toUpperCase(),
+        )
+      ) {
+        return error("conflict", "Device is already assigned to a chamber.");
+      }
       if (unreachableDeviceIds.has(unit.deviceId.toUpperCase())) {
         return error(
           "offline",
@@ -183,15 +197,253 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     });
   }
 
-  updateIncubator(id: string, patch: Partial<Incubator>) {
-    return this.execute("updateIncubator", () => {
-      const index = this.incubators.findIndex(
-        (candidate) => candidate.id === id,
+  private findUnitIndex(id: string): number {
+    return this.incubators.findIndex((candidate) => candidate.id === id);
+  }
+
+  private applyDerived(unit: Incubator): Result<Incubator> {
+    const mode = this.modes.find((candidate) => candidate.id === unit.modeId);
+    if (!mode) {
+      return error(
+        "validation_error",
+        `Mode ${unit.modeId} is not available for this incubator.`,
       );
+    }
+    return ok({
+      ...unit,
+      ...deriveConditionState({
+        paired: unit.paired,
+        temp: unit.temp,
+        targetTemp: mode.targetTemp,
+        humidity: unit.humidity,
+        targetHumidity: mode.targetHumidity,
+        waterOk: unit.waterOk,
+        batteryPct: unit.batteryPct,
+        powerSource: unit.powerSource,
+        nextTurn: unit.nextTurn,
+      }),
+      connectionState: connectionStateFromPairing(unit.paired),
+    });
+  }
+
+  private validateCandlingEntry(input: {
+    day: number;
+    label: string;
+    fertile: number;
+    clear: number;
+    uncertain: number;
+    note: string;
+    photos: unknown;
+    checks: unknown;
+    developing?: number;
+    stoppedDeveloping?: number;
+  }): string | null {
+    if (!Number.isInteger(input.day) || input.day < 1) {
+      return "Candling day must be a positive whole number.";
+    }
+    const counts = [
+      ["fertile", input.fertile],
+      ["clear", input.clear],
+      ["uncertain", input.uncertain],
+    ] as const;
+    for (const [label, value] of counts) {
+      if (!Number.isInteger(value) || (value as number) < 0) {
+        return `${label} count must be a non-negative whole number.`;
+      }
+    }
+    if (input.label.trim().length < 1) {
+      return "Candling label must not be empty.";
+    }
+    if (typeof input.note !== "string") {
+      return "Candling note must be text.";
+    }
+    if (
+      !Array.isArray(input.photos) ||
+      input.photos.some((photo) => typeof photo !== "string")
+    ) {
+      return "Candling photos must be a list of references.";
+    }
+    if (!Array.isArray(input.checks)) {
+      return "Candling checks must be a list.";
+    }
+    for (const key of ["developing", "stoppedDeveloping"] as const) {
+      const value = input[key];
+      if (
+        value !== undefined &&
+        (!Number.isInteger(value) || (value as number) < 0)
+      ) {
+        return `${key} count must be a non-negative whole number.`;
+      }
+    }
+    return null;
+  }
+
+  updateIncubatorProfile(id: string, input: UpdateIncubatorProfileInput) {
+    return this.execute("updateIncubatorProfile", () => {
+      const index = this.findUnitIndex(id);
+      if (index < 0)
+        return error("not_found", `Incubator ${id} was not found.`);
+      const name = input.name.trim();
+      if (name.length < 1 || name.length > 30) {
+        return error(
+          "validation_error",
+          "Incubator name must be between 1 and 30 characters.",
+        );
+      }
+      const updated = this.applyDerived({
+        ...this.incubators[index],
+        name,
+        id,
+      });
+      if (!updated.ok) return updated;
+      this.incubators[index] = updated.data;
+      return ok(updated.data);
+    });
+  }
+
+  updateIncubatorConfiguration(
+    id: string,
+    input: UpdateIncubatorConfigurationInput,
+  ) {
+    return this.execute("updateIncubatorConfiguration", () => {
+      const index = this.findUnitIndex(id);
       if (index < 0)
         return error("not_found", `Incubator ${id} was not found.`);
       if (
-        patch.paired === true &&
+        input.modeId === undefined &&
+        input.autoTurn === undefined &&
+        input.turnIntervalHours === undefined
+      ) {
+        return error(
+          "validation_error",
+          "At least one configuration field is required.",
+        );
+      }
+      if (
+        input.modeId !== undefined &&
+        !this.modes.some((candidate) => candidate.id === input.modeId)
+      ) {
+        return error(
+          "validation_error",
+          `Mode ${input.modeId} is not available for this incubator.`,
+        );
+      }
+      if (
+        input.turnIntervalHours !== undefined &&
+        (!Number.isFinite(input.turnIntervalHours) ||
+          input.turnIntervalHours <= 0)
+      ) {
+        return error(
+          "validation_error",
+          "Turn interval must be a positive number of hours.",
+        );
+      }
+      if (input.autoTurn !== undefined && typeof input.autoTurn !== "boolean") {
+        return error("validation_error", "autoTurn must be a boolean.");
+      }
+      const current = this.incubators[index];
+      const updated = this.applyDerived({
+        ...current,
+        id,
+        modeId: input.modeId ?? current.modeId,
+        autoTurn: input.autoTurn ?? current.autoTurn,
+        turnInterval: input.turnIntervalHours ?? current.turnInterval,
+      });
+      if (!updated.ok) return updated;
+      this.incubators[index] = updated.data;
+      return ok(updated.data);
+    });
+  }
+
+  startCycle(id: string, input: StartCycleInput) {
+    return this.execute("startCycle", () => {
+      const index = this.findUnitIndex(id);
+      if (index < 0)
+        return error("not_found", `Incubator ${id} was not found.`);
+      const mode = this.modes.find(
+        (candidate) => candidate.id === input.modeId,
+      );
+      if (!mode) {
+        return error(
+          "validation_error",
+          `Mode ${input.modeId} is not available for this incubator.`,
+        );
+      }
+      if (
+        !Number.isInteger(input.totalEggs) ||
+        input.totalEggs < 1 ||
+        input.totalEggs > 38
+      ) {
+        return error(
+          "validation_error",
+          "Total eggs must be a whole number from 1 to 38.",
+        );
+      }
+      const now = this.now();
+      const updated = this.applyDerived({
+        ...this.incubators[index],
+        id,
+        modeId: mode.id,
+        dayOfIncubation: 1,
+        totalEggsLoaded: input.totalEggs,
+        cyclePhase: "incubating",
+        turnInterval: mode.defaultTurnInterval,
+        candled: {},
+        candlingLog: [],
+        lastTurned: now.toISOString(),
+        nextTurn: new Date(
+          now.getTime() + mode.defaultTurnInterval * 3_600_000,
+        ).toISOString(),
+      });
+      if (!updated.ok) return updated;
+      this.incubators[index] = updated.data;
+      return ok(updated.data);
+    });
+  }
+
+  resetStoppedCycle(id: string) {
+    return this.execute("resetStoppedCycle", () => {
+      const index = this.findUnitIndex(id);
+      if (index < 0)
+        return error("not_found", `Incubator ${id} was not found.`);
+      const updated = this.applyDerived({
+        ...this.incubators[index],
+        ...resetChamberToReady(this.incubators[index], this.now()),
+        id,
+      });
+      if (!updated.ok) return updated;
+      this.incubators[index] = updated.data;
+      return ok(updated.data);
+    });
+  }
+
+  requestManualTurn(id: string) {
+    return this.execute("requestManualTurn", () => {
+      const index = this.findUnitIndex(id);
+      if (index < 0)
+        return error("not_found", `Incubator ${id} was not found.`);
+      const now = this.now();
+      const current = this.incubators[index];
+      const updated = this.applyDerived({
+        ...current,
+        id,
+        lastTurned: now.toISOString(),
+        nextTurn: new Date(
+          now.getTime() + current.turnInterval * 3_600_000,
+        ).toISOString(),
+      });
+      if (!updated.ok) return updated;
+      this.incubators[index] = updated.data;
+      return ok(updated.data);
+    });
+  }
+
+  reconnectIncubator(id: string) {
+    return this.execute("reconnectIncubator", () => {
+      const index = this.findUnitIndex(id);
+      if (index < 0)
+        return error("not_found", `Incubator ${id} was not found.`);
+      if (
         unreachableDeviceIds.has(this.incubators[index].deviceId.toUpperCase())
       ) {
         return error(
@@ -199,35 +451,105 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
           `Device ${this.incubators[index].deviceId} is offline. Check its power and network connection.`,
         );
       }
-      const next = { ...this.incubators[index], ...clone(patch), id };
-      const mode = this.modes.find((candidate) => candidate.id === next.modeId);
-      if (!mode) {
+      const updated = this.applyDerived({
+        ...this.incubators[index],
+        id,
+        paired: true,
+      });
+      if (!updated.ok) return updated;
+      this.incubators[index] = updated.data;
+      return ok(updated.data);
+    });
+  }
+
+  createCandlingEntry(id: string, input: CandlingEntryInput) {
+    return this.execute("createCandlingEntry", () => {
+      const index = this.findUnitIndex(id);
+      if (index < 0)
+        return error("not_found", `Incubator ${id} was not found.`);
+      const invalid = this.validateCandlingEntry(input);
+      if (invalid) return error("validation_error", invalid);
+      const unit = this.incubators[index];
+      if (unit.candlingLog.some((entry) => entry.day === input.day)) {
         return error(
-          "validation_error",
-          `Mode ${next.modeId} is not available for this incubator.`,
+          "conflict",
+          `A candling entry for day ${input.day} already exists.`,
         );
       }
-      const condition = deriveConditionState({
-        paired: next.paired,
-        temp: next.temp,
-        targetTemp: mode.targetTemp,
-        humidity: next.humidity,
-        targetHumidity: mode.targetHumidity,
-        waterOk: next.waterOk,
-        batteryPct: next.batteryPct,
-        powerSource: next.powerSource,
-        nextTurn: next.nextTurn,
+      const entry: CandlingLogEntry = {
+        ...clone(input),
+        id: this.nextId("candling"),
+      };
+      this.incubators[index] = {
+        ...unit,
+        id,
+        candled: { ...unit.candled, [input.day]: true },
+        candlingLog: [...unit.candlingLog, entry],
+      };
+      return ok(this.incubators[index]);
+    });
+  }
+
+  updateCandlingEntry(
+    id: string,
+    day: number,
+    input: UpdateCandlingEntryInput,
+  ) {
+    return this.execute("updateCandlingEntry", () => {
+      const index = this.findUnitIndex(id);
+      if (index < 0)
+        return error("not_found", `Incubator ${id} was not found.`);
+      const unit = this.incubators[index];
+      const entryIndex = unit.candlingLog.findIndex(
+        (entry) => entry.day === day,
+      );
+      if (entryIndex < 0) {
+        return error(
+          "not_found",
+          `Candling entry for day ${day} was not found.`,
+        );
+      }
+      const merged = { ...unit.candlingLog[entryIndex], ...clone(input), day };
+      const invalid = this.validateCandlingEntry({
+        day: merged.day,
+        label: merged.label,
+        fertile: merged.fertile,
+        clear: merged.clear,
+        uncertain: merged.uncertain,
+        note: merged.note,
+        photos: merged.photos,
+        checks: merged.checks,
+        developing: merged.developing,
+        stoppedDeveloping: merged.stoppedDeveloping,
       });
-      const connectionState =
-        patch.connectionState ??
-        (patch.paired !== undefined
-          ? next.paired
-            ? "connected"
-            : "offline"
-          : next.connectionState);
-      const updated: Incubator = { ...next, ...condition, connectionState };
-      this.incubators[index] = updated;
-      return ok(updated);
+      if (invalid) return error("validation_error", invalid);
+      const candlingLog = unit.candlingLog.map((entry, position) =>
+        position === entryIndex ? merged : entry,
+      );
+      this.incubators[index] = { ...unit, id, candlingLog };
+      return ok(this.incubators[index]);
+    });
+  }
+
+  deleteCandlingEntry(id: string, day: number) {
+    return this.execute("deleteCandlingEntry", () => {
+      const index = this.findUnitIndex(id);
+      if (index < 0)
+        return error("not_found", `Incubator ${id} was not found.`);
+      const unit = this.incubators[index];
+      if (!unit.candlingLog.some((entry) => entry.day === day)) {
+        return error(
+          "not_found",
+          `Candling entry for day ${day} was not found.`,
+        );
+      }
+      this.incubators[index] = {
+        ...unit,
+        id,
+        candled: { ...unit.candled, [day]: false },
+        candlingLog: unit.candlingLog.filter((entry) => entry.day !== day),
+      };
+      return ok(this.incubators[index]);
     });
   }
 

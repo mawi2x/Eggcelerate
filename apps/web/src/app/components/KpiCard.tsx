@@ -1,5 +1,4 @@
-import type { ComponentType } from "react";
-import type { CSSProperties } from "react";
+import type { ComponentType, CSSProperties } from "react";
 import { Card, CardContent } from "./ui/card";
 
 export interface KpiPill {

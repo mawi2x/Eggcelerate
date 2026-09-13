@@ -11,7 +11,7 @@ const Switch = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <span
     data-slot="switch-hit-area"
-    className="inline-flex h-11 w-11 shrink-0 items-center justify-center"
+    className="inline-flex h-[var(--control-height-mobile)] w-[var(--control-height-mobile)] shrink-0 items-center justify-center"
   >
     <SwitchPrimitive.Root
       ref={ref}

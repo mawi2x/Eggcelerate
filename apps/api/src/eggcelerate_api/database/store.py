@@ -1,0 +1,307 @@
+"""Async SQL persistence behind the existing application services.
+
+Other collections remain in memory during this explicitly selected B3 slice.
+Modes, chamber configuration, devices, and their replay records are relational.
+"""
+
+from collections.abc import AsyncIterator, Mapping
+from contextlib import asynccontextmanager
+from typing import Any
+from uuid import UUID, uuid5
+
+from fastapi.concurrency import contextmanager_in_threadpool
+from pydantic import BaseModel
+from sqlalchemy import delete, insert, select, text, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from ..errors import AppError
+from ..models import IncubatorDTO, ModeDTO, PreferencesDTO
+from ..store import MemoryStore
+from .incubators import load_incubators, save_incubators, seed_incubators
+from .preferences import preference_values, preferences_from_row
+from .schema import (
+    farm_preferences,
+    farms,
+    incubator_idempotency,
+    incubators,
+    mode_idempotency,
+    modes,
+    preferences_idempotency,
+)
+
+
+def mode_values(farm_id: UUID, mode: ModeDTO, position: int) -> dict[str, Any]:
+    return {
+        "id": uuid5(farm_id, f"mode:{mode.id}"),
+        "farm_id": farm_id,
+        "public_id": mode.id,
+        "position": position,
+        "name": mode.name,
+        "built_in": mode.built_in,
+        "temp_min": mode.target_temp_c.min,
+        "temp_max": mode.target_temp_c.max,
+        "humidity_min": mode.target_humidity_pct.min,
+        "humidity_max": mode.target_humidity_pct.max,
+        "incubation_days": mode.incubation_days,
+        "turn_interval_min": mode.default_turn_interval_min,
+        "temp_hysteresis_c": mode.temp_hysteresis_c,
+        "humidity_hysteresis_pct": mode.humidity_hysteresis_pct,
+        "version": mode.version,
+        "created_at": mode.created_at,
+        "updated_at": mode.updated_at,
+    }
+
+
+def mode_from_row(row: Mapping[str, Any]) -> ModeDTO:
+    return ModeDTO(
+        id=row["public_id"],
+        name=row["name"],
+        built_in=row["built_in"],
+        target_temp_c={"min": row["temp_min"], "max": row["temp_max"]},
+        target_humidity_pct={"min": row["humidity_min"], "max": row["humidity_max"]},
+        incubation_days=row["incubation_days"],
+        default_turn_interval_min=row["turn_interval_min"],
+        temp_hysteresis_c=row["temp_hysteresis_c"],
+        humidity_hysteresis_pct=row["humidity_hysteresis_pct"],
+        version=row["version"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+class PostgresStore:
+    def __init__(self, url: str, farm_id: str):
+        self.farm_id = UUID(farm_id)
+        self.engine = create_async_engine(
+            url,
+            pool_pre_ping=True,
+            connect_args={"timeout": 5, "command_timeout": 10},
+        )
+        self.sessions = async_sessionmaker(self.engine, expire_on_commit=False)
+
+    async def close(self) -> None:
+        await self.engine.dispose()
+
+    async def ready(self) -> bool:
+        async with self.sessions() as session:
+            revision = await session.scalar(
+                text("SELECT version_num FROM alembic_version")
+            )
+            extension = await session.scalar(
+                text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
+            )
+            farm = await session.scalar(
+                select(farms.c.id).where(farms.c.id == self.farm_id)
+            )
+            seeded = await session.scalar(
+                select(incubators.c.id)
+                .where(incubators.c.farm_id == self.farm_id)
+                .limit(1)
+            )
+            preferences = await session.scalar(
+                select(farm_preferences.c.farm_id).where(
+                    farm_preferences.c.farm_id == self.farm_id
+                )
+            )
+            return (
+                preferences is not None
+                and revision == "0003"
+                and extension is not None
+                and farm is not None
+                and seeded is not None
+            )
+
+    async def seed(self) -> None:
+        """Insert missing deterministic defaults; preserve existing edited rows."""
+        async with self.sessions.begin() as session:
+            await session.execute(
+                pg_insert(farms)
+                .values(id=self.farm_id, name="Sunrise Poultry")
+                .on_conflict_do_nothing(index_elements=[farms.c.id])
+            )
+            await session.execute(
+                select(farms.c.id).where(farms.c.id == self.farm_id).with_for_update()
+            )
+            seed = MemoryStore()
+            for position, mode in enumerate(seed.modes.values()):
+                await session.execute(
+                    pg_insert(modes)
+                    .values(**mode_values(self.farm_id, mode, position))
+                    .on_conflict_do_nothing(constraint="uq_modes_farm_public_id")
+                )
+
+            await seed_incubators(session, self.farm_id, seed)
+            await session.execute(
+                pg_insert(farm_preferences)
+                .values(**preference_values(self.farm_id, seed.preferences))
+                .on_conflict_do_nothing(index_elements=[farm_preferences.c.farm_id])
+            )
+
+    @asynccontextmanager
+    async def transaction(
+        self,
+        memory: MemoryStore,
+        replay: tuple[str, str, str, str] | None = None,
+    ) -> AsyncIterator[MemoryStore]:
+        try:
+            # Database commit occurs before the memory transaction exits. A
+            # failed commit therefore restores all in-process mutations too.
+            async with (
+                contextmanager_in_threadpool(memory.transaction()) as state,
+                self.sessions.begin() as session,
+            ):
+                farm = await session.scalar(
+                    select(farms.c.id)
+                    .where(farms.c.id == self.farm_id)
+                    .with_for_update()
+                )
+                if farm is None:
+                    raise AppError("offline", "Development farm is not seeded.")
+                rows = (
+                    (
+                        await session.execute(
+                            select(modes)
+                            .where(modes.c.farm_id == self.farm_id)
+                            .order_by(modes.c.position, modes.c.public_id)
+                        )
+                    )
+                    .mappings()
+                    .all()
+                )
+                before = {row["public_id"]: mode_from_row(dict(row)) for row in rows}
+                previous_modes = state.modes
+                state.modes = dict(before)
+                incubator_rows = await load_incubators(
+                    session, self.farm_id, state, previous_modes
+                )
+                if not incubator_rows:
+                    raise AppError("offline", "Development chambers are not seeded.")
+                before_incubators = dict(state.incubators)
+                preference_row = (
+                    (
+                        await session.execute(
+                            select(farm_preferences).where(
+                                farm_preferences.c.farm_id == self.farm_id
+                            )
+                        )
+                    )
+                    .mappings()
+                    .first()
+                )
+                if preference_row is None:
+                    raise AppError("offline", "Development preferences are not seeded.")
+                state.preferences = preferences_from_row(dict(preference_row))
+                before_preferences = state.preferences.model_copy(deep=True)
+                # Never let a process-local durable-operation receipt override the DB.
+                state.idempotency = {
+                    k: v
+                    for k, v in state.idempotency.items()
+                    if not k.startswith(
+                        (
+                            "preferences:",
+                            "create-mode:",
+                            "patch-mode-",
+                            "create-incubator:",
+                            "patch-",
+                            "reconnect-",
+                        )
+                    )
+                }
+                receipt_table = {
+                    "incubator": incubator_idempotency,
+                    "mode": mode_idempotency,
+                    "preferences": preferences_idempotency,
+                }[replay[3] if replay else "mode"]
+                receipt = None
+                if replay:
+                    scope, key, fingerprint, kind = replay
+                    receipt = (
+                        (
+                            await session.execute(
+                                select(receipt_table).where(
+                                    receipt_table.c.farm_id == self.farm_id,
+                                    receipt_table.c.scope == scope,
+                                    receipt_table.c.key == key,
+                                )
+                            )
+                        )
+                        .mappings()
+                        .first()
+                    )
+                    if receipt:
+                        if receipt["fingerprint"] != fingerprint:
+                            raise AppError(
+                                "conflict",
+                                "Idempotency key was used with a different request.",
+                            )
+                        schemas: dict[str, type[BaseModel]] = {
+                            "incubator": IncubatorDTO,
+                            "mode": ModeDTO,
+                            "preferences": PreferencesDTO,
+                        }
+                        schema = schemas[kind]
+                        state.idempotency[f"{scope}:{key}"] = schema.model_validate(
+                            receipt["response"]
+                        )
+                yield state
+                removed = set(before) - set(state.modes)
+                if removed:
+                    await session.execute(
+                        delete(modes).where(
+                            modes.c.farm_id == self.farm_id,
+                            modes.c.public_id.in_(removed),
+                        )
+                    )
+                positions = {row["public_id"]: row["position"] for row in rows}
+                next_position = max(positions.values(), default=-1) + 1
+                for public_id, mode in state.modes.items():
+                    if before.get(public_id) == mode:
+                        continue
+                    if public_id in before:
+                        await session.execute(
+                            update(modes)
+                            .where(
+                                modes.c.farm_id == self.farm_id,
+                                modes.c.public_id == public_id,
+                            )
+                            .values(
+                                **mode_values(self.farm_id, mode, positions[public_id])
+                            )
+                        )
+                    else:
+                        await session.execute(
+                            insert(modes).values(
+                                **mode_values(self.farm_id, mode, next_position)
+                            )
+                        )
+                        next_position += 1
+                await save_incubators(
+                    session, self.farm_id, state, before_incubators, incubator_rows
+                )
+                if state.preferences != before_preferences:
+                    await session.execute(
+                        update(farm_preferences)
+                        .where(farm_preferences.c.farm_id == self.farm_id)
+                        .values(**preference_values(self.farm_id, state.preferences))
+                    )
+                if replay and not receipt:
+                    scope, key, fingerprint, kind = replay
+                    result = state.idempotency.get(f"{scope}:{key}")
+                    if result is not None:
+                        await session.execute(
+                            insert(receipt_table).values(
+                                farm_id=self.farm_id,
+                                scope=scope,
+                                key=key,
+                                fingerprint=fingerprint,
+                                response=result.model_dump(mode="json"),
+                            )
+                        )
+        except IntegrityError as exc:
+            raise AppError(
+                "conflict", "A database constraint rejected the change."
+            ) from exc
+        except (SQLAlchemyError, OSError, TimeoutError) as exc:
+            raise AppError("offline", "Database is unavailable.") from exc

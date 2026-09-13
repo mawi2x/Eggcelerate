@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        VITE_DATA_SOURCE: ${VITE_DATA_SOURCE:-mock}
+        VITE_API_URL: ${VITE_API_URL:-http://127.0.0.1:8000/api/v1}
     ports:
       - "80:80"
     restart: unless-stopped
@@ -12,3 +15,68 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      APP_ENV: development
+      AUTH_MODE: disabled
+      DEFAULT_FARM_ID: "00000000-0000-0000-0000-000000000001"
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-memory}
+      DATABASE_URL: ${DATABASE_URL:-}
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost,http://127.0.0.1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  db:
+    image: timescale/timescaledb:2.30.0-pg17@sha256:3113d12b78392c064aa7475caf7a52b447b29ddd4f9bfd23526733fcb03e3459
+    profiles: [database]
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: eggcelerate
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eggcelerate_local}
+      POSTGRES_DB: eggcelerate
+      TIMESCALEDB_TELEMETRY: "off"
+      TS_TUNE_MEMORY: 512MB
+      TS_TUNE_NUM_CPUS: 2
+    volumes:
+      - eggcelerate-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eggcelerate -d eggcelerate"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  db-test:
+    image: timescale/timescaledb:2.30.0-pg17@sha256:3113d12b78392c064aa7475caf7a52b447b29ddd4f9bfd23526733fcb03e3459
+    profiles: [database-test]
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_USER: eggcelerate
+      POSTGRES_PASSWORD: eggcelerate_test
+      POSTGRES_DB: eggcelerate_test
+      TIMESCALEDB_TELEMETRY: "off"
+      TS_TUNE_MEMORY: 512MB
+      TS_TUNE_NUM_CPUS: 2
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eggcelerate -d eggcelerate_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  eggcelerate-db:

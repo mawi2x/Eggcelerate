@@ -47,6 +47,8 @@ export function SectionCard({
   divider = false,
   titleId,
   section = false,
+  density = "default",
+  bare = false,
 }: {
   title: string;
   subtitle?: string;
@@ -59,20 +61,26 @@ export function SectionCard({
   titleId?: string;
   /** Wraps the card in a labelled `<section>` for meaningful page sections. */
   section?: boolean;
+  /** Compact trims body padding (dense cards like the timeline). */
+  density?: "default" | "compact";
+  /** Bare drops the card chrome (border, fill, shadow) for sheet/dialog hosts. */
+  bare?: boolean;
 }) {
   void titleSize;
   const card = (
     <Card
       style={{
-        backgroundColor: "var(--surface-card)",
-        border: "1px solid var(--border-subtle)",
+        backgroundColor: bare ? "transparent" : "var(--surface-card)",
+        border: bare
+          ? "1px solid transparent"
+          : "1px solid var(--border-subtle)",
         borderRadius: "var(--radius-card)",
-        boxShadow: "var(--shadow-subtle)",
+        boxShadow: bare ? "none" : "var(--shadow-subtle)",
       }}
     >
-      <CardContent className="p-4 sm:p-5">
+      <CardContent className={density === "compact" ? "p-4" : "p-4 sm:p-5"}>
         <div
-          className={`flex flex-wrap items-start justify-between gap-3 min-h-[var(--control-height-compact)] ${divider ? "mb-3 border-b pb-3" : "mb-4"}`}
+          className={`flex flex-wrap items-start justify-between gap-3 ${divider ? "mb-3 border-b pb-2 min-h-[var(--control-height-mobile)]" : "mb-4 h-[var(--control-height-mobile)]"}`}
           style={{
             ...(centered
               ? { justifyContent: "center", textAlign: "center" }
@@ -174,6 +182,7 @@ export function StatusCallout({
   tone,
   size = "default",
   icon,
+  dense = false,
   hideIcon = false,
   title,
   description,
@@ -185,6 +194,8 @@ export function StatusCallout({
   size?: "sm" | "default" | "lg";
   icon?: React.ReactNode;
   hideIcon?: boolean;
+  /** Compact 10/9 type for tight instances (keeps sm geometry). */
+  dense?: boolean;
   title: string;
   description?: React.ReactNode;
   action?: React.ReactNode;
@@ -257,13 +268,16 @@ export function StatusCallout({
           style={{
             color: toneMap.fg,
             fontFamily: "var(--font-display)",
-            fontSize:
-              size === "lg"
+            fontSize: dense
+              ? "var(--type-filter-label)"
+              : size === "lg"
                 ? "var(--type-heading-md)"
                 : size === "sm"
                   ? "var(--type-body-sm)"
                   : "var(--type-heading-sm)",
-            fontWeight: "var(--weight-bold)",
+            fontWeight: dense
+              ? "var(--weight-extrabold)"
+              : "var(--weight-bold)",
             lineHeight: "var(--leading-snug)",
           }}
         >
@@ -275,8 +289,9 @@ export function StatusCallout({
             style={{
               color: "var(--text-secondary)",
               fontFamily: "var(--font-body)",
-              fontSize:
-                size === "lg"
+              fontSize: dense
+                ? "var(--type-label)"
+                : size === "lg"
                   ? "var(--type-body-lg)"
                   : size === "sm"
                     ? "var(--type-caption)"

@@ -91,7 +91,6 @@ export interface Reading {
   time: string;
   temp: number;
   humidity: number;
-  water: number;
 }
 
 export interface AlertEntry {

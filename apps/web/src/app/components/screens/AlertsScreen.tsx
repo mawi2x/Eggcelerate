@@ -175,7 +175,7 @@ export function AlertsScreen({
             >
               <SelectTrigger
                 size="filter"
-                className="h-[34px] min-w-0 flex-[1_1_100%] rounded-full px-3.5 min-[23rem]:flex-1 md:h-[var(--control-height-default)] md:w-[165px] md:flex-none md:rounded-xl md:px-3"
+                className="h-[var(--control-height-mobile)] min-w-0 flex-[1_1_100%] rounded-full px-3.5 min-[23rem]:flex-1 md:h-[var(--control-height-default)] md:w-[165px] md:flex-none md:rounded-xl md:px-3"
                 style={{
                   borderColor: BORDER,
                   backgroundColor: "var(--surface-card)",
@@ -194,7 +194,7 @@ export function AlertsScreen({
             </Select>
             <Button
               size="toolbar"
-              className="h-[34px] min-w-0 flex-1 rounded-xl md:h-[var(--control-height-default)] md:flex-none md:rounded-xl md:px-4"
+              className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-xl md:h-[var(--control-height-default)] md:flex-none md:rounded-xl md:px-4"
               style={{
                 backgroundColor: RUST,
                 color: "var(--on-brand)",
@@ -218,7 +218,7 @@ export function AlertsScreen({
             <Button
               size="toolbar"
               variant="outline"
-              className="h-[34px] min-w-0 flex-1 rounded-xl md:h-[var(--control-height-default)] md:flex-none md:rounded-xl md:px-4"
+              className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-xl md:h-[var(--control-height-default)] md:flex-none md:rounded-xl md:px-4"
               style={{
                 borderColor: BORDER,
                 fontSize: "var(--type-filter-label)",

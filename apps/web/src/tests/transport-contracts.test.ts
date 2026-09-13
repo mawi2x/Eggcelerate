@@ -2,15 +2,21 @@ import { describe, expect, it } from "vitest";
 import { createModeFixtures } from "../app/data/fixtures/modes";
 import {
   CompleteCycleRequestSchema,
+  CreateCandlingEntryRequestSchema,
   CreateIncubatorRequestSchema,
   ErrorEnvelopeSchema,
   IncubatorDTOSchema,
+  ManualTurnRequestSchema,
   modeFromDTO,
   modeToTransportDTO,
   ReadingDTOSchema,
+  ReconnectIncubatorRequestSchema,
+  ResetStoppedCycleRequestSchema,
   resultEnvelopeSchema,
   StartCycleRequestSchema,
-  UpdateIncubatorRequestSchema,
+  UpdateCandlingEntryRequestSchema,
+  UpdateIncubatorConfigurationRequestSchema,
+  UpdateIncubatorProfileRequestSchema,
 } from "../app/data/transport/contracts";
 
 describe("dashboard transport contracts", () => {
@@ -22,15 +28,18 @@ describe("dashboard transport contracts", () => {
     }
   });
 
-  it("rejects derived incubator fields in update requests", () => {
+  it("rejects derived incubator fields in command requests", () => {
     expect(
-      UpdateIncubatorRequestSchema.safeParse({
+      UpdateIncubatorProfileRequestSchema.safeParse({
         name: "Renamed chamber",
         status: "optimal",
       }).success,
     ).toBe(false);
     expect(
-      UpdateIncubatorRequestSchema.parse({
+      UpdateIncubatorProfileRequestSchema.parse({ name: "Renamed chamber" }),
+    ).toEqual({ name: "Renamed chamber" });
+    expect(
+      UpdateIncubatorConfigurationRequestSchema.parse({
         mode_id: "broiler",
         auto_turn: true,
         turn_interval_min: 240,
@@ -40,6 +49,32 @@ describe("dashboard transport contracts", () => {
       auto_turn: true,
       turn_interval_min: 240,
     });
+    expect(
+      UpdateIncubatorConfigurationRequestSchema.safeParse({}).success,
+    ).toBe(false);
+    for (const schema of [
+      ResetStoppedCycleRequestSchema,
+      ReconnectIncubatorRequestSchema,
+      ManualTurnRequestSchema,
+    ]) {
+      expect(schema.parse({})).toEqual({});
+      expect(schema.safeParse({ id: "chamber-1" }).success).toBe(false);
+    }
+    expect(
+      CreateCandlingEntryRequestSchema.safeParse({
+        day: 7,
+        label: "First candling",
+      }).success,
+    ).toBe(false);
+    expect(
+      UpdateCandlingEntryRequestSchema.safeParse({
+        day: 7,
+        note: "Recheck",
+      }).success,
+    ).toBe(false);
+    expect(UpdateCandlingEntryRequestSchema.parse({ note: "Recheck" })).toEqual(
+      { note: "Recheck" },
+    );
   });
 
   it("keeps create and cycle commands minimal and server-owned", () => {

@@ -21,10 +21,18 @@ const validBroiler = {
 };
 
 describe("ModeDTO", () => {
-  it("rejects invalid incubationDays 5", () => {
-    expect(() =>
-      ModeDTOSchema.parse({ ...validBroiler, incubation_days: 5 }),
-    ).toThrow();
+  it("rejects incubationDays outside 7-45", () => {
+    for (const days of [5, 6, 46]) {
+      expect(() =>
+        ModeDTOSchema.parse({ ...validBroiler, incubation_days: days }),
+      ).toThrow();
+    }
+    for (const days of [7, 21, 45]) {
+      expect(
+        ModeDTOSchema.parse({ ...validBroiler, incubation_days: days })
+          .incubation_days,
+      ).toBe(days);
+    }
   });
   it("accepts valid Broiler 21", () => {
     expect(ModeDTOSchema.parse(validBroiler)).toBeDefined();
@@ -52,13 +60,13 @@ describe("ModeDTO", () => {
       ok: false,
       error: {
         code: "validation_error",
-        message: "incubationDays must be 17-36",
+        message: "incubationDays must be 7-45",
       },
     };
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error.code).toBe("validation_error");
-      expect(resultMessage(r)).toBe("incubationDays must be 17-36");
+      expect(resultMessage(r)).toBe("incubationDays must be 7-45");
     }
   });
 });

@@ -22,10 +22,7 @@ const sizeTokens: Record<
 > = {
   sm: {
     circle: "var(--status-icon-badge-size-sm)",
-    // Phosphor writes `size` to the SVG width/height attributes, where a CSS
-    // var() token is invalid. Keep the semantic CSS token for documentation,
-    // but pass the equivalent numeric viewBox size to the icon.
-    glyph: 15,
+    glyph: 12,
   },
   md: {
     circle: "var(--status-icon-badge-size-md)",

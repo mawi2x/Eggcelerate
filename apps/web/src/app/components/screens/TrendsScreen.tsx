@@ -25,7 +25,6 @@ import { toast } from "sonner";
 import type { ReadingWindow } from "../../data/repositories/repository";
 import type { HatchRecord, Incubator, Mode } from "../../domain/types";
 import { useIncubatorReadingMap } from "../../features/farm/use-incubator-readings";
-import { KpiCard } from "../KpiCard";
 import {
   dedupeTickLabels,
   formatXTick,
@@ -37,6 +36,7 @@ import {
   selectHatchKpis,
   selectHatchWithPct,
 } from "../../features/trends/selectors";
+import { KpiCard } from "../KpiCard";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Checkbox } from "../ui/checkbox";
@@ -632,7 +632,7 @@ export function TrendsScreen({
                 <Select size="filter" value={unitId} onValueChange={setUnitId}>
                   <SelectTrigger
                     size="filter"
-                    className="min-w-0 flex-1 rounded-xl md:w-[240px] md:shrink-0"
+                    className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-xl md:w-[240px] md:shrink-0"
                     style={{
                       ...toolbarInputStyle,
                       ...CONTROL_FONT,
@@ -753,7 +753,7 @@ export function TrendsScreen({
                   <button
                     type="button"
                     onClick={() => setReadingsOpen(true)}
-                    className="flex min-h-[var(--control-height-default)] shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:min-h-[var(--control-height-compact)]"
+                    className="flex h-[var(--control-height-mobile)] shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-[var(--control-height-compact)]"
                     style={{
                       color: "var(--brand-primary)",
                       fontFamily: "var(--font-body)",
@@ -794,7 +794,7 @@ export function TrendsScreen({
                         style={{
                           color: TEXT,
                           fontFamily: "var(--font-display)",
-                          fontSize: "var(--type-heading-md)",
+                          fontSize: "var(--type-heading-sm)",
                           fontWeight: "var(--weight-bold)",
                           lineHeight: "var(--leading-snug)",
                         }}
@@ -802,7 +802,6 @@ export function TrendsScreen({
                         {metricInfo[metric].label} Trend
                       </h2>
                       <p
-                        className="mt-0.5"
                         style={{
                           color: MUTED,
                           fontFamily: "var(--font-body)",
@@ -867,7 +866,7 @@ export function TrendsScreen({
                         onMouseLeave={() => setHighlightedUnitId(null)}
                         onFocus={() => setHighlightedUnitId(u.id)}
                         onBlur={() => setHighlightedUnitId(null)}
-                        className="flex min-h-[var(--control-height-default)] shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded-md px-0.5 transition-[background-color,opacity] duration-150 hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none md:min-h-4"
+                        className="flex h-[var(--control-height-mobile)] shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded-md px-0.5 transition-[background-color,opacity] duration-150 hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none md:h-auto md:min-h-4"
                         style={{
                           fontFamily: "var(--font-body)",
                           fontSize: "var(--type-label)",
@@ -1103,8 +1102,7 @@ export function TrendsScreen({
               Icon={Layers}
               hideIconOnMobile
               label="Completed Cycles"
-              value={`${kpis.cycles} Cycles`}
-              minHeight="standard"
+              value={`${kpis.cycles}`}
             />
             <KpiCard
               Icon={Percent}
@@ -1112,14 +1110,12 @@ export function TrendsScreen({
               label="Average Hatchability"
               value={kpis.avgRate === null ? "N/A" : `${kpis.avgRate}%`}
               accent={OK}
-              minHeight="standard"
             />
             <KpiCard
               Icon={TrendingUp}
               hideIconOnMobile
               label="Total Chicks Hatched"
-              value={`${kpis.hatched} Hatched`}
-              minHeight="standard"
+              value={`${kpis.hatched}`}
             />
           </div>
 
@@ -1141,7 +1137,7 @@ export function TrendsScreen({
                 maxLength={50}
                 placeholder="Filter hatch history..."
                 aria-label="Filter hatch history"
-                className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
+                className="h-[var(--control-height-mobile)] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
                 style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
               />
             </div>

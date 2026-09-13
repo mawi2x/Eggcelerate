@@ -124,7 +124,7 @@ export function OnboardingStep2({
                 }}
               >
                 <Icon size={18} className="shrink-0" />
-                  <span
+                <span
                   className="min-w-0 break-words whitespace-normal"
                   style={{
                     fontFamily: "var(--font-body)",
@@ -182,7 +182,10 @@ export function OnboardingStep2({
         {error && (
           <p
             className="mt-2"
-            style={{ fontSize: "var(--type-caption)", color: "var(--status-danger-fg)" }}
+            style={{
+              fontSize: "var(--type-caption)",
+              color: "var(--status-danger-fg)",
+            }}
             role="alert"
           >
             {error}

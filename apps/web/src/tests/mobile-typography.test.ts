@@ -45,10 +45,12 @@ describe("mobile typography tokens", () => {
     expect(c).toContain("--control-size-icon: 2.25rem");
     expect(c).toContain("--control-segment-height: 2.25rem");
     expect(c).toContain("--control-hit-area-icon: 2.75rem");
-    expect(c).toContain("--type-filter-value: var(--type-control-value)");
+    expect(c).toMatch(
+      /--type-filter-value:\s*var\(\s*--type-control-value\s*\)/,
+    );
     expect(c).toContain("--type-filter-value: 0.75rem");
     expect(c).toContain("--type-filter-value: 0.625rem");
-    expect(c).toContain("--type-filter-label: var(--type-label)");
+    expect(c).toMatch(/--type-filter-label:\s*var\(\s*--type-label\s*\)/);
     expect(c).toContain("--type-filter-label: 0.625rem");
     expect(c).toMatch(
       /@media\s*\(\s*min-width:\s*48rem\s*\)\s*and\s*\(\s*max-width:\s*63\.9375rem\s*\)[\s\S]*--type-filter-value:\s*0\.75rem/,
@@ -157,7 +159,8 @@ describe("mobile touch targets", () => {
     const incubators = src("src/app/components/screens/IncubatorsScreen.tsx");
     const candling = src("src/app/components/screens/CandlingLogsScreen.tsx");
     const trends = src("src/app/components/screens/TrendsScreen.tsx");
-    const compactSortButton = "h-[34px] w-[34px]";
+    const compactSortButton =
+      "h-[var(--control-height-mobile)] w-[var(--control-height-mobile)]";
     expect(incubators).toContain(compactSortButton);
     expect(candling).toContain(compactSortButton);
     expect(incubators).toContain(

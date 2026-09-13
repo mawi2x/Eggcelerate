@@ -1,6 +1,16 @@
 import { z } from "zod";
-import type { Mode } from "../../domain/types";
+import type {
+  AbortedCycleRecord,
+  AlertEntry,
+  CandlingLogEntry,
+  DevelopmentCheck,
+  HatchRecord,
+  Incubator,
+  Mode,
+  Reading,
+} from "../../domain/types";
 import { ModeDTOSchema, modeToDTO } from "../dto";
+import type { SettingsPreferences } from "../settings";
 
 const IdentifierSchema = z.string().trim().min(1);
 const UtcTimestampSchema = z.string().datetime({ offset: true });
@@ -178,16 +188,48 @@ export const CreateIncubatorRequestSchema = z
   })
   .strict();
 
-export const UpdateIncubatorRequestSchema = z
+export const UpdateIncubatorProfileRequestSchema = z
+  .object({ name: z.string().trim().min(1).max(30) })
+  .strict();
+
+export const UpdateIncubatorConfigurationRequestSchema = z
   .object({
-    name: z.string().trim().min(1).max(30).optional(),
     mode_id: IdentifierSchema.optional(),
     auto_turn: z.boolean().optional(),
     turn_interval_min: z.number().int().min(1).optional(),
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, {
-    message: "At least one mutable incubator field is required.",
+    message: "At least one configuration field is required.",
+  });
+
+export const ResetStoppedCycleRequestSchema = z.object({}).strict();
+
+export const ReconnectIncubatorRequestSchema = z.object({}).strict();
+
+export const ManualTurnRequestSchema = z.object({}).strict();
+
+export const CreateCandlingEntryRequestSchema = CandlingEntryDTOSchema.omit({
+  id: true,
+});
+
+export const UpdateCandlingEntryRequestSchema = z
+  .object({
+    label: z.string().trim().min(1).optional(),
+    observed_on: DateOnlySchema.optional(),
+    fertile_eggs: z.number().int().nonnegative().optional(),
+    clear_eggs: z.number().int().nonnegative().optional(),
+    uncertain_eggs: z.number().int().nonnegative().optional(),
+    developing_eggs: z.number().int().nonnegative().optional(),
+    stopped_developing_eggs: z.number().int().nonnegative().optional(),
+    note: z.string().optional(),
+    photo_keys: z.array(z.string().min(1)).optional(),
+    checks: z.array(z.enum(["veining", "air_cell", "movement"])).optional(),
+    checkpoint_type: z.enum(["first", "later"]).optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one candling field is required.",
   });
 
 export const StartCycleRequestSchema = z
@@ -220,6 +262,160 @@ export function modeFromDTO(input: unknown): Mode {
     incubationDays: dto.incubation_days,
     defaultTurnInterval: dto.default_turn_interval_min / 60,
   };
+}
+export function readingTimeLabel(observedAt: string): string {
+  const date = new Date(observedAt);
+  if (Number.isNaN(date.getTime())) return observedAt;
+  const ageMs = Date.now() - date.getTime();
+  if (ageMs >= 0 && ageMs < 24 * 3_600_000) {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+export function readingFromDTO(input: unknown): Reading {
+  const dto = ReadingDTOSchema.parse(input);
+  return {
+    ts: Date.parse(dto.observed_at),
+    time: readingTimeLabel(dto.observed_at),
+    temp: dto.temperature_c,
+    humidity: dto.humidity_pct,
+  };
+}
+
+function developmentCheckFromDTO(
+  value: "veining" | "air_cell" | "movement",
+): DevelopmentCheck {
+  return value === "air_cell" ? "airCell" : value;
+}
+
+export function candlingEntryFromDTO(input: unknown): CandlingLogEntry {
+  const dto = CandlingEntryDTOSchema.parse(input);
+  return {
+    id: dto.id,
+    day: dto.day,
+    label: dto.label,
+    date: dto.observed_on,
+    fertile: dto.fertile_eggs,
+    clear: dto.clear_eggs,
+    uncertain: dto.uncertain_eggs,
+    developing: dto.developing_eggs,
+    stoppedDeveloping: dto.stopped_developing_eggs,
+    note: dto.note,
+    photos: [...dto.photo_keys],
+    checks: dto.checks.map(developmentCheckFromDTO),
+    checkpointType: dto.checkpoint_type,
+  };
+}
+
+export function incubatorFromDTO(input: unknown): Incubator {
+  const dto = IncubatorDTOSchema.parse(input);
+  return {
+    id: dto.id,
+    name: dto.name,
+    deviceId: dto.device_id,
+    modeId: dto.mode_id,
+    dayOfIncubation: dto.day_of_incubation,
+    totalEggsLoaded: dto.total_eggs_loaded ?? undefined,
+    fertileEggs: dto.fertile_eggs ?? undefined,
+    temp: dto.temperature_c,
+    humidity: dto.humidity_pct,
+    waterOk: dto.water_ok,
+    tempTrend: dto.temperature_trend_c,
+    humidityTrend: dto.humidity_trend_pct,
+    powerSource: dto.power_source,
+    batteryPct: dto.battery_pct,
+    status: dto.status,
+    lastTurned: dto.last_turned_at,
+    nextTurn: dto.next_turn_at,
+    turnInterval: dto.turn_interval_min / 60,
+    autoTurn: dto.auto_turn,
+    paired: dto.paired,
+    cyclePhase: dto.cycle_phase,
+    conditionSeverity: dto.condition_severity,
+    connectionState: dto.connection_state,
+    candled: Object.fromEntries(dto.candled_days.map((day) => [day, true])),
+    candlingLog: dto.candling_entries.map((entry) =>
+      candlingEntryFromDTO(entry),
+    ),
+  };
+}
+
+export function alertFromDTO(input: unknown): AlertEntry {
+  const dto = AlertDTOSchema.parse(input);
+  return {
+    id: dto.id,
+    severity: dto.severity,
+    title: dto.title,
+    unit: dto.unit_name ?? dto.incubator_id ?? "",
+    message: dto.message,
+    timestamp: dto.occurred_at,
+    acknowledged: dto.acknowledged_at !== null,
+  };
+}
+
+export function hatchHistoryFromDTO(input: unknown): HatchRecord {
+  const dto = HatchHistoryDTOSchema.parse(input);
+  return {
+    id: dto.id,
+    chamber: dto.chamber_name,
+    modeName: dto.mode_name,
+    startDate: dto.started_on,
+    endDate: dto.ended_on,
+    totalEggs: dto.total_eggs,
+    fertileEggs: dto.fertile_eggs,
+    hatchedEggs: dto.hatched_eggs,
+  };
+}
+
+export function abortedCycleFromDTO(input: unknown): AbortedCycleRecord {
+  const dto = AbortedCycleDTOSchema.parse(input);
+  return {
+    id: dto.id,
+    incubator: dto.chamber_name,
+    modeName: dto.mode_name,
+    stoppedOn: dto.stopped_at,
+    dayStopped: dto.day_stopped,
+    totalEggs: dto.total_eggs,
+    fertileEggs: dto.fertile_eggs,
+  };
+}
+
+export function preferencesFromDTO(input: unknown): SettingsPreferences {
+  const dto = PreferencesDTOSchema.parse(input);
+  return {
+    account: {
+      farmName: dto.farm_name,
+      accountHolder: dto.account_holder,
+      displayName: dto.display_name,
+    },
+    notifications: {
+      enabled: { ...dto.notifications.enabled },
+      sms: dto.notifications.sms,
+      email: dto.notifications.email,
+      phone: dto.notifications.phone,
+      emailAddress: dto.notifications.email_address,
+    },
+    temperatureUnit: dto.temperature_unit,
+    timeZone: dto.time_zone,
+  };
+}
+
+export function preferencesToDTO(input: SettingsPreferences): PreferencesDTO {
+  return PreferencesDTOSchema.parse({
+    farm_name: input.account.farmName,
+    account_holder: input.account.accountHolder,
+    display_name: input.account.displayName,
+    notifications: {
+      enabled: { ...input.notifications.enabled },
+      sms: input.notifications.sms,
+      email: input.notifications.email,
+      phone: input.notifications.phone,
+      email_address: input.notifications.emailAddress,
+    },
+    temperature_unit: input.temperatureUnit,
+    time_zone: input.timeZone,
+  });
 }
 
 export type IncubatorDTO = z.infer<typeof IncubatorDTOSchema>;

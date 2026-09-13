@@ -44,7 +44,12 @@ export function FarmDataStatus({
         role="status"
         aria-live="polite"
       >
-        <WifiSlash size={16} weight="fill" className="mt-0.5 shrink-0" aria-hidden="true" />
+        <WifiSlash
+          size={16}
+          weight="fill"
+          className="mt-0.5 shrink-0"
+          aria-hidden="true"
+        />
         <p className="text-sm">
           <strong>Offline.</strong> Showing the last loaded farm data. Changes
           may not be confirmed until you reconnect.

@@ -25,7 +25,10 @@ export function formatYTick(value: number, span: number): string {
  */
 export function formatXTick(timestamp: number, range: ReadingWindow): string {
   const date = new Date(timestamp);
-  if (range === "24h") return date.toLocaleTimeString([], { hour: "numeric" });
+  if (range === "24h")
+    return date
+      .toLocaleTimeString([], { hour: "numeric", hour12: true })
+      .toUpperCase();
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 

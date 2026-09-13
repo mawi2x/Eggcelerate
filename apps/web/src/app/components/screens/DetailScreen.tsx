@@ -43,9 +43,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { FilterBar } from "../ui/filter-bar";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { FilterBar } from "../ui/filter-bar";
 import {
   Select,
   SelectContent,
@@ -62,7 +62,7 @@ function SubTabNav({
   onChange: (t: DetailTab) => void;
 }) {
   return (
-    <div className="flex max-w-full justify-start overflow-x-auto pb-1">
+    <div className="flex max-w-full justify-start overflow-x-auto overflow-y-hidden pb-1">
       <FilterBar
         ariaLabel="Incubator detail sections"
         variant="segmented"
@@ -744,7 +744,7 @@ export function DetailScreen({
             <p
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "var(--type-heading-sm)",
+                fontSize: "var(--type-body-sm)",
                 fontWeight: "var(--weight-extrabold)",
                 lineHeight: "var(--leading-snug)",
                 color: "var(--status-warning-fg)",
@@ -756,7 +756,7 @@ export function DetailScreen({
             </p>
             <p
               style={{
-                fontSize: "var(--type-body-sm)",
+                fontSize: "var(--type-filter-label)",
                 color: "var(--status-warning-fg)",
                 marginTop: 2,
               }}

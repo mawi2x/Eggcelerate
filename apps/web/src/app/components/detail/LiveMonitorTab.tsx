@@ -51,7 +51,7 @@ function SystemStatusTile({
     >
       <span
         aria-hidden="true"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm [&>svg]:size-4 md:h-9 md:w-9 md:text-base md:[&>svg]:size-[18px]"
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-lg text-sm [&>svg]:size-3.5"
         style={{ backgroundColor: tone.bg, color: tone.fg }}
       >
         {icon}
@@ -244,12 +244,13 @@ function EnvironmentalSummary({
   return (
     <SectionCard
       title="History & trends"
-      subtitle="Past readings are available when you need more context"
+      subtitle="Track trends and catch issues early"
+      divider
       action={
         <button
           type="button"
           onClick={onViewTrends}
-          className="inline-flex min-h-[var(--control-height-default)] cursor-pointer items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[var(--surface-track)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:min-h-9"
+          className="inline-flex h-[var(--control-height-mobile)] cursor-pointer items-center gap-1 rounded-lg px-2.5 transition-colors hover:bg-[var(--surface-track)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:min-h-9"
           style={{
             color: "var(--brand-primary)",
             fontFamily: "var(--font-body)",
@@ -481,6 +482,8 @@ export function LiveMonitorTab({
         title="Incubation Timeline"
         titleId="incubation-timeline-title"
         section
+        divider
+        density="compact"
       >
         <Timeline
           currentDay={currentDay}
@@ -521,6 +524,7 @@ export function LiveMonitorTab({
         subtitle="Live systems, power, and connectivity"
         titleId="chamber-status-title"
         section
+        divider
       >
         <div className="grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-3">
           <SystemStatusTile

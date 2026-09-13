@@ -26,12 +26,12 @@ import {
   matchesCandlingFilter,
   selectCandlingFilterCounts,
 } from "../../features/candling/selectors";
-import { ExclamationIcon } from "../icons";
 import {
   ChamberCardFooter,
   ChamberCardHeader,
   ChamberCardShell,
 } from "../ChamberCardShell";
+import { ExclamationIcon } from "../icons";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { Button } from "../ui/button";
 import { FilterBar } from "../ui/filter-bar";
@@ -535,7 +535,7 @@ export function CandlingLogsScreen({
               maxLength={50}
               placeholder="Search incubators..."
               aria-label="Search candling logs"
-              className="h-[34px] rounded-xl pl-9 md:h-[var(--control-height-default)]"
+              className="h-[var(--control-height-mobile)] rounded-xl pl-9 md:h-[var(--control-height-default)]"
               style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
             />
           </div>
@@ -570,7 +570,7 @@ export function CandlingLogsScreen({
             >
               <SelectTrigger
                 size="filter"
-                className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
                 style={{
                   backgroundColor: SURFACE,
                   borderColor: CARD_BORDER,
@@ -598,7 +598,7 @@ export function CandlingLogsScreen({
             >
               <SelectTrigger
                 size="filter"
-                className="h-[34px] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
                 style={{
                   backgroundColor: SURFACE,
                   borderColor: CARD_BORDER,
@@ -619,7 +619,7 @@ export function CandlingLogsScreen({
             <button
               type="button"
               onClick={() => setSortAsc(!sortAsc)}
-              className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-default)] md:w-[var(--control-height-default)] md:rounded-xl"
+              className="flex h-[var(--control-height-mobile)] w-[var(--control-height-mobile)] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 md:h-[var(--control-height-default)] md:w-[var(--control-height-default)] md:rounded-xl"
               style={{
                 backgroundColor: SURFACE,
                 borderColor: CARD_BORDER,
@@ -708,6 +708,7 @@ export function CandlingLogsScreen({
 
             {/* Floating Vertical Dot Track on Mobile (shows candling chamber count and scroll position) */}
             {rows.length > 1 && (
+              // biome-ignore lint/a11y/useSemanticElements: navigation buttons form an ARIA group, not a set of form inputs
               <div
                 className="scrollbar-none pointer-events-auto fixed right-1.5 top-1/2 z-20 m-0 flex h-fit max-h-[calc(100dvh-var(--mobile-bottom-nav-clearance)-1rem)] w-3 min-w-0 -translate-y-1/2 flex-col items-center gap-1 overflow-y-auto bg-transparent max-[20rem]:hidden md:hidden"
                 role="group"

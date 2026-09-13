@@ -14,6 +14,7 @@ describe("detail screen layout", () => {
     );
 
     expect(subTabNav).toContain("justify-start");
+    expect(subTabNav).toContain("overflow-x-auto overflow-y-hidden");
     expect(subTabNav).not.toContain("lg:justify-end");
   });
   it("uses phone-sized detail padding and touch-sized calendar navigation", () => {

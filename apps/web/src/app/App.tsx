@@ -234,7 +234,7 @@ export default function App() {
         };
 
   const detailHeader = (
-    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 md:flex md:flex-wrap">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 md:flex md:flex-wrap">
       <h1
         className="min-w-0 max-w-full break-words md:basis-auto"
         style={{

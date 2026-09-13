@@ -519,7 +519,7 @@ export function OverviewScreen({
         }}
       >
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
+          <div className="flex h-[var(--control-height-mobile)] min-w-0 flex-col justify-center md:block md:h-auto">
             <h2
               id="active-incubators-title"
               className="text-(length:--type-heading-sm) lg:text-(length:--type-heading-md)"
@@ -533,13 +533,13 @@ export function OverviewScreen({
               Active Incubators
             </h2>
             <p
+              className="mt-0 md:mt-0.5"
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-regular)",
                 lineHeight: "var(--leading-normal)",
                 color: "var(--text-farm)",
-                marginTop: 2,
               }}
             >
               Chambers currently running.
@@ -618,30 +618,32 @@ export function OverviewScreen({
         }}
       >
         <div style={{ marginBottom: 16 }}>
-          <h2
-            id="conditions-to-check-title"
-            className="text-(length:--type-heading-sm) lg:text-(length:--type-heading-md)"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: "var(--weight-semibold)",
-              lineHeight: "var(--leading-snug)",
-              color: HEADING,
-            }}
-          >
-            Conditions to Check
-          </h2>
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "var(--type-caption)",
-              fontWeight: "var(--weight-regular)",
-              lineHeight: "var(--leading-normal)",
-              color: "var(--text-farm)",
-              marginTop: 2,
-            }}
-          >
-            Incubators with temperature or humidity concerns.
-          </p>
+          <div className="flex h-[var(--control-height-mobile)] flex-col justify-center md:block md:h-auto">
+            <h2
+              id="conditions-to-check-title"
+              className="text-(length:--type-heading-sm) lg:text-(length:--type-heading-md)"
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: "var(--weight-semibold)",
+                lineHeight: "var(--leading-snug)",
+                color: HEADING,
+              }}
+            >
+              Conditions to Check
+            </h2>
+            <p
+              className="mt-0 md:mt-0.5"
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-regular)",
+                lineHeight: "var(--leading-normal)",
+                color: "var(--text-farm)",
+              }}
+            >
+              Incubators with temperature or humidity concerns.
+            </p>
+          </div>
         </div>
         <div
           className="mb-4 h-px w-full"

@@ -1,12 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type {
+  CandlingEntryInput,
   CompleteCycleInput,
+  EggcelerateRepository,
+  MutationOptions,
   StopCycleInput,
 } from "../../data/repositories/repository";
 import { initialSettings, type SettingsPreferences } from "../../data/settings";
+import type { Result } from "../../domain/result";
 import type {
   AlertEntry,
+  CandlingLogEntry,
   HatchRecord,
   Incubator,
   Mode,
@@ -91,17 +96,170 @@ export function useFarmData() {
   };
 }
 
+const CONFIG_PATCH_KEYS = ["modeId", "autoTurn", "turnInterval"];
+const TURN_PATCH_KEYS = ["lastTurned", "nextTurn"];
+// Exact key set produced by resetChamberToReady(). repository.test.ts pins
+// this against the helper so the reset route cannot silently drift.
+const RESET_PATCH_KEYS = [
+  "autoTurn",
+  "candled",
+  "candlingLog",
+  "conditionSeverity",
+  "connectionState",
+  "cyclePhase",
+  "dayOfIncubation",
+  "fertileEggs",
+  "lastTurned",
+  "nextTurn",
+  "status",
+  "totalEggsLoaded",
+];
+
+function sameKeySet(keys: string[], wanted: string[]): boolean {
+  if (keys.length !== wanted.length) return false;
+  return keys.every((key) => wanted.includes(key));
+}
+
+function validationFailure(message: string): Result<Incubator> {
+  return { ok: false, error: { code: "validation_error", message } };
+}
+
+function candlingEntryInput(entry: CandlingLogEntry): CandlingEntryInput {
+  return {
+    day: entry.day,
+    label: entry.label,
+    date: entry.date,
+    fertile: entry.fertile,
+    clear: entry.clear,
+    uncertain: entry.uncertain,
+    note: entry.note,
+    photos: [...entry.photos],
+    checks: [...entry.checks],
+    checkpointType: entry.checkpointType,
+    developing: entry.developing,
+    stoppedDeveloping: entry.stoppedDeveloping,
+  };
+}
+
+async function routeCandlingPatch(
+  repository: EggcelerateRepository,
+  id: string,
+  patch: Partial<Incubator>,
+): Promise<Result<Incubator>> {
+  const current = await repository.getIncubator(id);
+  if (!current.ok) return current;
+  const nextLog = patch.candlingLog;
+  if (!Array.isArray(nextLog)) {
+    return validationFailure("Candling patch must include the entry list.");
+  }
+  const previousByDay = new Map(
+    current.data.candlingLog.map((entry) => [entry.day, entry] as const),
+  );
+  const nextByDay = new Map(
+    nextLog.map((entry) => [entry.day, entry] as const),
+  );
+  let latest: Result<Incubator> = current;
+  for (const entry of nextLog) {
+    const previous = previousByDay.get(entry.day);
+    if (!previous) {
+      latest = await repository.createCandlingEntry(
+        id,
+        candlingEntryInput(entry),
+      );
+    } else if (
+      JSON.stringify(candlingEntryInput(previous)) !==
+      JSON.stringify(candlingEntryInput(entry))
+    ) {
+      const { day: _ignored, ...rest } = candlingEntryInput(entry);
+      latest = await repository.updateCandlingEntry(id, entry.day, rest);
+    }
+    if (!latest.ok) return latest;
+  }
+  for (const day of previousByDay.keys()) {
+    if (!nextByDay.has(day)) {
+      latest = await repository.deleteCandlingEntry(id, day);
+      if (!latest.ok) return latest;
+    }
+  }
+  return latest;
+}
+
+// Screen-facing updateIncubator() keeps its signature so screens and the App
+// funnel stay untouched. Every patch shape routes to exactly one explicit
+// repository command; derived-only or unknown patches fail loudly instead of
+// writing arbitrary state. ApiRepository will expose the commands directly
+// and this router retires with the mock-era funnel.
+async function routeIncubatorPatch(
+  repository: EggcelerateRepository,
+  id: string,
+  patch: Partial<Incubator>,
+  options?: MutationOptions,
+): Promise<Result<Incubator>> {
+  const keys = Object.keys(patch);
+  if (keys.length === 1 && keys[0] === "name") {
+    return repository.updateIncubatorProfile(
+      id,
+      { name: patch.name ?? "" },
+      options,
+    );
+  }
+  if (sameKeySet(keys, RESET_PATCH_KEYS)) {
+    return repository.resetStoppedCycle(id);
+  }
+  if ("dayOfIncubation" in patch || "totalEggsLoaded" in patch) {
+    if (
+      typeof patch.modeId !== "string" ||
+      typeof patch.totalEggsLoaded !== "number"
+    ) {
+      return validationFailure("Cycle start needs a mode and an egg count.");
+    }
+    return repository.startCycle(id, {
+      modeId: patch.modeId,
+      totalEggs: patch.totalEggsLoaded,
+    });
+  }
+  if (keys.length > 0 && keys.every((key) => CONFIG_PATCH_KEYS.includes(key))) {
+    return repository.updateIncubatorConfiguration(
+      id,
+      {
+        modeId: patch.modeId,
+        autoTurn: patch.autoTurn,
+        turnIntervalHours: patch.turnInterval,
+      },
+      options,
+    );
+  }
+  if (sameKeySet(keys, TURN_PATCH_KEYS)) {
+    return repository.requestManualTurn(id);
+  }
+  if (patch.paired === true) {
+    return repository.reconnectIncubator(id, options);
+  }
+  if ("candled" in patch || "candlingLog" in patch) {
+    return routeCandlingPatch(repository, id, patch);
+  }
+  return validationFailure("Unsupported incubator patch for the command port.");
+}
+
 export function useFarmActions() {
   const repository = useRepository();
   const queryClient = useQueryClient();
 
   const addIncubatorMutation = useMutation({
-    mutationFn: async (unit: Incubator) =>
-      requireResultData(await repository.addIncubator(unit)),
+    mutationFn: async ({
+      unit,
+      options,
+    }: {
+      unit: Incubator;
+      options: MutationOptions;
+    }) => requireResultData(await repository.addIncubator(unit, options)),
     onSuccess: (created) => {
       queryClient.setQueryData<Incubator[]>(
         farmQueryKeys.incubators,
-        (current = []) => [...current, created],
+        (current = []) => [
+          ...current.filter((unit) => unit.id !== created.id),
+          created,
+        ],
       );
     },
   });
@@ -109,10 +267,15 @@ export function useFarmActions() {
     mutationFn: async ({
       id,
       patch,
+      options,
     }: {
       id: string;
       patch: Partial<Incubator>;
-    }) => requireResultData(await repository.updateIncubator(id, patch)),
+      options: MutationOptions;
+    }) =>
+      requireResultData(
+        await routeIncubatorPatch(repository, id, patch, options),
+      ),
     onMutate: async ({ id, patch }) => {
       await queryClient.cancelQueries({ queryKey: farmQueryKeys.incubators });
       const previous = queryClient
@@ -213,25 +376,37 @@ export function useFarmActions() {
       queryClient.setQueryData(farmQueryKeys.alerts, alerts),
   });
   const saveSettingsMutation = useMutation({
-    mutationFn: async (settings: SettingsPreferences) =>
-      requireResultData(await repository.saveSettings(settings)),
+    mutationFn: async ({
+      settings,
+      options,
+    }: {
+      settings: SettingsPreferences;
+      options: MutationOptions;
+    }) => requireResultData(await repository.saveSettings(settings, options)),
     onSuccess: (settings) =>
       queryClient.setQueryData(farmQueryKeys.settings, settings),
   });
 
-  async function addIncubator(unit: Incubator): Promise<boolean> {
-    return runMutation(() => addIncubatorMutation.mutateAsync(unit), {
-      retry: () => void addIncubator(unit),
-    });
+  async function addIncubator(
+    unit: Incubator,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(
+      () => addIncubatorMutation.mutateAsync({ unit, options }),
+      {
+        retry: () => void addIncubator(unit, options),
+      },
+    );
   }
   async function updateIncubator(
     id: string,
     patch: Partial<Incubator>,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
   ): Promise<boolean> {
     return runMutation(
-      () => updateIncubatorMutation.mutateAsync({ id, patch }),
+      () => updateIncubatorMutation.mutateAsync({ id, patch, options }),
       {
-        retry: () => void updateIncubator(id, patch),
+        retry: () => void updateIncubator(id, patch, options),
         rolledBack: true,
       },
     );
@@ -274,10 +449,16 @@ export function useFarmActions() {
       retry: () => void clearReadAlerts(),
     });
   }
-  async function saveSettings(settings: SettingsPreferences): Promise<boolean> {
-    return runMutation(() => saveSettingsMutation.mutateAsync(settings), {
-      retry: () => void saveSettings(settings),
-    });
+  async function saveSettings(
+    settings: SettingsPreferences,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(
+      () => saveSettingsMutation.mutateAsync({ settings, options }),
+      {
+        retry: () => void saveSettings(settings, options),
+      },
+    );
   }
 
   return {

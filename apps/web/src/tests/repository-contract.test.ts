@@ -1,0 +1,173 @@
+import { describe, expect, it } from "vitest";
+import { ApiRepository } from "../app/data/repositories/api-repository";
+import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
+import type { EggcelerateRepository } from "../app/data/repositories/repository";
+
+// Runs every case against the in-memory adapter, and additionally against a
+// live API when EGG_API_URL is set (fresh server per run — cases mutate):
+//   docker compose up -d api && EGG_API_URL=http://127.0.0.1:8000 pnpm vitest run repository-contract
+const liveUrl = process.env.EGG_API_URL;
+const targets: [string, () => EggcelerateRepository][] = [
+  ["memory", () => new InMemoryEggcelerateRepository({})],
+];
+if (liveUrl) {
+  targets.push(["http", () => new ApiRepository({ baseUrl: liveUrl })]);
+}
+
+describe.each(targets)("repository contract (%s)", (_name, factory) => {
+  it("lists the seeded farm and reads one chamber", async () => {
+    const repository = factory();
+    const listed = await repository.listIncubators();
+    expect(listed.ok && listed.data).toHaveLength(12);
+    const one = await repository.getIncubator("chamber-1");
+    expect(one.ok && one.data.name).toBe("Chamber One");
+    const missing = await repository.getIncubator("chamber-99");
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) expect(missing.error.code).toBe("not_found");
+  });
+
+  it("rejects a second chamber assignment for the same device", async () => {
+    const repository = factory();
+    const original = await repository.getIncubator("chamber-1");
+    if (!original.ok) throw new Error("Seeded chamber missing");
+    const duplicate = await repository.addIncubator({
+      ...original.data,
+      id: "duplicate-device-assignment",
+      name: "Duplicate device",
+      deviceId: original.data.deviceId.toLowerCase(),
+    });
+    expect(duplicate.ok).toBe(false);
+    if (!duplicate.ok) expect(duplicate.error.code).toBe("conflict");
+  });
+
+  it("renames through the profile command", async () => {
+    const repository = factory();
+    const renamed = await repository.updateIncubatorProfile("chamber-5", {
+      name: "Renamed Five",
+    });
+    expect(renamed.ok && renamed.data.name).toBe("Renamed Five");
+    expect(renamed.ok && renamed.data.id).toBe("chamber-5");
+  });
+
+  it("reconfigures mode and interval with derived state", async () => {
+    const repository = factory();
+    const changed = await repository.updateIncubatorConfiguration("chamber-6", {
+      modeId: "duck",
+      turnIntervalHours: 6,
+    });
+    expect(changed.ok && changed.data.modeId).toBe("duck");
+    expect(changed.ok && changed.data.turnInterval).toBe(6);
+  });
+
+  it("advances turn cursors on manual turn", async () => {
+    const repository = factory();
+    const before = await repository.getIncubator("chamber-7");
+    if (!before.ok) throw new Error("chamber-7 missing");
+    const turned = await repository.requestManualTurn("chamber-7");
+    expect(turned.ok).toBe(true);
+    if (!turned.ok) return;
+    expect(turned.data.lastTurned).not.toBe(before.data.lastTurned);
+    expect(turned.data.nextTurn > turned.data.lastTurned).toBe(true);
+  });
+
+  it("reconnects a chamber to connected", async () => {
+    const repository = factory();
+    const reconnected = await repository.reconnectIncubator("chamber-2");
+    expect(reconnected.ok && reconnected.data.paired).toBe(true);
+    expect(reconnected.ok && reconnected.data.connectionState).toBe(
+      "connected",
+    );
+  });
+
+  it("creates and deletes a candling entry by day", async () => {
+    const repository = factory();
+    const created = await repository.createCandlingEntry("chamber-10", {
+      day: 50,
+      label: "Contract check",
+      date: "2026-09-03",
+      fertile: 10,
+      clear: 1,
+      uncertain: 0,
+      note: "",
+      photos: [],
+      checks: [],
+    });
+    expect(created.ok && created.data.candled[50]).toBe(true);
+    const deleted = await repository.deleteCandlingEntry("chamber-10", 50);
+    expect(
+      deleted.ok && deleted.data.candlingLog.some((entry) => entry.day === 50),
+    ).toBe(false);
+  });
+
+  it("starts and resets a cycle", async () => {
+    const repository = factory();
+    const started = await repository.startCycle("chamber-9", {
+      modeId: "quail",
+      totalEggs: 20,
+    });
+    expect(started.ok && started.data.dayOfIncubation).toBe(1);
+    expect(started.ok && started.data.cyclePhase).toBe("incubating");
+    const reset = await repository.resetStoppedCycle("chamber-9");
+    expect(reset.ok && reset.data.dayOfIncubation).toBe(0);
+    expect(reset.ok && reset.data.cyclePhase).toBe("ready");
+  });
+
+  it("stops a cycle as stopped_early with a record", async () => {
+    const repository = factory();
+    const stopped = await repository.stopCycle({
+      incubatorId: "chamber-11",
+      incubator: "Chamber Eleven",
+      modeName: "Swan",
+      dayStopped: 29,
+      totalEggs: 16,
+      fertileEggs: null,
+    });
+    expect(stopped.ok && stopped.data.incubator.cyclePhase).toBe(
+      "stopped_early",
+    );
+    expect(stopped.ok && stopped.data.record.dayStopped).toBe(29);
+  });
+
+  it("completes a cycle atomically with a record", async () => {
+    const repository = factory();
+    const completed = await repository.completeCycle({
+      incubatorId: "chamber-10",
+      chamber: "Chamber Ten",
+      modeName: "Duck",
+      cycleDays: 3,
+      totalEggs: 32,
+      fertileEggs: null,
+      hatchedEggs: 20,
+    });
+    expect(completed.ok && completed.data.record.hatchedEggs).toBe(20);
+    expect(completed.ok && completed.data.incubator.dayOfIncubation).toBe(0);
+  });
+
+  it("reads ordered bounded windows", async () => {
+    const repository = factory();
+    for (const [window, count] of [
+      ["24h", 13],
+      ["7d", 85],
+      ["full", 109],
+    ] as const) {
+      const readings = await repository.listReadings({
+        incubatorId: "chamber-1",
+        window,
+      });
+      expect(readings.ok && readings.data).toHaveLength(count);
+      if (!readings.ok) continue;
+      const stamps = readings.data.map((point) => point.ts);
+      expect([...stamps].sort((a, b) => a - b)).toEqual(stamps);
+    }
+  });
+
+  it("rejects invalid commands the same way", async () => {
+    const repository = factory();
+    const badStart = await repository.startCycle("chamber-1", {
+      modeId: "broiler",
+      totalEggs: 0,
+    });
+    expect(badStart.ok).toBe(false);
+    if (!badStart.ok) expect(badStart.error.code).toBe("validation_error");
+  });
+});

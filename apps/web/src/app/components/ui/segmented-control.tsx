@@ -7,8 +7,10 @@ export type SegmentedControlSize = "compact" | "default" | "toolbar";
 const itemSizeClasses: Record<SegmentedControlSize, string> = {
   compact:
     "h-[var(--control-height-default)] px-3 md:h-[var(--control-height-compact)]",
-  default: "h-[var(--control-segment-height)] px-4",
-  toolbar: "h-[var(--control-height-toolbar)] px-4",
+  default:
+    "h-[var(--control-height-mobile)] px-4 md:h-[var(--control-segment-height)]",
+  toolbar:
+    "h-[var(--control-height-mobile)] px-4 md:h-[var(--control-height-toolbar)]",
 };
 
 export function SegmentedControl({
@@ -24,7 +26,9 @@ export function SegmentedControl({
       role={role}
       className={cn(
         "inline-flex items-center rounded-full border border-[var(--border-subtle)]",
-        flush ? "h-[var(--control-segment-height)] gap-0 p-0" : "gap-1 p-1",
+        flush
+          ? "h-[var(--control-height-mobile)] gap-0 p-0 md:h-[var(--control-segment-height)]"
+          : "gap-1 p-1",
         className,
       )}
       style={{ backgroundColor: "var(--surface-muted)", ...style }}

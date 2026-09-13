@@ -1,8 +1,9 @@
-import { Check, CheckCircle } from "@phosphor-icons/react";
+import { CheckCircle } from "@phosphor-icons/react";
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
+  CalendarDays,
   Camera,
   CheckCircle2,
   ChevronDown,
@@ -30,6 +31,7 @@ import {
   selectCandlingTallyValidation,
   selectPendingCheckpoint,
 } from "../../features/candling/selectors";
+import { CheckIcon } from "../icons/CheckIcon";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,7 +60,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { IncubationCalendar } from "./IncubationCalendar";
+import { CalendarSheetBody, IncubationCalendar } from "./IncubationCalendar";
 import { PhotoLightboxModal } from "./PhotoLightbox";
 import { SectionCard, StatusCallout } from "./primitives";
 import { Timeline } from "./Timeline";
@@ -474,6 +476,12 @@ export function JournalEntryCard({
 // ─── LogModal Dialog ────────────────────────────────────────────────────────
 type LogStage = 1 | 2 | 3;
 
+// Compact mobile labels so all three development checks fit one row on phones.
+const SHORT_CHECK_LABELS = {
+  veining: "Veining",
+  airCell: "Air Cell",
+  movement: "Movement",
+};
 const LOG_STAGES: { id: LogStage; label: string; description: string }[] = [
   { id: 1, label: "Checkpoint", description: "Choose the inspection day." },
   { id: 2, label: "Egg counts", description: "Record what you observed." },
@@ -514,7 +522,7 @@ export function LogModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[var(--dialog-height-max)] overflow-y-auto p-0 shadow-2xl md:max-w-[var(--dialog-width-wide)]"
+        className="grid max-h-[75dvh] min-h-[75dvh] grid-rows-[0.7fr_2fr_0.3fr] gap-2 overflow-y-auto p-0 shadow-2xl md:min-w-[var(--dialog-width-narrow)] md:max-w-[var(--dialog-width-wide)]"
         style={{
           backgroundColor: "var(--surface-subtle)",
           border: `1px solid var(--border-default)`,
@@ -621,6 +629,24 @@ function LogModalBody({
   const [isSaving, setIsSaving] = useState(false);
   const [stage, setStage] = useState<LogStage>(isEditing ? 2 : 1);
   const stageHeadingRef = useRef<HTMLHeadingElement>(null);
+  const scrollBodyRef = useRef<HTMLDivElement>(null);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  const checkBodyScroll = useCallback(() => {
+    const el = scrollBodyRef.current;
+    if (el)
+      setCanScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+  }, []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: changing wizard stages replaces the scroll content and requires measuring again
+  useEffect(() => {
+    checkBodyScroll();
+    window.addEventListener("resize", checkBodyScroll);
+    const el = scrollBodyRef.current;
+    el?.addEventListener("scroll", checkBodyScroll, { passive: true });
+    return () => {
+      window.removeEventListener("resize", checkBodyScroll);
+      el?.removeEventListener("scroll", checkBodyScroll);
+    };
+  }, [checkBodyScroll, stage]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: stage intentionally re-runs focus on step change
   useEffect(() => {
@@ -777,426 +803,649 @@ function LogModalBody({
 
   return (
     <>
-      <DialogHeader className="px-5 pt-5 text-left">
-        <DialogTitle
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "var(--type-heading-md)",
-            fontWeight: "var(--weight-bold)",
-            lineHeight: "var(--leading-snug)",
-            color: "var(--text-primary)",
-          }}
-        >
-          {isEditing
-            ? `Edit Inspection Log: Day ${form.targetDay}`
-            : "Candling Journal"}
-        </DialogTitle>
-        <DialogDescription
-          className="font-medium space-y-0.5"
-          style={{ fontSize: "var(--type-caption)" }}
-        >
-          <span className="block" style={{ color: "var(--text-primary)" }}>
-            {chamberName}
-          </span>
-          <span className="block" style={{ color: "var(--text-secondary)" }}>
-            {modeName}
-          </span>
-        </DialogDescription>
-      </DialogHeader>
+      <div>
+        <DialogHeader className="gap-1 px-5 pt-5 text-left">
+          <DialogTitle
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--type-heading-md)",
+              fontWeight: "var(--weight-bold)",
+              lineHeight: "var(--leading-snug)",
+              color: "var(--text-primary)",
+            }}
+          >
+            {isEditing
+              ? `Edit Inspection Log: Day ${form.targetDay}`
+              : "Candling Journal"}
+          </DialogTitle>
+          <DialogDescription
+            className="font-medium space-y-0.5"
+            style={{ fontSize: "var(--type-caption)" }}
+          >
+            <span
+              className="block"
+              style={{
+                color: "var(--text-primary)",
+                fontWeight: "var(--weight-bold)",
+              }}
+            >
+              {chamberName}
+            </span>
+            <span className="block" style={{ color: "var(--text-secondary)" }}>
+              {modeName}
+            </span>
+          </DialogDescription>
+        </DialogHeader>
 
-      <nav className="px-5 pt-1" aria-label="Candling log steps">
-        <ol className="grid grid-cols-3 gap-2">
-          {LOG_STAGES.map((item) => {
-            const active = stage === item.id;
-            const completed = stage > item.id;
-            return (
-              <li key={item.id} aria-current={active ? "step" : undefined}>
-                <div
-                  className="flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2"
-                  style={{
-                    borderColor: active
-                      ? "var(--brand-primary)"
-                      : completed
-                        ? "var(--status-success-fg)"
-                        : "var(--border-default)",
-                    backgroundColor: active
-                      ? "color-mix(in srgb, var(--brand-primary) 7%, transparent)"
-                      : completed
-                        ? "var(--status-success-bg)"
-                        : "var(--surface-card)",
-                  }}
+        <nav className="px-5 pt-1" aria-label="Candling log steps">
+          <ol className="flex flex-wrap gap-2">
+            {LOG_STAGES.map((item) => {
+              const active = stage === item.id;
+              const completed = stage > item.id;
+              return (
+                <li
+                  key={item.id}
+                  aria-current={active ? "step" : undefined}
+                  className="min-w-0 flex-1"
                 >
-                  <span
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                  <div
+                    className="flex h-full min-h-11 items-center gap-1.5 rounded-xl border px-2 py-2 md:gap-2 md:px-2.5"
                     style={{
-                      backgroundColor: active
+                      borderColor: active
                         ? "var(--brand-primary)"
                         : completed
                           ? "var(--status-success-fg)"
-                          : "transparent",
-                      border:
-                        active || completed
-                          ? "none"
-                          : `1px solid var(--border-default)`,
-                      color:
-                        active || completed
-                          ? "var(--surface-card)"
-                          : "var(--text-secondary)",
-                    }}
-                    aria-hidden="true"
-                  >
-                    {completed ? <Check size={13} weight="fill" /> : item.id}
-                  </span>
-                  <span
-                    className="min-w-0"
-                    style={{
-                      color: active
-                        ? "var(--brand-primary)"
-                        : "var(--text-primary)",
-                      fontSize: "var(--type-label)",
-                      fontWeight: "var(--weight-bold)",
-                      lineHeight: 1.2,
+                          : "var(--border-default)",
+                      backgroundColor: active
+                        ? "color-mix(in srgb, var(--brand-primary) 7%, transparent)"
+                        : completed
+                          ? "var(--status-success-bg)"
+                          : "var(--surface-card)",
                     }}
                   >
-                    {item.label}
-                  </span>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
-
-      <div className="px-5 pt-1" aria-live="polite">
-        <h3
-          ref={stageHeadingRef}
-          tabIndex={-1}
-          className="focus-visible:outline-none"
-          style={{
-            color: "var(--text-primary)",
-            fontSize: "var(--type-body)",
-            fontWeight: "var(--weight-bold)",
-          }}
-        >
-          {stage}. {LOG_STAGES[stage - 1].label}
-        </h3>
-        <p
-          className="mt-0.5"
-          style={{
-            color: "var(--text-secondary)",
-            fontSize: "var(--type-caption)",
-          }}
-        >
-          {LOG_STAGES[stage - 1].description}
-        </p>
+                    <span
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold md:h-6 md:w-6"
+                      style={{
+                        backgroundColor: active
+                          ? "var(--brand-primary)"
+                          : completed
+                            ? "var(--status-success-fg)"
+                            : "transparent",
+                        border:
+                          active || completed
+                            ? "none"
+                            : `1px solid var(--border-default)`,
+                        color:
+                          active || completed
+                            ? "var(--surface-card)"
+                            : "var(--text-secondary)",
+                      }}
+                      aria-hidden="true"
+                    >
+                      {completed ? <CheckIcon size={13} /> : item.id}
+                    </span>
+                    <span
+                      className="min-w-0"
+                      style={{
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
       </div>
 
-      <div className="space-y-4 px-5 pb-1">
-        {stage === 1 && (
-          <div>
-            <Label
-              style={{
-                fontSize: "var(--type-body-sm)",
-                color: "var(--text-primary)",
-              }}
-            >
-              Checkpoint
-            </Label>
-            {isEditing ? (
-              <div
-                className="mt-1.5 flex items-center justify-between rounded-xl px-3 py-2.5"
+      <div ref={scrollBodyRef} className="min-h-0 overflow-y-auto">
+        <div className="px-5" aria-live="polite">
+          <h3
+            ref={stageHeadingRef}
+            tabIndex={-1}
+            className="focus-visible:outline-none"
+            style={{
+              color: "var(--text-primary)",
+              fontSize: "var(--type-body-sm)",
+              fontWeight: "var(--weight-bold)",
+            }}
+          >
+            {stage}. {LOG_STAGES[stage - 1].label}
+          </h3>
+          <p
+            className="mt-0.5"
+            style={{
+              color: "var(--text-secondary)",
+              fontSize: "var(--type-caption)",
+            }}
+          >
+            {LOG_STAGES[stage - 1].description}
+          </p>
+        </div>
+
+        <div className="space-y-4 px-5 pb-1">
+          {stage === 1 && (
+            <div>
+              <Label
                 style={{
-                  border: `1px solid var(--border-default)`,
-                  backgroundColor: "var(--surface-card)",
+                  fontSize: "var(--type-body-sm)",
+                  color: "var(--text-primary)",
                 }}
               >
-                <span
+                Checkpoint
+              </Label>
+              {isEditing ? (
+                <div
+                  className="mt-1.5 flex items-center justify-between rounded-xl px-3 py-2.5"
                   style={{
-                    fontSize: "var(--type-body)",
-                    fontWeight: "var(--weight-semibold)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {target?.label ?? `Day ${form.targetDay} Candling`} (Day{" "}
-                  {form.targetDay})
-                </span>
-                <span
-                  className="rounded-full px-2 py-0.5"
-                  style={{
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-bold)",
-                    backgroundColor: "var(--border-subtle)",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  LOCKED
-                </span>
-              </div>
-            ) : (
-              <Select
-                value={selectedOption}
-                onValueChange={(val) => {
-                  setSelectedOption(val);
-                  if (val === "custom") {
-                    const day = Number(customDayRaw) || 1;
-                    setForm((f) => ({ ...f, targetDay: day }));
-                  } else {
-                    const day = Number(val);
-                    setForm((f) => ({ ...f, targetDay: day }));
-                  }
-                }}
-              >
-                <SelectTrigger
-                  className="mt-1.5 rounded-xl"
-                  style={{
-                    borderColor: "var(--input-border)",
+                    border: `1px solid var(--border-default)`,
                     backgroundColor: "var(--surface-card)",
                   }}
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {available.map((c) => (
-                    <SelectItem key={c.day} value={String(c.day)}>
-                      {c.label} (Day {c.day})
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">Custom Day...</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+                  <span
+                    style={{
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-semibold)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {target?.label ?? `Day ${form.targetDay} Candling`} (Day{" "}
+                    {form.targetDay})
+                  </span>
+                  <span
+                    className="rounded-full px-2 py-0.5"
+                    style={{
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
+                      backgroundColor: "var(--border-subtle)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    LOCKED
+                  </span>
+                </div>
+              ) : (
+                <Select
+                  value={selectedOption}
+                  onValueChange={(val) => {
+                    setSelectedOption(val);
+                    if (val === "custom") {
+                      const day = Number(customDayRaw) || 1;
+                      setForm((f) => ({ ...f, targetDay: day }));
+                    } else {
+                      const day = Number(val);
+                      setForm((f) => ({ ...f, targetDay: day }));
+                    }
+                  }}
+                >
+                  <SelectTrigger
+                    size="filter"
+                    className="mt-1.5 h-[var(--control-height-mobile)] rounded-xl md:h-[var(--control-height-default)]"
+                    style={{
+                      borderColor: "var(--input-border)",
+                      backgroundColor: "var(--surface-card)",
+                    }}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {available.map((c) => (
+                      <SelectItem key={c.day} value={String(c.day)}>
+                        {c.label} (Day {c.day})
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Custom Day...</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
 
-            {!isEditing && selectedOption === "custom" && (
-              <div className="mt-3">
+              {!isEditing && selectedOption === "custom" && (
+                <div className="mt-3">
+                  <Label
+                    htmlFor="custom-day-input"
+                    style={{
+                      fontSize: "var(--type-body-sm)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    Day Number
+                  </Label>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span
+                      style={{
+                        fontSize: "var(--type-body)",
+                        fontWeight: "var(--weight-semibold)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Day
+                    </span>
+                    <Input
+                      id="custom-day-input"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={2}
+                      value={customDayRaw}
+                      onKeyDown={(e) => {
+                        if (["e", "E", "+", "-", "."].includes(e.key))
+                          e.preventDefault();
+                      }}
+                      onChange={(e) => {
+                        const sanitized = e.target.value
+                          .replace(/[^0-9]/g, "")
+                          .slice(0, 2);
+                        setCustomDayRaw(sanitized);
+                        const val = Number(sanitized) || 0;
+                        setForm((f) => ({ ...f, targetDay: val }));
+                      }}
+                      placeholder="8"
+                      className="w-24 rounded-xl"
+                      style={{
+                        borderColor: customDayError
+                          ? "var(--status-danger-fg)"
+                          : "var(--input-border)",
+                        backgroundColor: "var(--surface-card)",
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                  </div>
+                  {customDayError && (
+                    <p
+                      className="mt-1.5 flex items-center gap-1"
+                      style={{
+                        fontSize: "var(--type-body-sm)",
+                        color: "var(--status-danger-fg)",
+                        fontWeight: "var(--weight-semibold)",
+                      }}
+                    >
+                      <AlertCircle size={13} /> Day must be between 1 and{" "}
+                      {totalDays}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!isEditing &&
+                selectedOption !== "custom" &&
+                target &&
+                target.day > currentDay && (
+                  <StatusCallout
+                    size="sm"
+                    tone="warning"
+                    title="Not yet due"
+                    description={
+                      <>
+                        This is <strong>Day {target.day}</strong>. You can still
+                        log it if candling was performed early.
+                      </>
+                    }
+                    className="mt-1.5"
+                  />
+                )}
+            </div>
+          )}
+
+          {/* Tally inputs */}
+          {stage === 2 && (
+            <div>
+              <Label
+                style={{
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-bold)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {isLaterCheckpoint ? "Development tally" : "Fertility tally"}
+              </Label>
+              <p
+                className="mt-1"
+                style={{
+                  fontSize: "var(--type-caption)",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                {isLaterCheckpoint
+                  ? "Classify every egg as developing, clear, stopped developing, or uncertain."
+                  : "Record the first candling result for each egg."}
+              </p>
+              <fieldset
+                className="mt-3 space-y-1.5"
+                style={{ border: 0, padding: 0, margin: 0, marginTop: 12 }}
+                aria-label="Egg category counts"
+              >
+                <div
+                  className="flex items-center justify-between px-3 text-(length:--type-filter-label) font-bold uppercase tracking-[var(--tracking-label)]"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  <span>Category</span>
+                  <span>Eggs</span>
+                </div>
+                {tallyFields.map((f) => (
+                  <div
+                    key={f.key}
+                    className="flex items-center justify-between gap-4 rounded-xl border px-3.5 py-1.5"
+                    style={{
+                      backgroundColor: "var(--surface-card)",
+                      borderColor: "var(--border-default)",
+                    }}
+                  >
+                    <label
+                      htmlFor={`tally-${f.key}`}
+                      className="min-w-0 leading-5"
+                      style={{
+                        color: f.color,
+                        fontSize: "var(--type-caption)",
+                        fontWeight: "var(--weight-bold)",
+                      }}
+                    >
+                      {f.label}
+                    </label>
+                    <Input
+                      id={`tally-${f.key}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={3}
+                      value={form[f.key] === 0 ? "" : String(form[f.key])}
+                      onKeyDown={(e) => {
+                        if (["e", "E", "+", "-", "."].includes(e.key))
+                          e.preventDefault();
+                      }}
+                      onChange={(e) => setCount(f.key, e.target.value)}
+                      placeholder="0"
+                      aria-invalid={isTallyOverCapacity ? "true" : undefined}
+                      aria-describedby={
+                        isTallyOverCapacity ? "tally-count-error" : undefined
+                      }
+                      className="h-8 w-28 shrink-0 rounded-xl text-center"
+                      style={{
+                        borderColor: isTallyOverCapacity
+                          ? "var(--status-danger-fg)"
+                          : "var(--input-border)",
+                        backgroundColor: "var(--surface-card)",
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                  </div>
+                ))}
+              </fieldset>
+
+              {isTallyOverCapacity ? (
+                <StatusCallout
+                  size="sm"
+                  tone="danger"
+                  title="Too many eggs counted."
+                  description={
+                    <>
+                      Total counted:{" "}
+                      <strong className="font-bold">
+                        {inspected} of {totalEggsSet}
+                      </strong>
+                      . Reduce one or more categories before continuing.
+                    </>
+                  }
+                  className="mt-3"
+                />
+              ) : isZeroTally ? (
+                <StatusCallout
+                  size="sm"
+                  dense
+                  title="Enter at least one egg count"
+                  tone="warning"
+                  description="Count fertile, clear, and uncertain eggs to continue."
+                  className="mt-3"
+                />
+              ) : hasIncompleteLockdown ? (
+                <StatusCallout
+                  size="sm"
+                  tone="danger"
+                  title="Lockdown check incomplete"
+                  description={
+                    hasUnresolvedUncertain && unaccountedEggs > 0
+                      ? "Resolve uncertain eggs and categorize every egg before the Lockdown check."
+                      : hasUnresolvedUncertain
+                        ? "Resolve all uncertain eggs before the Lockdown check."
+                        : "Categorize every egg before the Lockdown check."
+                  }
+                  className="mt-3"
+                />
+              ) : unaccountedEggs > 0 ? (
+                <StatusCallout
+                  size="sm"
+                  tone="warning"
+                  title={`${unaccountedEggs} egg${unaccountedEggs === 1 ? " is" : "s are"} not categorized yet.`}
+                  description="Add the remaining count before continuing, or mark the remaining eggs as uncertain."
+                  action={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full cursor-pointer rounded-lg transition-colors hover:bg-[var(--surface-honey)] active:bg-[var(--status-warning-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                      onClick={countRemainingAsUncertain}
+                      style={{
+                        borderColor: "var(--status-warning-fg)",
+                        color: "var(--status-warning-fg)",
+                        fontSize: "var(--type-filter-label)",
+                      }}
+                    >
+                      Count remaining as uncertain
+                    </Button>
+                  }
+                  className="mt-3"
+                />
+              ) : (
+                <StatusCallout
+                  size="sm"
+                  tone="success"
+                  title="All eggs categorized"
+                  description={
+                    <>
+                      <strong className="font-bold">
+                        {inspected} of {totalEggsSet}
+                      </strong>{" "}
+                      eggs accounted for.
+                    </>
+                  }
+                  className="mt-3"
+                />
+              )}
+            </div>
+          )}
+
+          {/* Development checks */}
+          {stage === 3 && (
+            <>
+              <div>
                 <Label
-                  htmlFor="custom-day-input"
                   style={{
                     fontSize: "var(--type-body-sm)",
                     color: "var(--text-primary)",
                   }}
                 >
-                  Day Number
+                  Development observed
                 </Label>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <span
-                    style={{
-                      fontSize: "var(--type-body)",
-                      fontWeight: "var(--weight-semibold)",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    Day
-                  </span>
-                  <Input
-                    id="custom-day-input"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={2}
-                    value={customDayRaw}
-                    onKeyDown={(e) => {
-                      if (["e", "E", "+", "-", "."].includes(e.key))
-                        e.preventDefault();
-                    }}
-                    onChange={(e) => {
-                      const sanitized = e.target.value
-                        .replace(/[^0-9]/g, "")
-                        .slice(0, 2);
-                      setCustomDayRaw(sanitized);
-                      const val = Number(sanitized) || 0;
-                      setForm((f) => ({ ...f, targetDay: val }));
-                    }}
-                    placeholder="8"
-                    className="w-24 rounded-xl"
-                    style={{
-                      borderColor: customDayError
-                        ? "var(--status-danger-fg)"
-                        : "var(--input-border)",
-                      backgroundColor: "var(--surface-card)",
-                      color: "var(--text-primary)",
-                    }}
-                  />
+                <div className="mt-1.5 flex flex-wrap gap-2">
+                  {(
+                    Object.keys(developmentCheckLabels) as DevelopmentCheck[]
+                  ).map((c) => {
+                    const on = form.checks.includes(c);
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            checks: on
+                              ? form.checks.filter((x) => x !== c)
+                              : [...form.checks, c],
+                          })
+                        }
+                        aria-pressed={on}
+                        aria-label={developmentCheckLabels[c]}
+                        className="inline-flex min-h-[var(--control-height-default)] items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:min-h-8"
+                        style={{
+                          backgroundColor: on
+                            ? "var(--status-success-bg)"
+                            : "var(--surface-card)",
+                          border: `1px solid ${on ? "var(--status-success-fg)" : "var(--border-default)"}`,
+                          color: on
+                            ? "var(--status-success-deep)"
+                            : "var(--text-secondary)",
+                          fontSize: "var(--type-body-sm)",
+                          fontWeight: "var(--weight-semibold)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {on ? <CheckIcon size={13} /> : <Circle size={13} />}
+                        <span aria-hidden="true" className="md:hidden">
+                          {SHORT_CHECK_LABELS[c]}
+                        </span>
+                        <span aria-hidden="true" className="hidden md:inline">
+                          {developmentCheckLabels[c]}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-                {customDayError && (
-                  <p
-                    className="mt-1.5 flex items-center gap-1"
-                    style={{
-                      fontSize: "var(--type-body-sm)",
-                      color: "var(--status-danger-fg)",
-                      fontWeight: "var(--weight-semibold)",
-                    }}
-                  >
-                    <AlertCircle size={13} /> Day must be between 1 and{" "}
-                    {totalDays}
-                  </p>
-                )}
               </div>
-            )}
 
-            {!isEditing &&
-              selectedOption !== "custom" &&
-              target &&
-              target.day > currentDay && (
-                <StatusCallout
-                  size="sm"
-                  tone="warning"
-                  title="Not yet due"
-                  description={
-                    <>
-                      This is <strong>Day {target.day}</strong>. You can still
-                      log it if candling was performed early.
-                    </>
-                  }
-                  className="mt-1.5"
-                />
-              )}
-          </div>
-        )}
-
-        {/* Tally inputs */}
-        {stage === 2 && (
-          <div>
-            <Label
-              style={{
-                fontSize: "var(--type-body-sm)",
-                color: "var(--text-primary)",
-              }}
-            >
-              {isLaterCheckpoint ? "Development tally" : "Fertility tally"}
-            </Label>
-            <p
-              className="mt-1"
-              style={{
-                fontSize: "var(--type-caption)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              {isLaterCheckpoint
-                ? "Classify every egg as developing, clear, stopped developing, or uncertain."
-                : "Record the first candling result for each egg."}
-            </p>
-            <fieldset
-              className="mt-3 space-y-2.5"
-              style={{ border: 0, padding: 0, margin: 0, marginTop: 12 }}
-              aria-label="Egg category counts"
-            >
-              <div
-                className="flex items-center justify-between px-3 text-[var(--type-label)] font-bold uppercase tracking-wide"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                <span>Category</span>
-                <span>Eggs</span>
-              </div>
-              {tallyFields.map((f) => (
-                <div
-                  key={f.key}
-                  className="flex min-h-14 items-center justify-between gap-4 rounded-xl border px-3.5 py-2.5"
+              {/* Notes */}
+              <div>
+                <Label
+                  htmlFor="lf-note"
                   style={{
-                    backgroundColor: "var(--surface-card)",
-                    borderColor: "var(--border-default)",
+                    fontSize: "var(--type-body-sm)",
+                    color: "var(--text-primary)",
                   }}
                 >
-                  <label
-                    htmlFor={`tally-${f.key}`}
-                    className="min-w-0 leading-5"
-                    style={{
-                      color: f.color,
-                      fontSize: "var(--type-body-sm)",
-                      fontWeight: "var(--weight-bold)",
-                    }}
-                  >
-                    {f.label}
-                  </label>
-                  <Input
-                    id={`tally-${f.key}`}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={3}
-                    value={form[f.key] === 0 ? "" : String(form[f.key])}
-                    onKeyDown={(e) => {
-                      if (["e", "E", "+", "-", "."].includes(e.key))
-                        e.preventDefault();
-                    }}
-                    onChange={(e) => setCount(f.key, e.target.value)}
-                    placeholder="0"
-                    aria-invalid={isTallyOverCapacity ? "true" : undefined}
-                    aria-describedby={
-                      isTallyOverCapacity ? "tally-count-error" : undefined
-                    }
-                    className="h-11 w-28 shrink-0 rounded-xl text-center"
-                    style={{
-                      borderColor: isTallyOverCapacity
-                        ? "var(--status-danger-fg)"
-                        : "var(--input-border)",
-                      backgroundColor: "var(--surface-card)",
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                </div>
-              ))}
-            </fieldset>
+                  Notes
+                </Label>
+                <textarea
+                  id="lf-note"
+                  value={form.note}
+                  onChange={(e) => setForm({ ...form, note: e.target.value })}
+                  placeholder="Observation notes…"
+                  rows={3}
+                  className="mt-1.5 w-full resize-none rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                  style={{
+                    border: `1px solid var(--input-border)`,
+                    backgroundColor: "var(--surface-card)",
+                    fontSize: "var(--type-control-value)",
+                    color: "var(--text-primary)",
+                  }}
+                />
+              </div>
 
-            {isTallyOverCapacity ? (
-              <StatusCallout
-                size="sm"
-                tone="danger"
-                title="Too many eggs counted."
-                description={
-                  <>
-                    Total counted:{" "}
-                    <strong className="font-bold">
-                      {inspected} of {totalEggsSet}
-                    </strong>
-                    . Reduce one or more categories before continuing.
-                  </>
-                }
-                className="mt-3"
-              />
-            ) : isZeroTally ? (
-              <StatusCallout
-                size="sm"
-                tone="warning"
-                title="Enter at least one egg count"
-                description="Record the count for fertile, clear, or uncertain eggs to continue."
-                className="mt-3"
-              />
-            ) : hasIncompleteLockdown ? (
-              <StatusCallout
-                size="sm"
-                tone="danger"
-                title="Lockdown check incomplete"
-                description={
-                  hasUnresolvedUncertain && unaccountedEggs > 0
-                    ? "Resolve uncertain eggs and categorize every egg before the Lockdown check."
-                    : hasUnresolvedUncertain
-                      ? "Resolve all uncertain eggs before the Lockdown check."
-                      : "Categorize every egg before the Lockdown check."
-                }
-                className="mt-3"
-              />
-            ) : unaccountedEggs > 0 ? (
-              <StatusCallout
-                size="sm"
-                tone="warning"
-                title={`${unaccountedEggs} egg${unaccountedEggs === 1 ? " is" : "s are"} not categorized yet.`}
-                description="Add the remaining count before continuing, or mark the remaining eggs as uncertain."
-                action={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full cursor-pointer rounded-lg transition-colors hover:bg-[var(--surface-honey)] active:bg-[var(--status-warning-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
-                    onClick={countRemainingAsUncertain}
+              {/* Photos */}
+              <div>
+                <Label
+                  style={{
+                    fontSize: "var(--type-body-sm)",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  Photos
+                </Label>
+                <button
+                  type="button"
+                  aria-label="Add candling photos"
+                  onClick={() => photoRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragging(true);
+                  }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={onDrop}
+                  className="mt-1.5 flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                  style={{
+                    border: `1.5px dashed ${dragging ? "var(--brand-primary)" : "var(--border-accent)"}`,
+                    backgroundColor: dragging
+                      ? "color-mix(in srgb, var(--brand-primary) 4%, transparent)"
+                      : "var(--surface-card)",
+                    transition: "var(--transition-interactive)",
+                  }}
+                >
+                  <Camera
+                    size={20}
+                    color={
+                      dragging ? "var(--brand-primary)" : "var(--icon-earth)"
+                    }
+                  />
+                  <span
                     style={{
-                      borderColor: "var(--status-warning-fg)",
-                      color: "var(--status-warning-fg)",
+                      color: "var(--text-primary)",
                       fontSize: "var(--type-body-sm)",
+                      fontWeight: "var(--weight-semibold)",
                     }}
                   >
-                    Count remaining as uncertain
-                  </Button>
-                }
-                className="mt-3"
-              />
-            ) : (
+                    Add photos from candling
+                  </span>
+                  <span
+                    style={{
+                      color: "var(--text-secondary)",
+                      fontSize: "var(--type-caption)",
+                    }}
+                  >
+                    Click or drag &amp; drop
+                  </span>
+                </button>
+                <input
+                  ref={photoRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => readFiles(e.target.files)}
+                />
+                {form.photos.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {form.photos.map((url, i) => (
+                      <div key={url} className="relative group">
+                        <img
+                          src={url}
+                          alt=""
+                          className="rounded-lg object-cover"
+                          style={{
+                            width: 60,
+                            height: 60,
+                            border: `1px solid var(--border-default)`,
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setForm((f) => ({
+                              ...f,
+                              photos: f.photos.filter((_, idx) => idx !== i),
+                            }));
+                          }}
+                          className="absolute -top-2 -right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-7 md:w-7"
+                          aria-label="Remove photo"
+                        >
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition-transform hover:bg-red-700 active:scale-95">
+                            <X size={11} />
+                          </span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {!hasEvidence && !isSaveDisabled && (
+                <StatusCallout
+                  size="sm"
+                  tone="info"
+                  title="No notes or photos attached."
+                  description="You can still save this inspection with the egg tally only."
+                  className="mt-3"
+                />
+              )}
+
               <StatusCallout
                 size="sm"
                 tone="success"
@@ -1209,231 +1458,28 @@ function LogModalBody({
                     eggs accounted for.
                   </>
                 }
-                className="mt-3"
+                className="mt-2.5"
               />
-            )}
-          </div>
-        )}
-
-        {/* Development checks */}
-        {stage === 3 && (
-          <>
-            <div>
-              <Label
-                style={{
-                  fontSize: "var(--type-body-sm)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                Development observed
-              </Label>
-              <div className="mt-1.5 flex flex-wrap gap-2">
-                {(
-                  Object.keys(developmentCheckLabels) as DevelopmentCheck[]
-                ).map((c) => {
-                  const on = form.checks.includes(c);
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() =>
-                        setForm({
-                          ...form,
-                          checks: on
-                            ? form.checks.filter((x) => x !== c)
-                            : [...form.checks, c],
-                        })
-                      }
-                      aria-pressed={on}
-                      className="inline-flex min-h-[var(--control-height-default)] items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:min-h-8"
-                      style={{
-                        backgroundColor: on
-                          ? "var(--status-success-bg)"
-                          : "var(--surface-card)",
-                        border: `1px solid ${on ? "var(--status-success-fg)" : "var(--border-default)"}`,
-                        color: on
-                          ? "var(--status-success-deep)"
-                          : "var(--text-secondary)",
-                        fontSize: "var(--type-body-sm)",
-                        fontWeight: "var(--weight-semibold)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {on ? (
-                        <Check size={13} weight="fill" />
-                      ) : (
-                        <Circle size={13} />
-                      )}
-                      {developmentCheckLabels[c]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <Label
-                htmlFor="lf-note"
-                style={{
-                  fontSize: "var(--type-body-sm)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                Notes
-              </Label>
-              <textarea
-                id="lf-note"
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                placeholder="Observation notes…"
-                rows={3}
-                className="mt-1.5 w-full resize-none rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
-                style={{
-                  border: `1px solid var(--input-border)`,
-                  backgroundColor: "var(--surface-card)",
-                  fontSize: "var(--type-control-value)",
-                  color: "var(--text-primary)",
-                }}
-              />
-            </div>
-
-            {/* Photos */}
-            <div>
-              <Label
-                style={{
-                  fontSize: "var(--type-body-sm)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                Photos
-              </Label>
-              <button
-                type="button"
-                aria-label="Add candling photos"
-                onClick={() => photoRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragging(true);
-                }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={onDrop}
-                className="mt-1.5 flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                style={{
-                  border: `1.5px dashed ${dragging ? "var(--brand-primary)" : "var(--border-accent)"}`,
-                  backgroundColor: dragging
-                    ? "color-mix(in srgb, var(--brand-primary) 4%, transparent)"
-                    : "var(--surface-card)",
-                  transition: "var(--transition-interactive)",
-                }}
-              >
-                <Camera
-                  size={20}
-                  color={
-                    dragging ? "var(--brand-primary)" : "var(--icon-earth)"
-                  }
-                />
-                <span
-                  style={{
-                    color: "var(--text-primary)",
-                    fontSize: "var(--type-body-sm)",
-                    fontWeight: "var(--weight-semibold)",
-                  }}
-                >
-                  Add photos from candling
-                </span>
-                <span
-                  style={{
-                    color: "var(--text-secondary)",
-                    fontSize: "var(--type-caption)",
-                  }}
-                >
-                  Click or drag &amp; drop
-                </span>
-              </button>
-              <input
-                ref={photoRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => readFiles(e.target.files)}
-              />
-              {form.photos.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {form.photos.map((url, i) => (
-                    <div key={url} className="relative group">
-                      <img
-                        src={url}
-                        alt=""
-                        className="rounded-lg object-cover"
-                        style={{
-                          width: 60,
-                          height: 60,
-                          border: `1px solid var(--border-default)`,
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setForm((f) => ({
-                            ...f,
-                            photos: f.photos.filter((_, idx) => idx !== i),
-                          }));
-                        }}
-                        className="absolute -top-2 -right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-7 md:w-7"
-                        aria-label="Remove photo"
-                      >
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition-transform hover:bg-red-700 active:scale-95">
-                          <X size={11} />
-                        </span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {!hasEvidence && !isSaveDisabled && (
-              <StatusCallout
-                size="sm"
-                tone="info"
-                title="No notes or photos attached."
-                description="You can still save this inspection with the egg tally only."
-                className="mt-3"
-              />
-            )}
-
-            <StatusCallout
-              size="sm"
-              tone="success"
-              title="All eggs categorized"
-              description={
-                <>
-                  <strong className="font-bold">
-                    {inspected} of {totalEggsSet}
-                  </strong>{" "}
-                  eggs accounted for.
-                </>
-              }
-              className="mt-2.5"
-            />
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       <div
-        className="sticky bottom-0 px-5 py-4"
+        className="relative sticky bottom-0 mt-auto px-5 py-4"
         style={{
           backgroundColor: "var(--surface-subtle)",
           borderTop: `1px solid var(--border-default)`,
         }}
       >
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-x-0 -top-6 h-6 bg-gradient-to-t from-[var(--surface-subtle)] to-transparent transition-opacity duration-200 ${canScrollDown ? "opacity-100" : "opacity-0"}`}
+        />
         <div className="flex items-center justify-between gap-2">
           <Button
             variant="ghost"
-            className="rounded-full"
+            className="rounded-full text-(length:--type-caption)"
             onClick={() =>
               stage === 1
                 ? onCancel()
@@ -1450,7 +1496,7 @@ function LogModalBody({
           </Button>
           {stage < 3 ? (
             <Button
-              className="rounded-full"
+              className="rounded-full text-(length:--type-caption)"
               style={{
                 backgroundColor: "var(--brand-primary)",
                 color: "var(--on-brand)",
@@ -1463,7 +1509,7 @@ function LogModalBody({
             </Button>
           ) : (
             <Button
-              className="rounded-full"
+              className="rounded-full text-(length:--type-caption)"
               style={{
                 backgroundColor: "var(--brand-primary)",
                 color: "var(--on-brand)",
@@ -1574,6 +1620,8 @@ export function CandlingJournalTab({
   isUpdating,
 }: CandlingJournalTabProps) {
   const [showLogForm, setShowLogForm] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
+  const calScrollRef = useRef<HTMLDivElement>(null);
   const [editingEntry, setEditingEntry] = useState<CandlingLogEntry | null>(
     null,
   );
@@ -1776,19 +1824,12 @@ export function CandlingJournalTab({
   return (
     <div className="space-y-5">
       {/* Combined Hero: Incubation Timeline + Candling Progress */}
-      <SectionCard title="Incubation Timeline">
+      <SectionCard title="Incubation Timeline" density="compact">
         <Timeline
           currentDay={currentDay}
           totalDays={totalDays}
           candling={candling}
           candled={effectiveCandled}
-          overdue={
-            pendingCheckpoint &&
-            checkpointDistance !== null &&
-            checkpointDistance < 0
-              ? { day: pendingCheckpoint.day, text: checkpointTiming }
-              : null
-          }
           labelSize={9}
         />
         <div
@@ -2223,10 +2264,10 @@ export function CandlingJournalTab({
             </div>
 
             <div
-              className="flex flex-col gap-3 border-t pt-4 md:flex-row md:items-center md:justify-between"
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t pt-4"
               style={{ borderColor: "var(--border-default)" }}
             >
-              <div>
+              <div className="col-start-1 flex flex-wrap items-center gap-2">
                 <p
                   style={{
                     fontFamily: "var(--font-display)",
@@ -2240,57 +2281,57 @@ export function CandlingJournalTab({
                 >
                   {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
                 </p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
+                {pendingCheckpoint && checkpointDistance !== null && (
                   <span
+                    className="inline-flex items-center rounded-full px-2.5 py-0.5"
                     style={{
-                      fontSize: "var(--type-body)",
+                      backgroundColor:
+                        checkpointDistance < 0
+                          ? "var(--status-danger-bg)"
+                          : checkpointDistance === 0
+                            ? "var(--status-warning-bg)"
+                            : "var(--surface-muted)",
+                      color:
+                        checkpointDistance < 0
+                          ? "var(--status-danger-fg)"
+                          : checkpointDistance === 0
+                            ? "var(--status-warning-fg)"
+                            : "var(--text-secondary)",
+                      fontSize: "var(--type-label)",
                       fontWeight: "var(--weight-bold)",
-                      color: "var(--text-primary)",
+                      letterSpacing: "var(--tracking-label)",
                     }}
                   >
-                    {pendingCheckpoint
-                      ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
-                      : "All scheduled checks completed"}
+                    {checkpointTiming}
                   </span>
-                  {pendingCheckpoint &&
-                    checkpointDistance !== null &&
-                    checkpointDistance >= 0 && (
-                      <span
-                        className="inline-flex items-center rounded-full px-2.5 py-0.5"
-                        style={{
-                          backgroundColor:
-                            checkpointDistance < 0
-                              ? "var(--status-danger-bg)"
-                              : checkpointDistance === 0
-                                ? "var(--status-warning-bg)"
-                                : "var(--surface-muted)",
-                          color:
-                            checkpointDistance < 0
-                              ? "var(--status-danger-fg)"
-                              : checkpointDistance === 0
-                                ? "var(--status-warning-fg)"
-                                : "var(--text-secondary)",
-                          fontSize: "var(--type-label)",
-                          fontWeight: "var(--weight-bold)",
-                          letterSpacing: "var(--tracking-label)",
-                        }}
-                      >
-                        {checkpointTiming}
-                      </span>
-                    )}
-                </div>
+                )}
               </div>
-              {canLog ? (
+              {canLog && (
                 <Button
                   onClick={openNewInspection}
-                  className="h-[34px] w-full rounded-full md:h-[var(--control-height-default)] md:w-auto"
+                  aria-label="Log inspection"
+                  className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-3 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
                   style={{ ...rustBtn }}
                 >
-                  <Plus size={14} /> Log Inspection
+                  <Plus size={14} /> Log
                 </Button>
-              ) : (
+              )}
+              <div className="col-start-1 mt-1">
+                <span
+                  style={{
+                    fontSize: "var(--type-body)",
+                    fontWeight: "var(--weight-bold)",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {pendingCheckpoint
+                    ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
+                    : "All scheduled checks completed"}
+                </span>
+              </div>
+              {!canLog && (
                 <p
-                  className="w-full md:w-auto md:text-right"
+                  className="col-span-2 w-full md:text-right"
                   style={{
                     color: "var(--text-secondary)",
                     fontSize: "var(--type-caption)",
@@ -2302,8 +2343,11 @@ export function CandlingJournalTab({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center md:justify-between">
-            <div>
+          <div
+            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t pt-4"
+            style={{ borderColor: "var(--border-default)" }}
+          >
+            <div className="col-start-1 flex flex-wrap items-center gap-2">
               <p
                 style={{
                   fontFamily: "var(--font-display)",
@@ -2317,61 +2361,58 @@ export function CandlingJournalTab({
               >
                 {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
               </p>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
+              {pendingCheckpoint && checkpointDistance !== null && (
                 <span
+                  className="inline-flex items-center rounded-full px-2.5 py-0.5"
                   style={{
-                    fontSize: "var(--type-body)",
+                    backgroundColor:
+                      checkpointDistance < 0
+                        ? "var(--status-danger-bg)"
+                        : checkpointDistance === 0
+                          ? "var(--status-warning-bg)"
+                          : "var(--surface-muted)",
+                    color:
+                      checkpointDistance < 0
+                        ? "var(--status-danger-fg)"
+                        : checkpointDistance === 0
+                          ? "var(--status-warning-fg)"
+                          : "var(--text-secondary)",
+                    fontSize: "var(--type-label)",
                     fontWeight: "var(--weight-bold)",
-                    color: "var(--text-primary)",
+                    letterSpacing: "var(--tracking-label)",
                   }}
                 >
-                  {pendingCheckpoint
-                    ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
-                    : "Candling checks scheduled"}
+                  {checkpointTiming}
                 </span>
-                {pendingCheckpoint &&
-                  checkpointDistance !== null &&
-                  checkpointDistance >= 0 && (
-                    <span
-                      className="inline-flex items-center rounded-full px-2.5 py-0.5"
-                      style={{
-                        backgroundColor:
-                          checkpointDistance < 0
-                            ? "var(--status-danger-bg)"
-                            : checkpointDistance === 0
-                              ? "var(--status-warning-bg)"
-                              : "var(--surface-muted)",
-                        color:
-                          checkpointDistance < 0
-                            ? "var(--status-danger-fg)"
-                            : checkpointDistance === 0
-                              ? "var(--status-warning-fg)"
-                              : "var(--text-secondary)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        letterSpacing: "var(--tracking-label)",
-                      }}
-                    >
-                      {checkpointTiming}
-                    </span>
-                  )}
-              </div>
+              )}
             </div>
-            {canLog ? (
+            {canLog && (
               <Button
                 onClick={openNewInspection}
                 disabled={isUpdating}
-                className="h-[34px] w-full rounded-full md:h-[var(--control-height-default)] md:w-auto"
+                aria-label="Log inspection"
+                className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-3 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
+                style={{ ...rustBtn }}
+              >
+                <Plus size={14} /> Log
+              </Button>
+            )}
+            <div className="col-start-1 mt-1">
+              <span
                 style={{
-                  ...rustBtn,
+                  fontSize: "var(--type-body)",
                   fontWeight: "var(--weight-bold)",
+                  color: "var(--text-primary)",
                 }}
               >
-                <Plus size={14} /> Log Inspection
-              </Button>
-            ) : (
+                {pendingCheckpoint
+                  ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
+                  : "Candling checks scheduled"}
+              </span>
+            </div>
+            {!canLog && (
               <p
-                className="w-full md:w-auto md:text-right"
+                className="col-span-2 w-full md:text-right"
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "var(--type-caption)",
@@ -2402,7 +2443,6 @@ export function CandlingJournalTab({
         onSubmit={submitInspection}
       />
 
-      {/* 2-column: 60% inspection history / 40% summary */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
         {/* LEFT — inspection history feed */}
         <div className="space-y-4 lg:col-span-3">
@@ -2410,12 +2450,21 @@ export function CandlingJournalTab({
             <p
               style={{
                 fontSize: "calc(var(--type-heading-md) - 2px)",
-                fontWeight: "var(--weight-semibold)",
+                fontWeight: "var(--weight-bold)",
                 color: "var(--text-primary)",
               }}
             >
               Candling Journal
             </p>
+            <button
+              type="button"
+              onClick={() => setCalOpen(true)}
+              aria-label="Open calendar"
+              title="Open calendar"
+              className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-sm transition-colors hover:bg-[var(--surface-action-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 lg:hidden"
+            >
+              <CalendarDays size={18} aria-hidden="true" />
+            </button>
           </div>
 
           <div className="relative pt-[24px]">
@@ -2494,7 +2543,7 @@ export function CandlingJournalTab({
                           }
                           className="flex min-h-[var(--control-height-default)] min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 md:min-h-8"
                           style={{
-                            fontSize: "calc(var(--type-heading-sm) - 2px)",
+                            fontSize: "calc(var(--type-filter-label) - 1px)",
                             fontWeight: "var(--weight-bold)",
                             color: "var(--text-primary)",
                           }}
@@ -2508,13 +2557,13 @@ export function CandlingJournalTab({
                               : n.entry.label}
                           </span>
                           <CircleCheck
-                            size={15}
+                            size={14}
                             strokeWidth={2.5}
                             className="shrink-0 text-[var(--status-success-fg)]"
                             aria-hidden="true"
                           />
                           <ChevronDown
-                            size={17}
+                            size={16}
                             className={`ml-0.5 text-[var(--text-muted)] transition-transform duration-200 ${expandedDays.has(n.day) ? "rotate-180" : ""}`}
                             aria-hidden="true"
                           />
@@ -2609,14 +2658,14 @@ export function CandlingJournalTab({
                             <p
                               className="flex flex-wrap items-center gap-1.5"
                               style={{
-                                fontSize: "var(--type-heading-sm)",
+                                fontSize: "var(--type-body-sm)",
                                 fontWeight: "var(--weight-bold)",
                                 color: "var(--text-primary)",
                               }}
                             >
                               {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
                               <AlertCircle
-                                size={16}
+                                size={15}
                                 color="var(--status-warning-fg)"
                                 strokeWidth={2}
                                 aria-label="Inspection due"
@@ -2715,13 +2764,29 @@ export function CandlingJournalTab({
         </div>
 
         {/* RIGHT — Incubation Calendar */}
-        <div className="space-y-5 lg:col-span-2">
+        <div className="hidden space-y-5 lg:col-span-2 lg:block">
           <IncubationCalendar
             currentDay={currentDay}
             totalDays={totalDays}
             candling={candling}
           />
         </div>
+        <Dialog open={calOpen} onOpenChange={setCalOpen}>
+          <DialogContent
+            ref={calScrollRef}
+            className="max-h-[85dvh] w-[90vw] overflow-y-auto rounded-2xl border-0 bg-[var(--surface-card)] p-4 shadow-xl md:border md:border-[var(--border-subtle)]"
+          >
+            <DialogTitle className="sr-only">Incubation calendar</DialogTitle>
+            <CalendarSheetBody
+              currentDay={currentDay}
+              totalDays={totalDays}
+              candling={candling}
+              onPageChange={() => {
+                calScrollRef.current?.scrollTo({ top: 0 });
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

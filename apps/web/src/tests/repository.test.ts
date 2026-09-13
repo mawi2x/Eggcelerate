@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
-import { resetChamberToReady } from "../app/domain/incubator";
 
 const fixedNow = () => new Date("2026-09-03T12:00:00.000Z");
 
@@ -47,8 +46,7 @@ describe("InMemoryEggcelerateRepository", () => {
 
   it("keeps entity IDs immutable during updates", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
-    const result = await repository.updateIncubator("chamber-1", {
-      id: "replacement-id",
+    const result = await repository.updateIncubatorProfile("chamber-1", {
       name: "Renamed chamber",
     });
 
@@ -58,22 +56,18 @@ describe("InMemoryEggcelerateRepository", () => {
     expect(replacement.ok).toBe(false);
   });
 
-  it("persists a chamber reset through the update boundary", async () => {
+  it("persists a chamber reset through the command boundary", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
     const existing = await repository.getIncubator("chamber-1");
     if (!existing.ok) throw new Error("Fixture incubator was not found.");
 
-    const reset = await repository.updateIncubator(
-      existing.data.id,
-      resetChamberToReady(existing.data),
-    );
+    const reset = await repository.resetStoppedCycle(existing.data.id);
     const reloaded = await repository.getIncubator(existing.data.id);
 
     expect(reset.ok && reset.data.dayOfIncubation).toBe(0);
     expect(reloaded.ok && reloaded.data.cyclePhase).toBe("ready");
     expect(reloaded.ok && reloaded.data.totalEggsLoaded).toBe(0);
   });
-
   it("recalculates affected chamber condition when a mode changes", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
     const update = await repository.updateMode("broiler", {
@@ -86,10 +80,11 @@ describe("InMemoryEggcelerateRepository", () => {
     expect(chamber.ok && chamber.data.status).toBe("alert");
   });
 
-  it("does not expose standalone history writers", () => {
+  it("does not expose standalone history writers or broad updates", () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
     expect(repository).not.toHaveProperty("recordHarvest");
     expect(repository).not.toHaveProperty("recordAbortedCycle");
+    expect(repository).not.toHaveProperty("updateIncubator");
   });
 
   it("rejects an invalid harvest without writing history", async () => {
@@ -199,5 +194,142 @@ describe("InMemoryEggcelerateRepository", () => {
     const result = await repository.listAlerts();
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("simulated_failure");
+  });
+  it("validates profile and configuration commands", async () => {
+    const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
+    for (const name of ["", "   ", "x".repeat(31)]) {
+      const bad = await repository.updateIncubatorProfile("chamber-1", {
+        name,
+      });
+      expect(bad.ok).toBe(false);
+      if (!bad.ok) expect(bad.error.code).toBe("validation_error");
+    }
+    const renamed = await repository.updateIncubatorProfile("chamber-1", {
+      name: "Renamed chamber",
+    });
+    expect(renamed.ok && renamed.data.name).toBe("Renamed chamber");
+
+    const empty = await repository.updateIncubatorConfiguration(
+      "chamber-1",
+      {},
+    );
+    expect(empty.ok).toBe(false);
+    const badMode = await repository.updateIncubatorConfiguration("chamber-1", {
+      modeId: "no-such-mode",
+    });
+    expect(badMode.ok).toBe(false);
+    if (!badMode.ok) expect(badMode.error.code).toBe("validation_error");
+    const configured = await repository.updateIncubatorConfiguration(
+      "chamber-1",
+      {
+        modeId: "duck",
+        autoTurn: false,
+        turnIntervalHours: 6,
+      },
+    );
+    expect(configured.ok && configured.data.modeId).toBe("duck");
+    expect(configured.ok && configured.data.turnInterval).toBe(6);
+    const missing = await repository.updateIncubatorProfile("nope", {
+      name: "x",
+    });
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) expect(missing.error.code).toBe("not_found");
+  });
+
+  it("starts cycles and turns with server-derived state", async () => {
+    const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
+    const badEggs = await repository.startCycle("chamber-1", {
+      modeId: "broiler",
+      totalEggs: 0,
+    });
+    expect(badEggs.ok).toBe(false);
+    const badMode = await repository.startCycle("chamber-1", {
+      modeId: "no-such-mode",
+      totalEggs: 12,
+    });
+    expect(badMode.ok).toBe(false);
+    const started = await repository.startCycle("chamber-1", {
+      modeId: "broiler",
+      totalEggs: 24,
+    });
+    expect(started.ok && started.data.dayOfIncubation).toBe(1);
+    expect(started.ok && started.data.cyclePhase).toBe("incubating");
+    expect(started.ok && started.data.totalEggsLoaded).toBe(24);
+    expect(started.ok && started.data.turnInterval).toBe(4);
+    expect(started.ok && started.data.lastTurned).toBe(
+      "2026-09-03T12:00:00.000Z",
+    );
+
+    const turned = await repository.requestManualTurn("chamber-1");
+    expect(turned.ok && turned.data.lastTurned).toBe(
+      "2026-09-03T12:00:00.000Z",
+    );
+    expect(turned.ok && turned.data.nextTurn).toBe("2026-09-03T16:00:00.000Z");
+    const missing = await repository.requestManualTurn("nope");
+    expect(missing.ok).toBe(false);
+  });
+
+  it("reconnects reachable devices and reports unreachable ones", async () => {
+    const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
+    const listed = await repository.listIncubators();
+    if (!listed.ok) throw new Error("Fixture incubators failed to load.");
+    const stranded = listed.data.find((unit) =>
+      ["EGG-0000", "EGG-9999", "EGG-1005", "EGG-1010"].includes(unit.deviceId),
+    );
+    if (!stranded) throw new Error("Unreachable fixture is missing.");
+    const offline = await repository.reconnectIncubator(stranded.id);
+    expect(offline.ok).toBe(false);
+    if (!offline.ok) expect(offline.error.code).toBe("offline");
+
+    const reconnected = await repository.reconnectIncubator("chamber-1");
+    expect(reconnected.ok && reconnected.data.paired).toBe(true);
+    expect(reconnected.ok && reconnected.data.connectionState).toBe(
+      "connected",
+    );
+  });
+
+  it("creates, updates, and deletes candling entries by day", async () => {
+    const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
+    const input = {
+      day: 99,
+      label: "Late check",
+      date: "2026-09-03",
+      fertile: 20,
+      clear: 1,
+      uncertain: 0,
+      note: "",
+      photos: [],
+      checks: [],
+      checkpointType: "later" as const,
+    };
+    const created = await repository.createCandlingEntry("chamber-1", input);
+    expect(created.ok && created.data.candled[99]).toBe(true);
+    const duplicate = await repository.createCandlingEntry("chamber-1", input);
+    expect(duplicate.ok).toBe(false);
+    if (!duplicate.ok) expect(duplicate.error.code).toBe("conflict");
+
+    const updated = await repository.updateCandlingEntry("chamber-1", 99, {
+      note: "Recheck tomorrow",
+    });
+    expect(
+      updated.ok &&
+        updated.data.candlingLog.find((entry) => entry.day === 99)?.note,
+    ).toBe("Recheck tomorrow");
+    const missingUpdate = await repository.updateCandlingEntry(
+      "chamber-1",
+      100,
+      {
+        note: "Ghost",
+      },
+    );
+    expect(missingUpdate.ok).toBe(false);
+
+    const deleted = await repository.deleteCandlingEntry("chamber-1", 99);
+    expect(
+      deleted.ok && deleted.data.candlingLog.some((entry) => entry.day === 99),
+    ).toBe(false);
+    expect(deleted.ok && deleted.data.candled[99]).toBe(false);
+    const missingDelete = await repository.deleteCandlingEntry("chamber-1", 99);
+    expect(missingDelete.ok).toBe(false);
   });
 });

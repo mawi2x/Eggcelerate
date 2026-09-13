@@ -56,14 +56,14 @@ export function PaginationBar({
       <span
         aria-live="polite"
         className="shrink-0"
-        style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}
+        style={{ color: MUTED, fontSize: "var(--type-filter-label)" }}
       >
         Showing {rangeStart} to {rangeEnd} of {totalItems} {itemLabel}
       </span>
 
       {showPageSize && (
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <span style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}>
+          <span style={{ color: MUTED, fontSize: "var(--type-filter-label)" }}>
             Items per page:
           </span>
           <Select
@@ -72,7 +72,7 @@ export function PaginationBar({
           >
             <SelectTrigger
               size="default"
-              className="h-[var(--control-height-default)] w-[72px] rounded-full md:h-8"
+              className="h-[var(--control-height-mobile)] w-[72px] rounded-full md:h-8"
               style={INPUT_STYLE}
               aria-label={`Items per page for ${itemLabel}`}
             >
@@ -93,7 +93,7 @@ export function PaginationBar({
         <Button
           size="sm"
           variant="outline"
-          className="h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] rounded-lg p-0 md:h-8 md:w-8"
+          className="h-[var(--control-height-mobile)] w-[var(--control-height-mobile)] rounded-lg p-0 md:h-8 md:w-8"
           style={{ borderColor: BORDER }}
           disabled={safePage <= 1}
           onClick={() => onPageChange(Math.max(1, safePage - 1))}
@@ -101,13 +101,13 @@ export function PaginationBar({
         >
           <ChevronLeft size={16} aria-hidden="true" />
         </Button>
-        <span style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}>
+        <span style={{ color: MUTED, fontSize: "var(--type-filter-label)" }}>
           Page {safePage} of {totalPages}
         </span>
         <Button
           size="sm"
           variant="outline"
-          className="h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)] rounded-lg p-0 md:h-8 md:w-8"
+          className="h-[var(--control-height-mobile)] w-[var(--control-height-mobile)] rounded-lg p-0 md:h-8 md:w-8"
           style={{ borderColor: BORDER }}
           disabled={safePage >= totalPages}
           onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}

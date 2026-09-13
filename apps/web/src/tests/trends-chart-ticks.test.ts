@@ -42,6 +42,7 @@ describe("formatXTick", () => {
   it("renders hour-only labels on the 24h range (no repeated :mm)", () => {
     const ts = new Date(2026, 8, 5, 13, 28).getTime();
     expect(formatXTick(ts, "24h")).not.toContain(":");
+    expect(formatXTick(ts, "24h")).toMatch(/1\s?(PM|pm)/);
   });
 
   it("renders short dates on longer ranges", () => {

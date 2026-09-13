@@ -1,7 +1,14 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
+import { ApiRepository } from "../app/data/repositories/api-repository";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
+import type { EggcelerateRepository } from "../app/data/repositories/repository";
+import type { SettingsPreferences } from "../app/data/settings";
+import { wireExamples } from "../app/data/transport/examples";
+import { resetChamberToReady } from "../app/domain/incubator";
 import type { Incubator } from "../app/domain/types";
 import { farmQueryKeys } from "../app/features/farm/query-keys";
 import {
@@ -30,14 +37,160 @@ async function waitFor(check: () => boolean) {
   }
   throw new Error("Timed out waiting for mutation state.");
 }
+interface FarmActionsHandle {
+  saveSettings(settings: SettingsPreferences): Promise<boolean>;
+  addIncubator(unit: Incubator): Promise<boolean>;
+  updateIncubator(id: string, patch: Partial<Incubator>): Promise<boolean>;
+  actionState: { updatingIncubatorId: string | null };
+}
+
+async function mountActions(repository: EggcelerateRepository) {
+  const seeded = await repository.listIncubators();
+  if (!seeded.ok) throw new Error("Incubator fixtures failed to load.");
+  const queryClient = createAppQueryClient();
+  queryClient.setQueryData(farmQueryKeys.incubators, seeded.data);
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  const observed: { current: FarmActionsHandle | null } = {
+    current: null,
+  };
+  function Probe() {
+    observed.current = useFarmActions();
+    return null;
+  }
+  await act(async () => {
+    root.render(
+      <AppProviders repository={repository} queryClient={queryClient}>
+        <Probe />
+      </AppProviders>,
+    );
+  });
+  return {
+    observed,
+    queryClient,
+    cleanup: () => act(async () => root.unmount()),
+  };
+}
+
+function storedUnit(queryClient: QueryClient, id: string): Incubator {
+  const unit = queryClient
+    .getQueryData<Incubator[]>(farmQueryKeys.incubators)
+    ?.find((candidate) => candidate.id === id);
+  if (!unit) throw new Error(`Chamber ${id} is missing from the cache.`);
+  return unit;
+}
 
 describe("repository mutation states", () => {
+  it.each([
+    "create",
+    "profile",
+    "configuration",
+    "reconnect",
+    "preferences",
+  ] as const)(
+    "reuses the HTTP operation key when retrying %s after a lost committed response",
+    async (operation) => {
+      vi.mocked(toast.error).mockClear();
+      const example = wireExamples.find(
+        (item) => item.path === "/api/v1/incubators",
+      );
+      const envelope = example?.response as {
+        ok: true;
+        data: Record<string, unknown>[];
+      };
+      const preferenceEnvelope = wireExamples.find(
+        (item) => item.path === "/api/v1/preferences" && item.method === "GET",
+      )?.response as { ok: true; data: Record<string, unknown> };
+      const dto = envelope.data[0];
+      const seen: string[] = [];
+      const results = new Map<string, unknown>();
+      let commits = 0;
+      let loseResponse = true;
+      const repository = new ApiRepository({
+        baseUrl: "http://api",
+        fetchImpl: (async (url: unknown, init?: RequestInit) => {
+          if (!init?.method || init.method === "GET") {
+            return {
+              json: async () =>
+                String(url).endsWith("/preferences")
+                  ? preferenceEnvelope
+                  : envelope,
+            } as Response;
+          }
+          const key = new Headers(init.headers).get("Idempotency-Key") ?? "";
+          seen.push(key);
+          if (!results.has(key)) {
+            commits += 1;
+            const patch = JSON.parse(init.body as string) as Record<
+              string,
+              unknown
+            >;
+            results.set(key, {
+              ok: true,
+              data: operation === "preferences" ? patch : { ...dto, ...patch },
+            });
+          }
+          if (loseResponse) {
+            loseResponse = false;
+            throw new TypeError("Response lost after server commit");
+          }
+          return { json: async () => results.get(key) } as Response;
+        }) as typeof fetch,
+      });
+      const mounted = await mountActions(repository);
+      try {
+        const actions = mounted.observed.current;
+        if (!actions) throw new Error("Actions did not mount");
+        const input = storedUnit(mounted.queryClient, dto.id as string);
+        const settings = await repository.listSettings();
+        if (!settings.ok) throw new Error("Settings fixture failed");
+        const invoke = () =>
+          operation === "preferences"
+            ? actions.saveSettings(settings.data)
+            : operation === "create"
+              ? actions.addIncubator(input)
+              : actions.updateIncubator(
+                  input.id,
+                  operation === "profile"
+                    ? { name: "Retry name" }
+                    : operation === "configuration"
+                      ? { autoTurn: false }
+                      : { paired: true },
+                );
+        await act(async () => {
+          expect(await invoke()).toBe(false);
+        });
+        const feedback = vi.mocked(toast.error).mock.calls[
+          vi.mocked(toast.error).mock.calls.length - 1
+        ]?.[1] as unknown as {
+          action: { onClick: () => void };
+        };
+        await act(async () => feedback.action.onClick());
+        await waitFor(
+          () =>
+            seen.length === 2 &&
+            !mounted.observed.current?.actionState.updatingIncubatorId,
+        );
+        expect(seen[0]).not.toBe("");
+        expect(seen[1]).toBe(seen[0]);
+        expect(commits).toBe(1);
+        // An intentional new user operation receives a different key.
+        await act(async () => {
+          expect(await invoke()).toBe(true);
+        });
+        expect(seen[2]).not.toBe(seen[0]);
+        expect(commits).toBe(2);
+      } finally {
+        await mounted.cleanup();
+      }
+    },
+  );
   it("simulates offline, rejected, and timeout results without writing", async () => {
     for (const failureMode of ["offline", "rejected", "timeout"] as const) {
       const repository = new InMemoryEggcelerateRepository({
-        failureModes: { updateIncubator: failureMode },
+        failureModes: { updateIncubatorProfile: failureMode },
       });
-      const result = await repository.updateIncubator("chamber-1", {
+      const result = await repository.updateIncubatorProfile("chamber-1", {
         name: "Should not persist",
       });
       const stored = await repository.getIncubator("chamber-1");
@@ -51,7 +204,7 @@ describe("repository mutation states", () => {
   it("shows a pending optimistic value and rolls it back after timeout", async () => {
     const repository = new InMemoryEggcelerateRepository({
       latencyMs: 30,
-      failureModes: { updateIncubator: "timeout" },
+      failureModes: { updateIncubatorProfile: "timeout" },
     });
     const seeded = await repository.listIncubators();
     if (!seeded.ok) throw new Error("Incubator fixtures failed to load.");
@@ -59,7 +212,7 @@ describe("repository mutation states", () => {
     queryClient.setQueryData(farmQueryKeys.incubators, seeded.data);
     const container = document.createElement("div");
     const root = createRoot(container);
-    const observed: { current: ReturnType<typeof useFarmActions> | null } = {
+    const observed: { current: FarmActionsHandle | null } = {
       current: null,
     };
 
@@ -131,5 +284,87 @@ describe("repository mutation states", () => {
       description:
         "The change was not confirmed. Try again. The previous values were restored.",
     });
+  });
+
+  it("routes turn, reconnect, reset, and unsupported patches to explicit commands", async () => {
+    const repository = new InMemoryEggcelerateRepository({});
+    const mounted = await mountActions(repository);
+    const actions = () => {
+      if (!mounted.observed.current) throw new Error("Probe did not mount");
+      return mounted.observed.current;
+    };
+
+    const before = storedUnit(mounted.queryClient, "chamber-1");
+    expect(
+      await actions().updateIncubator("chamber-1", {
+        lastTurned: "2000-01-01T00:00:00.000Z",
+        nextTurn: "2000-01-01T04:00:00.000Z",
+      }),
+    ).toBe(true);
+    expect(storedUnit(mounted.queryClient, "chamber-1").lastTurned).not.toBe(
+      before.lastTurned,
+    );
+
+    expect(await actions().updateIncubator("chamber-1", { paired: true })).toBe(
+      true,
+    );
+    expect(storedUnit(mounted.queryClient, "chamber-1").connectionState).toBe(
+      "connected",
+    );
+
+    expect(
+      await actions().updateIncubator("chamber-1", resetChamberToReady(before)),
+    ).toBe(true);
+    expect(storedUnit(mounted.queryClient, "chamber-1").dayOfIncubation).toBe(
+      0,
+    );
+    expect(storedUnit(mounted.queryClient, "chamber-1").cyclePhase).toBe(
+      "ready",
+    );
+
+    expect(
+      await actions().updateIncubator("chamber-1", { status: "optimal" }),
+    ).toBe(false);
+    await mounted.cleanup();
+  });
+
+  it("creates and deletes candling entries from log patches", async () => {
+    const repository = new InMemoryEggcelerateRepository({});
+    const mounted = await mountActions(repository);
+    const actions = () => {
+      if (!mounted.observed.current) throw new Error("Probe did not mount");
+      return mounted.observed.current;
+    };
+
+    const unit = storedUnit(mounted.queryClient, "chamber-1");
+    const entry = {
+      day: 99,
+      label: "Late check",
+      date: "2026-09-03",
+      fertile: 20,
+      clear: 1,
+      uncertain: 0,
+      note: "",
+      photos: [],
+      checks: [],
+      checkpointType: "later" as const,
+    };
+    expect(
+      await actions().updateIncubator("chamber-1", {
+        candlingLog: [...unit.candlingLog, entry],
+      }),
+    ).toBe(true);
+    const afterAdd = storedUnit(mounted.queryClient, "chamber-1");
+    expect(afterAdd.candlingLog.some((item) => item.day === 99)).toBe(true);
+    expect(afterAdd.candled[99]).toBe(true);
+
+    expect(
+      await actions().updateIncubator("chamber-1", {
+        candlingLog: afterAdd.candlingLog.filter((item) => item.day !== 99),
+      }),
+    ).toBe(true);
+    const afterDelete = storedUnit(mounted.queryClient, "chamber-1");
+    expect(afterDelete.candlingLog.some((item) => item.day === 99)).toBe(false);
+    await mounted.cleanup();
   });
 });

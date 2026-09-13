@@ -107,6 +107,7 @@ export function FilterBar({
     );
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: option count changes scroll width even when the container size is unchanged
   React.useEffect(() => {
     checkScroll();
     window.addEventListener("resize", checkScroll);
@@ -255,10 +256,7 @@ export function FilterBar({
         )}
         <span
           aria-hidden="true"
-          className={cn(
-            "w-11 shrink-0 md:hidden",
-            !arrowsEnabled && "hidden",
-          )}
+          className={cn("w-11 shrink-0 md:hidden", !arrowsEnabled && "hidden")}
         />
       </fieldset>
 

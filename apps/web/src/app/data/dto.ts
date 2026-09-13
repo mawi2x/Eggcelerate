@@ -38,7 +38,7 @@ export const ModeDTOSchema = z.object({
   built_in: z.boolean().optional().default(false),
   target_temp_c: RangeSchema,
   target_humidity_pct: RangeSchema,
-  incubation_days: z.number().int().min(17).max(36),
+  incubation_days: z.number().int().min(7).max(45),
   default_turn_interval_min: z.number().int().min(60).max(1440),
   version: z.number().int().optional(),
   created_at: z.string().optional(),

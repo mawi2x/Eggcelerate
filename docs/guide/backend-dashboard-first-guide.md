@@ -1,53 +1,107 @@
 # EGGCELERATE Dashboard-First Backend Guide
 
-> **Status:** Paused after B0A; resume at B0B
+> **Status:** B3 farm preferences verified; next: alerts
 > **Prepared:** 2026-09-04
 > **Scope:** Local FastAPI backend for the existing dashboard, followed by persistence and device simulation
 > **Deferred:** Real authentication, user administration, production deployment, and physical actuator control
 
-## 0. Pause and resume snapshot
+## 0. Current handoff (2026-09-13)
 
-Backend runtime development is intentionally paused while mobile frontend planning and improvement takes priority.
+B0–B2 are recorded complete. B3 now persists farms, modes, chamber/device configuration, farm preferences, and their replay records; alerts, cycles/candling/history and readings are still in memory. The full B3 exit is not met.
+The dated checkpoints below are historical evidence, not current resume instructions.
 
-### Completed before the pause
+### Evidence and limitations
 
-- Frontend restructuring F0–F6 is complete.
-- B0A added strict frontend Zod contracts for the API envelope, modes, incubators, readings, alerts, hatch/aborted history, preferences, and minimal incubator/cycle requests.
-- Mode transport mapping explicitly converts domain hours to wire minutes.
-- Incubator update contracts reject server-derived fields such as status and condition severity.
-- Standalone `recordHarvest` and `recordAbortedCycle` methods were removed from the production repository contract. Atomic `completeCycle` and `stopCycle` remain.
-- The B0A gate passed 159 tests across 22 files, scoped coverage, typecheck, Biome lint, production build, and `git diff --check`.
+- The latest preferences gate passed 265 frontend tests (34 files), coverage, lint/typecheck/build, 49 API tests including PostgreSQL integration, Ruff and mypy (24 source files), API Docker build, populated upgrade/downgrade and schema drift checks.
+- Simulator S0/S1/GUI and 22 unittest results are user-reported for the separate `eggcelerate-simulate` repository; its source and revision were not verified here. Simulator completion does not establish API/MQTT integration.
+- Chamber create/profile/configuration/reconnect retries now reuse one logical key through the hook and HTTP adapter. Other hooks (including modes and cycle commands) still mint fresh keys per attempt; do not claim general retry safety yet.
+- Wire examples now describe the current memory readiness response and accepted B1 mutation shapes; all seven error codes have examples. Operational health/readiness responses use their own shapes rather than the dashboard result envelope.
+- Working tree contains uncommitted backend and unrelated UI work. Base HEAD at review: `ed907a33942abb21a85e8d556041792844558251`; this revision alone does not reproduce the checkpoint. Review and selectively checkpoint files, then record actual commit IDs for both repositories. Do not use `git add -A`.
 
-### Current uncommitted backend-scope files
+### Implemented versus planned
 
-Before unrelated implementation begins, checkpoint only these B0A/backend-plan changes after reviewing the working tree:
+The main repository has in-memory FastAPI, API Docker/Compose configuration, `ApiRepository`, the mock/API switch, and an opt-in `postgres_incubators` backend (`postgres_modes` remains a configuration alias). PostgreSQL currently persists farms/modes, chamber/device configuration, and their replay records. Other persistence slices, API MQTT integration, WebSockets, real authentication, and hardware integration remain future work.
 
-```text
-apps/api/README.md
-apps/web/src/app/data/repositories/repository.ts
-apps/web/src/app/data/repositories/in-memory-repository.ts
-apps/web/src/app/data/transport/contracts.ts
-apps/web/src/tests/repository.test.ts
-apps/web/src/tests/transport-contracts.test.ts
-docs/SYSTEM_ARCHITECTURE_GUIDE.md
-docs/guide/backend-dashboard-first-guide.md
-```
+MQTT QoS/retention, 15-second live cadence, and five-minute research avg/min/max/count are requirements to reconcile and verify during B3/B4, not integration results from this review. Authentication remains deferred to B6; no VPS/public deployment before that gate.
 
-Do not use `git add -A`; unrelated documentation, `.agents`, Vite, and PostCSS work is present in the working tree.
+Error mapping: `validation_error` → 422; `not_found` → 404; `conflict` and `rejected` → 409; `offline` → 503; `timeout` → 504; `unknown_error` → 500.
 
-### Not started
+### B3 preferences checkpoint (2026-09-13)
 
-- No FastAPI package or Python dependencies.
-- No API Dockerfile or Compose service.
-- No `ApiRepository` or frontend environment switch.
-- No PostgreSQL, TimescaleDB, SQLAlchemy, Alembic, or migrations.
-- No Mosquitto, MQTT client, WebSocket stream, or device simulator.
-- No backend login/logout, JWT, cookies, users, memberships, or authorization.
-- No ESP32 firmware or LED harness.
+- **Changes:** migration 0003 adds explicit preference columns, an extensible JSONB notification-toggle map and farm-scoped replay receipts. Reads and replacements use the existing SQL farm transaction. Missing preference rows fail closed; seeding repairs missing rows without overwriting edits.
+- **Retries:** settings saves retain their operation key through frontend Retry. Replaying an old save returns the original response without replacing newer settings; payload mismatches return 409.
+- **Verification:** 49 API tests; 265 frontend tests; coverage 82.78% lines, 83.08% branches, 70.76% functions; frontend lint/typecheck/build; Ruff check/format and mypy on 24 source files. Populated 0002→0003 upgrade/downgrade preserves existing configuration and receipts. Database schema drift check passes.
+- **Live proof:** 24/24 shared repository cases passed against an isolated disposable test farm. Preferences and exact replay survived an actual API/database restart with the development volume retained; original preferences were restored. Packaged API reports `0003 (head)`.
+- **Environment:** `postgres_incubators` remains the configured backend, with `postgres_modes` accepted as an alias. Readiness now requires 0003 and seeded preferences; remaining state is `cycles_candling_alerts_readings_memory`.
+- **Limits:** alerts, cycles/candling/history, readings and turn timestamps remain volatile. Full B3 is open; B4 and B6 boundaries are unchanged. Existing Vite chunk-size and upstream TestClient deprecation warnings remain. No commit created.
+- **Next:** alerts persistence (0004), then cycles/candling/history and readings.
 
-### Exact resume point
+### Historical B3 chamber/device checkpoint (2026-09-13)
 
-Resume at **B0B**, replacing broad `updateIncubator(id, Partial<Incubator>)` behavior with explicit repository commands. Do not redo B0A and do not scaffold FastAPI until B0 exits cleanly.
+- **Completed scope:** persistent chamber names, mode assignments, auto-turn/interval settings, device assignments and pairing flag; farm-scoped SQL foreign keys, case-insensitive device uniqueness, and single-chamber assignment constraints. Profile/configuration/create/reconnect results replay atomically with their writes. Fresh API instances hydrate persisted configuration before executing the existing service logic.
+- **Files added/changed:** `database/store.py` (renamed from modes.py), new `database/incubators.py`, metadata/migration 0002, seed/configuration/dependency wiring, shared pytest fixtures and chamber integration tests; frontend repository mutation options, HTTP key forwarding, hook Retry propagation, mock duplicate-device guard, and behavioral tests. README/environment example/this guide updated; unrelated visual work preserved.
+- **Migrations:** `0002` adds `devices`, `incubators`, and `incubator_idempotency`, plus a composite mode identity constraint. A populated 0001 upgrade is tested with existing mode edits and replay data intact. Seeding inserts missing defaults without replacing existing chamber/device edits.
+- **Environment:** canonical backend is `STORAGE_BACKEND=postgres_incubators`; `postgres_modes` is a backward-compatible configuration alias to the expanded slice. Readiness requires 0002 and seeded chambers, reports the still-volatile collections, and fails closed on missing database state.
+- **Contracts:** all 22 paths and OpenAPI schemas unchanged from the modes checkpoint. Duplicate device assignment returns 409 in Python and the frontend memory repository. Four frontend action families now keep the same key on Retry while a separate user action receives a new key; other action families remain deferred.
+- **Verification:** 45 API tests; 264 frontend tests; 24/24 live shared repository cases; Ruff including migrations and mypy on 23 source files; frontend lint/typecheck/build and scoped coverage (82.14% lines, 82.99% branches, 68.51% functions); API Docker build, Compose configuration, migration 0002 and schema drift checks. SQL tests cover rollback of chamber/device/replay writes, cross-farm FK rejection, concurrent same-key replay and different-key assignment conflicts, changed-payload replay, and restart/seeding preservation. Frontend tests cover lost committed responses through the actual hook and HTTP adapter for create/profile/configuration/reconnect.
+- **Live restart proof:** restarted API + development DB without removing the volume; profile, configuration, device assignment and original replay results survived. Original proof chamber settings were restored. Live shared tests mutate their target farm, so use a disposable target for subsequent parity runs.
+- **Known limitations:** cycle counters/state/history, candling, sensor values, and turn timestamps are not yet durable. Seeded chambers restart with their fixture cycle/sensor projection; newly created chambers restart with a ready simulation projection, overlaid with durable configuration. Preferences and alerts also remain volatile. Use one API worker until these remaining collections persist; farm-level serialization is transitional. Pairing is a simulation/configuration flag, not hardware ACK evidence. Other hook retries still need stable-key propagation.
+- **Exact next phase:** preferences (migration 0003), then alerts, cycles/candling/history, and readings; full B3 remains open and B4 remains gated.
+- **Working tree:** no commit made; preserve pre-existing UI edits and keep the database setup WIP unchanged when selectively staging this checkpoint.
+
+### Historical B3 farms/modes checkpoint (2026-09-13)
+
+- **Completed scope:** pinned TimescaleDB/PostgreSQL development and tmpfs test services; SQLAlchemy 2.0.52 async sessions with asyncpg 0.31.0; Alembic 1.20.0 migrations; repeatable seed; durable mode CRUD and same-key POST/PATCH replay. Internal UUIDs preserve public string IDs. SQL mode changes and replay receipts commit together; a farm row lock coordinates separate API instances. Existing service logic remains authoritative.
+- **Files added/changed:** `apps/api/src/eggcelerate_api/database/`; `alembic.ini`, `migrations/`, `tests/test_postgres_modes.py`, API configuration/dependency/lifespan wiring, dependency pins/Dockerfile, Compose, `.env.example`, API README, this guide. No frontend feature edits in this slice.
+- **Migrations:** `0001` installs/verifies the Timescale extension and creates only the currently used `farms`, `modes`, and `mode_idempotency` tables. Later slices add the remaining B3 tables. No auth tables or unused telemetry hypertable were scaffolded.
+- **Environment:** `STORAGE_BACKEND=memory|postgres_modes` (memory default); `DATABASE_URL` requires `postgresql+asyncpg://` for postgres_modes; `POSTGRES_PASSWORD` configures the new development database; `TEST_DATABASE_URL` opts into disposable-database tests. Runtime does not migrate, seed, or silently fall back.
+- **Contracts:** dashboard paths and component schemas unchanged (22 paths). `/readyz` now supports adapter-dependent output and 503 when PostgreSQL is unavailable, unmigrated, or unseeded. It explicitly reports that remaining state is memory. Mode POST/PATCH same-key/different-payload requests return 409 in postgres_modes.
+- **Verification:** 38 API tests with the disposable DB; frontend 259 tests with coverage thresholds green; frontend lint/typecheck/build; Ruff including migrations; mypy on 22 source files; API Docker build; schema drift check reports no upgrade operations; live shared repository suite 22/22 with postgres_modes. Empty database migrated to 0001, repeated seed preserves edits, and mode CRUD/replay/farm isolation/rollback/concurrency/outage/restart-projection tests pass.
+- **Restart proof:** actual API and development DB containers restarted with their named volume preserved. An isolated mode edit and its original create replay survived; changed payload returned 409; proof mode cleaned up. This establishes mode durability only.
+- **Coverage:** frontend scoped coverage remains 80.71% lines, 81.66% branches, 65.38% functions. API integration tests are behavior checks; no API coverage percentage is claimed.
+- **Known limitations:** all non-mode state remains volatile; use one API worker until incubator assignments and remaining collections are durable. The farm lock currently serializes database-backed requests. Frontend logical retries still mint fresh keys. Durable replay for other commands, populated upgrades to later revisions, cycle constraints, telemetry hypertables/aggregation, and full B3 restart parity remain open. Vite chunk-size and upstream TestClient deprecation warnings remain.
+- **Exact next phase:** persistent incubators/devices (migration 0002), then preferences, alerts, cycles/candling/history, and readings. B4 remains gated on complete B3.
+- **Working tree:** no commit created; existing unrelated UI work and database setup WIP left untouched. Selective staging is still required.
+
+### Historical B3 preparation checkpoint (2026-09-12)
+
+- **Completed scope:** baseline repair and verification; memory request transactions with rollback and serialized same-key replay; storage protocols decoupling service type annotations from the memory implementation; route dependencies separated from router aggregation; mypy gate configured; wire examples reconciled.
+- **Files added/changed:** API `storage.py`, `store.py`, `services.py`, `api/v1/dependencies.py` and routers, `tests/test_transactions.py`, `pyproject.toml`, README; frontend transport examples/error coverage; existing frontend lint diagnostics repaired (format/import fixes, native calendar list, documented intentional effect dependencies and navigation-group semantics).
+- **Contracts changed:** internal `StoreState`/`UnitOfWork` boundary only; generated OpenAPI remains identical to the captured memory API schema (22 paths). `/readyz` example now uses `store: memory` and incubator count. No HTTP runtime shape changes.
+- **Migrations / environment variables:** none. `mypy==2.3.1` added to the API test extra; source checks include untyped function bodies and the Pydantic plugin, not full strict mode.
+- **Verification:** 259 frontend tests; 26 pytest (including two terminal-operation rollback cases and concurrent same-key completion); Ruff check/format; mypy on 18 source files; frontend lint/typecheck/build; scoped coverage thresholds passed (80.71% lines, 81.66% branches, 65.38% functions); live shared repository suite 22/22; API Docker build and Compose configuration green; `git diff --check` clean. TestClient and live HTTP tests require network-capable execution in this environment; sandbox attempts hung/returned offline and were rerun outside it.
+- **Known limitations:** memory transaction locking is single-process and serializes reads as well as writes; collection-based service access is transitional, not an async SQL adapter. Hook retries still mint fresh keys; payload fingerprinting, durable replay, and competing different-key cycle termination remain B3 work. No database restart/migration proof yet. Existing Vite large-chunk and upstream TestClient deprecation warnings remain. Simulator not checked. No commit created; the working tree includes earlier work.
+- **Exact next phase:** B3 schema/migrations, then persistent vertical slices using the reconciled decisions below and the verification matrix in section 10.
+- **Unrelated work:** existing UI feature edits preserved; `App.tsx` spacing change observed during the session was not modified. Lint repairs extend beyond backend files and should be reviewed separately when staging.
+
+### Database WIP reconciliation for the next migration
+
+The database setup guide was reviewed as input and left unchanged. These phase-specific decisions supersede its stale frontend prerequisite and initial authentication-table sequence:
+
+1. Keep public IDs opaque strings (`chamber-1`, `broiler`, etc.) in HTTP responses. Use internal UUID primary keys with farm-scoped unique public IDs and explicit mapping at the adapter boundary; deterministic development UUIDs can be derived from stable farm/type/public-ID inputs. Never substitute UUIDs into the existing public contract silently.
+2. Create only the B3 table set listed in section 7. Defer users, refresh tokens, and memberships to B6; use the configured development farm context for scoped lookups. Requester audit fields must support the disabled-auth context without fake user rows.
+3. Persist a stable cycle identity and mode snapshot at start, and project terminal history from that cycle. The memory implementation currently invents cycle IDs at terminal operations; migrating it requires parity tests for the public projections plus new lifecycle integrity tests.
+4. Replace the transitional collection surface slice by slice with async SQL repositories and explicit transaction ownership. Do not serialize the whole farm into a JSON blob or use the memory lock as cross-process concurrency control.
+5. Keep public reading DTO compatibility while defining five-minute UTC buckets with avg/min/max/count internally. Fix bucket boundaries, empty-bucket behavior, and water-state aggregation in fixtures before telemetry migrations; live MQTT ingestion remains B4.
+6. Persist a farm-scoped operation key, request fingerprint, and replay result in the same transaction as the mutation. A logical client retry reuses its key; changed payloads conflict. Unique active-cycle/terminal-outcome constraints must also protect different-key concurrent requests.
+
+### Historical checkpoints
+
+**B0B complete (2026-09-12).** The broad `updateIncubator(id, Partial<Incubator>)` port is replaced by nine explicit repository commands (profile, configuration, start/reset/turn/reconnect, candling create/update/delete); the screen-facing `updateIncubator(id, patch)` hook keeps its signature and routes each patch shape to exactly one command. Next: B0 remainder (response mapping + representative endpoint examples), then B1 in-memory FastAPI. Do not scaffold FastAPI until B0 exits cleanly.
+
+Checkpoint B0B:
+Completed scope: repository port split; in-memory adapter commands with server-derived status/condition/connection state; hook patch router with candling diff; command request schemas replacing the broad update schema; regression tests (235 passing).
+Files added/changed: `apps/web/src/app/data/repositories/repository.ts`, `apps/web/src/app/data/repositories/in-memory-repository.ts`, `apps/web/src/app/features/farm/use-farm-data.ts`, `apps/web/src/app/data/transport/contracts.ts`, `apps/web/src/tests/repository.test.ts`, `apps/web/src/tests/mutation-states.test.tsx`, `apps/web/src/tests/transport-contracts.test.ts`, this guide.
+Contracts changed: `EggcelerateRepository` drops `updateIncubator`; nine commands added; `UpdateIncubatorRequestSchema` replaced by per-command request schemas.
+Migrations added: none. Environment variables added: none.
+Tests and counts: 235 Vitest passing (30 files); typecheck, production build, Biome on touched files, `git diff --check` green. Repo-wide lint still reports pre-existing formatting diagnostics in untouched files.
+Docker/Compose verification: not applicable (no services added).
+Known limitations: candling diff in the hook router retires with the mock-era funnel when `ApiRepository` exposes entry endpoints directly; wire examples landed as part of B0 completion below.
+Exact next phase: B0 remainder, then B1.
+**B0 complete (2026-09-12).** Remainder landed: numeric `Reading.water` retired at the mapper (no screen consumed it); response mappers added for readings, incubators, candling entries, alerts, hatch/aborted history, and preferences (both directions where the API needs them); 32 wire examples (one per endpoint plus all six error envelopes) validated against the Zod schemas with mapper round-trips in `transport-examples.test.ts`. Open B1 review items are marked PROPOSED in `apps/web/src/app/data/transport/examples.ts` (health/readiness shapes, complete/stop response records, turn acknowledgement, delete-id responses). Suite: 238 passing. **B0 exit met — B1 unlocked.**
+**B1 complete (2026-09-12).** In-memory FastAPI implements the full dashboard API: 22 OpenAPI paths, deterministic 12-chamber/10-mode/12-alert dev seed, server-derived status/condition/phase, atomic complete/stop with history records, turn acceptance with `Idempotency-Key` replay, strict request validation normalized into the result envelope. Proven: 23 pytest green, Ruff check + format clean, `docker compose build/up api` serves seeded data on `127.0.0.1:8000`, `docker compose config` valid. Deviations from B0 examples (all reviewable): `GET /readyz` reports `{"store": "memory"}` until B3/B4 add database/MQTT checks; unknown mode *references* are 422 while direct mode lookups are 404; `POST` creates return 201; `command_id` defaults to the `Idempotency-Key` when sent. Frontend untouched (238-test suite unaffected). **Next: B2 `ApiRepository`.**
+**B2 complete (2026-09-12).** `ApiRepository` speaks the full HTTP contract with Zod-validated envelopes, error-code translation (abort→timeout, unreachable→offline, unknown codes→unknown_error), `Idempotency-Key` per mutating call, and hours→minutes conversion; follow-up GETs compose turn/candling/complete/stop results. `VITE_DATA_SOURCE=mock|api` switch in `app-repository.ts` (mock default; api requires a valid `VITE_API_URL`); Docker web build takes both as build args. Shared `repository-contract.test.ts` passes against memory (11) and live HTTP (11) — proven via compose API + `EGG_API_URL`. Parity fixes from the B2 audit: stop marks stopped_early/warning without reset; optional-but-not-nullable fields omitted (not nulled); reading windows inclusive (13/85/109 for chamber-1); new chambers pair on creation; mode duration bounds widened to the biological 7–45 days (Zod + Pydantic + tests). Timeout uses raced promises, not AbortController signal (jsdom/undici interop throws). Known edge: hook-level retry mints a fresh idempotency key per attempt — server dedupes same-key replays only. **Next: B3 PostgreSQL/TimescaleDB.**
+**Review follow-up (2026-09-12).** Independent review caught three out-of-box breakers, all fixed and re-proven: constructor normalizes a trailing `/api/v1` so the documented base URL cannot double-prefix (regression test pins both shapes); CORS now allows bare-loopback compose origins alongside dev ports (config default + compose env + `.env.example`); `VITE_API_URL` validates with `new URL` instead of regex. Live shared suite re-run green 22/22 using the documented suffixed URL. Suite now 259 passing.
 
 ## 1. Outcome
 
@@ -257,6 +311,8 @@ Checkpoint B0A: strict Zod schemas now define the shared result/error envelope, 
 
 ### B1 — Scaffold a local in-memory FastAPI service
 
+Recorded complete; the following is the original acceptance checklist, not a resume queue.
+
 - [ ] Add the Python package, application factory, configuration validation, request context, and error normalization.
 - [ ] Implement Pydantic request/response models matching the reviewed B0 examples.
 - [ ] Add `/healthz`, `/readyz`, and OpenAPI output.
@@ -269,6 +325,8 @@ Checkpoint B0A: strict Zod schemas now define the shared result/error envelope, 
 **Exit:** the full dashboard API passes against memory and OpenAPI is reviewed.
 
 ### B2 — Implement and switch `ApiRepository`
+
+Recorded complete with the retry limitation in section 0. The original acceptance checklist below does not establish fresh verification; timeout uses a promise race rather than request cancellation.
 
 - [ ] Add `VITE_DATA_SOURCE=mock|api` and validated `VITE_API_URL` configuration.
 - [ ] Implement fetch timeout, abort, response parsing, Zod validation, and stable error translation.
@@ -332,7 +390,8 @@ DEFAULT_FARM_ID=00000000-0000-0000-0000-000000000001
 API_HOST=0.0.0.0                # inside the container
 API_PORT=8000
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-DATABASE_URL=                   # added in B3
+STORAGE_BACKEND=memory          # postgres_incubators opts into durable configuration
+DATABASE_URL=                   # asyncpg URL required for postgres_incubators
 MQTT_URL=                       # added in B4
 VITE_DATA_SOURCE=mock
 VITE_API_URL=http://127.0.0.1:8000/api/v1
@@ -347,7 +406,7 @@ Every backend checkpoint runs:
 ```text
 frontend lint, typecheck, tests, scoped coverage, and production build
 Python lint/format check
-Python type check selected during B1 scaffolding
+Python type check: cd apps/api && .venv/bin/mypy
 API unit and contract tests
 OpenAPI generation/diff review
 Docker image build and Compose configuration validation
@@ -356,42 +415,39 @@ git diff --check
 
 Database checkpoints additionally run migrations against a disposable empty database and adapter integration tests. MQTT checkpoints additionally run simulator integration tests. Browser automation is not part of these gates.
 
-## 10. Immediate implementation batch
+## 10. Next implementation batch: B3 alerts
 
-The next coding batch is **B0 only**:
+Migrations 0001–0003 persist modes, chamber/device configuration and preferences.
+Keep their restart, retry and migration gates green while porting alerts.
 
-1. Add transport DTO schemas and fixture examples.
-2. Refine the repository port into explicit commands with regression tests.
-3. Write the OpenAPI-facing endpoint/error contract.
-4. Keep all current frontend checks green.
-5. Review the contract before adding Python dependencies, containers, or database services.
+1. Add migration 0004 for farm-scoped alerts, preserving current IDs, timestamps, severity, message and read/dismiss state.
+2. Seed only missing defaults; ensure cleared or dismissed alerts are not resurrected by repeated seeding or restart.
+3. Persist acknowledge, dismiss, mark-all-read and clear-read operations atomically. Add durable replay and stable frontend retry keys where those operations use idempotency keys.
+4. Prove farm isolation, bulk-operation rollback, populated migration preservation, replay behavior, live repository parity and API/database restart survival.
+5. Continue cycles/candling/history → readings. B4 MQTT remains gated on the full B3 exit; authentication stays in B6.
 
-Do not start authentication, PostgreSQL, MQTT, or ESP32 work inside B0.
+### B3 verification matrix
+
+| Gate | Required proof |
+|---|---|
+| Migrations | Empty database upgrades to head; an earlier revision with data upgrades without loss; Timescale extension/hypertable exists |
+| Seed | Repeated seed leaves one deterministic development farm and stable references without duplicates |
+| Adapter parity | Shared behavior suite passes for memory and persistent HTTP adapters against isolated fixtures |
+| Restart survival | Mutate data, restart API and database retaining the volume, then verify saved entities and command replay |
+| Atomicity | Inject failure during complete/stop and prove neither partial history nor partial cycle state commits |
+| Concurrency/idempotency | Concurrent requests cannot create duplicate terminal outcomes; same-key replay returns the original result |
+| Readings | Verify UTC bucket boundaries, avg/min/max/count, empty buckets and gaps against fixed sample data |
+| Database outage | Readiness fails and operations requiring persistence return the documented error without partial writes |
 
 ## 11. Resume procedure
 
-When backend work resumes:
+1. Read the current handoff above, API README, architecture and firmware safety contracts, and database setup WIP.
+2. Inspect source and working-tree changes; current source wins over historical examples. Preserve unrelated changes.
+3. Execute B3 steps in section 10 in order, starting with alerts and the verified preferences baseline.
+4. Keep the API contract and screen behavior stable; document any necessary contract change before implementing it.
+5. Record the section 13 checkpoint and actual repository revisions before switching phases.
 
-1. Confirm the B0A files above are committed separately from mobile UI changes.
-2. Read this guide, `apps/api/README.md`, the System Architecture Guide, and the firmware safety contract.
-3. Read the database setup guide as input, but reconcile its authentication sequence with the deferred-auth decision here before editing or implementing it.
-4. Inspect the current `EggcelerateRepository`, in-memory adapter, farm hooks, transport contracts, and repository tests; current source wins over stale examples.
-5. Run the baseline gate before editing:
-
-```sh
-pnpm lint
-pnpm --filter eggcelerate-ui typecheck
-pnpm --filter eggcelerate-ui test
-pnpm --filter eggcelerate-ui coverage
-pnpm --filter eggcelerate-ui build
-git diff --check
-```
-
-6. Implement B0B test-first, one command family at a time: profile/configuration, cycle lifecycle, manual turn/reconnect, then candling.
-7. Preserve screen behavior and TanStack Query rollback semantics during the command split.
-8. Update this guide only for work actually completed and record the exact gate counts.
-
-## 12. Decisions that must survive the pause
+## 12. Decisions that must survive each phase
 
 - Dashboard first; authentication remains dormant until B6.
 - Disabled auth is local-only, supplies a configured development farm, and is forbidden in production.

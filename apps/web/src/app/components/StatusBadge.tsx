@@ -3,7 +3,10 @@ import type { UnitStatus } from "../domain/types";
 import { statusLabels } from "./statusPresentation";
 
 // Semantic status palette — WCAG AA contrast on each tinted background.
-const styles: Record<UnitStatus, { bg: string; fg: string; Icon: typeof CheckCircle }> = {
+const styles: Record<
+  UnitStatus,
+  { bg: string; fg: string; Icon: typeof CheckCircle }
+> = {
   optimal: {
     bg: "var(--status-success-bg)",
     fg: "var(--status-success-fg)",

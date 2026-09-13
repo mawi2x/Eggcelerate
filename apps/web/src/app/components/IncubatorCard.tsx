@@ -11,16 +11,16 @@ import { ChevronRight, Droplets, Thermometer } from "lucide-react";
 import { conditionDisplayLabels } from "../domain/cycle";
 import { rangeState, waterState } from "../domain/incubator";
 import type { Incubator, Mode, ReadingState } from "../domain/types";
-import { ExclamationIcon } from "./icons";
-import { SegmentedBattery } from "./SegmentedBattery";
-import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
-import { getWaterStatusInfo, readingStateColors } from "./statusPresentation";
-import { Button } from "./ui/button";
 import {
   ChamberCardFooter,
   ChamberCardHeader,
   ChamberCardShell,
 } from "./ChamberCardShell";
+import { ExclamationIcon } from "./icons";
+import { SegmentedBattery } from "./SegmentedBattery";
+import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
+import { getWaterStatusInfo, readingStateColors } from "./statusPresentation";
+import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 
 interface Props {

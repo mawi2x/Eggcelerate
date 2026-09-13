@@ -21,7 +21,7 @@ describe("filter-bar primitive", () => {
   it("theme has required tokens", () => {
     const css = fs.readFileSync(path.resolve("src/styles/theme.css"), "utf-8");
     expect(css).toContain("--type-label: 0.6875rem");
-    expect(css).toContain("--type-filter-label: var(--type-label)");
+    expect(css).toMatch(/--type-filter-label:\s*var\(\s*--type-label\s*\)/);
     expect(css).toContain("--type-label-compact: 0.625rem");
     expect(css).toContain("--tracking-label: 0.05em");
   });
