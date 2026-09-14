@@ -1,13 +1,18 @@
 """Cycle lifecycle atomicity and candling entry commands."""
 
+import pytest
 from fastapi.testclient import TestClient
 
 from .conftest import make_client
 
-client: TestClient = make_client()
+
+@pytest.fixture
+def client():
+    with make_client() as instance:
+        yield instance
 
 
-def test_start_validates_then_derives_cycle_state():
+def test_start_validates_then_derives_cycle_state(client: TestClient):
     assert (
         client.post(
             "/api/v1/incubators/chamber-1/cycles",
@@ -26,7 +31,7 @@ def test_start_validates_then_derives_cycle_state():
     assert started["candling_entries"] == []
 
 
-def test_reset_returns_chamber_to_ready():
+def test_reset_returns_chamber_to_ready(client: TestClient):
     reset = client.post(
         "/api/v1/incubators/chamber-2/cycles/current/reset", json={}
     ).json()["data"]
@@ -35,7 +40,7 @@ def test_reset_returns_chamber_to_ready():
     assert reset["total_eggs_loaded"] == 0
 
 
-def test_complete_is_atomic_and_validated():
+def test_complete_is_atomic_and_validated(client: TestClient):
     bad_counts = client.post(
         "/api/v1/incubators/chamber-1/cycles/current/complete",
         json={"hatched_eggs": 99},
@@ -62,7 +67,7 @@ def test_complete_is_atomic_and_validated():
     assert chamber["cycle_phase"] == "ready"
 
 
-def test_stop_archives_and_marks_stopped_early():
+def test_stop_archives_and_marks_stopped_early(client: TestClient):
     record = client.post(
         "/api/v1/incubators/chamber-4/cycles/current/stop", json={}
     ).json()["data"]
@@ -74,7 +79,7 @@ def test_stop_archives_and_marks_stopped_early():
     assert chamber["day_of_incubation"] == 22
 
 
-def test_candling_crud_by_entry_id():
+def test_candling_crud_by_entry_id(client: TestClient):
     created = client.post(
         "/api/v1/incubators/chamber-2/cycles/current/candling-entries",
         json={

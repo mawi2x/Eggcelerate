@@ -67,7 +67,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "checks": {
                         "store": "postgres_incubators",
                         "database": "up" if ready else "unavailable_or_uninitialized",
-                        "remaining_state": "cycles_candling_alerts_readings_memory",
+                        "remaining_state": "readings_memory",
                     },
                 },
             )

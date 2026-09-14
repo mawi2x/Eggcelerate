@@ -1,7 +1,7 @@
 """Async SQL persistence behind the existing application services.
 
 Other collections remain in memory during this explicitly selected B3 slice.
-Modes, chamber configuration, devices, and their replay records are relational.
+Configuration, alerts, cycles, terminal history and replay records are relational.
 """
 
 from collections.abc import AsyncIterator, Mapping
@@ -10,21 +10,36 @@ from typing import Any
 from uuid import UUID, uuid5
 
 from fastapi.concurrency import contextmanager_in_threadpool
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
-from sqlalchemy import delete, insert, select, text, update
+from sqlalchemy import delete, func, insert, select, text, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from ..errors import AppError
-from ..models import IncubatorDTO, ModeDTO, PreferencesDTO
+from ..models import (
+    AbortedCycleDTO,
+    HatchHistoryDTO,
+    IncubatorDTO,
+    ModeDTO,
+    PreferencesDTO,
+)
 from ..store import MemoryStore
+from .alerts import load_alerts, save_alerts, seed_alerts
+from .candling import load_candling, save_candling, seed_candling
+from .cycles import load_cycles, runtime_values, save_cycles, seed_cycles
 from .incubators import load_incubators, save_incubators, seed_incubators
 from .preferences import preference_values, preferences_from_row
 from .schema import (
+    alert_idempotency,
+    alerts,
+    candling_idempotency,
+    cycle_idempotency,
     farm_preferences,
     farms,
     incubator_idempotency,
+    incubator_runtime,
     incubators,
     mode_idempotency,
     modes,
@@ -105,9 +120,26 @@ class PostgresStore:
                     farm_preferences.c.farm_id == self.farm_id
                 )
             )
+            alert_seed = await session.scalar(
+                select(alerts.c.public_id)
+                .where(alerts.c.farm_id == self.farm_id)
+                .limit(1)
+            )
+            runtime_count = await session.scalar(
+                select(func.count())
+                .select_from(incubator_runtime)
+                .where(incubator_runtime.c.farm_id == self.farm_id)
+            )
+            chamber_count = await session.scalar(
+                select(func.count())
+                .select_from(incubators)
+                .where(incubators.c.farm_id == self.farm_id)
+            )
             return (
-                preferences is not None
-                and revision == "0003"
+                runtime_count == chamber_count
+                and alert_seed is not None
+                and preferences is not None
+                and revision == "0007"
                 and extension is not None
                 and farm is not None
                 and seeded is not None
@@ -133,6 +165,19 @@ class PostgresStore:
                 )
 
             await seed_incubators(session, self.farm_id, seed)
+            await seed_alerts(session, self.farm_id, seed)
+            previous_modes = seed.modes
+            seed.modes = {
+                row["public_id"]: mode_from_row(dict(row))
+                for row in (
+                    await session.execute(
+                        select(modes).where(modes.c.farm_id == self.farm_id)
+                    )
+                ).mappings()
+            }
+            await load_incubators(session, self.farm_id, seed, previous_modes)
+            await seed_cycles(session, self.farm_id, seed)
+            await seed_candling(session, self.farm_id, seed)
             await session.execute(
                 pg_insert(farm_preferences)
                 .values(**preference_values(self.farm_id, seed.preferences))
@@ -178,6 +223,25 @@ class PostgresStore:
                 )
                 if not incubator_rows:
                     raise AppError("offline", "Development chambers are not seeded.")
+                await load_cycles(session, self.farm_id, state)
+                await load_candling(session, self.farm_id, state)
+                before_journals = {
+                    unit.id: (
+                        state.current_cycles.get(unit.id),
+                        list(unit.candling_entries),
+                    )
+                    for unit in state.incubators.values()
+                }
+                before_cycles = dict(state.cycles)
+                before_runtime = {
+                    unit.id: runtime_values(
+                        self.farm_id, unit, state.current_cycles.get(unit.id)
+                    )
+                    for unit in state.incubators.values()
+                }
+                before_history = {r.cycle_id for r in state.hatch} | {
+                    r.cycle_id for r in state.aborted
+                }
                 before_incubators = dict(state.incubators)
                 preference_row = (
                     (
@@ -194,12 +258,20 @@ class PostgresStore:
                     raise AppError("offline", "Development preferences are not seeded.")
                 state.preferences = preferences_from_row(dict(preference_row))
                 before_preferences = state.preferences.model_copy(deep=True)
+                await load_alerts(session, self.farm_id, state)
+                before_alerts = dict(state.alerts)
                 # Never let a process-local durable-operation receipt override the DB.
                 state.idempotency = {
                     k: v
                     for k, v in state.idempotency.items()
                     if not k.startswith(
                         (
+                            "candling-",
+                            "start-",
+                            "reset-",
+                            "complete-",
+                            "stop-",
+                            "alert-",
                             "preferences:",
                             "create-mode:",
                             "patch-mode-",
@@ -210,6 +282,12 @@ class PostgresStore:
                     )
                 }
                 receipt_table = {
+                    "candling": candling_idempotency,
+                    "candling_delete": candling_idempotency,
+                    "cycle": cycle_idempotency,
+                    "complete": cycle_idempotency,
+                    "stop": cycle_idempotency,
+                    "alerts": alert_idempotency,
                     "incubator": incubator_idempotency,
                     "mode": mode_idempotency,
                     "preferences": preferences_idempotency,
@@ -237,13 +315,18 @@ class PostgresStore:
                                 "Idempotency key was used with a different request.",
                             )
                         schemas: dict[str, type[BaseModel]] = {
+                            "candling": IncubatorDTO,
+                            "cycle": IncubatorDTO,
+                            "complete": HatchHistoryDTO,
+                            "stop": AbortedCycleDTO,
                             "incubator": IncubatorDTO,
                             "mode": ModeDTO,
                             "preferences": PreferencesDTO,
                         }
-                        schema = schemas[kind]
-                        state.idempotency[f"{scope}:{key}"] = schema.model_validate(
+                        state.idempotency[f"{scope}:{key}"] = (
                             receipt["response"]
+                            if kind in ("alerts", "candling_delete")
+                            else schemas[kind].model_validate(receipt["response"])
                         )
                 yield state
                 removed = set(before) - set(state.modes)
@@ -280,6 +363,16 @@ class PostgresStore:
                 await save_incubators(
                     session, self.farm_id, state, before_incubators, incubator_rows
                 )
+                await save_cycles(
+                    session,
+                    self.farm_id,
+                    state,
+                    before_cycles,
+                    before_runtime,
+                    before_history,
+                )
+                await save_candling(session, self.farm_id, state, before_journals)
+                await save_alerts(session, self.farm_id, state, before_alerts)
                 if state.preferences != before_preferences:
                     await session.execute(
                         update(farm_preferences)
@@ -296,7 +389,7 @@ class PostgresStore:
                                 scope=scope,
                                 key=key,
                                 fingerprint=fingerprint,
-                                response=result.model_dump(mode="json"),
+                                response=jsonable_encoder(result),
                             )
                         )
         except IntegrityError as exc:

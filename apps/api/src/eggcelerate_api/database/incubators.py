@@ -1,4 +1,4 @@
-"""Relational chamber configuration; cycle/sensor projections remain volatile."""
+"""Relational chamber configuration; cycle runtime is hydrated separately."""
 
 from datetime import UTC, datetime
 from typing import Any

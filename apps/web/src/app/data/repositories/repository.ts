@@ -131,8 +131,15 @@ export interface EggcelerateRepository {
     input: UpdateIncubatorConfigurationInput,
     options?: MutationOptions,
   ): Promise<Result<Incubator>>;
-  startCycle(id: string, input: StartCycleInput): Promise<Result<Incubator>>;
-  resetStoppedCycle(id: string): Promise<Result<Incubator>>;
+  startCycle(
+    id: string,
+    input: StartCycleInput,
+    options?: MutationOptions,
+  ): Promise<Result<Incubator>>;
+  resetStoppedCycle(
+    id: string,
+    options?: MutationOptions,
+  ): Promise<Result<Incubator>>;
   requestManualTurn(id: string): Promise<Result<Incubator>>;
   reconnectIncubator(
     id: string,
@@ -141,27 +148,45 @@ export interface EggcelerateRepository {
   createCandlingEntry(
     id: string,
     input: CandlingEntryInput,
+    options?: MutationOptions,
   ): Promise<Result<Incubator>>;
   updateCandlingEntry(
     id: string,
     day: number,
     input: UpdateCandlingEntryInput,
+    options?: MutationOptions,
   ): Promise<Result<Incubator>>;
-  deleteCandlingEntry(id: string, day: number): Promise<Result<Incubator>>;
+  deleteCandlingEntry(
+    id: string,
+    day: number,
+    options?: MutationOptions,
+  ): Promise<Result<Incubator>>;
   listReadings(query: ReadingQuery): Promise<Result<Reading[]>>;
   listModes(): Promise<Result<Mode[]>>;
   addMode(mode: Mode): Promise<Result<Mode>>;
   updateMode(id: string, patch: Partial<Mode>): Promise<Result<Mode>>;
   deleteMode(id: string): Promise<Result<{ id: string }>>;
   listAlerts(): Promise<Result<AlertEntry[]>>;
-  acknowledgeAlert(id: string): Promise<Result<AlertEntry>>;
-  dismissAlert(id: string): Promise<Result<{ id: string }>>;
-  markAllAlertsRead(): Promise<Result<AlertEntry[]>>;
-  clearReadAlerts(): Promise<Result<AlertEntry[]>>;
+  acknowledgeAlert(
+    id: string,
+    options?: MutationOptions,
+  ): Promise<Result<AlertEntry>>;
+  dismissAlert(
+    id: string,
+    options?: MutationOptions,
+  ): Promise<Result<{ id: string }>>;
+  markAllAlertsRead(options?: MutationOptions): Promise<Result<AlertEntry[]>>;
+  clearReadAlerts(options?: MutationOptions): Promise<Result<AlertEntry[]>>;
   listHatchRecords(): Promise<Result<HatchRecord[]>>;
-  completeCycle(input: CompleteCycleInput): Promise<Result<CompletedCycle>>;
+  completeCycle(
+    input: CompleteCycleInput,
+    options?: MutationOptions,
+  ): Promise<Result<CompletedCycle>>;
   listAbortedCycles(): Promise<Result<AbortedCycleRecord[]>>;
-  stopCycle(input: StopCycleInput): Promise<Result<StoppedCycle>>;
+  stopCycle(
+    input: StopCycleInput,
+    options?: MutationOptions,
+  ): Promise<Result<StoppedCycle>>;
   listSettings(): Promise<Result<SettingsPreferences>>;
   saveSettings(
     settings: SettingsPreferences,

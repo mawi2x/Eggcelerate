@@ -9,6 +9,7 @@ from sqlalchemy import (
     Double,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Integer,
     MetaData,
     Table,
@@ -167,5 +168,242 @@ preferences_idempotency = Table(
     Column("response", JSONB, nullable=False),
     Column(
         "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+)
+
+alerts = Table(
+    "alerts",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("public_id", Text, primary_key=True),
+    Column("position", Integer, nullable=False),
+    Column("incubator_id", Text),
+    Column("unit_name", Text),
+    Column("severity", Text, nullable=False),
+    Column("code", Text, nullable=False),
+    Column("title", Text, nullable=False),
+    Column("message", Text, nullable=False),
+    Column("occurred_at", DateTime(timezone=True), nullable=False),
+    Column("acknowledged_at", DateTime(timezone=True)),
+    Column("dismissed", Boolean, nullable=False, server_default="false"),
+    ForeignKeyConstraint(
+        ["farm_id", "incubator_id"],
+        ["incubators.farm_id", "incubators.public_id"],
+        name="fk_alerts_farm_incubator",
+    ),
+    CheckConstraint(
+        "severity IN ('critical', 'warning', 'info')", name="ck_alerts_severity"
+    ),
+)
+
+alert_idempotency = Table(
+    "alert_idempotency",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("scope", Text, primary_key=True),
+    Column("key", Text, primary_key=True),
+    Column("fingerprint", Text, nullable=False),
+    Column("response", JSONB, nullable=False),
+    Column(
+        "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+)
+
+cycles = Table(
+    "cycles",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("id", Text, primary_key=True),
+    Column("incubator_id", Text, nullable=False),
+    Column("status", Text, nullable=False),
+    Column("started_on", Text, nullable=False),
+    ForeignKeyConstraint(
+        ["farm_id", "incubator_id"],
+        ["incubators.farm_id", "incubators.public_id"],
+        name="fk_cycles_farm_incubator",
+    ),
+    UniqueConstraint(
+        "farm_id", "incubator_id", "id", name="uq_cycles_farm_incubator_id"
+    ),
+    CheckConstraint(
+        "status IN ('active', 'completed', 'stopped', 'reset')", name="ck_cycles_status"
+    ),
+)
+Index(
+    "uq_cycles_active_chamber",
+    cycles.c.farm_id,
+    cycles.c.incubator_id,
+    unique=True,
+    postgresql_where=cycles.c.status == "active",
+)
+
+incubator_runtime = Table(
+    "incubator_runtime",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("incubator_id", Text, primary_key=True),
+    Column("cycle_id", Text),
+    Column("day_of_incubation", Integer, nullable=False),
+    Column("total_eggs_loaded", Integer),
+    Column("fertile_eggs", Integer),
+    Column("cycle_phase", Text, nullable=False),
+    Column("last_turned_at", DateTime(timezone=True), nullable=False),
+    Column("next_turn_at", DateTime(timezone=True), nullable=False),
+    ForeignKeyConstraint(
+        ["farm_id", "incubator_id"],
+        ["incubators.farm_id", "incubators.public_id"],
+        name="fk_runtime_farm_incubator",
+    ),
+    ForeignKeyConstraint(
+        ["farm_id", "incubator_id", "cycle_id"],
+        ["cycles.farm_id", "cycles.incubator_id", "cycles.id"],
+        name="fk_runtime_farm_cycle",
+    ),
+    CheckConstraint(
+        "day_of_incubation >= 0 AND (total_eggs_loaded IS NULL OR total_eggs_loaded >= 0)",
+        name="ck_runtime_counts",
+    ),
+    CheckConstraint(
+        "fertile_eggs IS NULL OR (fertile_eggs >= 0 AND fertile_eggs <= total_eggs_loaded)",
+        name="ck_runtime_fertile",
+    ),
+)
+
+cycle_history = Table(
+    "cycle_history",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("cycle_id", Text, primary_key=True),
+    Column("public_id", Text, nullable=False),
+    Column("kind", Text, nullable=False),
+    Column("incubator_id", Text, nullable=False),
+    Column("chamber_name", Text, nullable=False),
+    Column("mode_id", Text, nullable=False),
+    Column("mode_name", Text, nullable=False),
+    Column("started_on", Text),
+    Column("ended_on", Text),
+    Column("stopped_at", DateTime(timezone=True)),
+    Column("day_stopped", Integer),
+    Column("total_eggs", Integer, nullable=False),
+    Column("fertile_eggs", Integer),
+    Column("hatched_eggs", Integer),
+    Column("position", Integer, nullable=False),
+    ForeignKeyConstraint(
+        ["farm_id", "incubator_id", "cycle_id"],
+        ["cycles.farm_id", "cycles.incubator_id", "cycles.id"],
+        name="fk_history_farm_cycle",
+    ),
+    UniqueConstraint("farm_id", "public_id", name="uq_history_farm_public_id"),
+    CheckConstraint(
+        "total_eggs >= 0 AND (fertile_eggs IS NULL OR (fertile_eggs >= 0 AND fertile_eggs <= total_eggs))",
+        name="ck_history_counts",
+    ),
+    CheckConstraint(
+        "(kind = 'completed' AND started_on IS NOT NULL AND ended_on IS NOT NULL AND hatched_eggs IS NOT NULL AND hatched_eggs >= 0 AND hatched_eggs <= coalesce(fertile_eggs, total_eggs) AND stopped_at IS NULL AND day_stopped IS NULL) OR (kind = 'stopped' AND stopped_at IS NOT NULL AND day_stopped IS NOT NULL AND day_stopped >= 0 AND hatched_eggs IS NULL AND started_on IS NULL AND ended_on IS NULL)",
+        name="ck_history_outcome",
+    ),
+)
+
+cycle_idempotency = Table(
+    "cycle_idempotency",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("scope", Text, primary_key=True),
+    Column("key", Text, primary_key=True),
+    Column("fingerprint", Text, nullable=False),
+    Column("response", JSONB, nullable=False),
+    Column(
+        "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+)
+
+candling_entries = Table(
+    "candling_entries",
+    metadata,
+    Column("farm_id", Uuid, primary_key=True),
+    Column("cycle_id", Text, primary_key=True),
+    Column("public_id", Text, primary_key=True),
+    Column("day", Integer, nullable=False),
+    Column("label", Text, nullable=False),
+    Column("observed_on", Text, nullable=False),
+    Column("fertile_eggs", Integer, nullable=False),
+    Column("clear_eggs", Integer, nullable=False),
+    Column("uncertain_eggs", Integer, nullable=False),
+    Column("developing_eggs", Integer),
+    Column("stopped_developing_eggs", Integer),
+    Column("note", Text, nullable=False),
+    Column("checks", JSONB, nullable=False),
+    Column("checkpoint_type", Text, nullable=False),
+    Column("deleted", Boolean, nullable=False, server_default="false"),
+    ForeignKeyConstraint(
+        ["farm_id", "cycle_id"],
+        ["cycles.farm_id", "cycles.id"],
+        name="fk_candling_cycle",
+    ),
+    UniqueConstraint("farm_id", "cycle_id", "day", name="uq_candling_cycle_day"),
+    CheckConstraint(
+        "day > 0 AND fertile_eggs >= 0 AND clear_eggs >= 0 AND uncertain_eggs >= 0 AND (developing_eggs IS NULL OR developing_eggs >= 0) AND (stopped_developing_eggs IS NULL OR stopped_developing_eggs >= 0)",
+        name="ck_candling_counts",
+    ),
+    CheckConstraint(
+        "checkpoint_type IN ('first', 'later')", name="ck_candling_checkpoint"
+    ),
+    CheckConstraint("jsonb_typeof(checks) = 'array'", name="ck_candling_checks"),
+)
+candling_photos = Table(
+    "candling_photos",
+    metadata,
+    Column("farm_id", Uuid, primary_key=True),
+    Column("cycle_id", Text, primary_key=True),
+    Column("entry_id", Text, primary_key=True),
+    Column("position", Integer, primary_key=True),
+    Column("photo_key", Text, nullable=False),
+    ForeignKeyConstraint(
+        ["farm_id", "cycle_id", "entry_id"],
+        [
+            "candling_entries.farm_id",
+            "candling_entries.cycle_id",
+            "candling_entries.public_id",
+        ],
+        name="fk_candling_photo_entry",
+    ),
+    CheckConstraint(
+        "position >= 0 AND length(photo_key) > 0", name="ck_candling_photo"
+    ),
+)
+candling_idempotency = Table(
+    "candling_idempotency",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("scope", Text, primary_key=True),
+    Column("key", Text, primary_key=True),
+    Column("fingerprint", Text, nullable=False),
+    Column("response", JSONB, nullable=False),
+    Column(
+        "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+)
+
+telemetry_samples = Table(
+    "telemetry_samples",
+    metadata,
+    Column("farm_id", Uuid, primary_key=True),
+    Column("device_id", Uuid, primary_key=True),
+    Column("observed_at", DateTime(timezone=True), primary_key=True),
+    Column("received_at", DateTime(timezone=True), nullable=False),
+    Column("temperature_c", Double, nullable=False),
+    Column("humidity_pct", Double, nullable=False),
+    Column("water_ok", Boolean, nullable=False),
+    ForeignKeyConstraint(
+        ["farm_id", "device_id"],
+        ["devices.farm_id", "devices.id"],
+        name="fk_telemetry_device",
+    ),
+    CheckConstraint(
+        "temperature_c > '-Infinity'::float8 AND temperature_c < 'Infinity'::float8",
+        name="ck_telemetry_temperature",
+    ),
+    CheckConstraint(
+        "humidity_pct >= 0 AND humidity_pct <= 100", name="ck_telemetry_humidity"
     ),
 )

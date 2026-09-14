@@ -141,47 +141,80 @@ function candlingEntryInput(entry: CandlingLogEntry): CandlingEntryInput {
   };
 }
 
+const candlingPlanInputs = new WeakMap<MutationOptions, string>();
+const candlingPlans = new WeakMap<
+  MutationOptions,
+  Array<() => Promise<Result<Incubator>>>
+>();
+
 async function routeCandlingPatch(
   repository: EggcelerateRepository,
   id: string,
   patch: Partial<Incubator>,
+  options: MutationOptions,
 ): Promise<Result<Incubator>> {
-  const current = await repository.getIncubator(id);
-  if (!current.ok) return current;
-  const nextLog = patch.candlingLog;
-  if (!Array.isArray(nextLog)) {
-    return validationFailure("Candling patch must include the entry list.");
-  }
-  const previousByDay = new Map(
-    current.data.candlingLog.map((entry) => [entry.day, entry] as const),
-  );
-  const nextByDay = new Map(
-    nextLog.map((entry) => [entry.day, entry] as const),
-  );
-  let latest: Result<Incubator> = current;
-  for (const entry of nextLog) {
-    const previous = previousByDay.get(entry.day);
-    if (!previous) {
-      latest = await repository.createCandlingEntry(
-        id,
-        candlingEntryInput(entry),
-      );
-    } else if (
-      JSON.stringify(candlingEntryInput(previous)) !==
-      JSON.stringify(candlingEntryInput(entry))
-    ) {
-      const { day: _ignored, ...rest } = candlingEntryInput(entry);
-      latest = await repository.updateCandlingEntry(id, entry.day, rest);
+  const identity = JSON.stringify({ id, patch });
+  const original = candlingPlanInputs.get(options);
+  if (original !== undefined && original !== identity)
+    return {
+      ok: false,
+      error: {
+        code: "conflict",
+        message: "Retry options belong to a different candling change.",
+      },
+    };
+  let plan = candlingPlans.get(options);
+  if (!plan) {
+    const current = await repository.getIncubator(id);
+    if (!current.ok) return current;
+    const nextLog = patch.candlingLog;
+    if (!Array.isArray(nextLog))
+      return validationFailure("Candling patch must include the entry list.");
+    const previousByDay = new Map(
+      current.data.candlingLog.map((entry) => [entry.day, entry] as const),
+    );
+    const nextByDay = new Map(
+      nextLog.map((entry) => [entry.day, entry] as const),
+    );
+    plan = [];
+    for (const entry of nextLog) {
+      const previous = previousByDay.get(entry.day);
+      if (!previous) {
+        const input = candlingEntryInput(entry);
+        const child = {
+          idempotencyKey: `${options.idempotencyKey}:create:${entry.day}`,
+        };
+        plan.push(() => repository.createCandlingEntry(id, input, child));
+      } else if (
+        JSON.stringify(candlingEntryInput(previous)) !==
+        JSON.stringify(candlingEntryInput(entry))
+      ) {
+        const { day: _ignored, ...input } = candlingEntryInput(entry);
+        const child = {
+          idempotencyKey: `${options.idempotencyKey}:update:${entry.day}`,
+        };
+        plan.push(() =>
+          repository.updateCandlingEntry(id, entry.day, input, child),
+        );
+      }
     }
+    for (const day of previousByDay.keys()) {
+      if (!nextByDay.has(day)) {
+        const child = {
+          idempotencyKey: `${options.idempotencyKey}:delete:${day}`,
+        };
+        plan.push(() => repository.deleteCandlingEntry(id, day, child));
+      }
+    }
+    candlingPlans.set(options, plan);
+    candlingPlanInputs.set(options, identity);
+  }
+  let latest: Result<Incubator> | undefined;
+  for (const action of plan) {
+    latest = await action();
     if (!latest.ok) return latest;
   }
-  for (const day of previousByDay.keys()) {
-    if (!nextByDay.has(day)) {
-      latest = await repository.deleteCandlingEntry(id, day);
-      if (!latest.ok) return latest;
-    }
-  }
-  return latest;
+  return latest ?? repository.getIncubator(id);
 }
 
 // Screen-facing updateIncubator() keeps its signature so screens and the App
@@ -204,7 +237,7 @@ async function routeIncubatorPatch(
     );
   }
   if (sameKeySet(keys, RESET_PATCH_KEYS)) {
-    return repository.resetStoppedCycle(id);
+    return repository.resetStoppedCycle(id, options);
   }
   if ("dayOfIncubation" in patch || "totalEggsLoaded" in patch) {
     if (
@@ -213,10 +246,14 @@ async function routeIncubatorPatch(
     ) {
       return validationFailure("Cycle start needs a mode and an egg count.");
     }
-    return repository.startCycle(id, {
-      modeId: patch.modeId,
-      totalEggs: patch.totalEggsLoaded,
-    });
+    return repository.startCycle(
+      id,
+      {
+        modeId: patch.modeId,
+        totalEggs: patch.totalEggsLoaded,
+      },
+      options,
+    );
   }
   if (keys.length > 0 && keys.every((key) => CONFIG_PATCH_KEYS.includes(key))) {
     return repository.updateIncubatorConfiguration(
@@ -236,7 +273,12 @@ async function routeIncubatorPatch(
     return repository.reconnectIncubator(id, options);
   }
   if ("candled" in patch || "candlingLog" in patch) {
-    return routeCandlingPatch(repository, id, patch);
+    return routeCandlingPatch(
+      repository,
+      id,
+      patch,
+      options ?? { idempotencyKey: crypto.randomUUID() },
+    );
   }
   return validationFailure("Unsupported incubator patch for the command port.");
 }
@@ -343,8 +385,13 @@ export function useFarmActions() {
     },
   });
   const acknowledgeAlertMutation = useMutation({
-    mutationFn: async (id: string) =>
-      requireResultData(await repository.acknowledgeAlert(id)),
+    mutationFn: async ({
+      id,
+      options,
+    }: {
+      id: string;
+      options: MutationOptions;
+    }) => requireResultData(await repository.acknowledgeAlert(id, options)),
     onSuccess: (updated) => {
       queryClient.setQueryData<AlertEntry[]>(
         farmQueryKeys.alerts,
@@ -354,8 +401,13 @@ export function useFarmActions() {
     },
   });
   const dismissAlertMutation = useMutation({
-    mutationFn: async (id: string) =>
-      requireResultData(await repository.dismissAlert(id)),
+    mutationFn: async ({
+      id,
+      options,
+    }: {
+      id: string;
+      options: MutationOptions;
+    }) => requireResultData(await repository.dismissAlert(id, options)),
     onSuccess: ({ id }) => {
       queryClient.setQueryData<AlertEntry[]>(
         farmQueryKeys.alerts,
@@ -364,14 +416,14 @@ export function useFarmActions() {
     },
   });
   const markAllAlertsReadMutation = useMutation({
-    mutationFn: async () =>
-      requireResultData(await repository.markAllAlertsRead()),
+    mutationFn: async (options: MutationOptions) =>
+      requireResultData(await repository.markAllAlertsRead(options)),
     onSuccess: (alerts) =>
       queryClient.setQueryData(farmQueryKeys.alerts, alerts),
   });
   const clearReadAlertsMutation = useMutation({
-    mutationFn: async () =>
-      requireResultData(await repository.clearReadAlerts()),
+    mutationFn: async (options: MutationOptions) =>
+      requireResultData(await repository.clearReadAlerts(options)),
     onSuccess: (alerts) =>
       queryClient.setQueryData(farmQueryKeys.alerts, alerts),
   });
@@ -429,24 +481,40 @@ export function useFarmActions() {
       retry: () => void deleteMode(id),
     });
   }
-  async function acknowledgeAlert(id: string): Promise<boolean> {
-    return runMutation(() => acknowledgeAlertMutation.mutateAsync(id), {
-      retry: () => void acknowledgeAlert(id),
+  async function acknowledgeAlert(
+    id: string,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(
+      () => acknowledgeAlertMutation.mutateAsync({ id, options }),
+      {
+        retry: () => void acknowledgeAlert(id, options),
+      },
+    );
+  }
+  async function dismissAlert(
+    id: string,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(
+      () => dismissAlertMutation.mutateAsync({ id, options }),
+      {
+        retry: () => void dismissAlert(id, options),
+      },
+    );
+  }
+  async function markAllAlertsRead(
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(() => markAllAlertsReadMutation.mutateAsync(options), {
+      retry: () => void markAllAlertsRead(options),
     });
   }
-  async function dismissAlert(id: string): Promise<boolean> {
-    return runMutation(() => dismissAlertMutation.mutateAsync(id), {
-      retry: () => void dismissAlert(id),
-    });
-  }
-  async function markAllAlertsRead(): Promise<boolean> {
-    return runMutation(() => markAllAlertsReadMutation.mutateAsync(), {
-      retry: () => void markAllAlertsRead(),
-    });
-  }
-  async function clearReadAlerts(): Promise<boolean> {
-    return runMutation(() => clearReadAlertsMutation.mutateAsync(), {
-      retry: () => void clearReadAlerts(),
+  async function clearReadAlerts(
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(() => clearReadAlertsMutation.mutateAsync(options), {
+      retry: () => void clearReadAlerts(options),
     });
   }
   async function saveSettings(
@@ -478,9 +546,9 @@ export function useFarmActions() {
         ? (updateIncubatorMutation.variables?.id ?? null)
         : null,
       pendingAlertId: acknowledgeAlertMutation.isPending
-        ? (acknowledgeAlertMutation.variables ?? null)
+        ? (acknowledgeAlertMutation.variables?.id ?? null)
         : dismissAlertMutation.isPending
-          ? (dismissAlertMutation.variables ?? null)
+          ? (dismissAlertMutation.variables?.id ?? null)
           : null,
       markingAllAlertsRead: markAllAlertsReadMutation.isPending,
       clearingReadAlerts: clearReadAlertsMutation.isPending,
@@ -494,8 +562,13 @@ export function useCycleHistoryActions() {
   const queryClient = useQueryClient();
 
   const completeCycleMutation = useMutation({
-    mutationFn: async (input: CompleteCycleInput) =>
-      requireResultData(await repository.completeCycle(input)),
+    mutationFn: async ({
+      input,
+      options,
+    }: {
+      input: CompleteCycleInput;
+      options: MutationOptions;
+    }) => requireResultData(await repository.completeCycle(input, options)),
     onSuccess: ({ incubator, record }) => {
       queryClient.setQueryData<HatchRecord[]>(
         farmQueryKeys.hatchRecords,
@@ -512,8 +585,13 @@ export function useCycleHistoryActions() {
     },
   });
   const stopCycleMutation = useMutation({
-    mutationFn: async (input: StopCycleInput) =>
-      requireResultData(await repository.stopCycle(input)),
+    mutationFn: async ({
+      input,
+      options,
+    }: {
+      input: StopCycleInput;
+      options: MutationOptions;
+    }) => requireResultData(await repository.stopCycle(input, options)),
     onSuccess: ({ incubator }) => {
       queryClient.setQueryData<Incubator[]>(
         farmQueryKeys.incubators,
@@ -526,15 +604,27 @@ export function useCycleHistoryActions() {
     },
   });
 
-  async function completeCycle(input: CompleteCycleInput): Promise<boolean> {
-    return runMutation(() => completeCycleMutation.mutateAsync(input), {
-      retry: () => void completeCycle(input),
-    });
+  async function completeCycle(
+    input: CompleteCycleInput,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(
+      () => completeCycleMutation.mutateAsync({ input, options }),
+      {
+        retry: () => void completeCycle(input, options),
+      },
+    );
   }
-  async function stopCycle(input: StopCycleInput): Promise<boolean> {
-    return runMutation(() => stopCycleMutation.mutateAsync(input), {
-      retry: () => void stopCycle(input),
-    });
+  async function stopCycle(
+    input: StopCycleInput,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(
+      () => stopCycleMutation.mutateAsync({ input, options }),
+      {
+        retry: () => void stopCycle(input, options),
+      },
+    );
   }
 
   return {

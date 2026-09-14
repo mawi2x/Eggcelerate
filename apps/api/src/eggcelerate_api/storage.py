@@ -9,6 +9,7 @@ from __future__ import annotations
 from contextlib import AbstractContextManager
 from typing import Any, Protocol
 
+from .lifecycle import CycleState
 from .models import (
     AbortedCycleDTO,
     AlertDTO,
@@ -20,6 +21,8 @@ from .models import (
 
 
 class StoreState(Protocol):
+    cycles: dict[str, CycleState]
+    current_cycles: dict[str, str]
     modes: dict[str, ModeDTO]
     incubators: dict[str, IncubatorDTO]
     alerts: dict[str, AlertDTO]

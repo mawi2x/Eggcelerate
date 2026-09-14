@@ -91,8 +91,16 @@ def derive(unit: IncubatorDTO, mode: ModeDTO, now: datetime) -> IncubatorDTO:
     return unit.model_copy(
         update={
             "condition_severity": severity,
-            "status": severity_to_status(severity),
+            "status": (
+                "warning"
+                if unit.cycle_phase == "stopped_early" and unit.day_of_incubation > 0
+                else severity_to_status(severity)
+            ),
             "connection_state": connection_state(unit.paired),
-            "cycle_phase": cycle_phase(unit.day_of_incubation, mode.incubation_days),
+            "cycle_phase": (
+                "stopped_early"
+                if unit.cycle_phase == "stopped_early" and unit.day_of_incubation > 0
+                else cycle_phase(unit.day_of_incubation, mode.incubation_days)
+            ),
         }
     )

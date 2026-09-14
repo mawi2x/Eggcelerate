@@ -1,7 +1,7 @@
 # EGGCELERATE API
 
-> **Current status:** B3 modes, chamber/device configuration, and farm preferences are persistent.
-> Next: persistent alerts, then cycles/candling/history and readings.
+> **Current status:** B3 configuration, alerts, cycles/history, and candling journals are persistent.
+> Next: persistent readings and Timescale aggregation, then remaining B3 replay gates.
 > See the guide’s current handoff for verification scope and retry limitations.
 > See `docs/guide/backend-dashboard-first-guide.md`.
 
@@ -32,8 +32,8 @@ src/eggcelerate_api/
   api/v1/               routers (incubators, modes, alerts, history, preferences)
   database/             async store + chamber/device persistence, metadata, explicit seed
 alembic.ini
-migrations/             Alembic-only DDL; 0001 farms/modes; 0002 chamber/device configuration/replay; 0003 preferences/replay
-tests/                  49 tests with TEST_DATABASE_URL, including persistence/rollback/replay
+migrations/             Alembic-only DDL; 0001 farms/modes; 0002 chamber/device configuration/replay; 0003 preferences/replay; 0004 alerts/replay; 0005 cycles/runtime/history/replay; 0006 candling/photo metadata/replay
+tests/                  69 tests with TEST_DATABASE_URL, including persistence/rollback/replay
 ```
 
 ## Local commands
@@ -51,26 +51,25 @@ The dashboard-first backend keeps authentication disabled and local-only
 initially, with a dormant request-context boundary and a production startup
 guard. Do not add fake auth endpoints or JWT storage during that milestone.
 The opt-in database slice persists farms, modes, chamber/device configuration,
-and the corresponding replay records. MQTT
+preferences, alerts, cycle runtime, terminal history and corresponding replay records. MQTT
 and hardware integration remain deferred.
 
 Memory request transactions roll back all state and idempotency results on failure.
 The lock protects one process only; this is not persistence or distributed command
 safety. In postgres_incubators, mode POST/PATCH and chamber create/profile/configuration/
-reconnect and preferences PUT requests additionally use farm-scoped
+reconnect, preferences PUT and alert action requests additionally use farm-scoped
 SQL transactions and durable same-key replay with payload-conflict detection.
-Settings save and chamber create/profile/configuration/reconnect Retry actions preserve their
+Candling create/update/delete, cycle start/reset/complete/stop, alert actions, settings save and chamber create/profile/configuration/reconnect Retry actions preserve their
 logical key through the frontend and HTTP adapter. New user actions get new keys.
-Mode and remaining command hooks still need the same retry propagation; cycle
-and other replay durability remain later B3 work.
+Mode and manual-turn hooks still need retry propagation. Manual-turn acceptance
+and replay remain volatile even though turn timestamps persist.
 
 
-## PostgreSQL chamber/device slice
+## PostgreSQL persistence slice
 
 `STORAGE_BACKEND=memory` remains the default. `postgres_incubators` is deliberately
-partial: alerts, cycle state/history, candling, sensor values and
-turn timestamps remain in memory and reset with the API. Chamber names, modes,
-auto-turn/interval settings, device assignments, pairing state and farm preferences persist.
+partial: sensor readings remain in memory. Chamber names, modes,
+auto-turn/interval settings, device assignments, pairing state, farm preferences, alerts, cycle state, terminal history, candling journals/photo references and turn timestamps persist.
 Pairing here is the existing simulator-facing flag, not proof of hardware
 connectivity. Use one API worker while the remaining
 collections remain volatile. Do not treat this checkpoint as the full B3 exit.
@@ -97,14 +96,14 @@ changed before database initialization, use the same password in `DATABASE_URL`.
 For host-side Alembic/seed commands, use `127.0.0.1` instead of `db` in the URL.
 Migrations and seed are explicit: startup never runs DDL, reseeds, or falls back
 to memory when the database fails. Repeated seeding inserts missing defaults and
-preserves existing edits. An intentionally deleted default returns if explicitly
-seeded again.
+preserves existing edits. Deleted default modes can return when explicitly seeded again; alert and candling
+deletion markers prevent those entries from reappearing.
 
 The previous `postgres_modes` configuration is accepted as an alias for
-`postgres_incubators`; migration 0003 and chamber/preferences seeding are required.
+`postgres_incubators`; migration 0006 and chamber/preferences/alert/runtime seeding are required.
 
 `GET /readyz` reports `store: postgres_incubators`, database availability, and
-`remaining_state: cycles_candling_alerts_readings_memory`. It returns 503 for a missing migration, missing farm/chamber/preferences seed,
+`remaining_state: readings_memory`. It returns 503 for a missing migration, missing farm/chamber/preferences/alert/runtime seed,
 or unavailable database. `GET /healthz` remains a database-independent liveness
 check. Dashboard DTOs and all 22 paths are preserved; OpenAPI is unchanged from the
 previous modes checkpoint. Device assignment conflicts return 409 in both the
@@ -152,7 +151,7 @@ Implementation references: [SQLAlchemy async sessions](https://docs.sqlalchemy.o
 [Alembic async migrations](https://alembic.sqlalchemy.org/en/latest/cookbook.html#using-asyncio-with-alembic),
 and [TimescaleDB Docker images](https://github.com/timescale/timescaledb-docker).
 
-### Preferences checkpoint (2026-09-13)
+### Historical preferences checkpoint (2026-09-13)
 
 Migration 0003 adds one `farm_preferences` row per farm and atomic
 `preferences_idempotency` receipts. Stable fields use explicit columns; the
@@ -172,3 +171,110 @@ farm in the disposable database. Preferences and their exact replay response
 survived a real API + development database restart with the named volume retained;
 the temporary verification settings were restored to their original values.
 The running packaged API reports migration `0003 (head)`.
+
+### Historical alerts checkpoint (2026-09-13)
+
+Migration 0004 adds farm-scoped alert rows with timestamps and a dismissal flag,
+plus `alert_idempotency` receipts. Dismiss and clear operations hide rows rather
+than deleting their identities, so repeated seeding cannot resurrect them.
+All four actions commit atomically and accept an optional `Idempotency-Key`;
+response envelopes and the 22 API paths remain unchanged. Same-key replay
+returns the original response even if the alert is now dismissed. Single-alert
+and bulk-action replay scopes are distinct. Frontend Retry preserves the key;
+a new user action gets a new key.
+
+Readiness requires migration 0004 and at least one seeded alert row, including
+hidden rows when all alerts have been cleared. New alert generation and MQTT
+integration remain deferred. Cycles/candling/history and readings remain volatile.
+
+Verification: 56 API tests; 269 frontend tests; 24/24 live repository cases on
+an isolated disposable farm; frontend lint/typecheck/build and coverage thresholds
+(84.34% lines, 83.82% branches, 77.91% functions); Ruff/mypy (25 source files).
+Tests cover repeated seeding, acknowledgement timestamps, unread preservation,
+old replay without resurrection, bulk rollback, concurrent same-key dismissal,
+farm isolation, and populated 0003→0004 upgrade/downgrade preservation.
+
+The packaged API reports `0004 (head)`; schema drift check passes. On an isolated
+farm in the named development volume, dismissed/cleared alerts and all four exact
+replay responses survived an actual database/API container restart and repeated
+seed. The temporary proof container was removed; the default farm's alert actions
+were not changed by the proof. Next is cycle persistence with atomic terminal
+outcomes, then candling/history and readings.
+
+### Historical cycle checkpoint (2026-09-13)
+
+Migration 0005 adds `cycles`, `incubator_runtime`, `cycle_history`, and
+`cycle_idempotency`. Internal cycle IDs originate at start and flow into terminal
+history. A partial unique index permits one active cycle per chamber; history's
+farm/cycle primary key permits one terminal outcome. Farm/chamber/cycle foreign
+keys prevent mismatched references. Historical mode/name values are snapshots,
+so later configuration edits cannot rewrite a terminal record.
+
+Cycle changes, chamber runtime, history and replay commit together. A competing
+complete/stop request gets 409 once the cycle is terminal. The memory adapter
+has matching terminal guards. Start/reset retain their existing replacement/reset
+behavior: replaced active cycles are closed as `reset`, without inventing harvest
+or stopped history. Stopped cycles remain stopped after unrelated updates.
+Public chamber/history DTO fields and 22 API paths are unchanged.
+
+The frontend keeps the start/reset/complete/stop key through Retry, including
+failures of the follow-up chamber GET after a committed terminal write. Older
+replay returns its original result without reapplying an old cycle snapshot.
+
+Migration creates storage; explicit seed initializes missing runtime from the
+existing development fixtures (new custom chambers start ready). Previously
+volatile pre-0005 changes cannot be recovered by this migration. Repeated seed
+preserves existing runtime, history and receipts. Day counts retain current
+behavior; no calendar scheduler or MQTT execution was added. Candling data
+remains volatile and is cleared when the loaded cycle identity changes, preventing
+bootstrap entries from being attached to a newly started cycle.
+
+Verified: 63 API tests; 277 frontend tests; 28/28 live memory/HTTP contract cases
+on an isolated farm; coverage thresholds (87.18% lines, 84.71% branches, 80.64%
+functions); lint/typecheck/build, Ruff/mypy (27 source files), populated
+0004→0005 upgrade/downgrade, schema drift, and API Docker build.
+Active/completed/stopped/reset runtime, both terminal histories, and exact replay
+for all four lifecycle actions survived an actual database/API restart and
+repeated seed on an isolated farm in the named development volume. The proof
+container was removed. Packaged API reports `0005 (head)`.
+
+### Candling checkpoint (2026-09-14)
+
+Migration 0006 adds cycle-scoped `candling_entries`, ordered `candling_photos`
+reference metadata, and `candling_idempotency`. Farm/cycle foreign keys and a
+unique cycle/day constraint prevent duplicate or mismatched journal ownership.
+Deleted entries retain tombstones, so repeated seed cannot revive them. New
+explicit create actions can recreate a deleted day. Seed applies fixture entries
+only to their original fixture cycles, never a newer cycle.
+
+Current-cycle endpoints load the current journal; completion/reset hides it while
+retaining archived rows. Stopped journals remain visible until reset/replacement.
+Archived journal rows are retained in SQL; no new archive endpoint or photo-upload
+service was added. Photo references are stored in their supplied order.
+
+Create/update validate each count against loaded eggs. A chamber without a current
+cycle cannot accept a journal write. PATCH validates the merged entry, rejecting
+null required values. Entry/photo changes and replay receipts commit atomically.
+DELETE now accepts the optional replay header, with unchanged response shapes and
+22 API paths. The frontend sends DELETE correctly and preserves the action plan,
+keys and resolved targets through retries, including lost follow-up GET responses.
+The shared deletion test now requires success rather than accepting a failed call.
+
+Verified: 69 API tests; 283 frontend tests; 28/28 live repository cases on an isolated
+farm; coverage 89.30% lines, 82.87% branches, 82.66% functions; lint/typecheck/build;
+Ruff/mypy (28 source files); populated 0005→0006 upgrade/downgrade preservation;
+API Docker build, migration `0006 (head)` and clean schema drift. Pre-0006 volatile
+journal edits cannot be recovered by migration. Full B3 remains open for readings
+and remaining command/retry gates; B4 MQTT and B6 auth remain deferred.
+
+Journal contents, ordered photo references, deletion markers and exact replay
+responses survived an actual API/database restart and repeated seeding on an
+isolated farm in the named development volume. Temporary proof container removed.
+Explicit recreation of a deleted seeded day replaces its tombstone safely, even
+when its original seed ID differs from the new entry ID.
+
+### Readings foundation — 2026-09-14
+
+Migration 0007 adds the telemetry hypertable and internal ingestion/raw/five-minute research queries. Source readiness now requires 0007. The running development stack remains on 0006 until the endpoint integration is ready. Dashboard readings still use generated data. See [the storage contract](../../docs/guide/readings-storage-contract.md) for duplicate identity, time boundaries, retention and remaining integration gates.
+
+Foundation verification: 71 API tests passed against the disposable Timescale database; Ruff lint/format, mypy (29 source files), Alembic schema-drift check and git diff check passed. New tests prove timestamp/value validation, ordered stored reads, duplicate/conflicting ingestion, sparse UTC buckets, late arrivals, farm isolation, and reconnect/reseed persistence. Real database restart and dashboard HTTP integration are not yet proven for readings. Frontend code was unchanged in this checkpoint; its prior results are not a new test run.

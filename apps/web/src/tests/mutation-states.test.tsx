@@ -5,7 +5,11 @@ import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 import { ApiRepository } from "../app/data/repositories/api-repository";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
-import type { EggcelerateRepository } from "../app/data/repositories/repository";
+import type {
+  CompleteCycleInput,
+  EggcelerateRepository,
+  StopCycleInput,
+} from "../app/data/repositories/repository";
 import type { SettingsPreferences } from "../app/data/settings";
 import { wireExamples } from "../app/data/transport/examples";
 import { resetChamberToReady } from "../app/domain/incubator";
@@ -15,7 +19,10 @@ import {
   mutationErrorPresentation,
   RepositoryQueryError,
 } from "../app/features/farm/repository-query";
-import { useFarmActions } from "../app/features/farm/use-farm-data";
+import {
+  useCycleHistoryActions,
+  useFarmActions,
+} from "../app/features/farm/use-farm-data";
 import {
   AppProviders,
   createAppQueryClient,
@@ -38,6 +45,12 @@ async function waitFor(check: () => boolean) {
   throw new Error("Timed out waiting for mutation state.");
 }
 interface FarmActionsHandle {
+  completeCycle(input: CompleteCycleInput): Promise<boolean>;
+  stopCycle(input: StopCycleInput): Promise<boolean>;
+  acknowledgeAlert(id: string): Promise<boolean>;
+  dismissAlert(id: string): Promise<boolean>;
+  markAllAlertsRead(): Promise<boolean>;
+  clearReadAlerts(): Promise<boolean>;
   saveSettings(settings: SettingsPreferences): Promise<boolean>;
   addIncubator(unit: Incubator): Promise<boolean>;
   updateIncubator(id: string, patch: Partial<Incubator>): Promise<boolean>;
@@ -55,7 +68,7 @@ async function mountActions(repository: EggcelerateRepository) {
     current: null,
   };
   function Probe() {
-    observed.current = useFarmActions();
+    observed.current = { ...useFarmActions(), ...useCycleHistoryActions() };
     return null;
   }
   await act(async () => {
@@ -81,15 +94,32 @@ function storedUnit(queryClient: QueryClient, id: string): Incubator {
 }
 
 describe("repository mutation states", () => {
-  it.each([
-    "create",
-    "profile",
-    "configuration",
-    "reconnect",
-    "preferences",
-  ] as const)(
-    "reuses the HTTP operation key when retrying %s after a lost committed response",
-    async (operation) => {
+  it.each(
+    (
+      [
+        "start",
+        "reset",
+        "complete",
+        "stop",
+        "create",
+        "profile",
+        "configuration",
+        "reconnect",
+        "preferences",
+        "acknowledgeAlert",
+        "dismissAlert",
+        "markAllAlertsRead",
+        "clearReadAlerts",
+      ] as const
+    ).flatMap((operation) =>
+      [
+        false,
+        ...(operation === "complete" || operation === "stop" ? [true] : []),
+      ].map((loseFollowup) => ({ operation, loseFollowup })),
+    ),
+  )(
+    "reuses $operation key after lost response (follow-up GET: $loseFollowup)",
+    async ({ operation, loseFollowup }) => {
       vi.mocked(toast.error).mockClear();
       const example = wireExamples.find(
         (item) => item.path === "/api/v1/incubators",
@@ -101,6 +131,12 @@ describe("repository mutation states", () => {
       const preferenceEnvelope = wireExamples.find(
         (item) => item.path === "/api/v1/preferences" && item.method === "GET",
       )?.response as { ok: true; data: Record<string, unknown> };
+      const alertEnvelope = wireExamples.find(
+        (item) => item.path === "/api/v1/alerts" && item.method === "GET",
+      )?.response as { ok: true; data: Record<string, unknown>[] };
+      const terminalEnvelope = wireExamples.find((item) =>
+        item.path.endsWith(`/cycles/current/${operation}`),
+      )?.response as { ok: true; data: Record<string, unknown> } | undefined;
       const dto = envelope.data[0];
       const seen: string[] = [];
       const results = new Map<string, unknown>();
@@ -110,27 +146,52 @@ describe("repository mutation states", () => {
         baseUrl: "http://api",
         fetchImpl: (async (url: unknown, init?: RequestInit) => {
           if (!init?.method || init.method === "GET") {
+            if (
+              loseFollowup &&
+              commits > 0 &&
+              loseResponse &&
+              String(url).endsWith(`/incubators/${dto.id}`)
+            ) {
+              loseResponse = false;
+              throw new TypeError("Follow-up GET lost after terminal commit");
+            }
             return {
               json: async () =>
                 String(url).endsWith("/preferences")
                   ? preferenceEnvelope
-                  : envelope,
+                  : String(url).endsWith(`/incubators/${dto.id}`)
+                    ? { ok: true, data: dto }
+                    : envelope,
             } as Response;
           }
           const key = new Headers(init.headers).get("Idempotency-Key") ?? "";
           seen.push(key);
           if (!results.has(key)) {
             commits += 1;
-            const patch = JSON.parse(init.body as string) as Record<
+            const patch = JSON.parse((init.body as string) || "{}") as Record<
               string,
               unknown
             >;
             results.set(key, {
               ok: true,
-              data: operation === "preferences" ? patch : { ...dto, ...patch },
+              data:
+                operation === "complete" || operation === "stop"
+                  ? terminalEnvelope?.data
+                  : operation === "start" || operation === "reset"
+                    ? dto
+                    : operation === "preferences"
+                      ? patch
+                      : operation === "acknowledgeAlert"
+                        ? alertEnvelope.data[0]
+                        : operation === "dismissAlert"
+                          ? { id: alertEnvelope.data[0].id }
+                          : operation === "markAllAlertsRead" ||
+                              operation === "clearReadAlerts"
+                            ? alertEnvelope.data
+                            : { ...dto, ...patch },
             });
           }
-          if (loseResponse) {
+          if (loseResponse && !loseFollowup) {
             loseResponse = false;
             throw new TypeError("Response lost after server commit");
           }
@@ -145,18 +206,54 @@ describe("repository mutation states", () => {
         const settings = await repository.listSettings();
         if (!settings.ok) throw new Error("Settings fixture failed");
         const invoke = () =>
-          operation === "preferences"
-            ? actions.saveSettings(settings.data)
-            : operation === "create"
-              ? actions.addIncubator(input)
-              : actions.updateIncubator(
+          operation === "start"
+            ? actions.updateIncubator(input.id, {
+                modeId: input.modeId,
+                totalEggsLoaded: 20,
+                dayOfIncubation: 1,
+              })
+            : operation === "reset"
+              ? actions.updateIncubator(
                   input.id,
-                  operation === "profile"
-                    ? { name: "Retry name" }
-                    : operation === "configuration"
-                      ? { autoTurn: false }
-                      : { paired: true },
-                );
+                  resetChamberToReady(input, new Date()),
+                )
+              : operation === "complete"
+                ? actions.completeCycle({
+                    incubatorId: input.id,
+                    chamber: input.name,
+                    modeName: "Broiler",
+                    cycleDays: 9,
+                    totalEggs: 24,
+                    fertileEggs: 22,
+                    hatchedEggs: 20,
+                  })
+                : operation === "stop"
+                  ? actions.stopCycle({
+                      incubatorId: input.id,
+                      incubator: input.name,
+                      modeName: "Broiler",
+                      dayStopped: 9,
+                      totalEggs: 24,
+                      fertileEggs: 22,
+                    })
+                  : operation === "acknowledgeAlert" ||
+                      operation === "dismissAlert"
+                    ? actions[operation](alertEnvelope.data[0].id as string)
+                    : operation === "markAllAlertsRead" ||
+                        operation === "clearReadAlerts"
+                      ? actions[operation]()
+                      : operation === "preferences"
+                        ? actions.saveSettings(settings.data)
+                        : operation === "create"
+                          ? actions.addIncubator(input)
+                          : actions.updateIncubator(
+                              input.id,
+                              operation === "profile"
+                                ? { name: "Retry name" }
+                                : operation === "configuration"
+                                  ? { autoTurn: false }
+                                  : { paired: true },
+                            );
         await act(async () => {
           expect(await invoke()).toBe(false);
         });
@@ -185,6 +282,138 @@ describe("repository mutation states", () => {
       }
     },
   );
+  it.each(
+    (["create", "update", "delete"] as const).flatMap((operation) =>
+      [false, true].map((loseFollowup) => ({ operation, loseFollowup })),
+    ),
+  )(
+    "retries candling $operation with the same action and target (follow-up: $loseFollowup)",
+    async ({ operation, loseFollowup }) => {
+      vi.mocked(toast.error).mockClear();
+      const envelope = wireExamples.find(
+        (item) => item.path === "/api/v1/incubators",
+      )?.response as { ok: true; data: Record<string, unknown>[] };
+      const entry = {
+        id: "chamber-1-d2",
+        day: 2,
+        label: "Journal",
+        observed_on: "2026-09-14",
+        fertile_eggs: 10,
+        clear_eggs: 1,
+        uncertain_eggs: 0,
+        note: "Before",
+        photo_keys: ["photos/one"],
+        checks: [],
+        checkpoint_type: "first",
+      };
+      let journal: Record<string, unknown>[] =
+        operation === "create" ? [] : [entry];
+      const dto = () => ({
+        ...envelope.data[0],
+        candling_entries: journal,
+        candled_days: journal.map((e) => e.day),
+      });
+      const receipts = new Map<string, unknown>();
+      const seen: { method: string; key: string; path: string }[] = [];
+      let lose = true;
+      let commits = 0;
+      const repository = new ApiRepository({
+        baseUrl: "http://api",
+        fetchImpl: (async (url: unknown, init?: RequestInit) => {
+          const path = String(url);
+          const method = init?.method ?? "GET";
+          if (method === "GET") {
+            if (
+              loseFollowup &&
+              lose &&
+              commits > 0 &&
+              path.endsWith("/incubators/chamber-1")
+            ) {
+              lose = false;
+              throw new TypeError("Follow-up lost");
+            }
+            const data = path.endsWith("/incubators")
+              ? [dto()]
+              : path.endsWith("/candling-entries")
+                ? journal
+                : dto();
+            return { json: async () => ({ ok: true, data }) } as Response;
+          }
+          const key = new Headers(init?.headers).get("Idempotency-Key") ?? "";
+          seen.push({ method, key, path });
+          if (!receipts.has(key)) {
+            commits += 1;
+            const body = JSON.parse((init?.body as string) || "{}");
+            if (method === "POST") journal = [{ ...entry, ...body }];
+            else if (method === "PATCH") journal = [{ ...journal[0], ...body }];
+            else if (method === "DELETE") journal = [];
+            receipts.set(key, {
+              ok: true,
+              data: method === "DELETE" ? { id: entry.id } : journal[0],
+            });
+          }
+          if (!loseFollowup && lose) {
+            lose = false;
+            throw new TypeError("Committed response lost");
+          }
+          return { json: async () => receipts.get(key) } as Response;
+        }) as typeof fetch,
+      });
+      const mounted = await mountActions(repository);
+      try {
+        const unit = storedUnit(mounted.queryClient, "chamber-1");
+        const next =
+          operation === "create"
+            ? [
+                {
+                  id: "draft",
+                  day: 2,
+                  label: "Journal",
+                  date: "2026-09-14",
+                  fertile: 10,
+                  clear: 1,
+                  uncertain: 0,
+                  note: "After",
+                  photos: ["photos/one"],
+                  checks: [],
+                },
+              ]
+            : operation === "delete"
+              ? []
+              : unit.candlingLog.map((e) => ({ ...e, note: "After" }));
+        await act(async () => {
+          expect(
+            await mounted.observed.current?.updateIncubator(unit.id, {
+              candlingLog: next,
+            }),
+          ).toBe(false);
+        });
+        const feedback = vi.mocked(toast.error).mock.calls[
+          vi.mocked(toast.error).mock.calls.length - 1
+        ]?.[1] as unknown as { action: { onClick: () => void } };
+        await act(async () => feedback.action.onClick());
+        await waitFor(
+          () =>
+            seen.length === 2 &&
+            !mounted.observed.current?.actionState.updatingIncubatorId,
+        );
+        expect(commits).toBe(1);
+        expect(seen[0].key).not.toBe("");
+        expect(seen[1]).toEqual(seen[0]);
+        expect(seen[0].method).toBe(
+          operation === "create"
+            ? "POST"
+            : operation === "update"
+              ? "PATCH"
+              : "DELETE",
+        );
+        expect(journal).toHaveLength(operation === "delete" ? 0 : 1);
+      } finally {
+        await mounted.cleanup();
+      }
+    },
+  );
+
   it("simulates offline, rejected, and timeout results without writing", async () => {
     for (const failureMode of ["offline", "rejected", "timeout"] as const) {
       const repository = new InMemoryEggcelerateRepository({
@@ -217,7 +446,7 @@ describe("repository mutation states", () => {
     };
 
     function Probe() {
-      const actions = useFarmActions();
+      const actions = { ...useFarmActions(), ...useCycleHistoryActions() };
       observed.current = actions;
       return <span>{actions.actionState.updatingIncubatorId ?? "idle"}</span>;
     }

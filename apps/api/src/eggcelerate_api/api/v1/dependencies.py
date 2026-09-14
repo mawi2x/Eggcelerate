@@ -20,6 +20,7 @@ async def get_store(request: Request) -> AsyncIterator[StoreState]:
             yield state
         return
     replay = None
+    kind: str
     scope: str | None = None
     key = request.headers.get("Idempotency-Key")
     route_path = request.url.path.rstrip("/")
@@ -69,6 +70,87 @@ async def get_store(request: Request) -> AsyncIterator[StoreState]:
             ).encode()
         ).hexdigest()
         replay = ("preferences", key, fingerprint, "preferences")
+    if key and route_path.startswith("/api/v1/alerts/"):
+        scope = None
+        alert_id = request.path_params.get("alert_id")
+        if (
+            request.method == "POST"
+            and route_path == "/api/v1/alerts/actions/acknowledge-all"
+        ):
+            scope = "alert-acknowledge-all"
+        elif (
+            request.method == "POST"
+            and route_path == "/api/v1/alerts/actions/clear-acknowledged"
+        ):
+            scope = "alert-clear-acknowledged"
+        elif (
+            alert_id
+            and request.method == "POST"
+            and route_path == f"/api/v1/alerts/{alert_id}/acknowledge"
+        ):
+            scope = f"alert-acknowledge-one-{alert_id}"
+        elif (
+            alert_id
+            and request.method == "DELETE"
+            and route_path == f"/api/v1/alerts/{alert_id}"
+        ):
+            scope = f"alert-dismiss-{alert_id}"
+        if scope:
+            # These actions have no request payload; identity is method + target.
+            fingerprint = hashlib.sha256(
+                f"{request.method}:{route_path}".encode()
+            ).hexdigest()
+            replay = (scope, key, fingerprint, "alerts")
+    unit_id = request.path_params.get("incubator_id")
+    if key and unit_id and request.method == "POST":
+        actions = {
+            f"/api/v1/incubators/{unit_id}/cycles": ("start", "cycle"),
+            **{
+                f"/api/v1/incubators/{unit_id}/cycles/current/{action}": (
+                    action,
+                    action if action in ("complete", "stop") else "cycle",
+                )
+                for action in ("reset", "complete", "stop")
+            },
+        }
+        if route_path in actions:
+            action, kind = actions[route_path]
+            raw = await request.body()
+            fingerprint = hashlib.sha256(
+                json.dumps(
+                    json.loads(raw) if raw else {},
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
+            replay = (f"{action}-{unit_id}", key, fingerprint, kind)
+    if key and unit_id:
+        base = f"/api/v1/incubators/{unit_id}/cycles/current/candling-entries"
+        entry_id = request.path_params.get("entry_id")
+        scope = None
+        kind = "candling"
+        if request.method == "POST" and route_path == base:
+            scope = f"candling-{unit_id}"
+        elif entry_id and route_path == f"{base}/{entry_id}":
+            if request.method == "PATCH":
+                scope = f"candling-{unit_id}-{entry_id}"
+            elif request.method == "DELETE":
+                scope = f"candling-delete-{unit_id}-{entry_id}"
+                kind = "candling_delete"
+        if scope:
+            raw = await request.body()
+            fingerprint = hashlib.sha256(
+                json.dumps(
+                    {
+                        "method": request.method,
+                        "path": route_path,
+                        "body": json.loads(raw) if raw else {},
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
+            replay = (scope, key, fingerprint, kind)
     async with database.transaction(memory, replay) as state:
         yield state
 

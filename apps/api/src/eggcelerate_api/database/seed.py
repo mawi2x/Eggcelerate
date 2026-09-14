@@ -16,7 +16,7 @@ async def main() -> None:
     try:
         await database.seed()
         print(
-            "Development farm and missing modes, chambers, devices, and preferences seeded."
+            "Development farm configuration, alerts, cycle runtime, history and journals seeded without overwriting existing rows."
         )
     finally:
         await database.close()

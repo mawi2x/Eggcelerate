@@ -237,6 +237,20 @@ def patch_candling(
 
 
 @router.delete("/{incubator_id}/cycles/current/candling-entries/{entry_id}")
-def delete_candling(incubator_id: str, entry_id: str, store: Store) -> dict:
-    removed = services.delete_candling(store, incubator_id, entry_id, services.utcnow())
-    return ok_envelope({"id": removed})
+def delete_candling(
+    incubator_id: str,
+    entry_id: str,
+    store: Store,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> dict:
+    result = services.idempotent(
+        store,
+        f"candling-delete-{incubator_id}-{entry_id}",
+        idempotency_key,
+        lambda: {
+            "id": services.delete_candling(
+                store, incubator_id, entry_id, services.utcnow()
+            )
+        },
+    )
+    return ok_envelope(result)

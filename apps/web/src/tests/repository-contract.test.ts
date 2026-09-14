@@ -94,6 +94,7 @@ describe.each(targets)("repository contract (%s)", (_name, factory) => {
     });
     expect(created.ok && created.data.candled[50]).toBe(true);
     const deleted = await repository.deleteCandlingEntry("chamber-10", 50);
+    expect(deleted.ok).toBe(true);
     expect(
       deleted.ok && deleted.data.candlingLog.some((entry) => entry.day === 50),
     ).toBe(false);
@@ -142,6 +143,56 @@ describe.each(targets)("repository contract (%s)", (_name, factory) => {
     expect(completed.ok && completed.data.record.hatchedEggs).toBe(20);
     expect(completed.ok && completed.data.incubator.dayOfIncubation).toBe(0);
   });
+
+  it.each(["stop", "complete"] as const)(
+    "rejects a second terminal outcome after %s",
+    async (first) => {
+      const repository = factory();
+      const id = first === "stop" ? "chamber-8" : "chamber-7";
+      expect(
+        (await repository.startCycle(id, { modeId: "broiler", totalEggs: 20 }))
+          .ok,
+      ).toBe(true);
+      const completion = {
+        incubatorId: id,
+        chamber: "Cycle test",
+        modeName: "Broiler",
+        cycleDays: 1,
+        totalEggs: 20,
+        fertileEggs: null,
+        hatchedEggs: 10,
+      };
+      const stopping = {
+        incubatorId: id,
+        incubator: "Cycle test",
+        modeName: "Broiler",
+        dayStopped: 1,
+        totalEggs: 20,
+        fertileEggs: null,
+      };
+      expect(
+        (
+          await (first === "stop"
+            ? repository.stopCycle(stopping)
+            : repository.completeCycle(completion))
+        ).ok,
+      ).toBe(true);
+      // A profile edit must not reopen a stopped cycle.
+      await repository.updateIncubatorProfile(id, { name: "Terminal cycle" });
+      if (first === "stop") {
+        const unit = await repository.getIncubator(id);
+        expect(unit.ok && unit.data.cyclePhase).toBe("stopped_early");
+        expect(unit.ok && unit.data.status).toBe("warning");
+      }
+      for (const result of [
+        await repository.completeCycle(completion),
+        await repository.stopCycle(stopping),
+      ]) {
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.error.code).toBe("conflict");
+      }
+    },
+  );
 
   it("reads ordered bounded windows", async () => {
     const repository = factory();

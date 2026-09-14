@@ -16,6 +16,7 @@ from threading import Lock
 from typing import Any
 
 from . import domain
+from .lifecycle import CycleState
 from .models import (
     AbortedCycleDTO,
     AlertDTO,
@@ -606,6 +607,34 @@ class MemoryStore:
             temperature_unit="c",
             time_zone="gmt8",
         )
+        self.cycles = {
+            f"seed-cycle-{unit.id}": CycleState(
+                f"seed-cycle-{unit.id}",
+                unit.id,
+                "active",
+                (boot - timedelta(days=max(0, unit.day_of_incubation - 1)))
+                .date()
+                .isoformat(),
+            )
+            for unit in self.incubators.values()
+            if unit.day_of_incubation > 0
+        }
+        self.current_cycles = {
+            cycle.incubator_id: cycle.id for cycle in self.cycles.values()
+        }
+        for record in self.hatch:
+            self.cycles[record.cycle_id] = CycleState(
+                record.cycle_id, record.incubator_id, "completed", record.started_on
+            )
+        for stopped in self.aborted:
+            self.cycles[stopped.cycle_id] = CycleState(
+                stopped.cycle_id,
+                stopped.incubator_id,
+                "stopped",
+                (stopped.stopped_at - timedelta(days=max(0, stopped.day_stopped - 1)))
+                .date()
+                .isoformat(),
+            )
         self.idempotency: dict[str, Any] = {}
         # A primitive Lock can be released by another worker thread: FastAPI
         # may enter and exit a sync generator dependency on different workers.

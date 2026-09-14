@@ -222,6 +222,9 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         powerSource: unit.powerSource,
         nextTurn: unit.nextTurn,
       }),
+      ...(unit.cyclePhase === "stopped_early" && unit.dayOfIncubation > 0
+        ? { status: "warning" as const }
+        : {}),
       connectionState: connectionStateFromPairing(unit.paired),
     });
   }
@@ -470,6 +473,23 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       const invalid = this.validateCandlingEntry(input);
       if (invalid) return error("validation_error", invalid);
       const unit = this.incubators[index];
+      if (unit.dayOfIncubation < 1)
+        return error("conflict", "There is no current cycle journal to edit.");
+      if (
+        [
+          input.fertile,
+          input.clear,
+          input.uncertain,
+          input.developing,
+          input.stoppedDeveloping,
+        ].some(
+          (count) => count !== undefined && count > (unit.totalEggsLoaded ?? 0),
+        )
+      )
+        return error(
+          "validation_error",
+          "Candling counts must not exceed loaded eggs.",
+        );
       if (unit.candlingLog.some((entry) => entry.day === input.day)) {
         return error(
           "conflict",
@@ -523,6 +543,23 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         stoppedDeveloping: merged.stoppedDeveloping,
       });
       if (invalid) return error("validation_error", invalid);
+      if (unit.dayOfIncubation < 1)
+        return error("conflict", "There is no current cycle journal to edit.");
+      if (
+        [
+          merged.fertile,
+          merged.clear,
+          merged.uncertain,
+          merged.developing,
+          merged.stoppedDeveloping,
+        ].some(
+          (count) => count !== undefined && count > (unit.totalEggsLoaded ?? 0),
+        )
+      )
+        return error(
+          "validation_error",
+          "Candling counts must not exceed loaded eggs.",
+        );
       const candlingLog = unit.candlingLog.map((entry, position) =>
         position === entryIndex ? merged : entry,
       );
@@ -718,6 +755,16 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
           "not_found",
           `Incubator ${input.incubatorId} was not found.`,
         );
+      const current = this.incubators[index];
+      if (
+        current.dayOfIncubation < 1 ||
+        current.cyclePhase === "stopped_early"
+      ) {
+        return error(
+          "conflict",
+          "There is no active cycle; it may already have finished.",
+        );
+      }
       const result = this.createHarvestRecord(input);
       if (!result.ok) return result;
       const incubator = {
@@ -784,6 +831,16 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
           "not_found",
           `Incubator ${input.incubatorId} was not found.`,
         );
+      const current = this.incubators[index];
+      if (
+        current.dayOfIncubation < 1 ||
+        current.cyclePhase === "stopped_early"
+      ) {
+        return error(
+          "conflict",
+          "There is no active cycle; it may already have finished.",
+        );
+      }
       const result = this.createAbortedCycleRecord(input);
       if (!result.ok) return result;
       const incubator: Incubator = {

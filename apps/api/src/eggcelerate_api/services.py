@@ -6,11 +6,13 @@ from __future__ import annotations
 import hashlib
 import uuid
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any, TypeVar
 
 from . import domain
-from .errors import AppError
+from .errors import AppError, validated
+from .lifecycle import CycleState
 from .models import (
     AbortedCycleDTO,
     AlertDTO,
@@ -164,6 +166,14 @@ def start_cycle(
 ) -> IncubatorDTO:
     unit = require_incubator(store, incubator_id)
     mode = require_mode(store, body.mode_id)
+    old = store.cycles.get(store.current_cycles.get(incubator_id, ""))
+    if old and old.status == "active":
+        store.cycles[old.id] = replace(old, status="reset")
+    cycle = CycleState(
+        f"cycle-{uuid.uuid4().hex}", incubator_id, "active", now.date().isoformat()
+    )
+    store.cycles[cycle.id] = cycle
+    store.current_cycles[incubator_id] = cycle.id
     return save(
         store,
         unit.model_copy(
@@ -206,7 +216,11 @@ def reset_chamber(store: StoreState, unit: IncubatorDTO, now: datetime) -> Incub
 def reset_stopped_cycle(
     store: StoreState, incubator_id: str, now: datetime
 ) -> IncubatorDTO:
-    return reset_chamber(store, require_incubator(store, incubator_id), now)
+    unit = require_incubator(store, incubator_id)
+    cycle = store.cycles.get(store.current_cycles.get(incubator_id, ""))
+    if cycle and cycle.status == "active":
+        store.cycles[cycle.id] = replace(cycle, status="reset")
+    return reset_chamber(store, unit, now)
 
 
 def request_turn(
@@ -268,10 +282,20 @@ def readings(
     return points
 
 
+def require_active_cycle(store: StoreState, incubator_id: str) -> CycleState:
+    cycle = store.cycles.get(store.current_cycles.get(incubator_id, ""))
+    if cycle is None or cycle.status != "active":
+        raise AppError(
+            "conflict", "There is no active cycle; it may already have finished."
+        )
+    return cycle
+
+
 def complete_cycle(
     store: StoreState, incubator_id: str, body: CompleteCycleRequest, now: datetime
 ) -> HatchHistoryDTO:
     unit = require_incubator(store, incubator_id)
+    cycle = require_active_cycle(store, incubator_id)
     total = unit.total_eggs_loaded or 0
     if unit.day_of_incubation < 1 or total < 1:
         raise AppError("validation_error", "There is no active cycle to complete.")
@@ -284,20 +308,20 @@ def complete_cycle(
     if fertile is None and not (0 <= body.hatched_eggs <= total):
         raise AppError("validation_error", "Hatched eggs must fit within total eggs.")
     mode = require_mode(store, unit.mode_id)
-    start = now - timedelta(days=max(0, unit.day_of_incubation - 1))
     record = HatchHistoryDTO(
         id=f"hatch-{uuid.uuid4().hex[:8]}",
-        cycle_id=f"cycle-{uuid.uuid4().hex[:8]}",
+        cycle_id=cycle.id,
         incubator_id=unit.id,
         chamber_name=unit.name,
         mode_id=mode.id,
         mode_name=mode.name,
-        started_on=start.date().isoformat(),
+        started_on=cycle.started_on,
         ended_on=now.date().isoformat(),
         total_eggs=total,
         fertile_eggs=fertile,
         hatched_eggs=body.hatched_eggs,
     )
+    store.cycles[cycle.id] = replace(cycle, status="completed")
     store.hatch.append(record)
     reset_chamber(store, unit, now)
     return record
@@ -307,10 +331,11 @@ def stop_cycle(store: StoreState, incubator_id: str, now: datetime) -> AbortedCy
     # Mirrors the mock: record the abort, then mark stopped_early/warning.
     # Unlike complete, stop does NOT reset the chamber.
     unit = require_incubator(store, incubator_id)
+    cycle = require_active_cycle(store, incubator_id)
     mode = require_mode(store, unit.mode_id)
     record = AbortedCycleDTO(
         id=f"aborted-{uuid.uuid4().hex[:8]}",
-        cycle_id=f"cycle-{uuid.uuid4().hex[:8]}",
+        cycle_id=cycle.id,
         incubator_id=unit.id,
         chamber_name=unit.name,
         mode_id=mode.id,
@@ -320,6 +345,7 @@ def stop_cycle(store: StoreState, incubator_id: str, now: datetime) -> AbortedCy
         total_eggs=unit.total_eggs_loaded or 0,
         fertile_eggs=unit.fertile_eggs,
     )
+    store.cycles[cycle.id] = replace(cycle, status="stopped")
     store.aborted.append(record)
     store.incubators[unit.id] = unit.model_copy(
         update={"cycle_phase": "stopped_early", "status": "warning"}
@@ -331,10 +357,30 @@ def list_candling(store: StoreState, incubator_id: str) -> list[CandlingEntryDTO
     return list(require_incubator(store, incubator_id).candling_entries)
 
 
+def validate_candling_counts(
+    unit: IncubatorDTO, entry: CandlingEntryDTO | CandlingEntryCreate
+) -> None:
+    if unit.day_of_incubation < 1:
+        raise AppError("conflict", "There is no current cycle journal to edit.")
+    total = unit.total_eggs_loaded or 0
+    for count in (
+        entry.fertile_eggs,
+        entry.clear_eggs,
+        entry.uncertain_eggs,
+        entry.developing_eggs,
+        entry.stopped_developing_eggs,
+    ):
+        if count is not None and count > total:
+            raise AppError(
+                "validation_error", "Candling counts must not exceed loaded eggs."
+            )
+
+
 def create_candling(
     store: StoreState, incubator_id: str, body: CandlingEntryCreate, now: datetime
 ) -> IncubatorDTO:
     unit = require_incubator(store, incubator_id)
+    validate_candling_counts(unit, body)
     if any(entry.day == body.day for entry in unit.candling_entries):
         raise AppError(
             "conflict", f"A candling entry for day {body.day} already exists."
@@ -363,7 +409,10 @@ def update_candling(
     )
     if position is None:
         raise AppError("not_found", f"Candling entry {entry_id} was not found.")
-    merged = unit.candling_entries[position].model_copy(update=patch)
+    merged: CandlingEntryDTO = validated(
+        CandlingEntryDTO, {**unit.candling_entries[position].model_dump(), **patch}
+    )
+    validate_candling_counts(unit, merged)
     entries = list(unit.candling_entries)
     entries[position] = merged
     return save(store, unit.model_copy(update={"candling_entries": entries}), now)

@@ -1,32 +1,61 @@
 # EGGCELERATE Dashboard-First Backend Guide
 
-> **Status:** B3 farm preferences verified; next: alerts
+> **Status:** B3 candling persistence verified; next: readings
 > **Prepared:** 2026-09-04
 > **Scope:** Local FastAPI backend for the existing dashboard, followed by persistence and device simulation
 > **Deferred:** Real authentication, user administration, production deployment, and physical actuator control
 
-## 0. Current handoff (2026-09-13)
+## 0. Current handoff (2026-09-14)
 
-B0–B2 are recorded complete. B3 now persists farms, modes, chamber/device configuration, farm preferences, and their replay records; alerts, cycles/candling/history and readings are still in memory. The full B3 exit is not met.
+B0–B2 are recorded complete. B3 now persists farms, modes, chamber/device configuration, farm preferences, alerts, cycle runtime, terminal history, candling journals/photo references, and their replay records; readings are still in memory. The full B3 exit is not met.
 The dated checkpoints below are historical evidence, not current resume instructions.
 
 ### Evidence and limitations
 
-- The latest preferences gate passed 265 frontend tests (34 files), coverage, lint/typecheck/build, 49 API tests including PostgreSQL integration, Ruff and mypy (24 source files), API Docker build, populated upgrade/downgrade and schema drift checks.
+- The latest candling gate passed 283 frontend tests (34 files), coverage, lint/typecheck/build, 69 API tests including PostgreSQL integration, Ruff/mypy (28 source files), and 28/28 live repository cases on an isolated farm. Packaged API migration 0006 and schema drift are verified.
 - Simulator S0/S1/GUI and 22 unittest results are user-reported for the separate `eggcelerate-simulate` repository; its source and revision were not verified here. Simulator completion does not establish API/MQTT integration.
-- Chamber create/profile/configuration/reconnect retries now reuse one logical key through the hook and HTTP adapter. Other hooks (including modes and cycle commands) still mint fresh keys per attempt; do not claim general retry safety yet.
+- Candling create/update/delete, cycle start/reset/complete/stop, alert actions, settings saves and chamber create/profile/configuration/reconnect retries now reuse one logical key through the hook and HTTP adapter. Other hooks (modes and manual turn) still mint fresh keys per attempt; do not claim general retry safety yet.
 - Wire examples now describe the current memory readiness response and accepted B1 mutation shapes; all seven error codes have examples. Operational health/readiness responses use their own shapes rather than the dashboard result envelope.
-- Working tree contains uncommitted backend and unrelated UI work. Base HEAD at review: `ed907a33942abb21a85e8d556041792844558251`; this revision alone does not reproduce the checkpoint. Review and selectively checkpoint files, then record actual commit IDs for both repositories. Do not use `git add -A`.
+- Alerts work started from clean HEAD `dd3a2ca94413a53bdb6f8ab984ad1955035e7675`. The alerts, cycle and candling slices are uncommitted; this base alone does not reproduce the latest checkpoint. No commit was created by this task.
 
 ### Implemented versus planned
 
-The main repository has in-memory FastAPI, API Docker/Compose configuration, `ApiRepository`, the mock/API switch, and an opt-in `postgres_incubators` backend (`postgres_modes` remains a configuration alias). PostgreSQL currently persists farms/modes, chamber/device configuration, and their replay records. Other persistence slices, API MQTT integration, WebSockets, real authentication, and hardware integration remain future work.
+The main repository has in-memory FastAPI, API Docker/Compose configuration, `ApiRepository`, the mock/API switch, and an opt-in `postgres_incubators` backend (`postgres_modes` remains a configuration alias). PostgreSQL currently persists farms/modes, chamber/device configuration, preferences, alerts, cycle runtime, terminal history, candling journals/photo references, and their replay records. Other persistence slices, API MQTT integration, WebSockets, real authentication, and hardware integration remain future work.
 
 MQTT QoS/retention, 15-second live cadence, and five-minute research avg/min/max/count are requirements to reconcile and verify during B3/B4, not integration results from this review. Authentication remains deferred to B6; no VPS/public deployment before that gate.
 
 Error mapping: `validation_error` → 422; `not_found` → 404; `conflict` and `rejected` → 409; `offline` → 503; `timeout` → 504; `unknown_error` → 500.
 
-### B3 preferences checkpoint (2026-09-13)
+### B3 candling checkpoint (2026-09-14)
+
+- **Changes:** migration 0006 adds cycle-owned entries, ordered photo-reference metadata and replay receipts. Unique cycle/day and scoped foreign keys enforce ownership. Deletion tombstones survive seeding; fixture entries stay with their original cycles. Archived journals survive completion/reset while current endpoints show the current visible journal.
+- **Validation/contract:** per-count loaded-egg bounds, merged PATCH validation, and rejection of writes to ready chambers. DELETE adds an optional replay header; response shapes and 22 API paths remain unchanged. API deletion now sends DELETE; the shared test explicitly requires success. No file-upload service or archived-journal endpoint was added.
+- **Retries:** frontend stores the original per-entry action plan and keys, and retains resolved update/delete targets. Six behavior tests cover lost committed responses and lost follow-up GETs across create/update/delete.
+- **Verification:** 69 API tests; 283 frontend tests; 28/28 isolated live cases; coverage 89.30% lines, 82.87% branches, 82.66% functions; lint/typecheck/build and Ruff/mypy (28 source files). Tests cover tombstones, photo replacement/order, old replay without overwriting newer edits, archived-cycle and farm isolation, partial entry/photo/receipt rollback, concurrent same-day creates, and populated migration preservation. Packaged API is at `0006 (head)` with clean schema drift.
+- **Restart proof:** journals, ordered photo references, deleted entries and exact create/update/delete replay survived an actual API/database restart and repeated seeding on an isolated farm in the named development volume. Temporary proof container removed. Explicit recreation of deleted seeded days is also covered.
+- **Limits:** remaining state is `readings_memory`; manual-turn acceptance/replay and mode-hook retry continuity still need B3 exit review. Existing journal changes from before 0006 were volatile and cannot be recovered by migration. Photo keys are references, not uploaded files. Prior uncommitted work is preserved; no commit created.
+- **Next:** persistent readings and Timescale aggregation, then finish remaining B3 command/replay gates before B4.
+
+### Historical B3 cycle checkpoint (2026-09-13)
+
+- **Changes:** migration 0005 adds cycle identity, chamber runtime, terminal history and replay. Constraints permit one active cycle per chamber and one terminal outcome per cycle, with scoped foreign keys. Historical mode/name snapshots survive later edits. Runtime persists day/egg counts, phase and turn timestamps.
+- **Behavior:** start/reset preserve existing replacement semantics, closing replaced active cycles as reset. Complete/stop commit runtime, history and receipt together; a competing terminal action returns 409. Stopped state survives unrelated updates. Public DTO fields and 22 OpenAPI paths remain unchanged.
+- **Retries:** start/reset/complete/stop hooks preserve their logical key, including failures in follow-up GET composition. Old-key replay returns its saved response without replacing newer runtime.
+- **Verification:** 63 API tests; 277 frontend tests; 28/28 isolated live repository cases; coverage 87.18% lines, 84.71% branches, 80.64% functions; lint/typecheck/build and Ruff/mypy (27 source files). Tests cover partial-write rollback, separate-instance complete/stop races, same-key replay, seed/restart preservation, scoped constraints, and populated 0004→0005 upgrade/downgrade preserving earlier slices.
+- **Live proof:** packaged API reports `0005 (head)` and schema drift is clean. Active/completed/stopped/reset states, both terminal histories and all four exact replay responses survived a database/API container restart and repeated seeding on an isolated farm in the named development volume. Temporary proof container removed.
+- **Limits:** remaining state is `candling_readings_memory`. Initial runtime bootstrap uses development fixtures; pre-0005 volatile changes cannot be recovered. Cycle day progression keeps existing behavior, without a scheduler. Candling stays volatile but cannot be attached to a newer loaded cycle. Manual-turn acceptance/replay remains volatile despite durable timestamps. Full B3 remains open; B4/B6 remain gated. No commit created; prior alerts work preserved.
+- **Next:** cycle-scoped candling entries and photo metadata (0006), then readings.
+
+### Historical B3 alerts checkpoint (2026-09-13)
+
+- **Changes:** migration 0004 adds farm-scoped alert columns, acknowledgement timestamps, dismissal tombstones and replay receipts. The configured backend name remains `postgres_incubators`, with `postgres_modes` accepted as an alias. Readiness requires 0004 and seeded alert rows; hidden rows count when the visible list is empty.
+- **Contract:** optional `Idempotency-Key` headers added to acknowledge, dismiss, acknowledge-all and clear-acknowledged. Existing envelopes and paths are unchanged. The frontend preserves one key through Retry; fresh actions receive fresh keys. Older replay responses do not reapply mutations or resurrect removed alerts.
+- **Verification:** 56 API tests; 269 frontend tests; 24/24 isolated live repository cases; coverage 84.34% lines, 83.82% branches, 77.91% functions; lint/typecheck/build and Ruff/mypy (25 source files). Populated migration upgrade/downgrade preserves preference edits and receipts. Tests prove unread preservation, seed/restart survival, bulk rollback, farm isolation and concurrent same-key dismissal.
+- **Live proof:** packaged API build and migration `0004 (head)` verified; schema drift check passes. All four exact replay responses and dismissal tombstones survived an actual database/API container restart and repeated seeding on an isolated farm in the named development volume. The temporary proof container was removed; default-farm alert actions were not changed by the proof.
+- **Limits:** `cycles_candling_readings_memory` remains volatile. Alert generation from telemetry is still deferred. Full B3 remains open; B4 MQTT and B6 auth boundaries remain unchanged. Existing Vite chunk and upstream Python dependency warnings remain.
+- **Next:** persist cycles, then candling/history and readings.
+
+### Historical B3 preferences checkpoint (2026-09-13)
 
 - **Changes:** migration 0003 adds explicit preference columns, an extensible JSONB notification-toggle map and farm-scoped replay receipts. Reads and replacements use the existing SQL farm transaction. Missing preference rows fail closed; seeding repairs missing rows without overwriting edits.
 - **Retries:** settings saves retain their operation key through frontend Retry. Replaying an old save returns the original response without replacing newer settings; payload mismatches return 409.
@@ -415,16 +444,18 @@ git diff --check
 
 Database checkpoints additionally run migrations against a disposable empty database and adapter integration tests. MQTT checkpoints additionally run simulator integration tests. Browser automation is not part of these gates.
 
-## 10. Next implementation batch: B3 alerts
+## 10. Next implementation batch: B3 readings
 
-Migrations 0001–0003 persist modes, chamber/device configuration and preferences.
-Keep their restart, retry and migration gates green while porting alerts.
+**2026-09-14 foundation checkpoint:** migration 0007 and internal validated ingestion/raw/research queries are implemented. See [storage contract](readings-storage-contract.md). Dashboard reads still use generated samples; API wiring, explicit development ingestion and the remaining persistence proofs are next. Migration 0007 has been applied to the disposable test database only.
 
-1. Add migration 0004 for farm-scoped alerts, preserving current IDs, timestamps, severity, message and read/dismiss state.
-2. Seed only missing defaults; ensure cleared or dismissed alerts are not resurrected by repeated seeding or restart.
-3. Persist acknowledge, dismiss, mark-all-read and clear-read operations atomically. Add durable replay and stable frontend retry keys where those operations use idempotency keys.
-4. Prove farm isolation, bulk-operation rollback, populated migration preservation, replay behavior, live repository parity and API/database restart survival.
-5. Continue cycles/candling/history → readings. B4 MQTT remains gated on the full B3 exit; authentication stays in B6.
+Migrations 0001–0006 persist configuration, alerts, cycles/history and journals.
+Keep their migration, retry, concurrency and restart gates green.
+
+1. Reconcile the existing reading DTO/window behavior with raw telemetry storage and five-minute research avg/min/max/count requirements. Document any necessary additive wire changes before implementing them.
+2. Add migration 0007 for farm/device-scoped telemetry samples using Timescale, with observed/received timestamps and explicit units. Define duplicate-sample identity and indexes from the query paths.
+3. Implement deterministic development ingestion/seed and persistent window queries. Replace runtime-generated readings for the PostgreSQL adapter without introducing MQTT execution yet.
+4. Prove UTC bucket boundaries, late/out-of-order samples, duplicate ingestion, empty buckets, gaps, farm/device isolation, retention policy decisions, populated migration and real restart survival.
+5. Finish durable manual-turn acceptance/replay and remaining frontend retry gaps, then run the full B3 exit matrix. B4 MQTT execution remains gated on that result; authentication remains B6.
 
 ### B3 verification matrix
 
@@ -443,7 +474,7 @@ Keep their restart, retry and migration gates green while porting alerts.
 
 1. Read the current handoff above, API README, architecture and firmware safety contracts, and database setup WIP.
 2. Inspect source and working-tree changes; current source wins over historical examples. Preserve unrelated changes.
-3. Execute B3 steps in section 10 in order, starting with alerts and the verified preferences baseline.
+3. Execute B3 steps in section 10 in order, starting with readings and the verified candling baseline.
 4. Keep the API contract and screen behavior stable; document any necessary contract change before implementing it.
 5. Record the section 13 checkpoint and actual repository revisions before switching phases.
 
