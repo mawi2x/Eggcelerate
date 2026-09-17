@@ -24,6 +24,7 @@ from ..models import (
     IncubatorDTO,
     ModeDTO,
     PreferencesDTO,
+    TurnAccepted,
 )
 from ..store import MemoryStore
 from .alerts import load_alerts, save_alerts, seed_alerts
@@ -274,6 +275,8 @@ class PostgresStore:
                             "alert-",
                             "preferences:",
                             "create-mode:",
+                            "delete-mode-",
+                            "turn-",
                             "patch-mode-",
                             "create-incubator:",
                             "patch-",
@@ -285,6 +288,8 @@ class PostgresStore:
                     "candling": candling_idempotency,
                     "candling_delete": candling_idempotency,
                     "cycle": cycle_idempotency,
+                    "turn": cycle_idempotency,
+                    "mode_delete": mode_idempotency,
                     "complete": cycle_idempotency,
                     "stop": cycle_idempotency,
                     "alerts": alert_idempotency,
@@ -321,11 +326,12 @@ class PostgresStore:
                             "stop": AbortedCycleDTO,
                             "incubator": IncubatorDTO,
                             "mode": ModeDTO,
+                            "turn": TurnAccepted,
                             "preferences": PreferencesDTO,
                         }
                         state.idempotency[f"{scope}:{key}"] = (
                             receipt["response"]
-                            if kind in ("alerts", "candling_delete")
+                            if kind in ("alerts", "candling_delete", "mode_delete")
                             else schemas[kind].model_validate(receipt["response"])
                         )
                 yield state

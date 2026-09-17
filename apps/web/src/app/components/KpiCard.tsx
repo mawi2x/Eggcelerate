@@ -29,6 +29,10 @@ interface Props {
   minHeight?: "compact" | "standard";
   /** Hides the glyph below sm (narrow multi-column rows like Trends KPIs). */
   hideIconOnMobile?: boolean;
+  /** Moves the glyph to the row's end; text stays left (Overview executive cards). */
+  iconRight?: boolean;
+  /** 20x4 bar beside the value in its own color (Trends stat tiles). */
+  accentBar?: string;
 }
 
 const cardStyle: CSSProperties = {
@@ -47,6 +51,8 @@ export function KpiCard({
   footer,
   minHeight = "compact",
   hideIconOnMobile = false,
+  iconRight = false,
+  accentBar,
 }: Props) {
   const hasDetail = Boolean(pill || footer);
   const heightClass =
@@ -63,7 +69,13 @@ export function KpiCard({
       }}
     >
       <CardContent className="flex flex-col p-3 sm:p-4">
-        <div className="flex items-start gap-3">
+        <div
+          className={
+            iconRight
+              ? "flex items-start gap-3 flex-row-reverse"
+              : "flex items-start gap-3"
+          }
+        >
           <span
             aria-hidden="true"
             className={
@@ -89,19 +101,42 @@ export function KpiCard({
             >
               {label}
             </div>
-            <div
-              className="mt-1 text-(length:--type-panel-title)"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: "var(--weight-extrabold)",
-                lineHeight: "var(--leading-tight)",
-                color: accent ?? "var(--text-primary)",
-                whiteSpace: "normal",
-                wordBreak: "break-word",
-              }}
-            >
-              {value}
-            </div>
+            {accentBar ? (
+              <div className="mt-1 flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className="h-5 w-1 shrink-0 rounded-full"
+                  style={{ backgroundColor: accentBar }}
+                />
+                <div
+                  className="text-(length:--type-panel-title)"
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontWeight: "var(--weight-extrabold)",
+                    lineHeight: "var(--leading-tight)",
+                    color: accent ?? "var(--text-primary)",
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {value}
+                </div>
+              </div>
+            ) : (
+              <div
+                className="mt-1 text-(length:--type-panel-title)"
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontWeight: "var(--weight-extrabold)",
+                  lineHeight: "var(--leading-tight)",
+                  color: accent ?? "var(--text-primary)",
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
+                }}
+              >
+                {value}
+              </div>
+            )}
           </div>
         </div>
         {footer && (

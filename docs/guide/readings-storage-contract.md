@@ -1,7 +1,7 @@
 # B3 readings storage contract (2026-09-14)
 
-Migration 0007 adds the internal storage boundary. The dashboard endpoint still
-uses generated readings; this is a foundation checkpoint, not the B3 exit.
+Migration 0007 adds the storage boundary. The PostgreSQL dashboard endpoint now
+reads stored telemetry; mock/memory mode retains generated readings. Full B3 remains open.
 No new HTTP endpoints or wire fields are introduced in this checkpoint.
 
 ## Raw samples
@@ -36,15 +36,39 @@ until an explicit retention decision; a materialized aggregate and refresh polic
 can follow measured query load. The hypertable API and uniqueness rule follow
 [Timescale's official documentation](https://github.com/timescale/docs/blob/latest/api/hypertable/create_hypertable.md).
 
-## Next integration gate
+## Dashboard and development ingestion
 
-Connect PostgreSQL-backed dashboard reads and an explicit development ingestion
-command. Generated demo data must be opt-in and must not mask missing telemetry.
-Decide the public `full` window's cycle boundary before replacing the current
-age-based generated series. Update contract tests to assert actual time boundaries
-and ordered stored values, rather than requiring generated 13/85/109 point counts.
-Expose research data through an additive, documented DTO/endpoint when needed.
-Before calling readings complete, prove populated migration downgrade/upgrade,
-real database restart survival, concurrent retries and the dashboard/live HTTP
-contract matrix. Durable manual-turn replay and remaining frontend retry gaps
-still gate full B3; MQTT execution remains B4.
+`GET /api/v1/incubators/{id}/readings?window=24h|7d|full` keeps the existing
+five-field ReadingDTO envelope. PostgreSQL returns only stored samples, including
+an empty array when none exist. Unknown chambers return 404, invalid windows 422,
+and unavailable storage 503. There is no fallback to generated data.
+
+`24h` and `7d` use `[request time - duration, request time)`. `full` starts at
+midnight UTC on the current cycle's recorded start date and ends at request time.
+The existing cycle model has date precision only: same-day samples before a cycle
+started can therefore appear. Exact cycle-start timestamps and historical device
+assignment would be needed for stricter attribution. A reset/ready chamber has an
+empty full window; recent device windows remain available. Queries follow the
+chamber's currently assigned device. Stopped cycles remain visible until reset.
+
+Import a JSON array explicitly from `apps/api`, with DATABASE_URL and
+DEFAULT_FARM_ID set for the intended local farm:
+
+```sh
+PYTHONPATH=src .venv/bin/python -m eggcelerate_api.database.ingest chamber-1 samples.json
+```
+
+Example `samples.json` (choose the actual observed timestamp):
+
+```json
+[{"observed_at":"2026-09-14T08:00:00Z","temperature_c":37.3,"humidity_pct":52,"water_ok":true}]
+```
+
+The entire batch is validated before writes and committed atomically. Exact retries
+are counted separately; a conflicting value rolls the batch back. The importer
+accepts development/test environments only. Normal configuration seeding creates
+no telemetry, removes no existing data, and does not enable the frontend API switch.
+
+Five-minute research queries remain internal; no new public research endpoint or
+MQTT ingestion has been introduced. Durable manual-turn replay and remaining
+frontend mode retries are next before the full B3 exit matrix and B4 MQTT.

@@ -27,9 +27,7 @@ describe("detail screen layout", () => {
       "utf-8",
     );
 
-    expect(settings).toContain(
-      'className="min-w-0 flex-1 rounded-2xl p-4 md:p-6"',
-    );
+    expect(settings).toContain("rounded-2xl p-4 md:p-6");
     expect(settings).not.toContain("padding: 24");
     expect(calendar).toContain(
       "h-[var(--control-hit-area-icon)] w-[var(--control-hit-area-icon)]",

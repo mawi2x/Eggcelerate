@@ -1,11 +1,15 @@
-import { Egg, Lock, WifiSlash } from "@phosphor-icons/react";
-import { ChevronRight, LockKeyhole, RotateCw, Wifi, Zap } from "lucide-react";
+import { Egg, WifiSlash } from "@phosphor-icons/react";
+import { ChevronRight, RotateCw, Wifi, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { CandlingCheckpoint, Incubator, Mode } from "../../domain/types";
 import { IncubatingIcon } from "../icons";
 import { Button } from "../ui/button";
 import { Progress } from "../ui/progress";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "../ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -14,7 +18,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Switch } from "../ui/switch";
-import { KeyValue } from "./primitives";
+import { KeyValue, StatusCallout } from "./primitives";
 import { StopCycleModal } from "./StopCycleModal";
 import { relTime } from "./types";
 
@@ -90,79 +94,8 @@ export function DeviceSettingsTab({
   };
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-      {/* Left Sub-Nav Card */}
-      <nav
-        className="w-full max-w-none shrink-0 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-1.5 sm:p-2 lg:sticky lg:top-6 lg:max-w-[240px] lg:p-4"
-        style={{
-          borderRadius: "var(--radius-card)",
-        }}
-        aria-label="Device settings"
-      >
-        <ul className="grid grid-cols-3 gap-1 lg:flex lg:flex-col lg:gap-1">
-          {[
-            {
-              id: "mode" as const,
-              label: "Incubation mode",
-              mobileLabel: "Mode",
-              Icon: IncubatingIcon,
-            },
-            {
-              id: "turning" as const,
-              label: "Turning schedule",
-              mobileLabel: "Turning",
-              Icon: RotateCw,
-            },
-            {
-              id: "device" as const,
-              label: "Device & connection",
-              mobileLabel: "Device",
-              Icon: Zap,
-            },
-          ].map(({ id, label, mobileLabel, Icon }) => {
-            const isActive = settingTab === id;
-            return (
-              <li key={id} className="min-w-0 w-full">
-                <button
-                  type="button"
-                  onClick={() => setSettingTab(id)}
-                  className={`flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-2 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 lg:justify-start sm:gap-2.5 sm:px-3 ${
-                    isActive
-                      ? "border-[var(--brand-primary-soft)] bg-[var(--local-nav-selected-bg)] text-[var(--local-nav-selected-fg)]"
-                      : "border-transparent bg-transparent text-[var(--text-primary)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"
-                  }`}
-                  style={{
-                    height: "var(--control-height-toolbar)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-body-sm)",
-                    fontWeight: "var(--weight-bold)",
-                  }}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <Icon
-                    size={16}
-                    strokeWidth={isActive ? 2.5 : 2}
-                    className="shrink-0"
-                    style={{
-                      color: isActive
-                        ? "var(--local-nav-selected-fg)"
-                        : "var(--text-primary)",
-                    }}
-                  />
-                  <span className="min-w-0 break-words whitespace-normal lg:hidden">
-                    {mobileLabel}
-                  </span>
-                  <span className="hidden min-w-0 break-words whitespace-normal lg:inline">
-                    {label}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {/* Right Content Card */}
+    <>
+      {/* Settings sub-tabs live inside the card as a segmented control. */}
       <section
         aria-labelledby={
           settingTab === "mode"
@@ -171,24 +104,76 @@ export function DeviceSettingsTab({
               ? "device-settings-turning-title"
               : "device-settings-device-title"
         }
-        className="min-w-0 flex-1 rounded-2xl p-4 md:p-6"
+        className="min-w-0 rounded-2xl p-4 md:p-6"
         style={{
           backgroundColor: "var(--surface-card)",
           borderRadius: "var(--radius-card)",
           border: "1px solid var(--border-default)",
         }}
       >
+        <fieldset
+          className="mb-4 w-full min-w-0 border-0 p-0"
+          aria-label="Device settings"
+        >
+          <SegmentedControl flush className="w-full">
+            {[
+              {
+                id: "mode" as const,
+                label: "Incubation mode",
+                mobileLabel: "Mode",
+                Icon: IncubatingIcon,
+              },
+              {
+                id: "turning" as const,
+                label: "Turning schedule",
+                mobileLabel: "Turning",
+                Icon: RotateCw,
+              },
+              {
+                id: "device" as const,
+                label: "Device & connection",
+                mobileLabel: "Device",
+                Icon: Zap,
+              },
+            ].map(({ id, label, mobileLabel, Icon }) => {
+              const isActive = settingTab === id;
+              return (
+                <SegmentedControlItem
+                  key={id}
+                  flush
+                  active={isActive}
+                  aria-pressed={isActive}
+                  aria-controls={`device-settings-${id}-panel`}
+                  onClick={() => setSettingTab(id)}
+                  className="min-w-0 flex-1"
+                >
+                  <Icon
+                    size={16}
+                    strokeWidth={isActive ? 2.5 : 2}
+                    className="shrink-0"
+                  />
+                  <span className="min-w-0 truncate lg:hidden">
+                    {mobileLabel}
+                  </span>
+                  <span className="hidden min-w-0 truncate lg:inline">
+                    {label}
+                  </span>
+                </SegmentedControlItem>
+              );
+            })}
+          </SegmentedControl>
+        </fieldset>
         {settingTab === "mode" && (
-          <>
+          <div id="device-settings-mode-panel">
             <div
               className="pb-5"
               style={{ borderBottom: "1px solid var(--border-default)" }}
             >
               <h2
                 id="device-settings-mode-title"
+                className="text-[14px] md:text-(length:--type-heading-sm)"
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "var(--type-heading-lg)",
                   fontWeight: "var(--weight-bold)",
                   lineHeight: "var(--leading-snug)",
                   color: "var(--text-primary)",
@@ -197,10 +182,9 @@ export function DeviceSettingsTab({
                 Incubation Mode
               </h2>
               <p
-                className="mt-1"
+                className="mt-1 text-[10px] md:text-(length:--type-body-sm)"
                 style={{
                   fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-body-sm)",
                   fontWeight: "var(--weight-regular)",
                   color: "var(--text-farm)",
                 }}
@@ -211,136 +195,115 @@ export function DeviceSettingsTab({
             </div>
             <div className="pt-5 space-y-4">
               <div
-                className="flex flex-col gap-4 rounded-2xl p-4 md:flex-row md:items-center md:justify-between"
+                className="flex flex-col gap-4 rounded-2xl p-4"
                 style={{
                   backgroundColor: "var(--surface-porcelain)",
                   border: `1px solid var(--border-default)`,
                 }}
               >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                    style={{
-                      backgroundColor: "var(--surface-oat)",
-                      color: "var(--brand-primary-hover)",
-                    }}
-                  >
-                    <Egg
-                      size={20}
-                      color="var(--brand-primary-hover)"
-                      weight="fill"
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
                       aria-hidden="true"
-                    />
-                  </span>
-                  <div className="min-w-0">
-                    <p
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                       style={{
-                        color: "var(--text-secondary)",
-                        fontFamily: "var(--font-body)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
+                        backgroundColor: "var(--surface-oat)",
+                        color: "var(--brand-primary-hover)",
                       }}
                     >
-                      Active preset
-                    </p>
-                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
+                      <Egg
+                        size={20}
+                        color="var(--brand-primary-hover)"
+                        weight="fill"
+                        aria-hidden="true"
+                      />
+                    </span>
+                    <div className="min-w-0">
                       <p
                         style={{
-                          fontFamily: "var(--font-display)",
-                          fontSize: "var(--type-heading-sm)",
-                          fontWeight: "var(--weight-extrabold)",
-                          lineHeight: "var(--leading-snug)",
-                          color: "var(--text-primary)",
-                          whiteSpace: "normal",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {mode.name}
-                      </p>
-                      <span
-                        className="shrink-0 rounded-full px-2 py-0.5"
-                        style={{
+                          color: "var(--text-secondary)",
                           fontFamily: "var(--font-body)",
                           fontSize: "var(--type-label)",
                           fontWeight: "var(--weight-bold)",
-                          backgroundColor: "var(--surface-track)",
-                          color: "var(--brand-primary-hover)",
                         }}
                       >
-                        {mode.builtIn ? "Built-in" : "Custom"}
-                      </span>
+                        Active preset
+                      </p>
+                      <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
+                        <p
+                          style={{
+                            fontFamily: "var(--font-display)",
+                            fontSize: "var(--type-heading-sm)",
+                            fontWeight: "var(--weight-extrabold)",
+                            lineHeight: "var(--leading-snug)",
+                            color: "var(--text-primary)",
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {mode.name}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {isReady ? (
-                  <Select
-                    value={unit.modeId}
-                    disabled={isUpdating}
-                    onValueChange={(val) => {
-                      if (val !== unit.modeId) void changeMode(val);
-                    }}
-                  >
-                    <SelectTrigger
-                      aria-label="Choose incubation mode"
-                      className="w-full rounded-xl md:w-[180px]"
-                      style={{
-                        borderColor: "var(--input-border)",
-                        backgroundColor: "var(--surface-card)",
-                        fontFamily: "var(--font-body)",
-                        fontSize: "var(--type-control-value)",
-                        fontWeight: "var(--weight-bold)",
+                  {isReady && (
+                    <Select
+                      value={unit.modeId}
+                      disabled={isUpdating}
+                      onValueChange={(val) => {
+                        if (val !== unit.modeId) void changeMode(val);
                       }}
                     >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {modes.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <span
-                    className="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-full px-3 md:self-auto"
-                    style={{
-                      backgroundColor: "var(--border-sand)",
-                      color: "var(--text-secondary)",
-                      fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-caption)",
-                      fontWeight: "var(--weight-bold)",
-                    }}
-                  >
-                    <Lock size={14} weight="fill" aria-hidden="true" /> Locked
-                    during cycle
-                  </span>
+                      <SelectTrigger
+                        aria-label="Choose incubation mode"
+                        className="w-full rounded-xl md:w-[180px]"
+                        style={{
+                          borderColor: "var(--input-border)",
+                          backgroundColor: "var(--surface-card)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-control-value)",
+                          fontWeight: "var(--weight-bold)",
+                        }}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {modes.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                {!isReady && (
+                  <StatusCallout
+                    tone="info"
+                    size="sm"
+                    title="Locked during cycle"
+                    description="The active preset cannot change until this cycle is stopped or finished."
+                  />
                 )}
               </div>
 
-              {!isReady && (
-                <p
-                  className="flex items-start gap-2"
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-caption)",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  <LockKeyhole
-                    size={14}
-                    className="mt-0.5 shrink-0"
-                    aria-hidden="true"
-                  />
-                  The active preset cannot change until this cycle is stopped or
-                  finished.
-                </p>
-              )}
-
+              <p
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-extrabold)",
+                  letterSpacing: "var(--tracking-label)",
+                  lineHeight: "var(--leading-snug)",
+                  color: "var(--text-secondary)",
+                  textTransform: "uppercase",
+                }}
+              >
+                Mode Information
+              </p>
               <dl
-                className="grid grid-cols-1 overflow-hidden rounded-2xl md:grid-cols-2"
+                className="grid grid-cols-2 overflow-hidden rounded-2xl"
                 style={{
                   border: `1px solid var(--border-default)`,
                   backgroundColor: "var(--surface-card)",
@@ -366,7 +329,7 @@ export function DeviceSettingsTab({
                 ].map((item, index) => (
                   <div
                     key={item.label}
-                    className={`p-4 ${index < 3 ? "border-b" : ""} ${index % 2 === 0 ? "md:border-r" : ""} ${index >= 2 ? "md:border-b-0" : ""}`}
+                    className={`p-4 ${index < 2 ? "border-b" : ""} ${index % 2 === 0 ? "border-r" : ""}`}
                     style={{
                       backgroundColor: "var(--surface-porcelain)",
                       borderColor: "var(--border-default)",
@@ -377,6 +340,7 @@ export function DeviceSettingsTab({
                         color: "var(--text-secondary)",
                         fontFamily: "var(--font-body)",
                         fontSize: "var(--type-caption)",
+                        fontWeight: "var(--weight-bold)",
                       }}
                     >
                       {item.label}
@@ -415,20 +379,20 @@ export function DeviceSettingsTab({
                 <ChevronRight size={14} aria-hidden="true" />
               </button>
             </div>
-          </>
+          </div>
         )}
 
         {settingTab === "turning" && (
-          <>
+          <div id="device-settings-turning-panel">
             <div
               className="pb-5"
               style={{ borderBottom: "1px solid var(--border-oat)" }}
             >
               <h2
                 id="device-settings-turning-title"
+                className="text-[14px] md:text-(length:--type-heading-sm)"
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "var(--type-heading-lg)",
                   fontWeight: "var(--weight-bold)",
                   lineHeight: "var(--leading-snug)",
                   color: "var(--text-primary)",
@@ -437,10 +401,9 @@ export function DeviceSettingsTab({
                 Turning Schedule
               </h2>
               <p
-                className="mt-1"
+                className="mt-1 text-[10px] md:text-(length:--type-body-sm)"
                 style={{
                   fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-body-sm)",
                   fontWeight: "var(--weight-regular)",
                   color: "var(--text-farm)",
                 }}
@@ -539,7 +502,9 @@ export function DeviceSettingsTab({
                     overflowWrap: "anywhere",
                   }}
                 >
-                  Next: {next.text} • Last: {relTime(unit.lastTurned)}
+                  Next: {next.text}
+                  <br />
+                  Last: {relTime(unit.lastTurned)}
                 </span>
                 <Button
                   disabled={turningStopped || isUpdating}
@@ -555,20 +520,20 @@ export function DeviceSettingsTab({
                 </Button>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {settingTab === "device" && (
-          <>
+          <div id="device-settings-device-panel">
             <div
               className="pb-5"
               style={{ borderBottom: "1px solid var(--border-oat)" }}
             >
               <h2
                 id="device-settings-device-title"
+                className="text-[14px] md:text-(length:--type-heading-sm)"
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "var(--type-heading-lg)",
                   fontWeight: "var(--weight-bold)",
                   lineHeight: "var(--leading-snug)",
                   color: "var(--text-primary)",
@@ -577,10 +542,9 @@ export function DeviceSettingsTab({
                 Device & Connection
               </h2>
               <p
-                className="mt-1"
+                className="mt-1 text-[10px] md:text-(length:--type-body-sm)"
                 style={{
                   fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-body-sm)",
                   fontWeight: "var(--weight-regular)",
                   color: "var(--text-farm)",
                 }}
@@ -661,7 +625,7 @@ export function DeviceSettingsTab({
                 <Progress value={unit.batteryPct} className="mt-1.5 h-2" />
               </div>
               <div
-                className="rounded-xl p-4"
+                className="rounded-xl px-4 py-3"
                 style={{
                   backgroundColor: "var(--surface-amber-pale)",
                   border: "1px solid var(--accent-gold)",
@@ -669,10 +633,10 @@ export function DeviceSettingsTab({
               >
                 <p
                   style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-body)",
-                    fontWeight: "var(--weight-bold)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-extrabold)",
                     color: "var(--text-primary)",
+                    textTransform: "uppercase",
                   }}
                 >
                   Advanced
@@ -689,7 +653,7 @@ export function DeviceSettingsTab({
                   before the expected hatch period.
                 </p>
                 <Button
-                  className="mt-3 rounded-xl"
+                  className="mt-2 rounded-lg"
                   variant="outline"
                   disabled={
                     isReady ||
@@ -700,6 +664,7 @@ export function DeviceSettingsTab({
                   onClick={() => setStopCycleOpen(true)}
                   style={{
                     borderColor: "var(--button-danger-border)",
+                    height: 34,
                     color: "var(--button-danger-fg)",
                     backgroundColor: "var(--surface-card)",
                   }}
@@ -708,7 +673,7 @@ export function DeviceSettingsTab({
                 </Button>
               </div>
             </div>
-          </>
+          </div>
         )}
       </section>
 
@@ -718,6 +683,6 @@ export function DeviceSettingsTab({
         unitName={unit.name}
         onConfirm={onStopCycle}
       />
-    </div>
+    </>
   );
 }

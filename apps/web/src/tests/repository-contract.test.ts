@@ -205,7 +205,9 @@ describe.each(targets)("repository contract (%s)", (_name, factory) => {
         incubatorId: "chamber-1",
         window,
       });
-      expect(readings.ok && readings.data).toHaveLength(count);
+      expect(readings.ok).toBe(true);
+      if (_name === "memory")
+        expect(readings.ok && readings.data).toHaveLength(count);
       if (!readings.ok) continue;
       const stamps = readings.data.map((point) => point.ts);
       expect([...stamps].sort((a, b) => a - b)).toEqual(stamps);

@@ -278,3 +278,51 @@ when its original seed ID differs from the new entry ID.
 Migration 0007 adds the telemetry hypertable and internal ingestion/raw/five-minute research queries. Source readiness now requires 0007. The running development stack remains on 0006 until the endpoint integration is ready. Dashboard readings still use generated data. See [the storage contract](../../docs/guide/readings-storage-contract.md) for duplicate identity, time boundaries, retention and remaining integration gates.
 
 Foundation verification: 71 API tests passed against the disposable Timescale database; Ruff lint/format, mypy (29 source files), Alembic schema-drift check and git diff check passed. New tests prove timestamp/value validation, ordered stored reads, duplicate/conflicting ingestion, sparse UTC buckets, late arrivals, farm isolation, and reconnect/reseed persistence. Real database restart and dashboard HTTP integration are not yet proven for readings. Frontend code was unchanged in this checkpoint; its prior results are not a new test run.
+
+### Stored readings API — 2026-09-14
+
+PostgreSQL dashboard reads now use durable telemetry, with no generated fallback.
+Mock/memory mode is preserved. The local database and rebuilt API run migration
+0007; readiness reports `manual_turn_replay_memory` as the remaining volatile state.
+Use the explicit JSON importer described in [the readings contract](../../docs/guide/readings-storage-contract.md).
+No seed records were deleted. Research queries remain internal.
+
+Verification: full API suite passed 73 tests before the final concurrent-ingestion
+case and populated migration extension; the affected suites were rerun afterward.
+Live memory/HTTP contracts passed 28/28, frontend readings/contracts passed 17/17,
+and frontend typecheck passed. Actual database/API restart, reseeding and repeated
+import preserved the proof sample and its first receipt timestamp. Schema drift,
+Ruff and mypy checks passed. Full B3 remains open for command retry closure.
+
+### Command retry closure — 2026-09-14
+
+Manual-turn acceptance receipts now persist in `cycle_idempotency`, atomically with
+runtime timestamps. Older replay returns the original acceptance without replacing
+newer cursors. No-key requests receive generated durable IDs. Mode DELETE accepts
+an optional Idempotency-Key and stores its response in `mode_idempotency`.
+Mode create/update/delete and manual-turn frontend retries preserve their original
+keys; intentional new actions mint new keys. Migration head remains 0007.
+
+Readiness now reports `device_projection_memory`: simulated sensor/connection state
+is still a projection. Durable acceptance is not MQTT dispatch or physical execution;
+`device_commands` and ACK state remain B4 work. Mock mode remains available.
+
+Verification: 78 API tests and 28 shared memory/live HTTP contract cases passed;
+new tests cover restart replay, concurrent turn retries, receipt-failure rollback,
+and durable mode deletion. Five new hook cases cover lost mode/turn responses and
+lost turn follow-up GETs. Full B3 exit review remains explicit in the main guide.
+
+Final checks for command retries: frontend coverage suite (288 tests), build, lint
+and typecheck passed; Ruff lint/format and mypy (30 source files) passed. Turn and
+mode-delete receipts survived an actual local database/API restart and reseed on
+an isolated farm; replaying the first turn preserved the newer turn timestamps.
+The local rebuilt API is healthy at migration 0007. Existing Vite chunk-size and
+upstream TestClient deprecation warnings remain. No commit was created.
+
+### B3 exit — 2026-09-15
+
+The local dashboard persistence exit passed. See the [final review](../../docs/guide/b3-exit-review.md) for the full gate matrix, reproduction commands, source manifest and explicit B4 boundaries. Added outage regression coverage for readings/turn/mode deletion and a repository-owned live contract runner. Verified 78 API, 288 frontend and 28 live contract tests, plus fresh migration, seed stability, actual outage/recovery and replay. Next is B4 simulator payload reconciliation and durable dispatch/ACK state; no MQTT execution is claimed.
+
+### B4 telemetry boundary — 2026-09-15
+
+Added simulator-v1 telemetry validation with topic/device/farm/chamber checks and deduplicated Timescale ingestion. Six affected PostgreSQL tests, 22 simulator tests and three fresh simulator payloads passed; Ruff/mypy clean. See [the B4 contract](../../docs/guide/b4-mqtt-contract.md). Broker transport and command dispatch are not implemented yet; command validation and durable simulator replay are the next prerequisite.

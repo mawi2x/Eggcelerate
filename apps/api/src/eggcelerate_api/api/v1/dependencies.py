@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -24,6 +25,22 @@ async def get_store(request: Request) -> AsyncIterator[StoreState]:
     scope: str | None = None
     key = request.headers.get("Idempotency-Key")
     route_path = request.url.path.rstrip("/")
+    if request.method == "POST" and route_path.endswith("/commands/turn"):
+        key = key or f"cmd-{uuid.uuid4().hex}"
+        request.state.turn_command_id = key
+        replay = (
+            f"turn-{request.path_params['incubator_id']}",
+            key,
+            "turn-empty-body-v1",
+            "turn",
+        )
+    if key and request.method == "DELETE" and route_path.startswith("/api/v1/modes/"):
+        replay = (
+            f"delete-mode-{request.path_params['mode_id']}",
+            key,
+            "delete-mode-v1",
+            "mode_delete",
+        )
     if key and (
         (request.method == "POST" and route_path == "/api/v1/modes")
         or (request.method == "PATCH" and route_path.startswith("/api/v1/modes/"))

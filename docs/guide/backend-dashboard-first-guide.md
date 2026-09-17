@@ -1,22 +1,22 @@
 # EGGCELERATE Dashboard-First Backend Guide
 
-> **Status:** B3 candling persistence verified; next: readings
+> **Status:** B3 exit passed; B4 telemetry boundary implemented, command reconciliation next
 > **Prepared:** 2026-09-04
 > **Scope:** Local FastAPI backend for the existing dashboard, followed by persistence and device simulation
 > **Deferred:** Real authentication, user administration, production deployment, and physical actuator control
 
-## 0. Current handoff (2026-09-14)
+## 0. Current handoff (2026-09-15)
 
-B0–B2 are recorded complete. B3 now persists farms, modes, chamber/device configuration, farm preferences, alerts, cycle runtime, terminal history, candling journals/photo references, and their replay records; readings are still in memory. The full B3 exit is not met.
+B0–B2 are recorded complete. B3 now persists farms, modes, chamber/device configuration, farm preferences, alerts, cycle runtime, terminal history, candling journals/photo references, and their replay records. Migration 0007 adds internal telemetry ingestion and raw/five-minute research queries; PostgreSQL dashboard readings now use stored samples. The local dashboard B3 exit passed; see [the final review](b3-exit-review.md) for evidence and recorded scope limits.
 The dated checkpoints below are historical evidence, not current resume instructions.
 
 ### Evidence and limitations
 
 - The latest candling gate passed 283 frontend tests (34 files), coverage, lint/typecheck/build, 69 API tests including PostgreSQL integration, Ruff/mypy (28 source files), and 28/28 live repository cases on an isolated farm. Packaged API migration 0006 and schema drift are verified.
 - Simulator S0/S1/GUI and 22 unittest results are user-reported for the separate `eggcelerate-simulate` repository; its source and revision were not verified here. Simulator completion does not establish API/MQTT integration.
-- Candling create/update/delete, cycle start/reset/complete/stop, alert actions, settings saves and chamber create/profile/configuration/reconnect retries now reuse one logical key through the hook and HTTP adapter. Other hooks (modes and manual turn) still mint fresh keys per attempt; do not claim general retry safety yet.
+- Candling create/update/delete, cycle start/reset/complete/stop, alert actions, settings saves and chamber create/profile/configuration/reconnect retries now reuse one logical key through the hook and HTTP adapter. Mode create/update/delete and manual-turn hooks now preserve keys across retries as well.
 - Wire examples now describe the current memory readiness response and accepted B1 mutation shapes; all seven error codes have examples. Operational health/readiness responses use their own shapes rather than the dashboard result envelope.
-- Alerts work started from clean HEAD `dd3a2ca94413a53bdb6f8ab984ad1955035e7675`. The alerts, cycle and candling slices are uncommitted; this base alone does not reproduce the latest checkpoint. No commit was created by this task.
+- Commit `035f555` contains the alerts, cycle, candling and readings-foundation slices. The earlier “implement cycle-scoped candling entries and photo metadata” prompt is already fulfilled by migration 0006; resume at the remaining B3 command retry gate in section 10.
 
 ### Implemented versus planned
 
@@ -444,18 +444,26 @@ git diff --check
 
 Database checkpoints additionally run migrations against a disposable empty database and adapter integration tests. MQTT checkpoints additionally run simulator integration tests. Browser automation is not part of these gates.
 
-## 10. Next implementation batch: B3 readings
+## 10. Next implementation batch: B4 MQTT simulator integration
 
-**2026-09-14 foundation checkpoint:** migration 0007 and internal validated ingestion/raw/research queries are implemented. See [storage contract](readings-storage-contract.md). Dashboard reads still use generated samples; API wiring, explicit development ingestion and the remaining persistence proofs are next. Migration 0007 has been applied to the disposable test database only.
+The simulator at `258f0e9` has now been inspected and its 22 tests pass. The API
+telemetry validation/persistence boundary is implemented. See [B4 reconciliation](b4-mqtt-contract.md) for verified payloads and command-handler gaps; duplicate
+execution, missing target/expiry validation and restart replay must be addressed
+before command publishing is enabled. No broker worker is running yet.
 
-Migrations 0001–0006 persist configuration, alerts, cycles/history and journals.
-Keep their migration, retry, concurrency and restart gates green.
+B3 passed the [2026-09-15 exit review](b3-exit-review.md): 78 API tests,
+288 frontend tests, 28 live contract cases, fresh/populated migrations, seed,
+restart/replay and real outage recovery. Implementation remains uncommitted on
+base `035f555`; use the review's source manifest to identify the tested checkout.
 
-1. Reconcile the existing reading DTO/window behavior with raw telemetry storage and five-minute research avg/min/max/count requirements. Document any necessary additive wire changes before implementing them.
-2. Add migration 0007 for farm/device-scoped telemetry samples using Timescale, with observed/received timestamps and explicit units. Define duplicate-sample identity and indexes from the query paths.
-3. Implement deterministic development ingestion/seed and persistent window queries. Replace runtime-generated readings for the PostgreSQL adapter without introducing MQTT execution yet.
-4. Prove UTC bucket boundaries, late/out-of-order samples, duplicate ingestion, empty buckets, gaps, farm/device isolation, retention policy decisions, populated migration and real restart survival.
-5. Finish durable manual-turn acceptance/replay and remaining frontend retry gaps, then run the full B3 exit matrix. B4 MQTT execution remains gated on that result; authentication remains B6.
+1. Inspect the separate simulator and reconcile command/ACK/telemetry wire contracts.
+2. Add durable dispatch/ACK state (`device_commands`, migration 0008), including
+   retries, deadlines, correlation and duplicate handling. Acceptance receipts
+   already persist; they are not a dispatch queue or proof of execution.
+3. Integrate a local MQTT broker and worker with the simulator; test delayed,
+   duplicate, rejected, out-of-order and missing acknowledgements.
+4. Connect validated telemetry and REST hydration before live cache updates.
+   Keep physical actuation disabled. Authentication/public deployment remain B6.
 
 ### B3 verification matrix
 
@@ -474,7 +482,7 @@ Keep their migration, retry, concurrency and restart gates green.
 
 1. Read the current handoff above, API README, architecture and firmware safety contracts, and database setup WIP.
 2. Inspect source and working-tree changes; current source wins over historical examples. Preserve unrelated changes.
-3. Execute B3 steps in section 10 in order, starting with readings and the verified candling baseline.
+3. Execute B3 steps in section 10 in order, starting with simulator contract reconciliation.
 4. Keep the API contract and screen behavior stable; document any necessary contract change before implementing it.
 5. Record the section 13 checkpoint and actual repository revisions before switching phases.
 

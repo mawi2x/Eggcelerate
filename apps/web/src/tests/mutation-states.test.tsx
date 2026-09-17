@@ -13,7 +13,7 @@ import type {
 import type { SettingsPreferences } from "../app/data/settings";
 import { wireExamples } from "../app/data/transport/examples";
 import { resetChamberToReady } from "../app/domain/incubator";
-import type { Incubator } from "../app/domain/types";
+import type { Incubator, Mode } from "../app/domain/types";
 import { farmQueryKeys } from "../app/features/farm/query-keys";
 import {
   mutationErrorPresentation,
@@ -45,6 +45,9 @@ async function waitFor(check: () => boolean) {
   throw new Error("Timed out waiting for mutation state.");
 }
 interface FarmActionsHandle {
+  addMode(mode: Mode): Promise<boolean>;
+  updateMode(id: string, patch: Partial<Mode>): Promise<boolean>;
+  deleteMode(id: string): Promise<boolean>;
   completeCycle(input: CompleteCycleInput): Promise<boolean>;
   stopCycle(input: StopCycleInput): Promise<boolean>;
   acknowledgeAlert(id: string): Promise<boolean>;
@@ -97,6 +100,10 @@ describe("repository mutation states", () => {
   it.each(
     (
       [
+        "turn",
+        "addMode",
+        "updateMode",
+        "deleteMode",
         "start",
         "reset",
         "complete",
@@ -114,7 +121,11 @@ describe("repository mutation states", () => {
     ).flatMap((operation) =>
       [
         false,
-        ...(operation === "complete" || operation === "stop" ? [true] : []),
+        ...(operation === "complete" ||
+        operation === "stop" ||
+        operation === "turn"
+          ? [true]
+          : []),
       ].map((loseFollowup) => ({ operation, loseFollowup })),
     ),
   )(
@@ -137,6 +148,9 @@ describe("repository mutation states", () => {
       const terminalEnvelope = wireExamples.find((item) =>
         item.path.endsWith(`/cycles/current/${operation}`),
       )?.response as { ok: true; data: Record<string, unknown> } | undefined;
+      const modeEnvelope = wireExamples.find(
+        (item) => item.path === "/api/v1/modes" && item.method === "GET",
+      )?.response as { ok: true; data: Record<string, unknown>[] };
       const dto = envelope.data[0];
       const seen: string[] = [];
       const results = new Map<string, unknown>();
@@ -157,11 +171,13 @@ describe("repository mutation states", () => {
             }
             return {
               json: async () =>
-                String(url).endsWith("/preferences")
-                  ? preferenceEnvelope
-                  : String(url).endsWith(`/incubators/${dto.id}`)
-                    ? { ok: true, data: dto }
-                    : envelope,
+                String(url).endsWith("/modes")
+                  ? modeEnvelope
+                  : String(url).endsWith("/preferences")
+                    ? preferenceEnvelope
+                    : String(url).endsWith(`/incubators/${dto.id}`)
+                      ? { ok: true, data: dto }
+                      : envelope,
             } as Response;
           }
           const key = new Headers(init.headers).get("Idempotency-Key") ?? "";
@@ -175,20 +191,26 @@ describe("repository mutation states", () => {
             results.set(key, {
               ok: true,
               data:
-                operation === "complete" || operation === "stop"
-                  ? terminalEnvelope?.data
-                  : operation === "start" || operation === "reset"
-                    ? dto
-                    : operation === "preferences"
-                      ? patch
-                      : operation === "acknowledgeAlert"
-                        ? alertEnvelope.data[0]
-                        : operation === "dismissAlert"
-                          ? { id: alertEnvelope.data[0].id }
-                          : operation === "markAllAlertsRead" ||
-                              operation === "clearReadAlerts"
-                            ? alertEnvelope.data
-                            : { ...dto, ...patch },
+                operation === "turn"
+                  ? { command_id: key, status: "accepted" }
+                  : operation === "addMode" || operation === "updateMode"
+                    ? { ...modeEnvelope.data[0], ...patch }
+                    : operation === "deleteMode"
+                      ? { id: modeEnvelope.data[0].id }
+                      : operation === "complete" || operation === "stop"
+                        ? terminalEnvelope?.data
+                        : operation === "start" || operation === "reset"
+                          ? dto
+                          : operation === "preferences"
+                            ? patch
+                            : operation === "acknowledgeAlert"
+                              ? alertEnvelope.data[0]
+                              : operation === "dismissAlert"
+                                ? { id: alertEnvelope.data[0].id }
+                                : operation === "markAllAlertsRead" ||
+                                    operation === "clearReadAlerts"
+                                  ? alertEnvelope.data
+                                  : { ...dto, ...patch },
             });
           }
           if (loseResponse && !loseFollowup) {
@@ -205,55 +227,70 @@ describe("repository mutation states", () => {
         const input = storedUnit(mounted.queryClient, dto.id as string);
         const settings = await repository.listSettings();
         if (!settings.ok) throw new Error("Settings fixture failed");
+        const modes = await repository.listModes();
+        if (!modes.ok) throw new Error("Modes fixture failed");
         const invoke = () =>
-          operation === "start"
-            ? actions.updateIncubator(input.id, {
-                modeId: input.modeId,
-                totalEggsLoaded: 20,
-                dayOfIncubation: 1,
-              })
-            : operation === "reset"
-              ? actions.updateIncubator(
-                  input.id,
-                  resetChamberToReady(input, new Date()),
-                )
-              : operation === "complete"
-                ? actions.completeCycle({
-                    incubatorId: input.id,
-                    chamber: input.name,
-                    modeName: "Broiler",
-                    cycleDays: 9,
-                    totalEggs: 24,
-                    fertileEggs: 22,
-                    hatchedEggs: 20,
-                  })
-                : operation === "stop"
-                  ? actions.stopCycle({
-                      incubatorId: input.id,
-                      incubator: input.name,
-                      modeName: "Broiler",
-                      dayStopped: 9,
-                      totalEggs: 24,
-                      fertileEggs: 22,
+          operation === "addMode"
+            ? actions.addMode(modes.data[0])
+            : operation === "updateMode"
+              ? actions.updateMode(modes.data[0].id, { name: "Retry mode" })
+              : operation === "deleteMode"
+                ? actions.deleteMode(modes.data[0].id)
+                : operation === "turn"
+                  ? actions.updateIncubator(input.id, {
+                      lastTurned: new Date().toISOString(),
+                      nextTurn: new Date().toISOString(),
                     })
-                  : operation === "acknowledgeAlert" ||
-                      operation === "dismissAlert"
-                    ? actions[operation](alertEnvelope.data[0].id as string)
-                    : operation === "markAllAlertsRead" ||
-                        operation === "clearReadAlerts"
-                      ? actions[operation]()
-                      : operation === "preferences"
-                        ? actions.saveSettings(settings.data)
-                        : operation === "create"
-                          ? actions.addIncubator(input)
-                          : actions.updateIncubator(
-                              input.id,
-                              operation === "profile"
-                                ? { name: "Retry name" }
-                                : operation === "configuration"
-                                  ? { autoTurn: false }
-                                  : { paired: true },
-                            );
+                  : operation === "start"
+                    ? actions.updateIncubator(input.id, {
+                        modeId: input.modeId,
+                        totalEggsLoaded: 20,
+                        dayOfIncubation: 1,
+                      })
+                    : operation === "reset"
+                      ? actions.updateIncubator(
+                          input.id,
+                          resetChamberToReady(input, new Date()),
+                        )
+                      : operation === "complete"
+                        ? actions.completeCycle({
+                            incubatorId: input.id,
+                            chamber: input.name,
+                            modeName: "Broiler",
+                            cycleDays: 9,
+                            totalEggs: 24,
+                            fertileEggs: 22,
+                            hatchedEggs: 20,
+                          })
+                        : operation === "stop"
+                          ? actions.stopCycle({
+                              incubatorId: input.id,
+                              incubator: input.name,
+                              modeName: "Broiler",
+                              dayStopped: 9,
+                              totalEggs: 24,
+                              fertileEggs: 22,
+                            })
+                          : operation === "acknowledgeAlert" ||
+                              operation === "dismissAlert"
+                            ? actions[operation](
+                                alertEnvelope.data[0].id as string,
+                              )
+                            : operation === "markAllAlertsRead" ||
+                                operation === "clearReadAlerts"
+                              ? actions[operation]()
+                              : operation === "preferences"
+                                ? actions.saveSettings(settings.data)
+                                : operation === "create"
+                                  ? actions.addIncubator(input)
+                                  : actions.updateIncubator(
+                                      input.id,
+                                      operation === "profile"
+                                        ? { name: "Retry name" }
+                                        : operation === "configuration"
+                                          ? { autoTurn: false }
+                                          : { paired: true },
+                                    );
         await act(async () => {
           expect(await invoke()).toBe(false);
         });

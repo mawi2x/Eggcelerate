@@ -846,7 +846,7 @@ export function ModeLibraryPanel({
         open={deleteTarget !== null}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
       >
-        <DialogContent className="rounded-xl md:max-w-sm">
+        <DialogContent className="rounded-2xl md:max-w-sm">
           <DialogHeader>
             <DialogTitle
               style={{
@@ -887,7 +887,7 @@ export function ModeLibraryPanel({
 
       {/* Edit / Add Mode modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="rounded-xl md:max-w-md">
+        <DialogContent className="rounded-2xl md:max-w-md">
           <DialogHeader>
             <DialogTitle
               style={{
@@ -978,7 +978,7 @@ export function ModeLibraryPanel({
 
       {/* Import conflict resolution modal */}
       <Dialog open={conflictOpen} onOpenChange={setConflictOpen}>
-        <DialogContent className="rounded-xl md:max-w-lg">
+        <DialogContent className="rounded-2xl md:max-w-lg">
           <DialogHeader>
             <DialogTitle
               style={{

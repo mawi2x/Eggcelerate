@@ -922,18 +922,24 @@ export function IncubatorsScreen({
           <DialogFooter>
             <Button
               variant="outline"
-              className="rounded-xl"
+              className="rounded-full"
+              style={{ height: 34, fontSize: "var(--type-body)" }}
               disabled={connecting || isAddingIncubator}
               onClick={() => setOpen(false)}
             >
               Cancel
             </Button>
             <Button
-              className="rounded-xl"
+              className="rounded-full"
               disabled={connecting || isAddingIncubator}
               aria-busy={connecting || isAddingIncubator}
               onClick={() => void handleAdd()}
-              style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
+              style={{
+                backgroundColor: RUST,
+                color: "var(--on-brand)",
+                height: 34,
+                fontSize: "var(--type-body)",
+              }}
             >
               {connecting || isAddingIncubator ? (
                 <>

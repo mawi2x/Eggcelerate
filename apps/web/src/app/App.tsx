@@ -238,7 +238,7 @@ export default function App() {
       <h1
         className="min-w-0 max-w-full break-words md:basis-auto"
         style={{
-          fontSize: "var(--type-page-title)",
+          fontSize: "var(--type-heading-md)",
           fontWeight: "var(--weight-bold)",
           color: "var(--text-primary)",
           lineHeight: 1.25,

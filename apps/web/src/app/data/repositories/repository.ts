@@ -140,7 +140,10 @@ export interface EggcelerateRepository {
     id: string,
     options?: MutationOptions,
   ): Promise<Result<Incubator>>;
-  requestManualTurn(id: string): Promise<Result<Incubator>>;
+  requestManualTurn(
+    id: string,
+    options?: MutationOptions,
+  ): Promise<Result<Incubator>>;
   reconnectIncubator(
     id: string,
     options?: MutationOptions,
@@ -163,9 +166,16 @@ export interface EggcelerateRepository {
   ): Promise<Result<Incubator>>;
   listReadings(query: ReadingQuery): Promise<Result<Reading[]>>;
   listModes(): Promise<Result<Mode[]>>;
-  addMode(mode: Mode): Promise<Result<Mode>>;
-  updateMode(id: string, patch: Partial<Mode>): Promise<Result<Mode>>;
-  deleteMode(id: string): Promise<Result<{ id: string }>>;
+  addMode(mode: Mode, options?: MutationOptions): Promise<Result<Mode>>;
+  updateMode(
+    id: string,
+    patch: Partial<Mode>,
+    options?: MutationOptions,
+  ): Promise<Result<Mode>>;
+  deleteMode(
+    id: string,
+    options?: MutationOptions,
+  ): Promise<Result<{ id: string }>>;
   listAlerts(): Promise<Result<AlertEntry[]>>;
   acknowledgeAlert(
     id: string,

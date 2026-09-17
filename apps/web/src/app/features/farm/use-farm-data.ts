@@ -267,7 +267,7 @@ async function routeIncubatorPatch(
     );
   }
   if (sameKeySet(keys, TURN_PATCH_KEYS)) {
-    return repository.requestManualTurn(id);
+    return repository.requestManualTurn(id, options);
   }
   if (patch.paired === true) {
     return repository.reconnectIncubator(id, options);
@@ -353,8 +353,13 @@ export function useFarmActions() {
     },
   });
   const addModeMutation = useMutation({
-    mutationFn: async (mode: Mode) =>
-      requireResultData(await repository.addMode(mode)),
+    mutationFn: async ({
+      mode,
+      options,
+    }: {
+      mode: Mode;
+      options: MutationOptions;
+    }) => requireResultData(await repository.addMode(mode, options)),
     onSuccess: (created) => {
       queryClient.setQueryData<Mode[]>(farmQueryKeys.modes, (current = []) => [
         ...current,
@@ -363,8 +368,15 @@ export function useFarmActions() {
     },
   });
   const updateModeMutation = useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Mode> }) =>
-      requireResultData(await repository.updateMode(id, patch)),
+    mutationFn: async ({
+      id,
+      patch,
+      options,
+    }: {
+      id: string;
+      patch: Partial<Mode>;
+      options: MutationOptions;
+    }) => requireResultData(await repository.updateMode(id, patch, options)),
     onSuccess: (updated) => {
       queryClient.setQueryData<Mode[]>(farmQueryKeys.modes, (current = []) =>
         current.map((mode) => (mode.id === updated.id ? updated : mode)),
@@ -376,8 +388,13 @@ export function useFarmActions() {
     },
   });
   const deleteModeMutation = useMutation({
-    mutationFn: async (id: string) =>
-      requireResultData(await repository.deleteMode(id)),
+    mutationFn: async ({
+      id,
+      options,
+    }: {
+      id: string;
+      options: MutationOptions;
+    }) => requireResultData(await repository.deleteMode(id, options)),
     onSuccess: ({ id }) => {
       queryClient.setQueryData<Mode[]>(farmQueryKeys.modes, (current = []) =>
         current.filter((mode) => mode.id !== id),
@@ -463,22 +480,32 @@ export function useFarmActions() {
       },
     );
   }
-  async function addMode(mode: Mode): Promise<boolean> {
-    return runMutation(() => addModeMutation.mutateAsync(mode), {
-      retry: () => void addMode(mode),
+  async function addMode(
+    mode: Mode,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(() => addModeMutation.mutateAsync({ mode, options }), {
+      retry: () => void addMode(mode, options),
     });
   }
   async function updateMode(
     id: string,
     patch: Partial<Mode>,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
   ): Promise<boolean> {
-    return runMutation(() => updateModeMutation.mutateAsync({ id, patch }), {
-      retry: () => void updateMode(id, patch),
-    });
+    return runMutation(
+      () => updateModeMutation.mutateAsync({ id, patch, options }),
+      {
+        retry: () => void updateMode(id, patch, options),
+      },
+    );
   }
-  async function deleteMode(id: string): Promise<boolean> {
-    return runMutation(() => deleteModeMutation.mutateAsync(id), {
-      retry: () => void deleteMode(id),
+  async function deleteMode(
+    id: string,
+    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+  ): Promise<boolean> {
+    return runMutation(() => deleteModeMutation.mutateAsync({ id, options }), {
+      retry: () => void deleteMode(id, options),
     });
   }
   async function acknowledgeAlert(

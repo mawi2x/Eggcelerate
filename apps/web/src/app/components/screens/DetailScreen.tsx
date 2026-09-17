@@ -631,6 +631,8 @@ export function DetailScreen({
               style={{
                 borderColor: "var(--border-default)",
                 color: "var(--text-secondary)",
+                height: 34,
+                fontSize: "var(--type-body)",
               }}
             >
               Go back
@@ -640,6 +642,8 @@ export function DetailScreen({
               style={{
                 backgroundColor: "var(--brand-primary)",
                 color: "var(--surface-card)",
+                height: 34,
+                fontSize: "var(--type-body)",
               }}
               disabled={isUpdating}
               aria-busy={isUpdating}
@@ -771,6 +775,7 @@ export function DetailScreen({
             style={{
               backgroundColor: "var(--brand-primary-hover)",
               color: "var(--on-brand)",
+              height: 34,
             }}
           >
             Finish Cycle

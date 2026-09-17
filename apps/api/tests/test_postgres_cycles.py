@@ -359,6 +359,18 @@ def test_populated_0004_upgrade_and_downgrade_preserve_prior_slices(database_url
                     await seed_candling(session, db.farm_id, state)
                     await session.commit()
                 assert len((await conn.execute(select(candling_entries))).all()) == 3
+                journal_snapshot = (await conn.execute(select(candling_entries))).all()
+                await conn.execute(text(f'SET LOCAL search_path TO "{schema}", public'))
+                await conn.run_sync(migrate, "0007")
+                assert (
+                    await conn.scalar(text("SELECT count(*) FROM telemetry_samples"))
+                    == 0
+                )
+                await conn.run_sync(migrate, "0006", True)
+                assert (
+                    await conn.execute(select(candling_entries))
+                ).all() == journal_snapshot
+                await conn.execute(text(f'SET LOCAL search_path TO "{schema}"'))
                 await conn.run_sync(migrate, "0005", True)
                 for table in cycle_tables:
                     assert (await conn.execute(select(table))).all() == cycle_snapshots[

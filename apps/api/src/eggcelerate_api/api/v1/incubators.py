@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, Request
+from fastapi.concurrency import contextmanager_in_threadpool
+from sqlalchemy.exc import SQLAlchemyError
 
 from ... import services
-from ...errors import ok_envelope, validated, validation_error
+from ...database.readings import chamber_readings
+from ...errors import AppError, ok_envelope, validated, validation_error
 from ...models import (
     CandlingEntryCreate,
     CandlingEntryPatch,
@@ -165,11 +168,16 @@ def stop_cycle(
 @router.post("/{incubator_id}/commands/turn")
 def manual_turn(
     incubator_id: str,
+    request: Request,
     store: Store,
     body: EmptyBody | None = None,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> dict:
-    command_id = idempotency_key or f"cmd-{uuid.uuid4().hex[:12]}"
+    command_id = (
+        getattr(request.state, "turn_command_id", None)
+        or idempotency_key
+        or f"cmd-{uuid.uuid4().hex}"
+    )
     accepted = services.idempotent(
         store,
         f"turn-{incubator_id}",
@@ -182,9 +190,25 @@ def manual_turn(
 
 
 @router.get("/{incubator_id}/readings")
-def list_readings(incubator_id: str, store: Store, window: str = "24h") -> dict:
-    points = services.readings(store, incubator_id, window, services.utcnow())
-    return ok_envelope([point.model_dump(mode="json") for point in points])
+async def list_readings(
+    incubator_id: str, request: Request, window: str = "24h"
+) -> dict:
+    database = request.app.state.database
+    now = services.utcnow()
+    if database is not None:
+        try:
+            async with database.sessions() as session:
+                points = await chamber_readings(
+                    session, database.farm_id, incubator_id, window, now
+                )
+                return ok_envelope(points)
+        except (SQLAlchemyError, OSError, TimeoutError) as exc:
+            raise AppError("offline", "Reading storage is unavailable.") from exc
+    async with contextmanager_in_threadpool(
+        request.app.state.store.transaction()
+    ) as store:
+        demo = services.readings(store, incubator_id, window, now)
+        return ok_envelope([point.model_dump(mode="json") for point in demo])
 
 
 @router.get("/{incubator_id}/cycles/current/candling-entries")

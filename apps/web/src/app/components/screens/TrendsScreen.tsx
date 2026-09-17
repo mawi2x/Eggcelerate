@@ -1103,6 +1103,7 @@ export function TrendsScreen({
               hideIconOnMobile
               label="Completed Cycles"
               value={`${kpis.cycles}`}
+              accentBar="var(--text-primary)"
             />
             <KpiCard
               Icon={Percent}
@@ -1110,12 +1111,14 @@ export function TrendsScreen({
               label="Average Hatchability"
               value={kpis.avgRate === null ? "N/A" : `${kpis.avgRate}%`}
               accent={OK}
+              accentBar={OK}
             />
             <KpiCard
               Icon={TrendingUp}
               hideIconOnMobile
               label="Total Chicks Hatched"
               value={`${kpis.hatched}`}
+              accentBar="var(--text-primary)"
             />
           </div>
 

@@ -315,11 +315,19 @@ export class ApiRepository implements EggcelerateRepository {
     return { ok: true, data: incubatorFromDTO(result.data) };
   }
 
-  async requestManualTurn(id: string): Promise<Result<Incubator>> {
+  async requestManualTurn(
+    id: string,
+    options?: MutationOptions,
+  ): Promise<Result<Incubator>> {
     const turned = await this.request<unknown>(
       `/api/v1/incubators/${encodeURIComponent(id)}/commands/turn`,
       z.object({ command_id: z.string(), status: z.string() }),
-      { method: "POST", body: {}, idempotent: true },
+      {
+        method: "POST",
+        body: {},
+        idempotent: true,
+        idempotencyKey: options?.idempotencyKey,
+      },
     );
     if (!turned.ok) return turned;
     return this.getIncubatorDTO(id);
@@ -528,17 +536,22 @@ export class ApiRepository implements EggcelerateRepository {
     return { ok: true, data: result.data.map((item) => modeFromDTO(item)) };
   }
 
-  async addMode(mode: Mode): Promise<Result<Mode>> {
+  async addMode(mode: Mode, options?: MutationOptions): Promise<Result<Mode>> {
     const result = await this.request<unknown>("/api/v1/modes", ModeDTOSchema, {
       method: "POST",
       body: modeToTransportDTO(mode),
       idempotent: true,
+      idempotencyKey: options?.idempotencyKey,
     });
     if (!result.ok) return result;
     return { ok: true, data: modeFromDTO(result.data) };
   }
 
-  async updateMode(id: string, patch: Partial<Mode>): Promise<Result<Mode>> {
+  async updateMode(
+    id: string,
+    patch: Partial<Mode>,
+    options?: MutationOptions,
+  ): Promise<Result<Mode>> {
     const result = await this.request<unknown>(
       `/api/v1/modes/${encodeURIComponent(id)}`,
       ModeDTOSchema,
@@ -564,17 +577,25 @@ export class ApiRepository implements EggcelerateRepository {
               }),
         },
         idempotent: true,
+        idempotencyKey: options?.idempotencyKey,
       },
     );
     if (!result.ok) return result;
     return { ok: true, data: modeFromDTO(result.data) };
   }
 
-  async deleteMode(id: string): Promise<Result<{ id: string }>> {
+  async deleteMode(
+    id: string,
+    options?: MutationOptions,
+  ): Promise<Result<{ id: string }>> {
     const result = await this.request<{ id: string }>(
       `/api/v1/modes/${encodeURIComponent(id)}`,
       z.object({ id: z.string() }),
-      { method: "DELETE" },
+      {
+        method: "DELETE",
+        idempotent: true,
+        idempotencyKey: options?.idempotencyKey,
+      },
     );
     return result;
   }

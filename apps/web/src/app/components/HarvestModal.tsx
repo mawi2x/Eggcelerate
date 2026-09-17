@@ -230,6 +230,7 @@ export function HarvestModal({
             <Button
               variant="ghost"
               className="rounded-full"
+              style={{ height: 34, fontSize: "var(--type-body)" }}
               onClick={() => onOpenChange(false)}
               disabled={isSaving}
             >
@@ -244,6 +245,8 @@ export function HarvestModal({
                 backgroundColor: "var(--brand-primary)",
                 color: "var(--on-brand)",
                 opacity: !valid || isSaving ? 0.5 : 1,
+                height: 34,
+                fontSize: "var(--type-body)",
               }}
             >
               {isSaving ? "Saving…" : "Save & Reset"}

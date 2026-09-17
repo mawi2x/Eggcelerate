@@ -60,5 +60,15 @@ def patch_mode(
 
 
 @router.delete("/{mode_id}")
-def delete_mode(mode_id: str, store: Store) -> dict:
-    return ok_envelope({"id": services.delete_mode(store, mode_id)})
+def delete_mode(
+    mode_id: str,
+    store: Store,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> dict:
+    result = services.idempotent(
+        store,
+        f"delete-mode-{mode_id}",
+        idempotency_key,
+        lambda: {"id": services.delete_mode(store, mode_id)},
+    )
+    return ok_envelope(result)

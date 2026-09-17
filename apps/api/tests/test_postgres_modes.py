@@ -190,6 +190,16 @@ def test_unavailable_database_fails_closed():
         response = client.post("/api/v1/modes", json=MODE)
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "offline"
+        for method, path in (
+            ("GET", "/api/v1/incubators/chamber-1/readings"),
+            ("POST", "/api/v1/incubators/chamber-1/commands/turn"),
+            ("DELETE", "/api/v1/modes/custom-mode"),
+        ):
+            response = client.request(
+                method, path, headers={"Idempotency-Key": "outage"}
+            )
+            assert response.status_code == 503
+            assert response.json()["error"]["code"] == "offline"
 
 
 def test_patch_replay_survives_restart_without_reapplying(settings):
@@ -246,6 +256,15 @@ def test_migration_has_extension_and_relational_tables(settings):
                     text(
                         "SELECT extversion FROM pg_extension WHERE extname='timescaledb'"
                     )
+                )
+                assert (
+                    await session.scalar(
+                        text(
+                            "SELECT count(*) FROM timescaledb_information.hypertables "
+                            "WHERE hypertable_schema = 'public' AND hypertable_name = 'telemetry_samples'"
+                        )
+                    )
+                    == 1
                 )
                 for table in ("farms", "modes", "mode_idempotency"):
                     assert await session.scalar(

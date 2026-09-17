@@ -477,7 +477,7 @@ export function LiveMonitorTab({
   const mistOn = unit.humidity < mode.targetHumidity.max && unit.waterOk;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 md:space-y-5">
       <SectionCard
         title="Incubation Timeline"
         titleId="incubation-timeline-title"

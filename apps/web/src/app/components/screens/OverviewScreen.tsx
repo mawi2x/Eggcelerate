@@ -484,12 +484,14 @@ export function OverviewScreen({
       <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
         {/* Same chamber-device glyph as the sidebar Incubators nav item. */}
         <KpiCard
+          iconRight
           Icon={IncubatorDeviceIcon}
           label="INCUBATORS"
           value={`${units.length} Active`}
           footer={incubatorsFooter}
         />
         <KpiCard
+          iconRight
           Icon={Egg}
           label="EGGS INCUBATING"
           value={`${stats.totalEggs} Eggs`}
@@ -497,11 +499,13 @@ export function OverviewScreen({
         />
         <KpiCard
           Icon={Clock}
+          iconRight
           label="UPCOMING HATCH"
           value={hatchValue}
           footer={upcomingFooter}
         />
         <KpiCard
+          iconRight
           Icon={ExclamationIcon}
           label="NEEDS ATTENTION"
           value={`${stats.needsAttention}`}

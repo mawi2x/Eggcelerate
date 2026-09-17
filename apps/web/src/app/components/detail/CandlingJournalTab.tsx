@@ -1568,6 +1568,8 @@ function LogModalBody({
               style={{
                 borderColor: "var(--border-default)",
                 color: "var(--text-secondary)",
+                height: 34,
+                fontSize: "var(--type-body)",
               }}
             >
               Go back
@@ -1577,6 +1579,8 @@ function LogModalBody({
               style={{
                 backgroundColor: "var(--brand-primary)",
                 color: "var(--surface-card)",
+                height: 34,
+                fontSize: "var(--type-body)",
               }}
               disabled={isSaving}
               aria-busy={isSaving}
@@ -1822,9 +1826,9 @@ export function CandlingJournalTab({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 md:space-y-5">
       {/* Combined Hero: Incubation Timeline + Candling Progress */}
-      <SectionCard title="Incubation Timeline" density="compact">
+      <SectionCard title="Incubation Timeline" density="compact" divider>
         <Timeline
           currentDay={currentDay}
           totalDays={totalDays}
@@ -1838,429 +1842,437 @@ export function CandlingJournalTab({
         />
         {latestCandlingEntry ? (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-extrabold)",
-                    letterSpacing: "var(--tracking-label)",
-                    lineHeight: "var(--leading-snug)",
-                    color: "var(--brand-primary)",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Latest inspection
-                </p>
-                <p
-                  style={{
-                    fontSize: "var(--type-heading-sm)",
-                    fontWeight: "var(--weight-bold)",
-                    color: "var(--text-primary)",
-                    marginTop: 2,
-                  }}
-                >
-                  Day {latestCandlingEntry.day}, {latestCandlingEntry.label}
-                </p>
-                <p
-                  style={{
-                    fontSize: "var(--type-caption)",
-                    color: "var(--text-secondary)",
-                    marginTop: 1,
-                  }}
-                >
-                  Recorded {fmtTimestamp(latestCandlingEntry.date)}
-                </p>
-              </div>
-              <div
-                className="rounded-xl px-3.5 py-2 text-right"
-                style={{
-                  backgroundColor: "var(--surface-track)",
-                  border: `1px solid var(--border-default)`,
-                }}
-              >
-                <p
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-extrabold)",
-                    letterSpacing: "var(--tracking-label)",
-                    lineHeight: "var(--leading-snug)",
-                    color: "var(--text-secondary)",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Initial fertility
-                </p>
-                <p
-                  style={{
-                    fontSize: "var(--type-body-sm)",
-                    fontWeight: "var(--weight-bold)",
-                    color: "var(--text-primary)",
-                    marginTop: 1,
-                  }}
-                >
-                  {latestCandlingEntry.fertile} of {totalEggsSet} eggs
-                  <span
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 md:grid md:grid-cols-2 md:content-start md:items-stretch">
+                <div className="md:col-span-2 md:min-w-0">
+                  <p
                     style={{
-                      marginLeft: 6,
                       fontFamily: "var(--font-display)",
-                      fontSize: "var(--type-heading-sm)",
+                      fontSize: "var(--type-label)",
                       fontWeight: "var(--weight-extrabold)",
-                      lineHeight: "var(--leading-tight)",
+                      letterSpacing: "var(--tracking-label)",
+                      lineHeight: "var(--leading-snug)",
                       color: "var(--brand-primary)",
+                      textTransform: "uppercase",
                     }}
                   >
-                    {summaryFertilityRate !== null
-                      ? `${summaryFertilityRate}%`
-                      : "N/A"}
-                  </span>
-                </p>
+                    Latest inspection
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-bold)",
+                      color: "var(--text-primary)",
+                      marginTop: 2,
+                    }}
+                  >
+                    Day {latestCandlingEntry.day}, {latestCandlingEntry.label}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "var(--type-caption)",
+                      color: "var(--text-secondary)",
+                      marginTop: 1,
+                    }}
+                  >
+                    Recorded {fmtTimestamp(latestCandlingEntry.date)}
+                  </p>
+                </div>
+                <div
+                  className="flex h-[58px] flex-col justify-center rounded-lg px-3.5 py-3 text-left md:block md:h-auto md:min-w-0 md:p-3.5"
+                  style={{
+                    backgroundColor: "var(--surface-track)",
+                    border: `1px solid var(--border-default)`,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-extrabold)",
+                      letterSpacing: "var(--tracking-label)",
+                      lineHeight: "var(--leading-snug)",
+                      color: "var(--text-secondary)",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Initial fertility
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "var(--type-body-sm)",
+                      fontWeight: "var(--weight-bold)",
+                      color: "var(--text-primary)",
+                      marginTop: 2,
+                    }}
+                  >
+                    {latestCandlingEntry.fertile} of {totalEggsSet} eggs
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        fontFamily: "var(--font-display)",
+                        fontSize: "var(--type-heading-sm)",
+                        fontWeight: "var(--weight-extrabold)",
+                        lineHeight: "var(--leading-tight)",
+                        color: "var(--brand-primary)",
+                      }}
+                    >
+                      {summaryFertilityRate !== null
+                        ? `${summaryFertilityRate}%`
+                        : "N/A"}
+                    </span>
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* High-contrast stat tiles with big numbers */}
-            <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
-              {isLaterSummary ? (
-                <>
-                  <div
-                    className="rounded-xl p-2.5"
-                    style={{
-                      backgroundColor: "var(--surface-mint)",
-                      border: "1px solid var(--border-mint)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "var(--status-success-fg)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Developing
-                    </span>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-extrabold)",
-                        lineHeight: "var(--leading-tight)",
-                        color: "var(--status-success-fg)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {summaryDeveloping}
-                    </p>
-                    <p
-                      style={{
-                        color: "var(--status-success-deep)",
-                        fontSize: "var(--type-label)",
-                        marginTop: 2,
-                      }}
-                    >
-                      Developing embryos
-                    </p>
-                  </div>
-                  <div
-                    className="rounded-xl p-2.5"
-                    style={{
-                      backgroundColor:
-                        summaryStopped > 0
-                          ? "var(--surface-blush)"
-                          : "var(--surface-mist)",
-                      border: `1px solid ${summaryStopped > 0 ? "var(--border-blush)" : "var(--border-mist)"}`,
-                    }}
-                  >
-                    <span
-                      style={{
-                        color:
-                          summaryStopped > 0
-                            ? "var(--status-danger-fg)"
-                            : "var(--text-slate-cool)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Stopped developing
-                    </span>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-extrabold)",
-                        lineHeight: "var(--leading-tight)",
-                        color:
-                          summaryStopped > 0
-                            ? "var(--status-danger-fg)"
-                            : "var(--text-slate-cool)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {summaryStopped}
-                    </p>
-                    <p
-                      style={{
-                        color:
-                          summaryStopped > 0
-                            ? "var(--status-danger-strong)"
-                            : "var(--text-slate-cool)",
-                        fontSize: "var(--type-label)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {summaryStopped > 0 ? "Review journal" : "None observed"}
-                    </p>
-                  </div>
-                  <div
-                    className="rounded-xl p-2.5"
-                    style={{
-                      backgroundColor: "var(--surface-slate-light)",
-                      border: "1px solid var(--border-slate-light)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "var(--text-slate-soft)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Clear
-                    </span>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-extrabold)",
-                        lineHeight: "var(--leading-tight)",
-                        color: "var(--text-slate)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {summaryClear}
-                    </p>
-                    <p
-                      style={{
-                        color: "var(--text-slate-cool)",
-                        fontSize: "var(--type-label)",
-                        marginTop: 2,
-                      }}
-                    >
-                      Likely infertile
-                    </p>
-                  </div>
-                  <div
-                    className="rounded-xl p-2.5"
-                    style={{
-                      backgroundColor: "var(--surface-warn-tile)",
-                      border: "1px solid var(--border-amber-soft)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "var(--status-warning-fg)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Uncertain
-                    </span>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-extrabold)",
-                        lineHeight: "var(--leading-tight)",
-                        color: "var(--status-warning-fg)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {summaryUncertain}
-                    </p>
-                    <p
-                      style={{
-                        color: "var(--text-amber-deep)",
-                        fontSize: "var(--type-label)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {summaryUncertain > 0
-                        ? pendingCheckpoint
-                          ? `Recheck Day ${pendingCheckpoint.day}`
-                          : "Resolve before finish"
-                        : "None to recheck"}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div
-                    className="rounded-xl p-2.5"
-                    style={{
-                      backgroundColor: "var(--surface-mint)",
-                      border: "1px solid var(--border-mint)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "var(--status-success-fg)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Fertile
-                    </span>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-extrabold)",
-                        lineHeight: "var(--leading-tight)",
-                        color: "var(--status-success-fg)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {latestCandlingEntry.fertile}
-                    </p>
-                    <p
-                      style={{
-                        color: "var(--status-success-deep)",
-                        fontSize: "var(--type-label)",
-                        marginTop: 2,
-                      }}
-                    >
-                      Development observed
-                    </p>
-                  </div>
-                  <div
-                    className="rounded-xl p-2.5"
-                    style={{
-                      backgroundColor: "var(--surface-slate-light)",
-                      border: "1px solid var(--border-slate-light)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "var(--text-slate-soft)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Clear
-                    </span>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-extrabold)",
-                        lineHeight: "var(--leading-tight)",
-                        color: "var(--text-slate)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {latestCandlingEntry.clear}
-                    </p>
-                    <p
-                      style={{
-                        color: "var(--text-slate-cool)",
-                        fontSize: "var(--type-label)",
-                        marginTop: 2,
-                      }}
-                    >
-                      Likely infertile
-                    </p>
-                  </div>
-                  <div
-                    className="rounded-xl p-2.5"
-                    style={{
-                      backgroundColor: "var(--surface-warn-tile)",
-                      border: "1px solid var(--border-amber-soft)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "var(--status-warning-fg)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Uncertain
-                    </span>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-extrabold)",
-                        lineHeight: "var(--leading-tight)",
-                        color: "var(--status-warning-fg)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {latestCandlingEntry.uncertain}
-                    </p>
-                    <p
-                      style={{
-                        color: "var(--text-amber-deep)",
-                        fontSize: "var(--type-label)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {latestCandlingEntry.uncertain > 0
-                        ? pendingCheckpoint
-                          ? `Recheck Day ${pendingCheckpoint.day}`
-                          : "Resolve before finish"
-                        : "None to recheck"}
-                    </p>
-                  </div>
-                  <div
-                    className="rounded-xl p-2.5"
-                    style={{
-                      backgroundColor: "var(--surface-track)",
-                      border: "1px solid var(--border-subtle)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        fontWeight: "var(--weight-bold)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Total Loaded
-                    </span>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-page-title)",
-                        fontWeight: "var(--weight-extrabold)",
-                        lineHeight: "var(--leading-tight)",
-                        color: "var(--text-primary)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {totalEggsSet}
-                    </p>
-                    <p
-                      style={{
-                        color: "var(--text-muted)",
-                        fontSize: "var(--type-label)",
-                        marginTop: 2,
-                      }}
-                    >
-                      Eggs in tray
-                    </p>
-                  </div>
-                </>
-              )}
+              <div className="grid grid-cols-1 gap-2">
+                <p
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-extrabold)",
+                    letterSpacing: "var(--tracking-label)",
+                    lineHeight: "var(--leading-snug)",
+                    color: "var(--text-secondary)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Egg Development
+                </p>
+                {/* High-contrast stat tiles with big numbers */}
+                <div className="grid grid-cols-4 gap-2 md:grid-cols-2">
+                  {isLaterSummary ? (
+                    <>
+                      <div
+                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+                        style={{
+                          backgroundColor: "var(--surface-mint)",
+                          border: "1px solid var(--border-mint)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--status-success-fg)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            textTransform: "uppercase",
+                            display: "block",
+                          }}
+                        >
+                          Developing
+                        </span>
+                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-5 w-1 shrink-0 rounded-full"
+                            style={{
+                              backgroundColor: "var(--status-success-fg)",
+                            }}
+                          />
+                          <p
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              fontSize: "var(--type-heading-md)",
+                              fontWeight: "var(--weight-extrabold)",
+                              lineHeight: "var(--leading-tight)",
+                              color: "var(--status-success-fg)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {summaryDeveloping}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+                        style={{
+                          backgroundColor:
+                            summaryStopped > 0
+                              ? "var(--surface-blush)"
+                              : "var(--surface-mist)",
+                          border: `1px solid ${summaryStopped > 0 ? "var(--border-blush)" : "var(--border-mist)"}`,
+                        }}
+                      >
+                        <span
+                          style={{
+                            color:
+                              summaryStopped > 0
+                                ? "var(--status-danger-fg)"
+                                : "var(--text-slate-cool)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            textTransform: "uppercase",
+                            display: "block",
+                          }}
+                        >
+                          Stopped
+                        </span>
+                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-5 w-1 shrink-0 rounded-full"
+                            style={{
+                              backgroundColor:
+                                summaryStopped > 0
+                                  ? "var(--status-danger-fg)"
+                                  : "var(--text-slate-cool)",
+                            }}
+                          />
+                          <p
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              fontSize: "var(--type-heading-md)",
+                              fontWeight: "var(--weight-extrabold)",
+                              lineHeight: "var(--leading-tight)",
+                              color:
+                                summaryStopped > 0
+                                  ? "var(--status-danger-fg)"
+                                  : "var(--text-slate-cool)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {summaryStopped}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+                        style={{
+                          backgroundColor: "var(--surface-slate-light)",
+                          border: "1px solid var(--border-slate-light)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--text-slate-soft)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            textTransform: "uppercase",
+                            display: "block",
+                          }}
+                        >
+                          Clear
+                        </span>
+                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-5 w-1 shrink-0 rounded-full"
+                            style={{ backgroundColor: "var(--text-slate)" }}
+                          />
+                          <p
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              fontSize: "var(--type-heading-md)",
+                              fontWeight: "var(--weight-extrabold)",
+                              lineHeight: "var(--leading-tight)",
+                              color: "var(--text-slate)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {summaryClear}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+                        style={{
+                          backgroundColor: "var(--surface-warn-tile)",
+                          border: "1px solid var(--border-amber-soft)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--status-warning-fg)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            textTransform: "uppercase",
+                            display: "block",
+                          }}
+                        >
+                          Uncertain
+                        </span>
+                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-5 w-1 shrink-0 rounded-full"
+                            style={{
+                              backgroundColor: "var(--status-warning-fg)",
+                            }}
+                          />
+                          <p
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              fontSize: "var(--type-heading-md)",
+                              fontWeight: "var(--weight-extrabold)",
+                              lineHeight: "var(--leading-tight)",
+                              color: "var(--status-warning-fg)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {summaryUncertain}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+                        style={{
+                          backgroundColor: "var(--surface-mint)",
+                          border: "1px solid var(--border-mint)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--status-success-fg)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            textTransform: "uppercase",
+                            display: "block",
+                          }}
+                        >
+                          Fertile
+                        </span>
+                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-5 w-1 shrink-0 rounded-full"
+                            style={{
+                              backgroundColor: "var(--status-success-fg)",
+                            }}
+                          />
+                          <p
+                            style={{
+                              fontSize: "var(--type-heading-md)",
+                              fontWeight: "var(--weight-extrabold)",
+                              lineHeight: "var(--leading-tight)",
+                              color: "var(--status-success-fg)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {latestCandlingEntry.fertile}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+                        style={{
+                          backgroundColor: "var(--surface-slate-light)",
+                          border: "1px solid var(--border-slate-light)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--text-slate-soft)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            textTransform: "uppercase",
+                            display: "block",
+                          }}
+                        >
+                          Clear
+                        </span>
+                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-5 w-1 shrink-0 rounded-full"
+                            style={{ backgroundColor: "var(--text-slate)" }}
+                          />
+                          <p
+                            style={{
+                              fontSize: "var(--type-heading-md)",
+                              fontWeight: "var(--weight-extrabold)",
+                              lineHeight: "var(--leading-tight)",
+                              color: "var(--text-slate)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {latestCandlingEntry.clear}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+                        style={{
+                          backgroundColor: "var(--surface-warn-tile)",
+                          border: "1px solid var(--border-amber-soft)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--status-warning-fg)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            textTransform: "uppercase",
+                            display: "block",
+                          }}
+                        >
+                          Uncertain
+                        </span>
+                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-5 w-1 shrink-0 rounded-full"
+                            style={{
+                              backgroundColor: "var(--status-warning-fg)",
+                            }}
+                          />
+                          <p
+                            style={{
+                              fontSize: "var(--type-heading-md)",
+                              fontWeight: "var(--weight-extrabold)",
+                              lineHeight: "var(--leading-tight)",
+                              color: "var(--status-warning-fg)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {latestCandlingEntry.uncertain}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+                        style={{
+                          backgroundColor: "var(--surface-track)",
+                          border: "1px solid var(--border-subtle)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--text-muted)",
+                            fontSize: "var(--type-label)",
+                            fontWeight: "var(--weight-bold)",
+                            textTransform: "uppercase",
+                            display: "block",
+                          }}
+                        >
+                          Total Loaded
+                        </span>
+                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-5 w-1 shrink-0 rounded-full"
+                            style={{ backgroundColor: "var(--text-primary)" }}
+                          />
+                          <p
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              fontSize: "var(--type-heading-md)",
+                              fontWeight: "var(--weight-extrabold)",
+                              lineHeight: "var(--leading-tight)",
+                              color: "var(--text-primary)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {totalEggsSet}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div
@@ -2310,7 +2322,7 @@ export function CandlingJournalTab({
                 <Button
                   onClick={openNewInspection}
                   aria-label="Log inspection"
-                  className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-3 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
+                  className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-4 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
                   style={{ ...rustBtn }}
                 >
                   <Plus size={14} /> Log
@@ -2391,7 +2403,7 @@ export function CandlingJournalTab({
                 onClick={openNewInspection}
                 disabled={isUpdating}
                 aria-label="Log inspection"
-                className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-3 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
+                className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-4 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
                 style={{ ...rustBtn }}
               >
                 <Plus size={14} /> Log
@@ -2461,7 +2473,7 @@ export function CandlingJournalTab({
               onClick={() => setCalOpen(true)}
               aria-label="Open calendar"
               title="Open calendar"
-              className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-sm transition-colors hover:bg-[var(--surface-action-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 lg:hidden"
+              className="inline-flex h-[58px] w-[58px] shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-sm transition-colors hover:bg-[var(--surface-action-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 lg:hidden"
             >
               <CalendarDays size={18} aria-hidden="true" />
             </button>
@@ -2507,14 +2519,18 @@ export function CandlingJournalTab({
                     className="group relative flex items-start"
                   >
                     <div
-                      className="shrink-0 flex justify-center relative z-10"
+                      className={
+                        expandedDays.has(n.day)
+                          ? "shrink-0 relative z-10 flex justify-center self-start"
+                          : "shrink-0 relative z-10 flex justify-center self-center"
+                      }
                       style={{ width: 40 }}
                     >
                       <span
                         className="flex items-center justify-center rounded-full"
                         style={{
-                          width: "var(--control-size-sm)",
-                          height: "var(--control-size-sm)",
+                          width: "var(--control-size-xs)",
+                          height: "var(--control-size-xs)",
                           backgroundColor: "var(--brand-primary)",
                           color: "var(--surface-card)",
                           fontSize: "var(--type-body-sm)",
@@ -2528,7 +2544,7 @@ export function CandlingJournalTab({
 
                     <div className="flex-1 min-w-0 pl-3">
                       <div
-                        className="flex flex-wrap items-center justify-between gap-2"
+                        className="flex items-center justify-between gap-2"
                         style={{ minHeight: "var(--control-height-compact)" }}
                       >
                         <button
@@ -2568,11 +2584,11 @@ export function CandlingJournalTab({
                             aria-hidden="true"
                           />
                         </button>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex shrink-0 items-center gap-1.5">
                           <span
-                            className="whitespace-nowrap mr-3"
+                            className="mr-3 text-right"
                             style={{
-                              fontSize: "var(--type-body-sm)",
+                              fontSize: "var(--type-label)",
                               color: "var(--text-farm)",
                             }}
                           >
@@ -2584,7 +2600,7 @@ export function CandlingJournalTab({
                               setEditingEntry(n.entry);
                               setShowLogForm(true);
                             }}
-                            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
+                            className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
                             aria-label={`Edit entry for Day ${n.entry.day}`}
                             title="Edit Inspection"
                           >
@@ -2593,7 +2609,7 @@ export function CandlingJournalTab({
                           <button
                             type="button"
                             onClick={() => setEntryToDelete(n.entry)}
-                            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
+                            className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
                             aria-label={`Delete entry for Day ${n.entry.day}`}
                             title="Delete Journal Entry"
                           >
@@ -2635,8 +2651,8 @@ export function CandlingJournalTab({
                           <span
                             className="flex items-center justify-center rounded-full"
                             style={{
-                              width: "var(--control-size-sm)",
-                              height: "var(--control-size-sm)",
+                              width: "var(--control-size-xs)",
+                              height: "var(--control-size-xs)",
                               backgroundColor: "var(--surface-card)",
                               border: isDue
                                 ? "2px solid var(--status-warning-fg)"
@@ -2702,48 +2718,64 @@ export function CandlingJournalTab({
             )}
 
             {/* Delete Confirmation Modal */}
-            <Dialog
+            <AlertDialog
               open={entryToDelete !== null}
-              onOpenChange={(open) => !open && setEntryToDelete(null)}
+              onOpenChange={(open) => {
+                if (!isUpdating && !open) setEntryToDelete(null);
+              }}
             >
-              <DialogContent
-                className="max-w-[var(--dialog-width-narrow)] w-[90vw] p-6 rounded-2xl bg-[var(--surface-card)] shadow-xl border border-[var(--border-subtle)] [&>[data-slot=dialog-close]]:hidden"
-                style={{ borderRadius: "var(--radius-card)" }}
+              <AlertDialogContent
+                className="rounded-2xl border-[var(--border-default)]"
+                style={{
+                  backgroundColor: "var(--surface-subtle)",
+                  color: "var(--text-primary)",
+                }}
               >
-                <DialogHeader className="gap-2 text-left">
-                  <DialogTitle
+                <AlertDialogHeader className="text-left">
+                  <AlertDialogTitle
                     style={{
+                      color: "var(--text-primary)",
                       fontSize: "var(--type-heading-md)",
                       fontWeight: "var(--weight-bold)",
-                      color: "var(--text-primary)",
                     }}
                   >
                     Delete Journal Entry?
-                  </DialogTitle>
-                  <DialogDescription
+                  </AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="mt-2">
+                      <StatusCallout
+                        size="sm"
+                        tone="danger"
+                        title="Delete entry"
+                        description={`Are you sure you want to delete this inspection log for Day ${entryToDelete?.day}? This will recalculate the cycle summary and cannot be undone.`}
+                      />
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    className="rounded-full"
                     style={{
-                      fontSize: "var(--type-body-sm)",
-                      color: "var(--text-neutral-deep)",
-                      lineHeight: 1.5,
+                      borderColor: "var(--border-default)",
+                      color: "var(--text-secondary)",
+                      height: 34,
+                      fontSize: "var(--type-body)",
                     }}
                   >
-                    Are you sure you want to delete this inspection log for Day{" "}
-                    {entryToDelete?.day}? This will recalculate the cycle
-                    summary and cannot be undone.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="mt-4 flex items-center justify-end gap-2.5">
-                  <Button
-                    variant="outline"
-                    onClick={() => setEntryToDelete(null)}
-                    className="rounded-xl border-[var(--border-subtle)] text-[var(--text-note)] hover:bg-[var(--surface-paper)]"
-                  >
                     Cancel
-                  </Button>
-                  <Button
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    className="rounded-full"
+                    style={{
+                      backgroundColor: "var(--status-danger-fg)",
+                      color: "var(--surface-card)",
+                      height: 34,
+                      fontSize: "var(--type-body)",
+                    }}
                     disabled={isUpdating}
                     aria-busy={isUpdating}
-                    onClick={() => {
+                    onClick={(event) => {
+                      event.preventDefault();
                       if (entryToDelete) {
                         void deleteJournalEntry(entryToDelete.day).then(
                           (deleted) => {
@@ -2752,14 +2784,12 @@ export function CandlingJournalTab({
                         );
                       }
                     }}
-                    className="rounded-xl text-white font-medium transition-colors"
-                    style={{ backgroundColor: "var(--status-danger-fg)" }}
                   >
-                    Delete Entry
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                    {isUpdating ? "Deleting…" : "Delete Entry"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 
