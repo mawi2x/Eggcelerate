@@ -423,10 +423,15 @@ STORAGE_BACKEND=memory          # postgres_incubators opts into durable configur
 DATABASE_URL=                   # asyncpg URL required for postgres_incubators
 MQTT_URL=                       # added in B4
 VITE_DATA_SOURCE=mock
-VITE_API_URL=http://127.0.0.1:8000/api/v1
+VITE_API_URL=/api                  # same-origin production proxy; API mode only
 ```
 
 Compose publishes API port 8000 to host `127.0.0.1` only. `AUTH_MODE=disabled` is a local-development capability, not a deployment shortcut.
+The web Nginx container forwards `/api/*` to the internal `api:8000` service. A VPS
+preview should use `compose.production.yaml`, which builds with
+`VITE_DATA_SOURCE=api`, enables durable `postgres_incubators` storage, and
+removes unnecessary host ports; Vite variables are baked into the static bundle
+during `docker compose build`.
 
 ## 9. Checkpoint gates
 

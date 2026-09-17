@@ -8,6 +8,7 @@ import type {
   StopCycleInput,
 } from "../../data/repositories/repository";
 import { initialSettings, type SettingsPreferences } from "../../data/settings";
+import { createIdempotencyKey } from "../../data/transport/idempotency";
 import type { Result } from "../../domain/result";
 import type {
   AlertEntry,
@@ -277,7 +278,7 @@ async function routeIncubatorPatch(
       repository,
       id,
       patch,
-      options ?? { idempotencyKey: crypto.randomUUID() },
+      options ?? { idempotencyKey: createIdempotencyKey() },
     );
   }
   return validationFailure("Unsupported incubator patch for the command port.");
@@ -458,7 +459,7 @@ export function useFarmActions() {
 
   async function addIncubator(
     unit: Incubator,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(
       () => addIncubatorMutation.mutateAsync({ unit, options }),
@@ -470,7 +471,7 @@ export function useFarmActions() {
   async function updateIncubator(
     id: string,
     patch: Partial<Incubator>,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(
       () => updateIncubatorMutation.mutateAsync({ id, patch, options }),
@@ -482,7 +483,7 @@ export function useFarmActions() {
   }
   async function addMode(
     mode: Mode,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(() => addModeMutation.mutateAsync({ mode, options }), {
       retry: () => void addMode(mode, options),
@@ -491,7 +492,7 @@ export function useFarmActions() {
   async function updateMode(
     id: string,
     patch: Partial<Mode>,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(
       () => updateModeMutation.mutateAsync({ id, patch, options }),
@@ -502,7 +503,7 @@ export function useFarmActions() {
   }
   async function deleteMode(
     id: string,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(() => deleteModeMutation.mutateAsync({ id, options }), {
       retry: () => void deleteMode(id, options),
@@ -510,7 +511,7 @@ export function useFarmActions() {
   }
   async function acknowledgeAlert(
     id: string,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(
       () => acknowledgeAlertMutation.mutateAsync({ id, options }),
@@ -521,7 +522,7 @@ export function useFarmActions() {
   }
   async function dismissAlert(
     id: string,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(
       () => dismissAlertMutation.mutateAsync({ id, options }),
@@ -531,14 +532,14 @@ export function useFarmActions() {
     );
   }
   async function markAllAlertsRead(
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(() => markAllAlertsReadMutation.mutateAsync(options), {
       retry: () => void markAllAlertsRead(options),
     });
   }
   async function clearReadAlerts(
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(() => clearReadAlertsMutation.mutateAsync(options), {
       retry: () => void clearReadAlerts(options),
@@ -546,7 +547,7 @@ export function useFarmActions() {
   }
   async function saveSettings(
     settings: SettingsPreferences,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(
       () => saveSettingsMutation.mutateAsync({ settings, options }),
@@ -633,7 +634,7 @@ export function useCycleHistoryActions() {
 
   async function completeCycle(
     input: CompleteCycleInput,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(
       () => completeCycleMutation.mutateAsync({ input, options }),
@@ -644,7 +645,7 @@ export function useCycleHistoryActions() {
   }
   async function stopCycle(
     input: StopCycleInput,
-    options: MutationOptions = { idempotencyKey: crypto.randomUUID() },
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(
       () => stopCycleMutation.mutateAsync({ input, options }),

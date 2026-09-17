@@ -4,12 +4,12 @@ EGGCELERATE is organized as a pnpm monorepo for independently deployable applica
 
 ## Repository structure
 
-- `apps/web` — current Vite + React web dashboard. This is the only implemented and deployed application.
-- `apps/api` — reserved for a future backend/API; no framework has been selected.
+- `apps/web` — current Vite + React web dashboard.
+- `apps/api` — FastAPI dashboard API with memory and opt-in PostgreSQL/TimescaleDB storage.
 - `apps/mobile` — reserved for a future Android/iOS application; no framework has been selected.
 - `packages` — reserved for code that is genuinely shared between applications.
 - `infrastructure` — reserved for future service and infrastructure configuration.
-- `compose.yaml` — currently builds and deploys only the web application.
+- `compose.yaml` — builds the web and API services; the database profile is opt-in.
 
 ## Workspace commands
 
@@ -32,13 +32,32 @@ Start the web development server:
 pnpm --filter eggcelerate-ui dev
 ```
 
-## Production web container
+## Web container
 
-Docker Compose builds the web application with Node and pnpm, then serves only the generated static files from Nginx:
+Docker Compose builds the web application with Node and pnpm, then serves the generated static files from Nginx. In API mode Nginx forwards same-origin `/api/*` requests to the internal `api` service:
 
 ```bash
 docker compose up -d --build
 docker compose ps
 ```
 
-The deployment currently exposes the web dashboard on host port 80. API, database, MQTT, and mobile services are not implemented or included in Compose.
+The web is exposed on host port 80. The API is bound to host loopback port 8000 for local diagnostics; the browser should use `VITE_API_URL=/api` so it does not call a team member's localhost. The database is not started unless the `database` profile is enabled.
+
+## Team preview with durable notifications
+
+The checked-in defaults are intentionally mock and in-memory for local work. A VPS preview that must retain cleared notifications across refreshes and restarts needs the API repository and PostgreSQL enabled at **build time** and **run time**:
+
+```sh
+export POSTGRES_PASSWORD='replace-with-a-long-secret'
+export DATABASE_URL="postgresql+asyncpg://eggcelerate:${POSTGRES_PASSWORD}@db:5432/eggcelerate"
+export COMPOSE_FILES='-f compose.yaml -f compose.production.yaml'
+
+docker compose ${COMPOSE_FILES} --profile database up -d --wait db
+docker compose ${COMPOSE_FILES} --profile database run --rm api alembic upgrade head
+docker compose ${COMPOSE_FILES} --profile database run --rm api python -m eggcelerate_api.database.seed
+docker compose ${COMPOSE_FILES} --profile database up -d --build api web
+docker compose ${COMPOSE_FILES} --profile database ps
+```
+
+The overlay forces `VITE_DATA_SOURCE=api`, `VITE_API_URL=/api`, and `STORAGE_BACKEND=postgres_incubators`; it also removes the API and database host ports. Run those commands from the repository checkout on the VPS. Do not run `docker compose down -v`; the named database volume contains the alert dismissal tombstones. The API currently has authentication disabled pending B6, so keep this preview behind a VPN, firewall, or an authenticated outer proxy rather than publishing it as a public service.
+The overlay uses the Compose `!override` tag; use Docker Compose v2.24 or newer.

@@ -8,6 +8,8 @@ describe("base URL normalization", () => {
       "http://api",
       "http://api/api/v1",
       "http://api/api/v1///",
+      "/api",
+      "/api/v1",
     ]) {
       const seen: string[] = [];
       vi.stubGlobal(
@@ -19,7 +21,11 @@ describe("base URL normalization", () => {
       );
       const repository = new ApiRepository({ baseUrl });
       expect((await repository.listIncubators()).ok).toBe(true);
-      expect(seen).toEqual(["http://api/api/v1/incubators"]);
+      expect(seen).toEqual([
+        baseUrl.startsWith("/")
+          ? "/api/v1/incubators"
+          : "http://api/api/v1/incubators",
+      ]);
     }
   });
 });
@@ -154,5 +160,31 @@ describe("ApiRepository transport", () => {
       unknown
     >;
     expect(body).toEqual({ mode_id: "duck", turn_interval_min: 240 });
+  });
+
+  it("posts clear acknowledged alerts through a same-origin base", async () => {
+    const seen: { url: string; init?: RequestInit }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown, init?: RequestInit) => {
+        seen.push({ url: url as string, init });
+        return {
+          json: async () =>
+            wireResponse("/api/v1/alerts/actions/clear-acknowledged"),
+        } as Response;
+      }),
+    );
+    const repository = new ApiRepository({
+      baseUrl: "/api",
+      newIdempotencyKey: () => "clear-key",
+    });
+
+    const result = await repository.clearReadAlerts();
+
+    expect(result.ok).toBe(true);
+    expect(seen[0]?.url).toBe("/api/v1/alerts/actions/clear-acknowledged");
+    expect(new Headers(seen[0]?.init?.headers).get("Idempotency-Key")).toBe(
+      "clear-key",
+    );
   });
 });

@@ -19,6 +19,19 @@ describe("data source resolution", () => {
       }),
     ).toEqual({ source: "api", apiUrl: "http://127.0.0.1:8000/api/v1" });
   });
+
+  it("accepts the same-origin API paths used by the production proxy", () => {
+    expect(
+      resolveDataSource({ VITE_DATA_SOURCE: "api", VITE_API_URL: "/api///" }),
+    ).toEqual({ source: "api", apiUrl: "/api" });
+    expect(
+      resolveDataSource({
+        VITE_DATA_SOURCE: "api",
+        VITE_API_URL: "/api/v1///",
+      }),
+    ).toEqual({ source: "api", apiUrl: "/api/v1" });
+  });
+
   it("rejects non-http API URLs", () => {
     expect(() =>
       resolveDataSource({ VITE_DATA_SOURCE: "api", VITE_API_URL: "mqtt://x" }),
@@ -31,6 +44,12 @@ describe("data source resolution", () => {
     ).toThrow();
     expect(() =>
       resolveDataSource({ VITE_DATA_SOURCE: "api", VITE_API_URL: "not-a-url" }),
+    ).toThrow();
+    expect(() =>
+      resolveDataSource({
+        VITE_DATA_SOURCE: "api",
+        VITE_API_URL: "/internal-api",
+      }),
     ).toThrow();
   });
 });

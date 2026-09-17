@@ -5,10 +5,15 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         VITE_DATA_SOURCE: ${VITE_DATA_SOURCE:-mock}
-        VITE_API_URL: ${VITE_API_URL:-http://127.0.0.1:8000/api/v1}
+        # The production build is same-origin. Set VITE_DATA_SOURCE=api in
+        # the VPS .env so requests go through the Nginx /api proxy.
+        VITE_API_URL: ${VITE_API_URL:-/api}
     ports:
       - "80:80"
     restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/healthz"]
       interval: 30s
@@ -29,7 +34,7 @@ services:
       API_PORT: 8000
       STORAGE_BACKEND: ${STORAGE_BACKEND:-memory}
       DATABASE_URL: ${DATABASE_URL:-}
-      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost,http://127.0.0.1
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost,http://127.0.0.1}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]

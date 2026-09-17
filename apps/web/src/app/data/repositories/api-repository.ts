@@ -31,6 +31,7 @@ import {
   readingFromDTO,
   resultEnvelopeSchema,
 } from "../transport/contracts";
+import { createIdempotencyKey } from "../transport/idempotency";
 import type {
   CompleteCycleInput,
   CompletedCycle,
@@ -71,6 +72,21 @@ function toWireChecks(
   return checks.map((check) => (check === "airCell" ? "air_cell" : check));
 }
 
+function normalizeBaseUrl(baseUrl: string): string {
+  const normalized = baseUrl.replace(/\/+$/, "");
+  if (normalized === "/api" || normalized === "/api/v1") return "";
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.pathname === "/api" || parsed.pathname === "/api/v1") {
+      return parsed.origin;
+    }
+  } catch {
+    // The environment resolver validates API URLs. Keep this fallback safe
+    // for a relative test base or a caller-provided custom path.
+  }
+  return normalized;
+}
+
 export class ApiRepository implements EggcelerateRepository {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
@@ -78,16 +94,13 @@ export class ApiRepository implements EggcelerateRepository {
   private readonly newIdempotencyKey: () => string;
 
   constructor(options: ApiRepositoryOptions) {
-    // Paths below already start with /api/v1, but documented examples hand
-    // us a base URL that sometimes includes the suffix too. Normalize both
-    // shapes to origin-only so neither double-prefixes.
-    this.baseUrl = options.baseUrl
-      .replace(/\/+$/, "")
-      .replace(/\/api\/v1$/, "");
+    // Paths below already start with /api/v1. Accept an origin, an origin
+    // with /api or /api/v1, or the same-origin /api path used by Nginx. Strip
+    // the optional API prefix so none of those forms double-prefix requests.
+    this.baseUrl = normalizeBaseUrl(options.baseUrl);
     this.timeoutMs = options.timeoutMs ?? REQUEST_TIMEOUT_MS;
     this.fetchImpl = options.fetchImpl ?? fetch;
-    this.newIdempotencyKey =
-      options.newIdempotencyKey ?? (() => crypto.randomUUID());
+    this.newIdempotencyKey = options.newIdempotencyKey ?? createIdempotencyKey;
   }
 
   private async request<T>(

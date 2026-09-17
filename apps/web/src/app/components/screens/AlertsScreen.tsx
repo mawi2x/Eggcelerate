@@ -227,7 +227,8 @@ export function AlertsScreen({
               onClick={() => void onClearRead()}
               disabled={readCount === 0 || clearingRead || markingAllRead}
               aria-busy={clearingRead}
-              title="Removes every notification you've already read"
+              aria-label="Clear all read notifications"
+              title="Removes every notification you've already read; unread notifications remain"
             >
               <Eraser size={16} /> {clearingRead ? "Clearing…" : "Clear All"}
             </Button>

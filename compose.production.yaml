@@ -1,0 +1,34 @@
+# Team-preview deployment overlay. Keep compose.yaml's mock/memory defaults
+# for local work; use this file when the dashboard must talk to durable API
+# storage through the web container's same-origin /api proxy.
+services:
+  web:
+    build:
+      args:
+        VITE_DATA_SOURCE: api
+        VITE_API_URL: /api
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    environment:
+      STORAGE_BACKEND: postgres_incubators
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for the production database}
+      # The API is intentionally auth-disabled until B6. Protect this preview
+      # with a VPN, firewall, or authenticated outer reverse proxy.
+      APP_ENV: development
+      AUTH_MODE: disabled
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz')"]
+    # The web container reaches api over the Compose network; no host port is
+    # needed for the team preview.
+    ports: !override []
+
+  db:
+    # PostgreSQL is reachable only over the private Compose network here.
+    ports: !override []
