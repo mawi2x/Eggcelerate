@@ -10,6 +10,19 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    # A static shell can still return 200 when the /api proxy is missing.
+    # Probe the proxied API so an old or misconfigured web image cannot report
+    # healthy while the dashboard is pointed at a team member's localhost.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O - http://127.0.0.1/api/v1/alerts | grep -q '\"ok\":true'",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   api:
     environment:

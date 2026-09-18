@@ -13,7 +13,12 @@ ARG VITE_DATA_SOURCE=mock
 ARG VITE_API_URL=/api
 ENV VITE_DATA_SOURCE=$VITE_DATA_SOURCE
 ENV VITE_API_URL=$VITE_API_URL
-RUN pnpm --filter eggcelerate-ui build
+RUN pnpm --filter eggcelerate-ui build \
+    && if [ "$VITE_DATA_SOURCE" = "api" ] \
+      && grep -R -E 'https?://(localhost|127\.0\.0\.1)(:|/)' apps/web/dist >/dev/null; then \
+         echo "Production API builds must not contain a loopback URL." >&2; \
+         exit 1; \
+       fi
 
 FROM nginx:alpine
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf

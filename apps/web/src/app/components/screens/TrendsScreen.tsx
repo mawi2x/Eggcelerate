@@ -8,7 +8,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   CartesianGrid,
@@ -72,6 +72,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { useIsMobile } from "../ui/use-mobile";
+import { type ViewMode, ViewToggle } from "../ViewToggle";
 
 // ── Design tokens ───────────────────────────────────────────────────────────
 const RUST = "var(--brand-primary)";
@@ -357,7 +358,9 @@ export function TrendsScreen({
   const [hatchSearch, setHatchSearch] = useState("");
   const [species, setSpecies] = useState<string>("All");
   const [hatchPage, setHatchPage] = useState(1);
+  const touchStartX = useRef<number | null>(null);
   const [hatchRowsPerPage, setHatchRowsPerPage] = useState(HATCH_ROWS);
+  const [hatchView, setHatchView] = useState<ViewMode>("grid");
 
   const unit = units.find((u) => u.id === unitId) ?? units[0];
   const modeOf = useCallback(
@@ -555,7 +558,9 @@ export function TrendsScreen({
     (page - 1) * hatchRowsPerPage,
     page * hatchRowsPerPage,
   );
-
+  const hatchRangeStart =
+    filteredHatch.length === 0 ? 0 : (page - 1) * hatchRowsPerPage + 1;
+  const hatchRangeEnd = Math.min(page * hatchRowsPerPage, filteredHatch.length);
   const viewOptions: {
     key: TrendView;
     label: string;
@@ -1103,6 +1108,7 @@ export function TrendsScreen({
               hideIconOnMobile
               label="Completed Cycles"
               value={`${kpis.cycles}`}
+              minHeight="none"
               accentBar="var(--text-primary)"
             />
             <KpiCard
@@ -1110,6 +1116,7 @@ export function TrendsScreen({
               hideIconOnMobile
               label="Average Hatchability"
               value={kpis.avgRate === null ? "N/A" : `${kpis.avgRate}%`}
+              minHeight="none"
               accent={OK}
               accentBar={OK}
             />
@@ -1118,75 +1125,345 @@ export function TrendsScreen({
               hideIconOnMobile
               label="Total Chicks Hatched"
               value={`${kpis.hatched}`}
+              minHeight="none"
               accentBar="var(--text-primary)"
             />
           </div>
 
           {/* Control bar: search + species filter dropdown */}
-          <div className="mt-2 flex flex-wrap items-center gap-3 md:mt-6">
-            <div className="relative min-w-0 w-full flex-1 md:min-w-[220px]">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2"
-                style={{ color: MUTED }}
-              />
-              <Input
-                size="toolbar"
-                value={hatchSearch}
-                onChange={(e) => {
-                  setHatchSearch(e.target.value);
-                  setHatchPage(1);
-                }}
-                maxLength={50}
-                placeholder="Filter hatch history..."
-                aria-label="Filter hatch history"
-                className="h-[var(--control-height-mobile)] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
-                style={{ ...inputStyle, fontSize: "var(--type-filter-value)" }}
-              />
-            </div>
-            <div className="w-full shrink-0 md:w-[200px]">
-              <Select
-                size="filter"
-                value={species}
-                onValueChange={(val) => {
-                  setSpecies(val);
-                  setHatchPage(1);
-                }}
-              >
-                <SelectTrigger
-                  size="filter"
-                  className="w-full rounded-xl"
+          {/* Control bar: search + species filter dropdown + ViewToggle */}
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3 md:mt-6">
+            <div className="flex flex-1 flex-wrap items-center gap-3">
+              <div className="relative min-w-0 flex-1 md:min-w-[220px]">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2"
+                  style={{ color: MUTED }}
+                />
+                <Input
+                  size="toolbar"
+                  value={hatchSearch}
+                  onChange={(e) => {
+                    setHatchSearch(e.target.value);
+                    setHatchPage(1);
+                  }}
+                  maxLength={50}
+                  placeholder="Filter hatch history..."
+                  aria-label="Filter hatch history"
+                  className="h-[var(--control-height-mobile)] rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
                   style={{
-                    ...toolbarInputStyle,
-                    ...CONTROL_FONT,
-                    color: RUST,
+                    ...inputStyle,
+                    fontSize: "var(--type-filter-value)",
+                  }}
+                />
+              </div>
+              <div className="w-[150px] shrink-0 md:w-[200px]">
+                <Select
+                  size="filter"
+                  value={species}
+                  onValueChange={(val) => {
+                    setSpecies(val);
+                    setHatchPage(1);
                   }}
                 >
-                  <SelectValue placeholder="Species: All" />
-                </SelectTrigger>
-                <SelectContent style={CONTROL_FONT}>
-                  {speciesOptions.map((s) => {
-                    const count =
-                      s === "All"
-                        ? withPct.length
-                        : withPct.filter((h) => h.modeName === s).length;
-                    return (
-                      <SelectItem key={s} value={s} style={{ color: TEXT }}>
-                        {s === "All"
-                          ? `All Species (${count})`
-                          : `${s} (${count})`}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+                  <SelectTrigger
+                    size="filter"
+                    className="w-full justify-start rounded-xl"
+                    style={{
+                      ...toolbarInputStyle,
+                      ...CONTROL_FONT,
+                      color: RUST,
+                    }}
+                  >
+                    <SelectValue placeholder="Species: All" />
+                  </SelectTrigger>
+                  <SelectContent style={CONTROL_FONT}>
+                    {speciesOptions.map((s) => {
+                      return (
+                        <SelectItem key={s} value={s} style={{ color: TEXT }}>
+                          {s === "All" ? `All Species` : s}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Desktop ViewToggle (grid vs list), hidden on mobile where responsive cards are always shown */}
+            <div className="hidden md:block">
+              <ViewToggle view={hatchView} onChange={setHatchView} />
             </div>
           </div>
 
-          <Card style={cardStyle} className="mt-2 md:mt-6">
-            <CardContent className="p-5">
+          {/* Sub-toolbar row: records range count + horizontal mini page indicator dots */}
+          <div className="mt-2 flex items-center justify-between px-1 md:mt-3">
+            <span
+              aria-live="polite"
+              style={{
+                color: MUTED,
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-filter-label)",
+              }}
+            >
+              Showing {hatchRangeStart} to {hatchRangeEnd} of {filteredHatch.length} records
+            </span>
+
+            {hatchPages > 1 && (
+              <div
+                role="group"
+                aria-label={`Page selection. Page ${page} of ${hatchPages}`}
+                className="flex items-center gap-1.5 py-1"
+              >
+                {Array.from({ length: hatchPages }, (_, i) => i + 1).map((p) => {
+                  const isActive = page === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setHatchPage(p)}
+                      aria-label={`Go to page ${p} of ${hatchPages}`}
+                      aria-current={isActive ? "page" : undefined}
+                      className="flex h-4 items-center justify-center border-0 bg-transparent p-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                    >
+                      <span
+                        className="rounded-full transition-all duration-200 motion-reduce:transition-none"
+                        style={{
+                          width: isActive ? 16 : 5,
+                          height: 5,
+                          backgroundColor: isActive
+                            ? "var(--brand-primary)"
+                            : "var(--wash-checkbox)",
+                        }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Main content: Cards view (Mobile & Desktop Grid) vs Table view (Desktop List) */}
+          {isMobile || hatchView === "grid" ? (
+            <div className="mt-2 md:mt-4 space-y-4">
+              {/* Responsive Cards Grid */}
+              <div
+                className="grid grid-cols-1 gap-3 touch-pan-y md:grid-cols-2"
+                    onTouchStart={(e) => {
+                      touchStartX.current = e.touches[0].clientX;
+                    }}
+                    onTouchEnd={(e) => {
+                      if (touchStartX.current === null) return;
+                      const dx =
+                        e.changedTouches[0].clientX - touchStartX.current;
+                      touchStartX.current = null;
+                      if (Math.abs(dx) < 48) return;
+                      if (dx < 0) setHatchPage(Math.min(hatchPages, page + 1));
+                      else setHatchPage(Math.max(1, page - 1));
+                    }}
+                  >
+                    {pagedHatch.map((h, idx) => {
+                      const good = h.pct !== null && h.pct >= 80;
+                      const unhatched = h.totalEggs - h.hatchedEggs;
+                      return (
+                        <div
+                          key={h.id}
+                          className="flex flex-col gap-3 rounded-2xl border p-4 shadow-sm transition-colors duration-150"
+                          style={{
+                            backgroundColor: "var(--surface-card)",
+                            borderColor: BORDER,
+                          }}
+                        >
+                          {/* Card Header: Chamber Name + Mode Badge + Hatchability Pill */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h4
+                                style={{
+                                  fontFamily: "var(--font-display)",
+                                  fontSize: "var(--type-heading-sm)",
+                                  fontWeight: "var(--weight-bold)",
+                                  color: TEXT,
+                                }}
+                                className="truncate"
+                              >
+                                {h.chamber}
+                              </h4>
+                              <div className="mt-1 flex flex-wrap items-center gap-2">
+                                <span
+                                  className="rounded-full px-2 py-0.5"
+                                  style={{
+                                    backgroundColor: "var(--wash-brand-soft)",
+                                    color: RUST,
+                                    fontWeight: "var(--weight-semibold)",
+                                    fontSize: "var(--type-label)",
+                                  }}
+                                >
+                                  {h.modeName}
+                                </span>
+                                <span
+                                  style={{
+                                    color: MUTED,
+                                    fontFamily: "var(--font-body)",
+                                    fontSize: "var(--type-caption)",
+                                  }}
+                                >
+                                  {formatDate(h.startDate)} –{" "}
+                                  {formatDate(h.endDate)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <span
+                              className="shrink-0 rounded-full px-2.5 py-1 text-center"
+                              style={{
+                                backgroundColor: good ? OK_BG : WARN_BG,
+                                color: good ? OK : WARN,
+                                fontWeight: "var(--weight-extrabold)",
+                                fontSize: "var(--type-body-sm)",
+                              }}
+                            >
+                              {h.pct === null ? "N/A" : `${h.pct}%`}
+                            </span>
+                          </div>
+
+                          {/* Card Telemetry Metrics: Eggs Set, Hatched, Unhatched */}
+                          <div
+                            className="grid grid-cols-3 gap-2 rounded-xl p-2.5"
+                            style={{ backgroundColor: "var(--surface-tile)" }}
+                          >
+                            <div className="flex flex-col">
+                              <span
+                                style={{
+                                  fontSize: "var(--type-label-compact)",
+                                  color: "var(--text-muted)",
+                                  fontWeight: "var(--weight-bold)",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "var(--tracking-label)",
+                                }}
+                              >
+                                Eggs Set
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: "var(--type-heading-sm)",
+                                  fontWeight: "var(--weight-bold)",
+                                  color: TEXT,
+                                }}
+                              >
+                                {h.totalEggs}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-col">
+                              <span
+                                style={{
+                                  fontSize: "var(--type-label-compact)",
+                                  color: "var(--text-muted)",
+                                  fontWeight: "var(--weight-bold)",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "var(--tracking-label)",
+                                }}
+                              >
+                                Hatched
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: "var(--type-heading-sm)",
+                                  fontWeight: "var(--weight-bold)",
+                                  color: good ? OK : TEXT,
+                                }}
+                              >
+                                {h.hatchedEggs}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-col">
+                              <span
+                                style={{
+                                  fontSize: "var(--type-label-compact)",
+                                  color: "var(--text-muted)",
+                                  fontWeight: "var(--weight-bold)",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "var(--tracking-label)",
+                                }}
+                              >
+                                Unhatched
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: "var(--type-heading-sm)",
+                                  fontWeight: "var(--weight-bold)",
+                                  color:
+                                    unhatched > 0
+                                      ? "var(--text-secondary)"
+                                      : "var(--text-muted)",
+                                }}
+                              >
+                                {Math.max(0, unhatched)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {pagedHatch.length === 0 && (
+                    <div
+                      className="py-12 text-center rounded-2xl border"
+                      style={{
+                        borderColor: BORDER,
+                        backgroundColor: "var(--surface-card)",
+                      }}
+                    >
+                      <p
+                        style={{
+                          color: MUTED,
+                          fontSize: "var(--type-body-sm)",
+                        }}
+                      >
+                        No cycles match your filters.
+                      </p>
+                    </div>
+                  )}
+
+
+                  {/* Single clean pagination bar below cards */}
+                  {filteredHatch.length > 0 && (
+                <div
+                  className="overflow-hidden rounded-2xl border"
+                  style={{
+                    backgroundColor: "var(--surface-card)",
+                    borderColor: BORDER,
+                  }}
+                >
+                  <PaginationBar
+                    className="border-none px-4 py-3"
+                    page={page}
+                    pageSize={hatchRowsPerPage}
+                    totalItems={filteredHatch.length}
+                    itemLabel="records"
+                    pageSizeOptions={[10, 20, 50]}
+                    onPageSizeChange={(value) => {
+                      setHatchRowsPerPage(value);
+                      setHatchPage(1);
+                    }}
+                    onPageChange={setHatchPage}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Desktop List View: Full 6-Column Data Table */
+            <div
+              className="mt-3 md:mt-6 overflow-hidden rounded-2xl border"
+              style={{
+                borderColor: BORDER,
+                backgroundColor: CARD,
+              }}
+            >
               <PaginationBar
-                className="mb-4 border-b border-t-0 px-0 pt-0"
+                className="border-b border-t-0 px-4 py-2.5"
                 page={page}
                 pageSize={hatchRowsPerPage}
                 totalItems={filteredHatch.length}
@@ -1198,142 +1475,153 @@ export function TrendsScreen({
                 }}
                 onPageChange={setHatchPage}
               />
-              <div
-                className="h-[520px] overflow-auto rounded-2xl border"
-                style={{ borderColor: BORDER }}
-              >
-                <Table>
-                  <TableHeader
-                    className="sticky top-0 z-10"
-                    style={{ backgroundColor: "var(--surface-tile)" }}
-                  >
-                    <TableRow>
-                      {["CHAMBER", "MODE", "DATES"].map((h) => (
-                        <TableHead
-                          key={h}
-                          style={{
-                            color: "var(--text-muted)",
-                            fontFamily: "var(--font-body)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            letterSpacing: "var(--tracking-label)",
-                            lineHeight: "var(--leading-snug)",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {h}
-                        </TableHead>
-                      ))}
-                      {["EGGS SET", "HATCHED", "HATCHABILITY"].map((h) => (
-                        <TableHead
-                          key={h}
-                          className="text-right"
-                          style={{
-                            color: "var(--text-muted)",
-                            fontFamily: "var(--font-body)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            letterSpacing: "var(--tracking-label)",
-                            lineHeight: "var(--leading-snug)",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {h}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pagedHatch.map((h) => {
-                      const good = h.pct !== null && h.pct >= 80;
-                      return (
-                        <TableRow key={h.id} className="hover:bg-amber-50/60">
-                          <TableCell
+              <div className="h-[520px] overflow-auto">
+                <Table className="min-w-[640px]">
+                    <TableHeader
+                      className="sticky top-0 z-10"
+                      style={{ backgroundColor: "var(--surface-tile)" }}
+                    >
+                      <TableRow>
+                        {["CHAMBER", "MODE", "DATES"].map((h) => (
+                          <TableHead
+                            key={h}
                             style={{
-                              fontSize: "var(--type-body)",
-                              lineHeight: "var(--leading-normal)",
+                              color: "var(--text-muted)",
+                              fontFamily: "var(--font-body)",
+                              fontSize: "var(--type-label)",
                               fontWeight: "var(--weight-bold)",
-                              color: TEXT,
+                              letterSpacing: "var(--tracking-label)",
+                              lineHeight: "var(--leading-snug)",
+                              textTransform: "uppercase",
                             }}
                           >
-                            {h.chamber}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className="rounded-full px-2 py-0.5"
+                            {h}
+                          </TableHead>
+                        ))}
+                        {["EGGS SET", "HATCHED", "HATCHABILITY"].map((h) => (
+                          <TableHead
+                            key={h}
+                            className="text-right"
+                            style={{
+                              color: "var(--text-muted)",
+                              fontFamily: "var(--font-body)",
+                              fontSize: "var(--type-label)",
+                              fontWeight: "var(--weight-bold)",
+                              letterSpacing: "var(--tracking-label)",
+                              lineHeight: "var(--leading-snug)",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {h}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagedHatch.map((h) => {
+                        const good = h.pct !== null && h.pct >= 80;
+                        return (
+                          <TableRow key={h.id} className="hover:bg-amber-50/60">
+                            <TableCell
                               style={{
-                                backgroundColor: "var(--wash-brand-soft)",
-                                color: RUST,
-                                fontWeight: "var(--weight-semibold)",
-                                fontSize: "var(--type-body-sm)",
+                                fontSize: "var(--type-body)",
+                                lineHeight: "var(--leading-normal)",
+                                fontWeight: "var(--weight-bold)",
+                                color: TEXT,
                               }}
                             >
-                              {h.modeName}
-                            </span>
-                          </TableCell>
+                              {h.chamber}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className="rounded-full px-2 py-0.5"
+                                style={{
+                                  backgroundColor: "var(--wash-brand-soft)",
+                                  color: RUST,
+                                  fontWeight: "var(--weight-semibold)",
+                                  fontSize: "var(--type-body-sm)",
+                                }}
+                              >
+                                {h.modeName}
+                              </span>
+                            </TableCell>
+                            <TableCell
+                              style={{
+                                color: MUTED,
+                                fontFamily: "var(--font-body)",
+                                fontSize: "var(--type-body-sm)",
+                                lineHeight: "var(--leading-normal)",
+                              }}
+                            >
+                              {formatDate(h.startDate)} to{" "}
+                              {formatDate(h.endDate)}
+                            </TableCell>
+                            <TableCell
+                              className="text-right"
+                              style={{
+                                fontSize: "var(--type-body)",
+                                lineHeight: "var(--leading-normal)",
+                              }}
+                            >
+                              {h.totalEggs}
+                            </TableCell>
+                            <TableCell
+                              className="text-right"
+                              style={{
+                                fontSize: "var(--type-body)",
+                                lineHeight: "var(--leading-normal)",
+                              }}
+                            >
+                              {h.hatchedEggs}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span
+                                className="inline-block rounded-full px-2.5 py-0.5"
+                                style={{
+                                  backgroundColor: good ? OK_BG : WARN_BG,
+                                  color: good ? OK : WARN,
+                                  fontWeight: "var(--weight-bold)",
+                                  fontSize: "var(--type-body-sm)",
+                                }}
+                              >
+                                {h.pct === null ? "Not available" : `${h.pct}%`}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {pagedHatch.length === 0 && (
+                        <TableRow>
                           <TableCell
+                            colSpan={6}
+                            className="py-8 text-center"
                             style={{
                               color: MUTED,
-                              fontFamily: "var(--font-body)",
                               fontSize: "var(--type-body-sm)",
-                              lineHeight: "var(--leading-normal)",
                             }}
                           >
-                            {formatDate(h.startDate)} to {formatDate(h.endDate)}
-                          </TableCell>
-                          <TableCell
-                            className="text-right"
-                            style={{
-                              fontSize: "var(--type-body)",
-                              lineHeight: "var(--leading-normal)",
-                            }}
-                          >
-                            {h.totalEggs}
-                          </TableCell>
-                          <TableCell
-                            className="text-right"
-                            style={{
-                              fontSize: "var(--type-body)",
-                              lineHeight: "var(--leading-normal)",
-                            }}
-                          >
-                            {h.hatchedEggs}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span
-                              className="inline-block rounded-full px-2.5 py-0.5"
-                              style={{
-                                backgroundColor: good ? OK_BG : WARN_BG,
-                                color: good ? OK : WARN,
-                                fontWeight: "var(--weight-bold)",
-                                fontSize: "var(--type-body-sm)",
-                              }}
-                            >
-                              {h.pct === null ? "Not available" : `${h.pct}%`}
-                            </span>
+                            No cycles match your filters.
                           </TableCell>
                         </TableRow>
-                      );
-                    })}
-                    {pagedHatch.length === 0 && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="py-8 text-center"
-                          style={{
-                            color: MUTED,
-                            fontSize: "var(--type-body-sm)",
-                          }}
-                        >
-                          No cycles match your filters.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              <PaginationBar
+                className="border-t border-b-0 px-4 py-2.5"
+                page={page}
+                pageSize={hatchRowsPerPage}
+                totalItems={filteredHatch.length}
+                itemLabel="records"
+                pageSizeOptions={[10, 20, 50]}
+                onPageSizeChange={(value) => {
+                  setHatchRowsPerPage(value);
+                  setHatchPage(1);
+                }}
+                onPageChange={setHatchPage}
+              />
+            </div>
+          )}
         </section>
       )}
 

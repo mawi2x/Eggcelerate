@@ -52,12 +52,16 @@ export POSTGRES_PASSWORD='replace-with-a-long-secret'
 export DATABASE_URL="postgresql+asyncpg://eggcelerate:${POSTGRES_PASSWORD}@db:5432/eggcelerate"
 export COMPOSE_FILES='-f compose.yaml -f compose.production.yaml'
 
+docker compose ${COMPOSE_FILES} --profile database down
+docker compose ${COMPOSE_FILES} --profile database build --no-cache api web
 docker compose ${COMPOSE_FILES} --profile database up -d --wait db
-docker compose ${COMPOSE_FILES} --profile database run --rm api alembic upgrade head
-docker compose ${COMPOSE_FILES} --profile database run --rm api python -m eggcelerate_api.database.seed
-docker compose ${COMPOSE_FILES} --profile database up -d --build api web
+docker compose ${COMPOSE_FILES} --profile database run --rm --no-deps api alembic upgrade head
+docker compose ${COMPOSE_FILES} --profile database run --rm --no-deps api python -m eggcelerate_api.database.seed
+docker compose ${COMPOSE_FILES} --profile database up -d api web
 docker compose ${COMPOSE_FILES} --profile database ps
+curl -fsS http://127.0.0.1/healthz
+curl -fsS http://127.0.0.1/api/v1/alerts | grep -q '"ok":true'
 ```
 
-The overlay forces `VITE_DATA_SOURCE=api`, `VITE_API_URL=/api`, and `STORAGE_BACKEND=postgres_incubators`; it also removes the API and database host ports. Run those commands from the repository checkout on the VPS. Do not run `docker compose down -v`; the named database volume contains the alert dismissal tombstones. The API currently has authentication disabled pending B6, so keep this preview behind a VPN, firewall, or an authenticated outer proxy rather than publishing it as a public service.
+The overlay forces `VITE_DATA_SOURCE=api`, `VITE_API_URL=/api`, and `STORAGE_BACKEND=postgres_incubators`; it also removes the API and database host ports. The web image fails its build if API mode contains a loopback URL, and its healthcheck probes the Nginx `/api` proxy. Run those commands from the repository checkout on the VPS. Do not run `docker compose down -v`; the named database volume contains the alert dismissal tombstones. The API currently has authentication disabled pending B6, so keep this preview behind a VPN, firewall, or an authenticated outer proxy rather than publishing it as a public service.
 The overlay uses the Compose `!override` tag; use Docker Compose v2.24 or newer.

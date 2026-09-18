@@ -181,7 +181,7 @@ export function HarvestModal({
               <span
                 style={{
                   fontSize: "var(--type-body-sm)",
-                  fontWeight: "var(--weight-semibold)",
+                  fontWeight: "var(--weight-bold)",
                   color: "var(--text-secondary)",
                 }}
               >
@@ -194,11 +194,22 @@ export function HarvestModal({
                   color: "var(--text-secondary)",
                 }}
               >
-                {exceedsMax
-                  ? `Cannot exceed ${totalEggsLoaded} eggs loaded.`
-                  : fertileEggs
-                    ? `${hatchedNum} of ${fertileEggs} fertile eggs hatched. ${unhatchedNum} unhatched.`
-                    : `Fertility record not available. ${unhatchedNum} unhatched.`}
+                {exceedsMax ? (
+                  `Cannot exceed ${totalEggsLoaded} eggs loaded.`
+                ) : fertileEggs ? (
+                  <>
+                    <strong>
+                      {hatchedNum} of {fertileEggs}
+                    </strong>{" "}
+                    fertile eggs hatched. <strong>{unhatchedNum}</strong>{" "}
+                    unhatched.
+                  </>
+                ) : (
+                  <>
+                    Fertility record not available.{" "}
+                    <strong>{unhatchedNum}</strong> unhatched.
+                  </>
+                )}
               </span>
             </div>
             <span

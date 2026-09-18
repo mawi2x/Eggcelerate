@@ -244,57 +244,51 @@ export function DetailScreen({
       {isReady && (
         <div
           role="status"
-          className="flex flex-col gap-4 rounded-2xl p-4 shadow-sm md:flex-row md:items-center md:justify-between"
+          className="flex min-h-20 flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm"
           style={{
             backgroundColor: "var(--surface-subtle)",
             border: `1px solid var(--border-default)`,
           }}
         >
-          <div className="flex min-w-0 items-center gap-3">
-            <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          <span
+            aria-hidden="true"
+            className="w-1.5 shrink-0 self-stretch rounded-full"
+            style={{ backgroundColor: "var(--brand-primary)" }}
+          />
+          <div className="min-w-0 flex-1">
+            <p
               style={{
-                backgroundColor: "var(--brand-primary-soft)",
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--type-body-sm)",
+                fontWeight: "var(--weight-extrabold)",
+                lineHeight: "var(--leading-snug)",
                 color: "var(--brand-primary-hover)",
               }}
-              aria-hidden="true"
             >
-              <EggIcon size={22} weight="fill" />
-            </span>
-            <div className="min-w-0">
-              <p
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "var(--type-heading-sm)",
-                  fontWeight: "var(--weight-extrabold)",
-                  lineHeight: "var(--leading-snug)",
-                  color: "var(--brand-primary-hover)",
-                }}
-              >
-                Ready for a new incubation cycle
-              </p>
-              <p
-                className="mt-0.5"
-                style={{
-                  fontSize: "var(--type-body-sm)",
-                  color: "var(--text-secondary)",
-                  lineHeight: 1.45,
-                }}
-              >
-                Load the tray, choose an incubation mode, and begin Day 1.
-              </p>
-            </div>
+              Ready for New Cycle
+            </p>
+            <p
+              className="mt-0.5"
+              style={{
+                fontSize: "var(--type-filter-label)",
+                color: "var(--text-secondary)",
+                lineHeight: 1.45,
+              }}
+            >
+              Load the tray, choose an incubation mode, and begin Day 1.
+            </p>
           </div>
           <Button
             size="toolbar"
             onClick={() => setSetupOpen(true)}
-            className="w-full rounded-xl px-5 md:w-auto"
+            className="shrink-0 rounded-xl px-5 font-bold"
             style={{
               backgroundColor: "var(--brand-primary-hover)",
               color: "var(--on-brand)",
+              height: 34,
             }}
           >
-            Set up incubation
+            Set Up
           </Button>
         </div>
       )}
@@ -733,7 +727,7 @@ export function DetailScreen({
       {/* Overtime / Past Hatch Day Banner - Slim Celebratory Strip */}
       {cycleEnded && (
         <div
-          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm"
+          className="flex min-h-20 flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm"
           style={{
             backgroundColor: "var(--status-warning-bg)",
             border: `1px solid var(--border-default)`,

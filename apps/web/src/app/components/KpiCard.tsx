@@ -26,7 +26,7 @@ interface Props {
   accent?: string;
   pill?: KpiPill;
   footer?: KpiFooter;
-  minHeight?: "compact" | "standard";
+  minHeight?: "compact" | "standard" | "none";
   /** Hides the glyph below sm (narrow multi-column rows like Trends KPIs). */
   hideIconOnMobile?: boolean;
   /** Moves the glyph to the row's end; text stays left (Overview executive cards). */
@@ -48,17 +48,19 @@ export function KpiCard({
   value,
   accent,
   pill,
-  footer,
   minHeight = "compact",
+  footer,
   hideIconOnMobile = false,
   iconRight = false,
   accentBar,
 }: Props) {
   const hasDetail = Boolean(pill || footer);
   const heightClass =
-    minHeight === "standard" || hasDetail
-      ? "min-h-[6.3125rem] sm:min-h-[5.875rem] lg:min-h-[7.25rem]"
-      : "min-h-[5.625rem]";
+    minHeight === "none"
+      ? ""
+      : minHeight === "standard" || hasDetail
+        ? "min-h-[6.3125rem] sm:min-h-[5.875rem] lg:min-h-[7.25rem]"
+        : "min-h-[5.625rem]";
 
   return (
     <Card
@@ -68,7 +70,7 @@ export function KpiCard({
         height: "auto",
       }}
     >
-      <CardContent className="flex flex-col p-3 sm:p-4">
+      <CardContent className="flex flex-col px-3 py-2 sm:px-4 sm:py-2">
         <div
           className={
             iconRight
@@ -102,7 +104,7 @@ export function KpiCard({
               {label}
             </div>
             {accentBar ? (
-              <div className="mt-1 flex items-center gap-1.5">
+              <div className="mt-0.5 flex items-center gap-1.5">
                 <span
                   aria-hidden="true"
                   className="h-5 w-1 shrink-0 rounded-full"
@@ -124,7 +126,7 @@ export function KpiCard({
               </div>
             ) : (
               <div
-                className="mt-1 text-(length:--type-panel-title)"
+                className="mt-0.5 text-(length:--type-panel-title)"
                 style={{
                   fontFamily: "var(--font-display)",
                   fontWeight: "var(--weight-extrabold)",

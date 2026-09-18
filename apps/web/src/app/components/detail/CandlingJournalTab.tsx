@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { developmentCheckLabels } from "../../domain/candling";
 import { calculateFertilityRate } from "../../domain/fertility";
@@ -1599,6 +1600,73 @@ function LogModalBody({
   );
 }
 
+interface SummaryTileDatum {
+  label: string;
+  value: ReactNode;
+  surface: string;
+  border: string;
+  fg: string;
+  labelFg: string;
+  displayFont?: boolean;
+}
+
+/** Shared 4-tile summary grid; later/first/empty variants differ only in data. */
+function SummaryTiles({
+  tiles,
+  gridClassName,
+}: {
+  tiles: SummaryTileDatum[];
+  gridClassName: string;
+}) {
+  return (
+    <div className={gridClassName}>
+      {tiles.map((tile) => (
+        <div
+          key={tile.label}
+          className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+          style={{
+            backgroundColor: tile.surface,
+            border: `1px solid ${tile.border}`,
+          }}
+        >
+          <span
+            style={{
+              color: tile.labelFg,
+              fontSize: "var(--type-label)",
+              fontWeight: "var(--weight-bold)",
+              textTransform: "uppercase",
+              display: "block",
+            }}
+          >
+            {tile.label}
+          </span>
+          <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+            <span
+              aria-hidden="true"
+              className="h-5 w-1 shrink-0 rounded-full"
+              style={{ backgroundColor: tile.fg }}
+            />
+            <p
+              style={{
+                ...(tile.displayFont
+                  ? { fontFamily: "var(--font-display)" }
+                  : null),
+                fontSize: "var(--type-heading-md)",
+                fontWeight: "var(--weight-extrabold)",
+                lineHeight: "var(--leading-tight)",
+                color: tile.fg,
+                marginTop: 2,
+              }}
+            >
+              {tile.value}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main CandlingJournalTab Component ───────────────────────────────────────
 interface CandlingJournalTabProps {
   unit: Incubator;
@@ -1653,6 +1721,120 @@ export function CandlingJournalTab({
   const summaryStopped = latestCandlingEntry?.stoppedDeveloping ?? 0;
   const summaryClear = latestCandlingEntry?.clear ?? 0;
   const summaryUncertain = latestCandlingEntry?.uncertain ?? 0;
+  const stoppedActive = summaryStopped > 0;
+  const laterTiles: SummaryTileDatum[] = [
+    {
+      label: "Developing",
+      value: summaryDeveloping,
+      surface: "var(--surface-mint)",
+      border: "var(--border-mint)",
+      fg: "var(--status-success-fg)",
+      labelFg: "var(--status-success-fg)",
+      displayFont: true,
+    },
+    {
+      label: "Stopped",
+      value: summaryStopped,
+      surface: stoppedActive ? "var(--surface-blush)" : "var(--surface-mist)",
+      border: stoppedActive ? "var(--border-blush)" : "var(--border-mist)",
+      fg: stoppedActive ? "var(--status-danger-fg)" : "var(--text-slate-cool)",
+      labelFg: stoppedActive
+        ? "var(--status-danger-fg)"
+        : "var(--text-slate-cool)",
+      displayFont: true,
+    },
+    {
+      label: "Clear",
+      value: summaryClear,
+      surface: "var(--surface-slate-light)",
+      border: "var(--border-slate-light)",
+      fg: "var(--text-slate)",
+      labelFg: "var(--text-slate-soft)",
+      displayFont: true,
+    },
+    {
+      label: "Uncertain",
+      value: summaryUncertain,
+      surface: "var(--surface-warn-tile)",
+      border: "var(--border-amber-soft)",
+      fg: "var(--status-warning-fg)",
+      labelFg: "var(--status-warning-fg)",
+      displayFont: true,
+    },
+  ];
+  const firstTiles: SummaryTileDatum[] = [
+    {
+      label: "Fertile",
+      value: latestCandlingEntry?.fertile ?? "–",
+      surface: "var(--surface-mint)",
+      border: "var(--border-mint)",
+      fg: "var(--status-success-fg)",
+      labelFg: "var(--status-success-fg)",
+    },
+    {
+      label: "Clear",
+      value: latestCandlingEntry?.clear ?? "–",
+      surface: "var(--surface-slate-light)",
+      border: "var(--border-slate-light)",
+      fg: "var(--text-slate)",
+      labelFg: "var(--text-slate-soft)",
+    },
+    {
+      label: "Uncertain",
+      value: latestCandlingEntry?.uncertain ?? "–",
+      surface: "var(--surface-warn-tile)",
+      border: "var(--border-amber-soft)",
+      fg: "var(--status-warning-fg)",
+      labelFg: "var(--status-warning-fg)",
+    },
+    {
+      label: "Total Loaded",
+      value: totalEggsSet,
+      surface: "var(--surface-track)",
+      border: "var(--border-subtle)",
+      fg: "var(--text-primary)",
+      labelFg: "var(--text-muted)",
+      displayFont: true,
+    },
+  ];
+  const emptyTiles: SummaryTileDatum[] = [
+    {
+      label: "Developing",
+      value: "–",
+      surface: "var(--surface-mint)",
+      border: "var(--border-mint)",
+      fg: "var(--status-success-fg)",
+      labelFg: "var(--status-success-fg)",
+      displayFont: true,
+    },
+    {
+      label: "Stopped",
+      value: "–",
+      surface: "var(--surface-mist)",
+      border: "var(--border-mist)",
+      fg: "var(--text-slate-cool)",
+      labelFg: "var(--text-slate-cool)",
+      displayFont: true,
+    },
+    {
+      label: "Clear",
+      value: "–",
+      surface: "var(--surface-slate-light)",
+      border: "var(--border-slate-light)",
+      fg: "var(--text-slate)",
+      labelFg: "var(--text-slate-soft)",
+      displayFont: true,
+    },
+    {
+      label: "Uncertain",
+      value: "–",
+      surface: "var(--surface-warn-tile)",
+      border: "var(--border-amber-soft)",
+      fg: "var(--status-warning-fg)",
+      labelFg: "var(--status-warning-fg)",
+      displayFont: true,
+    },
+  ];
   const pendingCheckpoint = selectPendingCheckpoint(
     candling,
     effectiveCandled,
@@ -1940,338 +2122,10 @@ export function CandlingJournalTab({
                   Egg Development
                 </p>
                 {/* High-contrast stat tiles with big numbers */}
-                <div className="grid grid-cols-4 gap-2 md:grid-cols-2">
-                  {isLaterSummary ? (
-                    <>
-                      <div
-                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
-                        style={{
-                          backgroundColor: "var(--surface-mint)",
-                          border: "1px solid var(--border-mint)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "var(--status-success-fg)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            textTransform: "uppercase",
-                            display: "block",
-                          }}
-                        >
-                          Developing
-                        </span>
-                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-5 w-1 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: "var(--status-success-fg)",
-                            }}
-                          />
-                          <p
-                            style={{
-                              fontFamily: "var(--font-display)",
-                              fontSize: "var(--type-heading-md)",
-                              fontWeight: "var(--weight-extrabold)",
-                              lineHeight: "var(--leading-tight)",
-                              color: "var(--status-success-fg)",
-                              marginTop: 2,
-                            }}
-                          >
-                            {summaryDeveloping}
-                          </p>
-                        </div>
-                      </div>
-                      <div
-                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
-                        style={{
-                          backgroundColor:
-                            summaryStopped > 0
-                              ? "var(--surface-blush)"
-                              : "var(--surface-mist)",
-                          border: `1px solid ${summaryStopped > 0 ? "var(--border-blush)" : "var(--border-mist)"}`,
-                        }}
-                      >
-                        <span
-                          style={{
-                            color:
-                              summaryStopped > 0
-                                ? "var(--status-danger-fg)"
-                                : "var(--text-slate-cool)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            textTransform: "uppercase",
-                            display: "block",
-                          }}
-                        >
-                          Stopped
-                        </span>
-                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-5 w-1 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor:
-                                summaryStopped > 0
-                                  ? "var(--status-danger-fg)"
-                                  : "var(--text-slate-cool)",
-                            }}
-                          />
-                          <p
-                            style={{
-                              fontFamily: "var(--font-display)",
-                              fontSize: "var(--type-heading-md)",
-                              fontWeight: "var(--weight-extrabold)",
-                              lineHeight: "var(--leading-tight)",
-                              color:
-                                summaryStopped > 0
-                                  ? "var(--status-danger-fg)"
-                                  : "var(--text-slate-cool)",
-                              marginTop: 2,
-                            }}
-                          >
-                            {summaryStopped}
-                          </p>
-                        </div>
-                      </div>
-                      <div
-                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
-                        style={{
-                          backgroundColor: "var(--surface-slate-light)",
-                          border: "1px solid var(--border-slate-light)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "var(--text-slate-soft)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            textTransform: "uppercase",
-                            display: "block",
-                          }}
-                        >
-                          Clear
-                        </span>
-                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-5 w-1 shrink-0 rounded-full"
-                            style={{ backgroundColor: "var(--text-slate)" }}
-                          />
-                          <p
-                            style={{
-                              fontFamily: "var(--font-display)",
-                              fontSize: "var(--type-heading-md)",
-                              fontWeight: "var(--weight-extrabold)",
-                              lineHeight: "var(--leading-tight)",
-                              color: "var(--text-slate)",
-                              marginTop: 2,
-                            }}
-                          >
-                            {summaryClear}
-                          </p>
-                        </div>
-                      </div>
-                      <div
-                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
-                        style={{
-                          backgroundColor: "var(--surface-warn-tile)",
-                          border: "1px solid var(--border-amber-soft)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "var(--status-warning-fg)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            textTransform: "uppercase",
-                            display: "block",
-                          }}
-                        >
-                          Uncertain
-                        </span>
-                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-5 w-1 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: "var(--status-warning-fg)",
-                            }}
-                          />
-                          <p
-                            style={{
-                              fontFamily: "var(--font-display)",
-                              fontSize: "var(--type-heading-md)",
-                              fontWeight: "var(--weight-extrabold)",
-                              lineHeight: "var(--leading-tight)",
-                              color: "var(--status-warning-fg)",
-                              marginTop: 2,
-                            }}
-                          >
-                            {summaryUncertain}
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div
-                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
-                        style={{
-                          backgroundColor: "var(--surface-mint)",
-                          border: "1px solid var(--border-mint)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "var(--status-success-fg)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            textTransform: "uppercase",
-                            display: "block",
-                          }}
-                        >
-                          Fertile
-                        </span>
-                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-5 w-1 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: "var(--status-success-fg)",
-                            }}
-                          />
-                          <p
-                            style={{
-                              fontSize: "var(--type-heading-md)",
-                              fontWeight: "var(--weight-extrabold)",
-                              lineHeight: "var(--leading-tight)",
-                              color: "var(--status-success-fg)",
-                              marginTop: 2,
-                            }}
-                          >
-                            {latestCandlingEntry.fertile}
-                          </p>
-                        </div>
-                      </div>
-                      <div
-                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
-                        style={{
-                          backgroundColor: "var(--surface-slate-light)",
-                          border: "1px solid var(--border-slate-light)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "var(--text-slate-soft)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            textTransform: "uppercase",
-                            display: "block",
-                          }}
-                        >
-                          Clear
-                        </span>
-                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-5 w-1 shrink-0 rounded-full"
-                            style={{ backgroundColor: "var(--text-slate)" }}
-                          />
-                          <p
-                            style={{
-                              fontSize: "var(--type-heading-md)",
-                              fontWeight: "var(--weight-extrabold)",
-                              lineHeight: "var(--leading-tight)",
-                              color: "var(--text-slate)",
-                              marginTop: 2,
-                            }}
-                          >
-                            {latestCandlingEntry.clear}
-                          </p>
-                        </div>
-                      </div>
-                      <div
-                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
-                        style={{
-                          backgroundColor: "var(--surface-warn-tile)",
-                          border: "1px solid var(--border-amber-soft)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "var(--status-warning-fg)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            textTransform: "uppercase",
-                            display: "block",
-                          }}
-                        >
-                          Uncertain
-                        </span>
-                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-5 w-1 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: "var(--status-warning-fg)",
-                            }}
-                          />
-                          <p
-                            style={{
-                              fontSize: "var(--type-heading-md)",
-                              fontWeight: "var(--weight-extrabold)",
-                              lineHeight: "var(--leading-tight)",
-                              color: "var(--status-warning-fg)",
-                              marginTop: 2,
-                            }}
-                          >
-                            {latestCandlingEntry.uncertain}
-                          </p>
-                        </div>
-                      </div>
-                      <div
-                        className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
-                        style={{
-                          backgroundColor: "var(--surface-track)",
-                          border: "1px solid var(--border-subtle)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "var(--text-muted)",
-                            fontSize: "var(--type-label)",
-                            fontWeight: "var(--weight-bold)",
-                            textTransform: "uppercase",
-                            display: "block",
-                          }}
-                        >
-                          Total Loaded
-                        </span>
-                        <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-5 w-1 shrink-0 rounded-full"
-                            style={{ backgroundColor: "var(--text-primary)" }}
-                          />
-                          <p
-                            style={{
-                              fontFamily: "var(--font-display)",
-                              fontSize: "var(--type-heading-md)",
-                              fontWeight: "var(--weight-extrabold)",
-                              lineHeight: "var(--leading-tight)",
-                              color: "var(--text-primary)",
-                              marginTop: 2,
-                            }}
-                          >
-                            {totalEggsSet}
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <SummaryTiles
+                  gridClassName="grid grid-cols-4 gap-2 md:grid-cols-2"
+                  tiles={isLaterSummary ? laterTiles : firstTiles}
+                />
               </div>
             </div>
 
@@ -2322,7 +2176,7 @@ export function CandlingJournalTab({
                 <Button
                   onClick={openNewInspection}
                   aria-label="Log inspection"
-                  className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-4 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
+                  className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-6 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
                   style={{ ...rustBtn }}
                 >
                   <Plus size={14} /> Log
@@ -2355,11 +2209,8 @@ export function CandlingJournalTab({
             </div>
           </div>
         ) : (
-          <div
-            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t pt-4"
-            style={{ borderColor: "var(--border-default)" }}
-          >
-            <div className="col-start-1 flex flex-wrap items-center gap-2">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-2">
               <p
                 style={{
                   fontFamily: "var(--font-display)",
@@ -2371,68 +2222,92 @@ export function CandlingJournalTab({
                   textTransform: "uppercase",
                 }}
               >
-                {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
+                Egg Development
               </p>
-              {pendingCheckpoint && checkpointDistance !== null && (
-                <span
-                  className="inline-flex items-center rounded-full px-2.5 py-0.5"
+              <SummaryTiles
+                gridClassName="grid grid-cols-4 gap-2 md:grid-cols-4"
+                tiles={emptyTiles}
+              />
+            </div>
+            <div
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t pt-4"
+              style={{ borderColor: "var(--border-default)" }}
+            >
+              <div className="col-start-1 flex flex-wrap items-center gap-2">
+                <p
                   style={{
-                    backgroundColor:
-                      checkpointDistance < 0
-                        ? "var(--status-danger-bg)"
-                        : checkpointDistance === 0
-                          ? "var(--status-warning-bg)"
-                          : "var(--surface-muted)",
-                    color:
-                      checkpointDistance < 0
-                        ? "var(--status-danger-fg)"
-                        : checkpointDistance === 0
-                          ? "var(--status-warning-fg)"
-                          : "var(--text-secondary)",
+                    fontFamily: "var(--font-display)",
                     fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-bold)",
+                    fontWeight: "var(--weight-extrabold)",
                     letterSpacing: "var(--tracking-label)",
+                    lineHeight: "var(--leading-snug)",
+                    color: "var(--text-secondary)",
+                    textTransform: "uppercase",
                   }}
                 >
-                  {checkpointTiming}
+                  {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
+                </p>
+                {pendingCheckpoint && checkpointDistance !== null && (
+                  <span
+                    className="inline-flex items-center rounded-full px-2.5 py-0.5"
+                    style={{
+                      backgroundColor:
+                        checkpointDistance < 0
+                          ? "var(--status-danger-bg)"
+                          : checkpointDistance === 0
+                            ? "var(--status-warning-bg)"
+                            : "var(--surface-muted)",
+                      color:
+                        checkpointDistance < 0
+                          ? "var(--status-danger-fg)"
+                          : checkpointDistance === 0
+                            ? "var(--status-warning-fg)"
+                            : "var(--text-secondary)",
+                      fontSize: "var(--type-label)",
+                      fontWeight: "var(--weight-bold)",
+                      letterSpacing: "var(--tracking-label)",
+                    }}
+                  >
+                    {checkpointTiming}
+                  </span>
+                )}
+              </div>
+              {canLog && (
+                <Button
+                  onClick={openNewInspection}
+                  disabled={isUpdating}
+                  aria-label="Log inspection"
+                  className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-6 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
+                  style={{ ...rustBtn }}
+                >
+                  <Plus size={14} /> Log
+                </Button>
+              )}
+              <div className="col-start-1 mt-1">
+                <span
+                  style={{
+                    fontSize: "var(--type-body)",
+                    fontWeight: "var(--weight-bold)",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {pendingCheckpoint
+                    ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
+                    : "Candling checks scheduled"}
                 </span>
+              </div>
+              {!canLog && (
+                <p
+                  className="col-span-2 w-full md:text-right"
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontSize: "var(--type-caption)",
+                  }}
+                >
+                  Start an incubation cycle to log inspections.
+                </p>
               )}
             </div>
-            {canLog && (
-              <Button
-                onClick={openNewInspection}
-                disabled={isUpdating}
-                aria-label="Log inspection"
-                className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-4 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
-                style={{ ...rustBtn }}
-              >
-                <Plus size={14} /> Log
-              </Button>
-            )}
-            <div className="col-start-1 mt-1">
-              <span
-                style={{
-                  fontSize: "var(--type-body)",
-                  fontWeight: "var(--weight-bold)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                {pendingCheckpoint
-                  ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
-                  : "Candling checks scheduled"}
-              </span>
-            </div>
-            {!canLog && (
-              <p
-                className="col-span-2 w-full md:text-right"
-                style={{
-                  color: "var(--text-secondary)",
-                  fontSize: "var(--type-caption)",
-                }}
-              >
-                Start an incubation cycle to log inspections.
-              </p>
-            )}
           </div>
         )}
       </SectionCard>
@@ -2480,234 +2355,236 @@ export function CandlingJournalTab({
           </div>
 
           <div className="relative pt-[24px]">
-            <div
-              className="absolute top-0 bottom-0 left-0 flex flex-col items-center"
-              style={{ width: 40 }}
-            >
-              <span
-                className="absolute font-bold"
-                style={{
-                  top: 0,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  fontSize: "var(--type-label)",
-                  fontWeight: "var(--weight-bold)",
-                  textTransform: "uppercase",
-                  letterSpacing: "var(--tracking-label)",
-                  color: "var(--text-muted)",
-                  lineHeight: "1",
-                  zIndex: "var(--z-overlay)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                DAY
-              </span>
+            <div className="relative">
               <div
-                className="w-0.5 flex-1"
-                style={{
-                  marginTop: 24,
-                  backgroundColor: "var(--border-subtle)",
-                }}
-              />
-            </div>
+                className="absolute top-0 bottom-0 left-0 flex flex-col items-center"
+                style={{ width: 40 }}
+              >
+                <span
+                  className="absolute font-bold"
+                  style={{
+                    top: 0,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    fontSize: "var(--type-label)",
+                    fontWeight: "var(--weight-bold)",
+                    textTransform: "uppercase",
+                    letterSpacing: "var(--tracking-label)",
+                    color: "var(--text-muted)",
+                    lineHeight: "1",
+                    zIndex: "var(--z-overlay)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  DAY
+                </span>
+                <div
+                  className="w-0.5 flex-1"
+                  style={{
+                    marginTop: 24,
+                    backgroundColor: "var(--border-subtle)",
+                  }}
+                />
+              </div>
 
-            <ul className="space-y-5">
-              {feedNodes.map((n) =>
-                n.kind === "logged" ? (
-                  <li
-                    key={`log-${n.day}`}
-                    className="group relative flex items-start"
-                  >
-                    <div
-                      className={
-                        expandedDays.has(n.day)
-                          ? "shrink-0 relative z-10 flex justify-center self-start"
-                          : "shrink-0 relative z-10 flex justify-center self-center"
-                      }
-                      style={{ width: 40 }}
+              <ul className="space-y-5">
+                {feedNodes.map((n) =>
+                  n.kind === "logged" ? (
+                    <li
+                      key={`log-${n.day}`}
+                      className="group relative flex items-start"
                     >
-                      <span
-                        className="flex items-center justify-center rounded-full"
-                        style={{
-                          width: "var(--control-size-xs)",
-                          height: "var(--control-size-xs)",
-                          backgroundColor: "var(--brand-primary)",
-                          color: "var(--surface-card)",
-                          fontSize: "var(--type-body-sm)",
-                          fontWeight: "var(--weight-bold)",
-                          boxShadow: `0 0 0 3px var(--surface-app)`,
-                        }}
-                      >
-                        {formatNodeDay(n.day)}
-                      </span>
-                    </div>
-
-                    <div className="flex-1 min-w-0 pl-3">
                       <div
-                        className="flex items-center justify-between gap-2"
-                        style={{ minHeight: "var(--control-height-compact)" }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExpandedDays((days) => {
-                              const next = new Set(days);
-                              if (next.has(n.day)) next.delete(n.day);
-                              else next.add(n.day);
-                              return next;
-                            })
-                          }
-                          className="flex min-h-[var(--control-height-default)] min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 md:min-h-8"
-                          style={{
-                            fontSize: "calc(var(--type-filter-label) - 1px)",
-                            fontWeight: "var(--weight-bold)",
-                            color: "var(--text-primary)",
-                          }}
-                          aria-expanded={expandedDays.has(n.day)}
-                          aria-controls={`journal-entry-${n.day}`}
-                          aria-label={`${expandedDays.has(n.day) ? "Hide" : "Show"} details for Day ${n.entry.day}`}
-                        >
-                          <span>
-                            {n.idx >= 0
-                              ? (CANDLE_SHORT_LABELS[n.idx] ?? n.entry.label)
-                              : n.entry.label}
-                          </span>
-                          <CircleCheck
-                            size={14}
-                            strokeWidth={2.5}
-                            className="shrink-0 text-[var(--status-success-fg)]"
-                            aria-hidden="true"
-                          />
-                          <ChevronDown
-                            size={16}
-                            className={`ml-0.5 text-[var(--text-muted)] transition-transform duration-200 ${expandedDays.has(n.day) ? "rotate-180" : ""}`}
-                            aria-hidden="true"
-                          />
-                        </button>
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <span
-                            className="mr-3 text-right"
-                            style={{
-                              fontSize: "var(--type-label)",
-                              color: "var(--text-farm)",
-                            }}
-                          >
-                            {fmtTimestamp(n.entry.date)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingEntry(n.entry);
-                              setShowLogForm(true);
-                            }}
-                            className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
-                            aria-label={`Edit entry for Day ${n.entry.day}`}
-                            title="Edit Inspection"
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEntryToDelete(n.entry)}
-                            className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
-                            aria-label={`Delete entry for Day ${n.entry.day}`}
-                            title="Delete Journal Entry"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                      <div
-                        id={`journal-entry-${n.day}`}
-                        className={`grid transition-[grid-template-rows,opacity,margin] duration-200 ease-out ${
+                        className={
                           expandedDays.has(n.day)
-                            ? "visible mt-3 grid-rows-[1fr] opacity-100"
-                            : "invisible grid-rows-[0fr] opacity-0 group-hover:visible group-hover:mt-3 group-hover:grid-rows-[1fr] group-hover:opacity-100"
-                        }`}
+                            ? "shrink-0 relative z-10 flex justify-center self-start"
+                            : "shrink-0 relative z-10 flex justify-center self-center"
+                        }
+                        style={{ width: 40 }}
                       >
-                        <div className="min-h-0 overflow-hidden">
-                          <JournalEntryCard
-                            entry={n.entry}
-                            onAddPhotos={addPhotosToEntry}
-                            onUpdateNote={updateEntryNote}
-                            onDeletePhoto={deletePhotoFromEntry}
-                          />
+                        <span
+                          className="flex items-center justify-center rounded-full"
+                          style={{
+                            width: "var(--control-size-xs)",
+                            height: "var(--control-size-xs)",
+                            backgroundColor: "var(--brand-primary)",
+                            color: "var(--surface-card)",
+                            fontSize: "var(--type-body-sm)",
+                            fontWeight: "var(--weight-bold)",
+                            boxShadow: `0 0 0 3px var(--surface-app)`,
+                          }}
+                        >
+                          {formatNodeDay(n.day)}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 min-w-0 pl-3">
+                        <div
+                          className="flex items-center justify-between gap-2"
+                          style={{ minHeight: "var(--control-height-compact)" }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedDays((days) => {
+                                const next = new Set(days);
+                                if (next.has(n.day)) next.delete(n.day);
+                                else next.add(n.day);
+                                return next;
+                              })
+                            }
+                            className="flex min-h-[var(--control-height-default)] min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 md:min-h-8"
+                            style={{
+                              fontSize: "calc(var(--type-filter-label) - 1px)",
+                              fontWeight: "var(--weight-bold)",
+                              color: "var(--text-primary)",
+                            }}
+                            aria-expanded={expandedDays.has(n.day)}
+                            aria-controls={`journal-entry-${n.day}`}
+                            aria-label={`${expandedDays.has(n.day) ? "Hide" : "Show"} details for Day ${n.entry.day}`}
+                          >
+                            <span>
+                              {n.idx >= 0
+                                ? (CANDLE_SHORT_LABELS[n.idx] ?? n.entry.label)
+                                : n.entry.label}
+                            </span>
+                            <CircleCheck
+                              size={14}
+                              strokeWidth={2.5}
+                              className="shrink-0 text-[var(--status-success-fg)]"
+                              aria-hidden="true"
+                            />
+                            <ChevronDown
+                              size={16}
+                              className={`ml-0.5 text-[var(--text-muted)] transition-transform duration-200 ${expandedDays.has(n.day) ? "rotate-180" : ""}`}
+                              aria-hidden="true"
+                            />
+                          </button>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <span
+                              className="mr-3 text-right"
+                              style={{
+                                fontSize: "var(--type-label)",
+                                color: "var(--text-farm)",
+                              }}
+                            >
+                              {fmtTimestamp(n.entry.date)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingEntry(n.entry);
+                                setShowLogForm(true);
+                              }}
+                              className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
+                              aria-label={`Edit entry for Day ${n.entry.day}`}
+                              title="Edit Inspection"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEntryToDelete(n.entry)}
+                              className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
+                              aria-label={`Delete entry for Day ${n.entry.day}`}
+                              title="Delete Journal Entry"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                        <div
+                          id={`journal-entry-${n.day}`}
+                          className={`grid transition-[grid-template-rows,opacity,margin] duration-200 ease-out ${
+                            expandedDays.has(n.day)
+                              ? "visible mt-3 grid-rows-[1fr] opacity-100"
+                              : "invisible grid-rows-[0fr] opacity-0 group-hover:visible group-hover:mt-3 group-hover:grid-rows-[1fr] group-hover:opacity-100"
+                          }`}
+                        >
+                          <div className="min-h-0 overflow-hidden">
+                            <JournalEntryCard
+                              entry={n.entry}
+                              onAddPhotos={addPhotosToEntry}
+                              onUpdateNote={updateEntryNote}
+                              onDeletePhoto={deletePhotoFromEntry}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </li>
-                ) : (
-                  (() => {
-                    const isDue = n.cp.day <= currentDay;
-                    return (
-                      <li
-                        key={`cp-${n.day}`}
-                        className="relative flex items-center min-h-[var(--control-height-compact)]"
-                      >
-                        <div
-                          className="shrink-0 flex justify-center relative z-10"
-                          style={{ width: 40 }}
+                    </li>
+                  ) : (
+                    (() => {
+                      const isDue = n.cp.day <= currentDay;
+                      return (
+                        <li
+                          key={`cp-${n.day}`}
+                          className="relative flex items-center min-h-[var(--control-height-compact)]"
                         >
-                          <span
-                            className="flex items-center justify-center rounded-full"
-                            style={{
-                              width: "var(--control-size-xs)",
-                              height: "var(--control-size-xs)",
-                              backgroundColor: "var(--surface-card)",
-                              border: isDue
-                                ? "2px solid var(--status-warning-fg)"
-                                : "2px solid var(--border-subtle)",
-                              color: isDue
-                                ? "var(--status-warning-fg)"
-                                : "var(--text-muted)",
-                              fontSize: "var(--type-body-sm)",
-                              fontWeight: "var(--weight-bold)",
-                              boxShadow: `0 0 0 3px var(--surface-app)`,
-                            }}
+                          <div
+                            className="shrink-0 flex justify-center relative z-10"
+                            style={{ width: 40 }}
                           >
-                            {formatNodeDay(n.day)}
-                          </span>
-                        </div>
-
-                        <div className="flex-1 min-w-0 pl-3">
-                          {isDue ? (
-                            <p
-                              className="flex flex-wrap items-center gap-1.5"
+                            <span
+                              className="flex items-center justify-center rounded-full"
                               style={{
+                                width: "var(--control-size-xs)",
+                                height: "var(--control-size-xs)",
+                                backgroundColor: "var(--surface-card)",
+                                border: isDue
+                                  ? "2px solid var(--status-warning-fg)"
+                                  : "2px solid var(--border-subtle)",
+                                color: isDue
+                                  ? "var(--status-warning-fg)"
+                                  : "var(--text-muted)",
                                 fontSize: "var(--type-body-sm)",
                                 fontWeight: "var(--weight-bold)",
-                                color: "var(--text-primary)",
+                                boxShadow: `0 0 0 3px var(--surface-app)`,
                               }}
                             >
-                              {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
-                              <AlertCircle
-                                size={15}
-                                color="var(--status-warning-fg)"
-                                strokeWidth={2}
-                                aria-label="Inspection due"
-                              />
-                            </p>
-                          ) : (
-                            <p
-                              style={{
-                                fontSize: "var(--type-body-sm)",
-                                fontWeight: "var(--weight-semibold)",
-                                color: "var(--text-muted)",
-                              }}
-                            >
-                              {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
-                            </p>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })()
-                ),
-              )}
-            </ul>
+                              {formatNodeDay(n.day)}
+                            </span>
+                          </div>
+
+                          <div className="flex-1 min-w-0 pl-3">
+                            {isDue ? (
+                              <p
+                                className="flex flex-wrap items-center gap-1.5"
+                                style={{
+                                  fontSize: "var(--type-body-sm)",
+                                  fontWeight: "var(--weight-bold)",
+                                  color: "var(--text-primary)",
+                                }}
+                              >
+                                {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
+                                <AlertCircle
+                                  size={15}
+                                  color="var(--status-warning-fg)"
+                                  strokeWidth={2}
+                                  aria-label="Inspection due"
+                                />
+                              </p>
+                            ) : (
+                              <p
+                                style={{
+                                  fontSize: "var(--type-body-sm)",
+                                  fontWeight: "var(--weight-semibold)",
+                                  color: "var(--text-muted)",
+                                }}
+                              >
+                                {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
+                              </p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })()
+                  ),
+                )}
+              </ul>
+            </div>
 
             {loggedEntries.length === 0 && (
-              <div className="ml-[52px] mt-6 max-w-lg">
+              <div className="mx-auto mt-6 max-w-lg">
                 <StatusCallout
                   size="sm"
                   tone="warning"

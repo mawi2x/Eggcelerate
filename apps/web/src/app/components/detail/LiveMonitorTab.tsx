@@ -43,7 +43,7 @@ function SystemStatusTile({
 }) {
   return (
     <div
-      className="flex min-h-[50px] items-center gap-2 rounded-xl px-2.5 py-2 md:min-h-16 md:gap-3 md:px-3.5 md:py-3"
+      className="flex min-h-[50px] items-center gap-2 rounded-lg px-2.5 py-2 md:min-h-16 md:gap-3 md:px-3.5 md:py-3"
       style={{
         backgroundColor: "var(--surface-porcelain)",
         border: `1px solid var(--border-default)`,
