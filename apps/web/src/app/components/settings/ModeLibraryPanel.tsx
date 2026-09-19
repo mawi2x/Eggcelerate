@@ -533,12 +533,12 @@ export function ModeLibraryPanel({
       <PanelHeader
         id="settings-panel-modes"
         title="Mode Library"
-        description="Incubation presets: temperature, humidity, duration, and how often eggs turn for each species."
+        description="Customize incubation mode conditions"
       />
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 py-4">
-        <div className="relative min-w-0 w-full flex-1 md:min-w-[200px]">
+      <div className="flex flex-col gap-2.5 py-4 md:flex-row md:items-center">
+        <div className="relative min-w-0 w-full md:flex-1 md:min-w-[200px]">
           <Search
             size={16}
             className="absolute left-3 top-1/2 -translate-y-1/2"
@@ -550,12 +550,12 @@ export function ModeLibraryPanel({
             maxLength={50}
             placeholder="Search modes..."
             aria-label="Search modes"
-            className={`${inputClass} pl-9`}
-            style={inputStyle}
+            className="h-[var(--control-height-mobile)] w-full rounded-xl pl-9 md:h-[var(--control-height-toolbar)]"
+            style={{
+              ...inputStyle,
+              fontSize: "var(--type-filter-value)",
+            }}
           />
-        </div>
-        <div className="hidden md:block">
-          <ViewToggle view={view} onChange={setView} />
         </div>
         <input
           ref={fileRef}
@@ -568,34 +568,39 @@ export function ModeLibraryPanel({
             e.target.value = "";
           }}
         />
-        <Button
-          variant="outline"
-          className="rounded-xl"
-          style={{ borderColor: BORDER }}
-          onClick={() => fileRef.current?.click()}
-        >
-          <Upload size={16} /> Import
-        </Button>
-        <Button
-          variant="outline"
-          className="rounded-xl"
-          style={{ borderColor: BORDER }}
-          onClick={handleExport}
-        >
-          <Download size={16} /> Export All
-        </Button>
-        <Button
-          className="rounded-xl"
-          style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
-          onClick={openAdd}
-        >
-          <Plus size={17} /> Add Custom Mode
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            className="h-[var(--control-height-mobile)] rounded-xl px-3 md:h-[var(--control-height-default)]"
+            style={{ borderColor: BORDER, fontSize: 10 }}
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload size={15} /> Import
+          </Button>
+          <Button
+            variant="outline"
+            className="h-[var(--control-height-mobile)] rounded-xl px-3 md:h-[var(--control-height-default)]"
+            style={{ borderColor: BORDER, fontSize: 10 }}
+            onClick={handleExport}
+          >
+            <Download size={15} /> Export All
+          </Button>
+          <Button
+            className="h-[var(--control-height-mobile)] rounded-xl px-3.5 md:h-[var(--control-height-default)]"
+            style={{ backgroundColor: RUST, color: "var(--on-brand)", fontSize: 10 }}
+            onClick={openAdd}
+          >
+            <Plus size={16} /> Add Custom Mode
+          </Button>
+          <div className="hidden md:block">
+            <ViewToggle view={view} onChange={setView} />
+          </div>
+        </div>
       </div>
 
       {filteredModes.length === 0 ? (
         <div
-          className="rounded-2xl px-5 py-12 text-center"
+          className="rounded-[var(--radius-dialog)] px-5 py-12 text-center"
           style={{
             backgroundColor: "var(--surface-app)",
             border: `var(--border-width-hairline) dashed ${BORDER}`,
@@ -632,7 +637,7 @@ export function ModeLibraryPanel({
             return (
               <div
                 key={m.id}
-                className="rounded-2xl p-4"
+                className="rounded-[var(--radius-dialog)] p-4"
                 style={{
                   border: `var(--border-width-hairline) solid ${BORDER}`,
                 }}
@@ -642,10 +647,10 @@ export function ModeLibraryPanel({
                     id={`mode-card-${m.id}`}
                     className="min-w-0 break-words"
                     style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-body)",
+                      fontFamily: "var(--font-display)",
+                      fontSize: "var(--type-heading-sm)",
                       fontWeight: "var(--weight-bold)",
-                      lineHeight: "var(--leading-normal)",
+                      lineHeight: "var(--leading-snug)",
                       color: TEXT,
                     }}
                   >
@@ -721,7 +726,7 @@ export function ModeLibraryPanel({
         </div>
       ) : (
         <div
-          className="overflow-hidden rounded-2xl border"
+          className="overflow-hidden rounded-[var(--radius-dialog)] border"
           style={{ borderColor: BORDER }}
         >
           <Table>
@@ -1014,7 +1019,7 @@ export function ModeLibraryPanel({
             {conflicts.map((c, idx) => (
               <div
                 key={c.incoming.id}
-                className="rounded-2xl p-3"
+                className="rounded-[var(--radius-dialog)] p-3"
                 style={{ backgroundColor: "var(--surface-import)" }}
               >
                 <p

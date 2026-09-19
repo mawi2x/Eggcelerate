@@ -198,7 +198,7 @@ export function HelpWidget() {
 
           <div className="overflow-y-auto p-4">
             <div
-              className="rounded-2xl rounded-tl-md px-3.5 py-3"
+              className="rounded-[var(--radius-dialog)] rounded-tl-[var(--radius-mini)] px-3.5 py-3"
               style={{
                 backgroundColor: "var(--surface-track)",
                 color: "var(--text-secondary)",
@@ -213,7 +213,7 @@ export function HelpWidget() {
             {selectedIndex !== null && (
               <div className="mt-3 space-y-2.5" aria-live="polite">
                 <div
-                  className="ml-8 rounded-2xl rounded-tr-md px-3.5 py-3"
+                  className="ml-8 rounded-[var(--radius-dialog)] rounded-tr-[var(--radius-mini)] px-3.5 py-3"
                   style={{
                     backgroundColor: "var(--brand-primary)",
                     color: "var(--on-brand)",
@@ -230,7 +230,7 @@ export function HelpWidget() {
                   </p>
                 </div>
                 <div
-                  className="mr-5 rounded-2xl rounded-tl-md px-3.5 py-3"
+                  className="mr-5 rounded-[var(--radius-dialog)] rounded-tl-[var(--radius-mini)] px-3.5 py-3"
                   style={{
                     backgroundColor: "var(--surface-track)",
                     color: "var(--text-secondary)",

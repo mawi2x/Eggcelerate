@@ -43,7 +43,7 @@ function SystemStatusTile({
 }) {
   return (
     <div
-      className="flex min-h-[50px] items-center gap-2 rounded-lg px-2.5 py-2 md:min-h-16 md:gap-3 md:px-3.5 md:py-3"
+      className="flex min-h-[50px] items-center gap-2 rounded-[var(--radius-compact)] px-2.5 py-2 md:min-h-16 md:gap-3 md:px-3.5 md:py-3"
       style={{
         backgroundColor: "var(--surface-porcelain)",
         border: `1px solid var(--border-default)`,
@@ -117,7 +117,7 @@ function ExtremumTile({
   const stamp = readingStamp(reading.ts);
   return (
     <div
-      className="rounded-xl px-3 py-2 md:px-3.5 md:py-3"
+      className="rounded-[var(--radius-compact)] px-3 py-2 md:px-3.5 md:py-3"
       style={{
         backgroundColor: "var(--surface-porcelain)",
         border: `1px solid var(--border-default)`,
@@ -263,7 +263,7 @@ function EnvironmentalSummary({
       }
     >
       <details
-        className="group scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-2xl"
+        className="group scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-[var(--radius-dialog)]"
         style={{
           border: `1px solid var(--border-default)`,
           backgroundColor: "var(--surface-porcelain)",
@@ -285,7 +285,7 @@ function EnvironmentalSummary({
           });
         }}
       >
-        <summary className="cursor-pointer list-none rounded-2xl px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+        <summary className="cursor-pointer list-none rounded-[var(--radius-dialog)] px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 max-[19rem]:justify-start">
             <p
               style={{

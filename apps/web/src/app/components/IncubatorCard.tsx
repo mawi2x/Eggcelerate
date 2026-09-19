@@ -269,7 +269,7 @@ function Reading({
   const color = valueColor ?? readingStateColors[state];
   return (
     <div
-      className="min-w-0 overflow-hidden rounded-2xl"
+      className="min-w-0 overflow-hidden rounded-[var(--radius-dialog)]"
       style={{
         backgroundColor: tileBg[state],
         border: `1px solid ${tileBorder[state]}`,
@@ -471,7 +471,7 @@ export function IncubatorCard({
       {ready ? (
         /* Ready chamber — no cycle running yet, prompt the farmer to set up. */
         <div
-          className="flex flex-1 flex-col items-center justify-center rounded-2xl px-4 py-5 text-center"
+          className="flex flex-1 flex-col items-center justify-center rounded-[var(--radius-dialog)] px-4 py-5 text-center"
           style={{ backgroundColor: "var(--surface-subtle)" }}
         >
           <p

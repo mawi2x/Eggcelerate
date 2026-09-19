@@ -195,7 +195,7 @@ export function DeviceSettingsTab({
             </div>
             <div className="pt-5 space-y-4">
               <div
-                className="flex flex-col gap-4 rounded-2xl p-4"
+                className="flex flex-col gap-4 rounded-[var(--radius-dialog)] p-4"
                 style={{
                   backgroundColor: "var(--surface-porcelain)",
                   border: `1px solid var(--border-default)`,
@@ -303,7 +303,7 @@ export function DeviceSettingsTab({
                 Mode Information
               </p>
               <dl
-                className="grid grid-cols-2 overflow-hidden rounded-2xl"
+                className="grid grid-cols-2 overflow-hidden rounded-[var(--radius-dialog)]"
                 style={{
                   border: `1px solid var(--border-default)`,
                   backgroundColor: "var(--surface-card)",

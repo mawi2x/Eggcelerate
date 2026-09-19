@@ -400,7 +400,8 @@ export default function App() {
     screen === "candling" ||
     screen === "incubators" ||
     screen === "alerts" ||
-    screen === "trends";
+    screen === "trends" ||
+    screen === "settings";
 
   // Single PageHeader node: the shell renders it directly, except on routes
   // whose screen places it inside its own sticky toolbar (see headerInScreen).
@@ -545,6 +546,7 @@ export default function App() {
                 onSaveSettings={saveSettings}
                 isSaving={actionState.savingSettings}
                 units={incubators}
+                header={pageHeader}
               />
             )}
           </div>

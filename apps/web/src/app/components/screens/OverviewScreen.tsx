@@ -231,7 +231,7 @@ function MiniCard({
   return (
     <article
       aria-labelledby={`mini-card-${unit.id}`}
-      className="group flex h-full w-full flex-col justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] md:rounded-2xl md:p-4"
+      className="group flex h-full w-full flex-col justify-between rounded-[8px] border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] md:rounded-[var(--radius-dialog)] md:p-4"
     >
       {/* Top-left header stack — name over mode over progress. */}
       <div className="relative w-full min-w-0 text-left">

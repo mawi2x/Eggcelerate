@@ -178,13 +178,14 @@ export function NotificationsPanel({
       <PanelHeader
         id="settings-panel-notifications"
         title="Notifications & Alerts"
-        description="Choose how you're reached and which events are worth interrupting you for."
+        description="Choose how you're notified and what deserves your attention."
       />
 
       <SegmentedControl
         role="tablist"
         aria-label="Notification settings sections"
         className="mt-5 w-full md:w-auto"
+        flush
       >
         <SegmentedControlItem
           id="notification-delivery-tab"
@@ -192,7 +193,7 @@ export function NotificationsPanel({
           aria-selected={view === "delivery"}
           aria-controls="notification-delivery-panel"
           active={view === "delivery"}
-          size="toolbar"
+          flush
           className="flex-1 md:flex-none"
           onClick={() => onViewChange("delivery")}
         >
@@ -204,7 +205,7 @@ export function NotificationsPanel({
           aria-selected={view === "rules"}
           aria-controls="notification-rules-panel"
           active={view === "rules"}
-          size="toolbar"
+          flush
           className="flex-1 md:flex-none"
           onClick={() => onViewChange("rules")}
         >
@@ -221,7 +222,7 @@ export function NotificationsPanel({
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <section
-              className="rounded-2xl p-4"
+              className="rounded-[var(--radius-dialog)] p-4"
               style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
               aria-labelledby="sms-delivery-title"
             >
@@ -288,7 +289,7 @@ export function NotificationsPanel({
             </section>
 
             <section
-              className="rounded-2xl p-4"
+              className="rounded-[var(--radius-dialog)] p-4"
               style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
               aria-labelledby="email-delivery-title"
             >
@@ -374,7 +375,7 @@ export function NotificationsPanel({
               <section
                 key={group.id}
                 aria-labelledby={`notification-rule-${group.id}`}
-                className={`rounded-2xl p-4 ${group.id === "schedule" ? "md:col-span-2" : ""}`}
+                className={`rounded-[var(--radius-dialog)] p-4 ${group.id === "schedule" ? "md:col-span-2" : ""}`}
                 style={{
                   border: `var(--border-width-hairline) solid ${BORDER}`,
                 }}

@@ -37,7 +37,7 @@ describe("incubator grid responsive contracts", () => {
   it("Reading tile clips overflow instead of squeezing the grid", () => {
     const s = card();
     const tile = s.slice(s.indexOf("function Reading("));
-    expect(tile).toContain('className="min-w-0 overflow-hidden rounded-2xl"');
+    expect(tile).toMatch(/className="min-w-0 overflow-hidden rounded-[^"]+"/);
     expect(tile).toContain('whiteSpace: "nowrap"');
   });
 

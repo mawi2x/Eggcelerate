@@ -1,5 +1,5 @@
 import { Bell, Package, Tractor, Zap } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import type { SettingsPreferences } from "../../data/settings";
 import type { Incubator, Mode } from "../../domain/types";
@@ -16,6 +16,7 @@ import {
 } from "../settings/NotificationsPanel";
 import { BORDER, MUTED, RUST, SURFACE } from "../settings/tokens";
 import { Button } from "../ui/button";
+import { FilterBar } from "../ui/filter-bar";
 
 interface Props {
   modes: Mode[];
@@ -26,6 +27,8 @@ interface Props {
   onSaveSettings: (settings: SettingsPreferences) => Promise<boolean>;
   isSaving: boolean;
   units: Incubator[];
+  /** Shell page header rendered inside the sticky toolbar (settings route). */
+  header?: ReactNode;
 }
 
 type CategoryId = "modes" | "notifications" | "account" | "hardware";
@@ -66,6 +69,7 @@ export function SettingsScreen({
   onSaveSettings,
   isSaving,
   units,
+  header,
 }: Props) {
   const [category, setCategory] = useState<CategoryId>("modes");
   const [notificationView, setNotificationView] =
@@ -104,50 +108,29 @@ export function SettingsScreen({
   };
 
   return (
-    <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+    <div className="flex flex-col">
       <nav
-        className="w-full max-w-none shrink-0 rounded-2xl p-2 lg:sticky lg:top-6 lg:max-w-[220px]"
-        style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
         aria-label="Settings categories"
+        className="sticky top-0 z-30"
+        style={{
+          backgroundColor: "var(--surface-app)",
+          paddingTop: 8,
+          paddingBottom: 8,
+        }}
       >
-        <ul className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
-          {categories.map(({ id, label, mobileLabel, Icon }) => {
-            const isActive = category === id;
-            return (
-              <li key={id} className="min-w-0 shrink-0 lg:shrink lg:w-full">
-                <button
-                  type="button"
-                  onClick={() => setCategory(id)}
-                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${isActive ? "border-[var(--brand-primary-soft)] bg-[var(--local-nav-selected-bg)] text-[var(--local-nav-selected-fg)]" : "border-transparent bg-transparent text-[var(--text-muted)] hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--brand-primary)]"}`}
-                  style={{
-                    height: "var(--control-height-toolbar)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-caption)",
-                    fontWeight: "var(--weight-bold)",
-                    letterSpacing: "var(--tracking-label)",
-                  }}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <Icon
-                    size={17}
-                    strokeWidth={isActive ? 2.5 : 2}
-                    className="shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span className="min-w-0 whitespace-nowrap lg:hidden">
-                    {mobileLabel}
-                  </span>
-                  <span
-                    className="hidden min-w-0 whitespace-nowrap lg:inline"
-                    title={label}
-                  >
-                    {label}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mb-3">{header}</div>
+        <FilterBar
+          ariaLabel="Settings categories"
+          variant="segmented"
+          fitToScreenOnMobile
+          value={category}
+          onChange={(key) => setCategory(key as CategoryId)}
+          options={categories.map(({ id, label, mobileLabel }) => ({
+            key: id,
+            label,
+            mobileLabel,
+          }))}
+        />
       </nav>
 
       <div
@@ -209,52 +192,53 @@ export function SettingsScreen({
           )}
         </div>
 
-        <div
-          className="sticky bottom-[var(--mobile-bottom-nav-clearance)] z-30 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl px-4 py-3.5 md:bottom-0 md:px-6"
-          style={{
-            backgroundColor: "var(--scrim-card)",
-            backdropFilter: "blur(8px)",
-            borderTop: `1px solid ${BORDER}`,
-          }}
-        >
-          <span
-            className="min-w-0"
-            style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
+        {(category !== "modes" || isDirty) && (
+          <div
+            className="sticky bottom-[var(--mobile-bottom-nav-clearance)] z-30 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl pl-4 pr-16 py-2.5 md:bottom-0 md:px-6 md:py-3.5"
+            style={{
+              backgroundColor: "var(--scrim-card)",
+              backdropFilter: "blur(8px)",
+              borderTop: `1px solid ${BORDER}`,
+            }}
           >
-            {isDirty
-              ? "You have unsaved settings changes."
-              : "All settings changes are saved."}
-            {category === "modes"
-              ? " Mode library actions save individually."
-              : ""}
-          </span>
-          <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2 max-[19rem]:w-full">
-            <Button
-              variant="outline"
-              className="rounded-xl max-[19rem]:w-full max-[19rem]:whitespace-normal"
-              disabled={!isDirty || isSaving}
-              onClick={discard}
+            <span
+              className="min-w-0"
+              style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
             >
-              Discard
-            </Button>
-            <Button
-              className="rounded-xl px-4 md:px-6 max-[19rem]:w-full max-[19rem]:whitespace-normal"
-              style={{
-                backgroundColor: RUST,
-                color: "var(--on-brand)",
-                minHeight: "var(--control-height-toolbar)",
-              }}
-              disabled={!isDirty || isSaving}
-              aria-busy={isSaving}
-              onClick={() => void save()}
-            >
-              {isSaving ? "Saving…" : "Save Changes"}
-            </Button>
+              {isDirty
+                ? "You have unsaved settings changes."
+                : "All settings changes are saved."}
+              {category === "modes"
+                ? " Mode library actions save individually."
+                : ""}
+            </span>
+            <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2 max-[19rem]:w-full">
+              <Button
+                variant="outline"
+                className="h-[var(--control-height-mobile)] md:h-[var(--control-height-toolbar)] rounded-xl max-[19rem]:w-full max-[19rem]:whitespace-normal"
+                disabled={!isDirty || isSaving}
+                onClick={discard}
+              >
+                Discard
+              </Button>
+              <Button
+                className="h-[var(--control-height-mobile)] md:h-[var(--control-height-toolbar)] rounded-xl px-4 md:px-6 max-[19rem]:w-full max-[19rem]:whitespace-normal"
+                style={{
+                  backgroundColor: RUST,
+                  color: "var(--on-brand)",
+                }}
+                disabled={!isDirty || isSaving}
+                aria-busy={isSaving}
+                onClick={() => void save()}
+              >
+                {isSaving ? "Saving…" : "Save Changes"}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

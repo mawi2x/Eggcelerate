@@ -47,13 +47,14 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
       <PanelHeader
         id="settings-panel-hardware"
         title="Hardware & Devices"
-        description="Paired controllers, sensor sampling, and calibration across every incubator."
+        description="Pairing, sensor checks, and calibration for all incubators."
       />
 
       <SegmentedControl
         role="tablist"
         aria-label="Hardware settings sections"
         className="mt-5 w-full md:w-auto"
+        flush
       >
         <SegmentedControlItem
           id="hardware-devices-tab"
@@ -61,7 +62,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           aria-selected={view === "devices"}
           aria-controls="hardware-devices-panel"
           active={view === "devices"}
-          size="toolbar"
+          flush
           className="flex-1 md:flex-none"
           onClick={() => onViewChange("devices")}
         >
@@ -73,7 +74,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           aria-selected={view === "preferences"}
           aria-controls="hardware-preferences-panel"
           active={view === "preferences"}
-          size="toolbar"
+          flush
           className="flex-1 md:flex-none"
           onClick={() => onViewChange("preferences")}
         >
@@ -102,14 +103,14 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
               </span>
             )}
           </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
             {units.map((unit) => {
               const online =
                 unit.paired && unit.connectionState === "connected";
               return (
                 <div
                   key={unit.id}
-                  className="flex min-w-0 items-center gap-3 rounded-xl p-3"
+                  className="flex min-w-0 items-center gap-3 rounded-[var(--radius-compact)] p-2"
                   style={{
                     border: `var(--border-width-hairline) solid ${BORDER}`,
                   }}
@@ -117,8 +118,8 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                   <span
                     className="flex shrink-0 items-center justify-center rounded-xl"
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 32,
+                      height: 32,
                       backgroundColor: online
                         ? "var(--wash-brand-10)"
                         : "var(--surface-neutral)",
@@ -126,9 +127,9 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                     }}
                   >
                     {online ? (
-                      <Wifi size={17} />
+                      <Wifi size={15} />
                     ) : (
-                      <WifiSlash size={17} weight="fill" />
+                      <WifiSlash size={15} weight="fill" />
                     )}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -184,7 +185,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
             })}
             {units.length === 0 && (
               <div
-                className="rounded-2xl px-5 py-10 text-center md:col-span-2"
+                className="rounded-[var(--radius-dialog)] px-5 py-10 text-center md:col-span-2"
                 style={{
                   backgroundColor: "var(--surface-app)",
                   border: `var(--border-width-hairline) dashed ${BORDER}`,
@@ -214,7 +215,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
         >
           <section
             aria-labelledby="hardware-group-sampling"
-            className="rounded-2xl p-4"
+            className="rounded-[var(--radius-dialog)] p-4"
             style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
           >
             <GroupLabel id="hardware-group-sampling">
@@ -272,7 +273,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
 
           <section
             aria-labelledby="hardware-group-calibration"
-            className="rounded-2xl p-4"
+            className="rounded-[var(--radius-dialog)] p-4"
             style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
           >
             <GroupLabel id="hardware-group-calibration">
@@ -335,7 +336,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
 
           <section
             aria-labelledby="hardware-group-display"
-            className="rounded-2xl p-4"
+            className="rounded-[var(--radius-dialog)] p-4"
             style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
           >
             <GroupLabel id="hardware-group-display">

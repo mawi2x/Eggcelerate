@@ -250,7 +250,7 @@ function JournalCard({
       />
       <div className="flex-1">
         <div
-          className="flex min-h-[116px] flex-col justify-between rounded-2xl border p-3.5"
+          className="flex min-h-[116px] flex-col justify-between rounded-[var(--radius-dialog)] border p-3.5"
           style={{
             backgroundColor: TILE,
             borderColor: BORDER,

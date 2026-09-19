@@ -442,7 +442,7 @@ export function DetailScreen({
 
               {setupMode ? (
                 <div
-                  className="rounded-2xl p-4"
+                  className="rounded-[var(--radius-dialog)] p-4"
                   style={{
                     backgroundColor: "var(--surface-app)",
                     border: "1px solid var(--border-preview)",
@@ -504,7 +504,7 @@ export function DetailScreen({
                       return (
                         <div
                           key={item.label}
-                          className="min-w-0 rounded-xl bg-[var(--surface-card)] p-3"
+                          className="min-w-0 rounded-[var(--radius-dialog)] bg-[var(--surface-card)] p-3"
                           style={{ border: "1px solid var(--border-preview)" }}
                         >
                           <Icon

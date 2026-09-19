@@ -8,7 +8,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Area,
   CartesianGrid,
@@ -1262,13 +1262,13 @@ export function TrendsScreen({
                       else setHatchPage(Math.max(1, page - 1));
                     }}
                   >
-                    {pagedHatch.map((h, idx) => {
+                    {pagedHatch.map((h) => {
                       const good = h.pct !== null && h.pct >= 80;
                       const unhatched = h.totalEggs - h.hatchedEggs;
                       return (
                         <div
                           key={h.id}
-                          className="flex flex-col gap-3 rounded-2xl border p-4 shadow-sm transition-colors duration-150"
+                          className="flex flex-col gap-3 rounded-[var(--radius-dialog)] border p-4 shadow-sm transition-colors duration-150"
                           style={{
                             backgroundColor: "var(--surface-card)",
                             borderColor: BORDER,
@@ -1328,7 +1328,7 @@ export function TrendsScreen({
 
                           {/* Card Telemetry Metrics: Eggs Set, Hatched, Unhatched */}
                           <div
-                            className="grid grid-cols-3 gap-2 rounded-xl p-2.5"
+                            className="grid grid-cols-3 gap-2 rounded-[var(--radius-dialog)] p-2.5"
                             style={{ backgroundColor: "var(--surface-tile)" }}
                           >
                             <div className="flex flex-col">
@@ -1410,7 +1410,7 @@ export function TrendsScreen({
 
                   {pagedHatch.length === 0 && (
                     <div
-                      className="py-12 text-center rounded-2xl border"
+                      className="py-12 text-center rounded-[var(--radius-dialog)] border"
                       style={{
                         borderColor: BORDER,
                         backgroundColor: "var(--surface-card)",
@@ -1431,7 +1431,7 @@ export function TrendsScreen({
                   {/* Single clean pagination bar below cards */}
                   {filteredHatch.length > 0 && (
                 <div
-                  className="overflow-hidden rounded-2xl border"
+                  className="overflow-hidden rounded-[var(--radius-dialog)] border"
                   style={{
                     backgroundColor: "var(--surface-card)",
                     borderColor: BORDER,
@@ -1456,7 +1456,7 @@ export function TrendsScreen({
           ) : (
             /* Desktop List View: Full 6-Column Data Table */
             <div
-              className="mt-3 md:mt-6 overflow-hidden rounded-2xl border"
+              className="mt-3 md:mt-6 overflow-hidden rounded-[var(--radius-dialog)] border"
               style={{
                 borderColor: BORDER,
                 backgroundColor: CARD,
@@ -1671,7 +1671,7 @@ export function TrendsScreen({
             </div>
           </DialogHeader>
           <div
-            className="max-h-[50vh] overflow-y-auto rounded-2xl border"
+            className="max-h-[50vh] overflow-y-auto rounded-[var(--radius-dialog)] border"
             style={{ borderColor: BORDER }}
           >
             <Table>
