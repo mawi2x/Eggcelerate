@@ -1,5 +1,5 @@
 import { WifiSlash } from "@phosphor-icons/react";
-import { BatteryMedium, Plug, Wifi } from "lucide-react";
+import { BatteryMedium, Info, Minus, Plug, Plus, Wifi } from "lucide-react";
 import { useState } from "react";
 import type { Incubator } from "../../domain/types";
 import { Input } from "../ui/input";
@@ -24,6 +24,7 @@ import {
   PanelHeader,
   RUST,
   SettingRow,
+  SURFACE,
   TEXT,
 } from "./tokens";
 
@@ -225,10 +226,11 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
               <SettingRow
                 label="Sensor Sampling Interval"
                 hint="How often each controller reports temperature and humidity."
+                layout="stacked"
                 control={
                   <Select value={pollInterval} onValueChange={setPollInterval}>
                     <SelectTrigger
-                      className={`${inputClass} w-[150px]`}
+                      className={`${inputClass} w-full sm:w-[180px]`}
                       style={inputStyle}
                     >
                       <SelectValue />
@@ -247,19 +249,21 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                 hint="Stored research records use a fixed five minute interval."
                 control={
                   <span
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold"
                     style={{
-                      fontSize: "var(--type-body-sm)",
-                      fontWeight: "var(--weight-bold)",
-                      color: TEXT,
+                      backgroundColor: "var(--surface-tile)",
+                      color: MUTED,
+                      border: `var(--border-width-hairline) solid ${BORDER}`,
                     }}
                   >
-                    Every 5 minutes
+                    5 min · Fixed
                   </span>
                 }
               />
               <SettingRow
                 label="Battery saver mode"
                 hint="Halves the sampling rate when a chamber runs on battery."
+                borderless
                 control={
                   <Switch
                     checked={batterySaver}
@@ -279,42 +283,107 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
             <GroupLabel id="hardware-group-calibration">
               Advanced and Calibration
             </GroupLabel>
-            <p
-              className="mt-2"
+            <div
+              className="mt-2.5 flex items-start gap-2.5 rounded-xl p-3"
               style={{
-                color: MUTED,
-                fontSize: "var(--type-caption)",
-                lineHeight: 1.5,
+                backgroundColor: "var(--surface-tile)",
+                border: `var(--border-width-hairline) solid ${BORDER}`,
               }}
             >
-              Calibration changes every temperature record. Use a trusted
-              reference thermometer before saving an offset.
-            </p>
+              <Info
+                size={16}
+                className="mt-0.5 shrink-0"
+                style={{ color: "var(--status-info-fg)" }}
+                aria-hidden="true"
+              />
+              <p
+                style={{
+                  color: MUTED,
+                  fontSize: "var(--type-caption)",
+                  lineHeight: "var(--leading-snug)",
+                }}
+              >
+                Calibration changes every temperature record. Use a trusted
+                reference thermometer before saving an offset.
+              </p>
+            </div>
             <div className="mt-2">
               <SettingRow
                 label="Temperature Calibration Offset"
                 hint="Applied to every temperature reading, in °C."
                 htmlFor="calibration"
+                layout="stacked"
+                borderless
                 control={
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="calibration"
-                      type="number"
-                      step={0.1}
-                      min={-10}
-                      max={10}
-                      value={calibration}
-                      onChange={(event) => {
-                        setCalibration(event.target.value);
-                        setCalibrationSaved(false);
+                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                    <div
+                      className="flex items-center rounded-xl border"
+                      style={{
+                        borderColor: "var(--input-border)",
+                        backgroundColor: SURFACE,
                       }}
-                      className={`${inputClass} w-[110px]`}
-                      style={inputStyle}
-                    />
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const curr = parseFloat(calibration) || 0;
+                          const next = Math.max(
+                            -10,
+                            Math.round((curr - 0.1) * 10) / 10,
+                          );
+                          setCalibration(next.toString());
+                          setCalibrationSaved(false);
+                        }}
+                        aria-label="Decrease offset by 0.1"
+                        className="flex h-10 w-9 items-center justify-center text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <Input
+                        id="calibration"
+                        type="number"
+                        step={0.1}
+                        min={-10}
+                        max={10}
+                        value={calibration}
+                        onChange={(event) => {
+                          setCalibration(event.target.value);
+                          setCalibrationSaved(false);
+                        }}
+                        className="h-10 w-16 border-0 bg-transparent px-1 text-center font-semibold focus-visible:ring-0"
+                        style={{
+                          color: TEXT,
+                          fontSize: "var(--type-control-value)",
+                        }}
+                      />
+                      <span
+                        className="pr-2 text-xs"
+                        style={{ color: MUTED }}
+                        aria-hidden="true"
+                      >
+                        °C
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const curr = parseFloat(calibration) || 0;
+                          const next = Math.min(
+                            10,
+                            Math.round((curr + 0.1) * 10) / 10,
+                          );
+                          setCalibration(next.toString());
+                          setCalibrationSaved(false);
+                        }}
+                        aria-label="Increase offset by 0.1"
+                        className="flex h-10 w-9 items-center justify-center text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setCalibrationSaved(true)}
-                      className="min-h-[var(--control-height-default)] min-w-[var(--control-height-default)] cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-8 md:min-w-8"
+                      className="min-h-10 min-w-16 cursor-pointer rounded-xl px-3 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
                       style={{
                         backgroundColor: calibrationSaved
                           ? "var(--status-success-bg)"
@@ -324,6 +393,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                           : RUST,
                         fontSize: "var(--type-caption)",
                         fontWeight: "var(--weight-bold)",
+                        border: `1px solid ${calibrationSaved ? "transparent" : BORDER}`,
                       }}
                     >
                       {calibrationSaved ? "Saved" : "Save"}
@@ -346,6 +416,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
               <SettingRow
                 label="Status LED indicators"
                 hint="Physical light ring on the controller housing."
+                borderless
                 control={
                   <Switch
                     checked={ledIndicators}

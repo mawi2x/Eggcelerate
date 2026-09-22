@@ -1,5 +1,7 @@
 // Shared visual language for the Settings master-detail panels.
+
 import { Typography } from "../ui/typography";
+import { cn } from "../ui/utils";
 
 export const RUST = "var(--brand-primary)";
 export const SURFACE = "var(--surface-card)";
@@ -73,18 +75,39 @@ export function SettingRow({
   hint,
   control,
   htmlFor,
+  layout = "inline",
+  borderless = false,
+  className,
 }: {
   label: string;
   hint?: string;
   control: React.ReactNode;
   htmlFor?: string;
+  layout?: "inline" | "stacked";
+  borderless?: boolean;
+  className?: string;
 }) {
+  const isStacked = layout === "stacked";
+
   return (
     <div
-      className="flex flex-col gap-3 py-3.5 md:flex-row md:items-center md:justify-between md:gap-6"
-      style={{ borderBottom: `var(--border-width-hairline) solid ${DIVIDER}` }}
+      className={cn(
+        "py-3.5",
+        isStacked
+          ? "flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+          : "flex items-center justify-between gap-4",
+        className,
+      )}
+      style={{
+        borderBottom: borderless
+          ? "none"
+          : `var(--border-width-hairline) solid ${DIVIDER}`,
+      }}
     >
-      <label htmlFor={htmlFor} className="min-w-0 flex-1">
+      <label
+        htmlFor={htmlFor}
+        className={cn("min-w-0 flex-1", !isStacked && "cursor-pointer")}
+      >
         <span
           className="block break-words"
           style={{
@@ -108,7 +131,14 @@ export function SettingRow({
           </span>
         )}
       </label>
-      <div className="shrink-0 self-end md:self-auto">{control}</div>
+      <div
+        className={cn(
+          "shrink-0 flex items-center",
+          isStacked ? "w-full sm:w-auto sm:justify-end" : "justify-end",
+        )}
+      >
+        {control}
+      </div>
     </div>
   );
 }

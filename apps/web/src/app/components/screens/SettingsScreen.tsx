@@ -1,5 +1,5 @@
 import { Bell, Package, Tractor, Zap } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { SettingsPreferences } from "../../data/settings";
 import type { Incubator, Mode } from "../../domain/types";
@@ -194,11 +194,17 @@ export function SettingsScreen({
 
         {(category !== "modes" || isDirty) && (
           <div
-            className="sticky bottom-[var(--mobile-bottom-nav-clearance)] z-30 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl pl-4 pr-16 py-2.5 md:bottom-0 md:px-6 md:py-3.5"
+            className={`sticky bottom-[var(--mobile-bottom-nav-clearance)] z-30 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl pl-4 pr-16 py-2.5 transition-all duration-200 md:bottom-0 md:px-6 md:py-3.5 ${
+              !isDirty
+                ? "max-md:hidden"
+                : "border-t-[var(--brand-primary-soft)] shadow-md"
+            }`}
             style={{
-              backgroundColor: "var(--scrim-card)",
+              backgroundColor: isDirty
+                ? "var(--surface-card)"
+                : "var(--scrim-card)",
               backdropFilter: "blur(8px)",
-              borderTop: `1px solid ${BORDER}`,
+              borderTop: `1px solid ${isDirty ? "var(--brand-primary-soft)" : BORDER}`,
             }}
           >
             <span

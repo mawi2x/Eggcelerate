@@ -587,7 +587,11 @@ export function ModeLibraryPanel({
           </Button>
           <Button
             className="h-[var(--control-height-mobile)] rounded-xl px-3.5 md:h-[var(--control-height-default)]"
-            style={{ backgroundColor: RUST, color: "var(--on-brand)", fontSize: 10 }}
+            style={{
+              backgroundColor: RUST,
+              color: "var(--on-brand)",
+              fontSize: 10,
+            }}
             onClick={openAdd}
           >
             <Plus size={16} /> Add Custom Mode
