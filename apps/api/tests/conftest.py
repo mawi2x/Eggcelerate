@@ -20,6 +20,30 @@ from eggcelerate_api.database.store import PostgresStore
 from eggcelerate_api.main import create_app
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--require-database",
+        action="store_true",
+        help="Require disposable PostgreSQL and fail if any test is skipped.",
+    )
+
+
+def pytest_sessionstart(session):
+    if session.config.getoption("--require-database"):
+        url = os.environ.get("TEST_DATABASE_URL", "")
+        if not url or make_url(url).database != "eggcelerate_test":
+            raise pytest.UsageError(
+                "--require-database requires TEST_DATABASE_URL targeting eggcelerate_test"
+            )
+
+
+def pytest_sessionfinish(session, exitstatus):
+    if session.config.getoption("--require-database"):
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        if reporter and reporter.stats.get("skipped"):
+            session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
 def make_client() -> TestClient:
     settings = Settings(app_env="test")
     return TestClient(create_app(settings))

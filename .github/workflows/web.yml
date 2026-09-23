@@ -3,9 +3,7 @@ name: web
 on:
   push:
     branches: ["experiment", "main"]
-    paths: ["apps/web/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "biome.json"]
   pull_request:
-    paths: ["apps/web/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "biome.json"]
 
 jobs:
   web:
