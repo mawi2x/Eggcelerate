@@ -13,6 +13,9 @@ operator-provisioned device routing, and configures the local simulator API to r
 sessions. Database restore, migration, and software gates have now passed. Phase 8's
 implementation checkpoint is `0709075` (`feat: add farm-scoped account sessions`); its
 verification record is in the [Phase 8 handoff](project-review-handoff-2026-09-23-phase8.md).
+Phase 9's in-progress implementation checkpoint is `4c5c095`
+(`feat: harden owner and device onboarding`); its current limits and evidence are in the
+[Phase 9 progress checkpoint](project-review-handoff-2026-09-24-phase9-progress.md).
 Phase 7's implementation checkpoint is `8d5252b` (`fix: make dashboard states truthful and actionable`);
 its verification record is in the [Phase 7 handoff](project-review-handoff-2026-09-23-phase7.md).
 Phase 6's implementation checkpoint is `fc6e353` (`test: harden verification gates and UI behavior coverage`);

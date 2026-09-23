@@ -4,6 +4,8 @@
 or release-ready.** The main-repository changes are on branch `experiment`. This checkpoint
 captures a safe stopping point for the release-readiness and electronics work.
 
+**Implementation revision:** `4c5c095` (`feat: harden owner and device onboarding`).
+
 Production now keeps public registration disabled until email verification exists. An
 operator can create an owner, reset passwords (revoking active sessions), and provision
 globally unique device IDs. Login attempts are limited by an HMAC-keyed, persistent
