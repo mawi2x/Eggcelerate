@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+import ssl
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -96,6 +97,37 @@ class MqttInputQueues:
             await self.available.wait()
 
 
+def configure_broker_security(client: mqtt.Client) -> None:
+    """Configure verified broker TLS and credentials from the process environment."""
+    username = os.environ.get("MQTT_USERNAME")
+    password = os.environ.get("MQTT_PASSWORD")
+    ca_file = os.environ.get("MQTT_TLS_CA_FILE")
+    cert_file = os.environ.get("MQTT_TLS_CERT_FILE")
+    key_file = os.environ.get("MQTT_TLS_KEY_FILE")
+
+    if bool(username) != bool(password):
+        raise ValueError("MQTT_USERNAME and MQTT_PASSWORD must be set together")
+    if username and not ca_file:
+        raise ValueError("MQTT credentials require MQTT_TLS_CA_FILE")
+    if bool(cert_file) != bool(key_file):
+        raise ValueError(
+            "MQTT_TLS_CERT_FILE and MQTT_TLS_KEY_FILE must be set together"
+        )
+    if (cert_file or key_file) and not ca_file:
+        raise ValueError("MQTT client certificates require MQTT_TLS_CA_FILE")
+
+    if ca_file:
+        client.tls_set(
+            ca_certs=ca_file,
+            certfile=cert_file,
+            keyfile=key_file,
+            cert_reqs=ssl.CERT_REQUIRED,
+        )
+        client.tls_insecure_set(False)
+    if username:
+        client.username_pw_set(username, password)
+
+
 async def run() -> None:
     settings = load_settings()
     if settings.app_env == "production":
@@ -110,10 +142,7 @@ async def run() -> None:
     loop = asyncio.get_running_loop()
     dispatch = os.environ.get("SIMULATOR_DISPATCH_ENABLED") == "true"
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, manual_ack=True)
-    if os.environ.get("MQTT_USERNAME"):
-        client.username_pw_set(
-            os.environ["MQTT_USERNAME"], os.environ.get("MQTT_PASSWORD")
-        )
+    configure_broker_security(client)
 
     def connected(client, userdata, flags, reason_code, properties):
         if not reason_code.is_failure:
@@ -168,7 +197,11 @@ async def run() -> None:
     client.on_message = message
     client.connect_async(
         os.environ.get("MQTT_HOST", "127.0.0.1"),
-        int(os.environ.get("MQTT_PORT", "1883")),
+        int(
+            os.environ.get(
+                "MQTT_PORT", "8883" if os.environ.get("MQTT_TLS_CA_FILE") else "1883"
+            )
+        ),
     )
     client.reconnect_delay_set(1, 30)
     client.loop_start()

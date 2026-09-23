@@ -1,10 +1,17 @@
 """The worker keeps QoS1 command outcomes ahead of lossy sensor traffic."""
 
 import asyncio
+import ssl
+from unittest.mock import Mock
 
 import pytest
 
-from eggcelerate_api.mqtt.worker import InboundMqttMessage, MqttInputQueues, run
+from eggcelerate_api.mqtt.worker import (
+    InboundMqttMessage,
+    MqttInputQueues,
+    configure_broker_security,
+    run,
+)
 
 
 def test_ack_lane_is_not_blocked_or_dropped_by_full_telemetry_queue():
@@ -36,6 +43,41 @@ def test_worker_counts_acknowledgements_it_discards():
     queues = MqttInputQueues()
     queues.drop(InboundMqttMessage("eggcelerate/v1/devices/EGG-1/ack", b"bad", 1, 1))
     assert queues.dropped_ack_count == 1
+
+
+def test_broker_credentials_require_verified_tls(monkeypatch):
+    monkeypatch.setenv("MQTT_USERNAME", "EGG-1003")
+    monkeypatch.setenv("MQTT_PASSWORD", "local-secret")
+    monkeypatch.delenv("MQTT_TLS_CA_FILE", raising=False)
+    with pytest.raises(ValueError, match="require MQTT_TLS_CA_FILE"):
+        configure_broker_security(Mock())
+
+
+def test_worker_configures_tls_client_identity_and_broker_credentials(
+    monkeypatch, tmp_path
+):
+    ca_file = tmp_path / "ca.pem"
+    cert_file = tmp_path / "worker.pem"
+    key_file = tmp_path / "worker.key"
+    for path in (ca_file, cert_file, key_file):
+        path.write_text("test fixture", encoding="utf-8")
+    monkeypatch.setenv("MQTT_USERNAME", "egg-worker")
+    monkeypatch.setenv("MQTT_PASSWORD", "local-secret")
+    monkeypatch.setenv("MQTT_TLS_CA_FILE", str(ca_file))
+    monkeypatch.setenv("MQTT_TLS_CERT_FILE", str(cert_file))
+    monkeypatch.setenv("MQTT_TLS_KEY_FILE", str(key_file))
+    client = Mock()
+
+    configure_broker_security(client)
+
+    client.tls_set.assert_called_once_with(
+        ca_certs=str(ca_file),
+        certfile=str(cert_file),
+        keyfile=str(key_file),
+        cert_reqs=ssl.CERT_REQUIRED,
+    )
+    client.tls_insecure_set.assert_called_once_with(False)
+    client.username_pw_set.assert_called_once_with("egg-worker", "local-secret")
 
 
 def test_production_cannot_start_the_simulator_mqtt_worker(monkeypatch):
