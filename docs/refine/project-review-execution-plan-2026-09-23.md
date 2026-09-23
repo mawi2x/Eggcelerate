@@ -6,7 +6,10 @@ entries (44 modified, 17 untracked) containing refinement Phase 4 (durable devic
 commands, migration `0008`) and Phase 5 (telemetry projection/freshness, migration
 `0009`). Sibling repository `eggcelerate-simulate` @ `e112a25` with 4 modified files.
 
-**Execution status (2026-09-23):** Phases 0–5 complete; Phase 6 is next. Main
+**Execution status (2026-09-23):** Phases 0–6 complete; Phase 7 is next. Phase 6's
+implementation checkpoint is `fc6e353` (`test: harden verification gates and UI behavior coverage`);
+its verification record is in the [Phase 6 handoff](project-review-handoff-2026-09-23-phase6.md).
+Main
 repository checkpoints are `6fd0869` (earlier UI refinements), `0db4a94`
 (command outbox), `6b53341` (telemetry), `d5f6b44` (CI/migration gates), and the Phase 1
 commit `5221ca4`, Phase 2 API commit `b4bbc7e`, and simulator commits `5746c94` (Phase 0)
@@ -558,6 +561,10 @@ See [`project-review-handoff-2026-09-23-phase5.md`](project-review-handoff-2026-
 
 ## Phase 6 — Verification integrity
 
+**Status (2026-09-23): complete.** Implementation commit: `fc6e353`. See the
+[Phase 6 handoff](project-review-handoff-2026-09-23-phase6.md) for gate results and
+remaining limitations.
+
 **Outcome:** the gates fail when the behaviour they name regresses.
 
 **Why:** 85 of 298 web tests assert source text and demonstrably miss real defects — the
@@ -569,28 +576,30 @@ gate excludes every screen and component, and its thresholds sit 16–34 pp belo
 non-deterministic and unattributed.
 
 **Work**
-- [ ] Apply **D-4** so the transport contract is either part of the documented local gate
+- [x] Apply **D-4** so the transport contract is either part of the documented local gate
       or explicitly named as its own gate; stop citing `298 passed` as transport coverage.
-- [ ] Purge source-text assertions: re-express the ones that encode a real contract
+- [x] Purge source-text assertions: re-express the ones that encode a real contract
       against rendered or computed surfaces (`getByRole`, focus assertions,
       `getComputedStyle` tokens — `timeline-density.test.tsx:42-64` is the existing
       pattern) and delete the pure string pins. Do not re-pin them to new strings.
-- [ ] Extend `coverage.include` to the rendered components once render coverage exists and
+- [x] Extend `coverage.include` to the rendered components once render coverage exists and
       raise the thresholds to a frozen floor near measured values (lines ~90, branches
       ~81, functions ~88), keeping the raise-never-lower rule.
-- [ ] GATE-06: add `filterwarnings = ["error::pydantic.UnsupportedFieldAttributeWarning"]`
-      to `[tool.pytest.ini_options]`, locate the offending `Header(alias=...)` position
-      (candidates: `api/v1/alerts.py:12` and the `Idempotency-Key` parameters across
-      `api/v1/*.py`) and express it where Pydantic honours it.
-- [ ] GATE-10: derive the expected chamber count from the seeded baseline instead of the
+- [x] GATE-06: add a warning-as-error filter for Pydantic's
+      `UnsupportedFieldAttributeWarning`, locate the offending alert header declaration,
+      and express it as a direct `Header(default=None, alias=...)` parameter.
+- [x] GATE-10: derive the expected chamber count from the seeded baseline instead of the
       literal `13` in `test_postgres_incubators.py:143`.
-- [ ] GATE-11/GATE-09 follow-ups are already Phase 1 work; record the gate block below as
+- [x] GATE-11/GATE-09 follow-ups are already Phase 1 work; record the gate block below as
       the single source of commands.
 
-**Exit gate:** deliberately breaking a covered component's markup/class makes the
-corresponding test fail; removing a screen from coverage makes `coverage` fail; the API
-suite fails while the Pydantic warning is present and passes with a stable warning count
-after the fix; every command in §6 runs from a clean checkout.
+**Exit gate:** passed. Rendered filter and screen tests assert accessible markup, focus,
+responsive classes, and computed typography; the chart title defect found by its former
+source-string pin now has a rendered assertion. The coverage scope check requires all
+seven screen modules. The Pydantic warning-as-error gate caught the alert-header warning;
+after the declaration fix, all 104 API tests pass with only two dependency warnings. The
+commands in §6 passed, including the live HTTP contract and fresh/populated migration
+checks.
 
 **Recovery:** test-only changes; revert per file. Thresholds may be raised again but never
 lowered.
