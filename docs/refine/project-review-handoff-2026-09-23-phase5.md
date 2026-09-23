@@ -2,7 +2,7 @@
 
 **Status:** complete. Phase 6 (verification integrity) is next.
 
-**Commit:** recorded in the Phase 5 execution plan after commit.
+**Commit:** `10e32e5` (`ci: harden deployment runtime configuration`).
 
 ## What changed
 
