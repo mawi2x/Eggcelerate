@@ -128,6 +128,7 @@ describe("dashboard transport contracts", () => {
       cycle_phase: "incubating",
       condition_severity: "info",
       connection_state: "connected",
+      telemetry_status: "fresh",
       candled_days: [6],
       candling_entries: [],
     });

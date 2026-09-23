@@ -53,7 +53,10 @@ export function resetChamberToReady(
     status: "optimal",
     cyclePhase: "ready",
     conditionSeverity: "info",
-    connectionState: connectionStateFromPairing(unit.paired),
+    connectionState: connectionStateFromPairing(
+      unit.paired,
+      unit.telemetryStatus ?? "offline",
+    ),
     lastTurned: nowIso,
     nextTurn: new Date(now.getTime() + 24 * 3_600_000).toISOString(),
   };

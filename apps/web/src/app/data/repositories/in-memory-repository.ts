@@ -181,6 +181,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         ...clone(unit),
         ...deriveConditionState({
           paired: unit.paired,
+          telemetryStatus: unit.telemetryStatus ?? "offline",
           temp: unit.temp,
           targetTemp: mode.targetTemp,
           humidity: unit.humidity,
@@ -190,7 +191,10 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
           powerSource: unit.powerSource,
           nextTurn: unit.nextTurn,
         }),
-        connectionState: connectionStateFromPairing(unit.paired),
+        connectionState: connectionStateFromPairing(
+          unit.paired,
+          unit.telemetryStatus ?? "offline",
+        ),
       };
       this.incubators.push(created);
       return ok(created);
@@ -213,6 +217,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       ...unit,
       ...deriveConditionState({
         paired: unit.paired,
+        telemetryStatus: unit.telemetryStatus ?? "offline",
         temp: unit.temp,
         targetTemp: mode.targetTemp,
         humidity: unit.humidity,
@@ -225,7 +230,10 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       ...(unit.cyclePhase === "stopped_early" && unit.dayOfIncubation > 0
         ? { status: "warning" as const }
         : {}),
-      connectionState: connectionStateFromPairing(unit.paired),
+      connectionState: connectionStateFromPairing(
+        unit.paired,
+        unit.telemetryStatus ?? "offline",
+      ),
     });
   }
 
@@ -640,6 +648,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
               ...unit,
               ...deriveConditionState({
                 paired: unit.paired,
+                telemetryStatus: unit.telemetryStatus ?? "offline",
                 temp: unit.temp,
                 targetTemp: updated.targetTemp,
                 humidity: unit.humidity,

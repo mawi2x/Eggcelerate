@@ -325,10 +325,11 @@ export function IncubatorsScreen({
       humidityTrend: 0,
       powerSource: "grid",
       batteryPct: 100,
-      status: "optimal",
+      status: "alert",
       cyclePhase: "ready",
-      conditionSeverity: "info",
-      connectionState: "connected",
+      conditionSeverity: "critical",
+      connectionState: "offline",
+      telemetryStatus: "offline",
       lastTurned: nowIso,
       nextTurn: new Date(
         Date.now() + mode.defaultTurnInterval * 3_600_000,
@@ -343,7 +344,9 @@ export function IncubatorsScreen({
       setConnecting(false);
       return;
     }
-    toast.success(`Connected to Chamber ${trimmedName} successfully.`);
+    toast.success(
+      `Chamber ${trimmedName} paired. Waiting for its first telemetry report.`,
+    );
     resetForm();
     setConnecting(false);
     setOpen(false);

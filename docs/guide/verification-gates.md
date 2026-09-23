@@ -14,9 +14,12 @@ test extra into a Python 3.14 virtual environment. Then run:
 ```sh
 pnpm lint
 pnpm --filter eggcelerate-ui typecheck
+pnpm --filter eggcelerate-ui test
 pnpm --filter eggcelerate-ui coverage
 pnpm --filter eggcelerate-ui build
 docker compose --profile database-test up -d --wait db-test
+# Verify the disposable Timescale image without relying on a container name.
+docker ps --filter ancestor=timescale/timescaledb:2.30.0-pg17
 export TEST_DATABASE_URL=postgresql+asyncpg://eggcelerate:eggcelerate_test@127.0.0.1:55432/eggcelerate_test
 apps/api/.venv/bin/ruff check apps/api
 apps/api/.venv/bin/ruff format --check apps/api

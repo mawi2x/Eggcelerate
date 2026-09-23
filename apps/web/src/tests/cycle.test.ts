@@ -82,6 +82,7 @@ describe("deriveConditionSeverity", () => {
 
   const base = {
     paired: true,
+    telemetryStatus: "fresh" as const,
     temp: 37.6,
     targetTemp,
     humidity: 60,
@@ -136,6 +137,14 @@ describe("deriveConditionSeverity", () => {
   it("critical when not paired", () => {
     const s = deriveConditionSeverity({ ...base, paired: false });
     expect(s).toBe("critical");
+  });
+  it("critical when telemetry is offline and warning when stale", () => {
+    expect(
+      deriveConditionSeverity({ ...base, telemetryStatus: "offline" }),
+    ).toBe("critical");
+    expect(deriveConditionSeverity({ ...base, telemetryStatus: "stale" })).toBe(
+      "warning",
+    );
   });
   it("critical when humidity > max+5 (71 vs 65)", () => {
     const s = deriveConditionSeverity({
@@ -252,8 +261,10 @@ describe("conditionSeverityFromLegacyStatus", () => {
 });
 
 describe("connectionStateFromPairing", () => {
-  it("returns connected when paired", () =>
-    expect(connectionStateFromPairing(true)).toBe("connected"));
+  it("requires fresh telemetry before reporting connected", () => {
+    expect(connectionStateFromPairing(true)).toBe("offline");
+    expect(connectionStateFromPairing(true, "fresh")).toBe("connected");
+  });
   it("returns offline when not paired", () =>
     expect(connectionStateFromPairing(false)).toBe("offline"));
 });

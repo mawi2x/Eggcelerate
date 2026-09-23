@@ -21,6 +21,8 @@ describe.each(targets)("repository contract (%s)", (_name, factory) => {
     expect(listed.ok && listed.data).toHaveLength(12);
     const one = await repository.getIncubator("chamber-1");
     expect(one.ok && one.data.name).toBe("Chamber One");
+    expect(one.ok && one.data.telemetryStatus).toBe("offline");
+    expect(one.ok && one.data.connectionState).toBe("offline");
     const missing = await repository.getIncubator("chamber-99");
     expect(missing.ok).toBe(false);
     if (!missing.ok) expect(missing.error.code).toBe("not_found");
@@ -71,13 +73,12 @@ describe.each(targets)("repository contract (%s)", (_name, factory) => {
     expect(turned.data.turnCommandStatus).toBe("pending");
   });
 
-  it("reconnects a chamber to connected", async () => {
+  it("reconnects a chamber without claiming it has reported telemetry", async () => {
     const repository = factory();
     const reconnected = await repository.reconnectIncubator("chamber-2");
     expect(reconnected.ok && reconnected.data.paired).toBe(true);
-    expect(reconnected.ok && reconnected.data.connectionState).toBe(
-      "connected",
-    );
+    expect(reconnected.ok && reconnected.data.connectionState).toBe("offline");
+    expect(reconnected.ok && reconnected.data.telemetryStatus).toBe("offline");
   });
 
   it("creates and deletes a candling entry by day", async () => {

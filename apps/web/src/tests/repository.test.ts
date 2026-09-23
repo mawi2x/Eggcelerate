@@ -269,7 +269,7 @@ describe("InMemoryEggcelerateRepository", () => {
     expect(missing.ok).toBe(false);
   });
 
-  it("reconnects reachable devices and reports unreachable ones", async () => {
+  it("re-pairs without claiming reachability and reports unreachable devices", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
     const listed = await repository.listIncubators();
     if (!listed.ok) throw new Error("Fixture incubators failed to load.");
@@ -283,9 +283,8 @@ describe("InMemoryEggcelerateRepository", () => {
 
     const reconnected = await repository.reconnectIncubator("chamber-1");
     expect(reconnected.ok && reconnected.data.paired).toBe(true);
-    expect(reconnected.ok && reconnected.data.connectionState).toBe(
-      "connected",
-    );
+    expect(reconnected.ok && reconnected.data.telemetryStatus).toBe("offline");
+    expect(reconnected.ok && reconnected.data.connectionState).toBe("offline");
   });
 
   it("creates, updates, and deletes candling entries by day", async () => {

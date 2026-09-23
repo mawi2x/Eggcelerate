@@ -578,7 +578,10 @@ describe("repository mutation states", () => {
       true,
     );
     expect(storedUnit(mounted.queryClient, "chamber-1").connectionState).toBe(
-      "connected",
+      "offline",
+    );
+    expect(storedUnit(mounted.queryClient, "chamber-1").telemetryStatus).toBe(
+      "offline",
     );
 
     expect(

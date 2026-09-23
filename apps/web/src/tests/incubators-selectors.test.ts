@@ -192,21 +192,20 @@ describe("selectSortedIncubators", () => {
   });
 
   it("prioritizes alert over warning when the Issues view is active", () => {
-    const warningSource = units.find((u) => u.status === "warning");
-    const alertSource = units.find((u) => u.status === "alert");
-    if (!warningSource || !alertSource) {
-      throw new Error("Expected warning and alert fixture units");
-    }
     const warning = {
-      ...warningSource,
+      ...units[0],
       id: "warning",
       name: "Chamber Warning",
+      status: "warning" as const,
+      conditionSeverity: "warning" as const,
       cyclePhase: "completed" as const,
     };
     const alert = {
-      ...alertSource,
+      ...units[1],
       id: "alert",
       name: "Chamber Alert",
+      status: "alert" as const,
+      conditionSeverity: "critical" as const,
       cyclePhase: "incubating" as const,
     };
 

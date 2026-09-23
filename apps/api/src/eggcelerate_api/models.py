@@ -202,7 +202,7 @@ class IncubatorDTO(BaseModel):
     connection_state: ConnectionState
     candled_days: list[Annotated[int, Field(gt=0)]]
     candling_entries: list[CandlingEntryDTO]
-    telemetry_status: TelemetryStatus = "fresh"
+    telemetry_status: TelemetryStatus = "offline"
     telemetry_observed_at: datetime | None = None
     telemetry_received_at: datetime | None = None
     telemetry_last_seen_at: datetime | None = None

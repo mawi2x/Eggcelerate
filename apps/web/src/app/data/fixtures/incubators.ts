@@ -440,6 +440,7 @@ export function createIncubatorFixtures(
     const condition = mode
       ? deriveConditionState({
           paired: unit.paired,
+          telemetryStatus: unit.telemetryStatus ?? "offline",
           temp: unit.temp,
           targetTemp: mode.targetTemp,
           humidity: unit.humidity,
@@ -452,6 +453,7 @@ export function createIncubatorFixtures(
       : { conditionSeverity: "info" as const, status: unit.status };
     return {
       ...unit,
+      telemetryStatus: unit.telemetryStatus ?? "offline",
       cyclePhase,
       autoTurn:
         cyclePhase === "lockdown" ||
@@ -460,7 +462,10 @@ export function createIncubatorFixtures(
           ? false
           : unit.autoTurn,
       ...condition,
-      connectionState: connectionStateFromPairing(unit.paired),
+      connectionState: connectionStateFromPairing(
+        unit.paired,
+        unit.telemetryStatus ?? "offline",
+      ),
     };
   });
 }

@@ -489,9 +489,10 @@ class MemoryStore:
                 paired=paired,
                 cycle_phase="incubating",
                 condition_severity="info",
-                connection_state="connected",
+                connection_state="offline",
                 candled_days=[],
                 candling_entries=[],
+                telemetry_status="offline",
             )
             self.incubators[cid] = domain.derive(unit, self.modes[mode_id], boot)
         self.incubators["chamber-1"] = self.incubators["chamber-1"].model_copy(

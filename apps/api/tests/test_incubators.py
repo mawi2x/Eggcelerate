@@ -1,6 +1,9 @@
 """Incubator reads, commands, turn idempotency, and readings windows."""
 
+import pytest
 from fastapi.testclient import TestClient
+
+from eggcelerate_api.domain import connection_state
 
 from .conftest import make_client
 
@@ -14,6 +17,8 @@ def test_list_and_get_incubators():
     one = client.get("/api/v1/incubators/chamber-1").json()
     assert one["data"]["name"] == "Chamber One"
     assert one["data"]["turn_interval_min"] == 240
+    assert one["data"]["telemetry_status"] == "offline"
+    assert one["data"]["connection_state"] == "offline"
     missing = client.get("/api/v1/incubators/chamber-99")
     assert missing.status_code == 404
     assert missing.json()["error"]["code"] == "not_found"
@@ -46,7 +51,7 @@ def test_create_validates_and_assigns_server_ids():
     assert data["cycle_phase"] == "ready"
     assert data["id"] not in ("", "Chamber Thirteen")
     assert data["paired"] is True
-    assert data["connection_state"] == "connected"
+    assert data["connection_state"] == "offline"
 
 
 def test_profile_and_configuration_patches():
@@ -67,10 +72,23 @@ def test_profile_and_configuration_patches():
 def test_reconnect_reports_unreachable_devices():
     ok = client.post("/api/v1/incubators/chamber-2/reconnect", json={})
     assert ok.json()["data"]["paired"] is True
-    assert ok.json()["data"]["connection_state"] == "connected"
+    assert ok.json()["data"]["connection_state"] == "offline"
     stranded = client.post("/api/v1/incubators/chamber-3/reconnect", json={})
     assert stranded.status_code == 503
     assert stranded.json()["error"]["code"] == "offline"
+
+
+@pytest.mark.parametrize(
+    ("paired", "telemetry_status", "expected"),
+    [
+        (True, "fresh", "connected"),
+        (True, "stale", "offline"),
+        (True, "offline", "offline"),
+        (False, "fresh", "offline"),
+    ],
+)
+def test_connection_state_requires_fresh_telemetry(paired, telemetry_status, expected):
+    assert connection_state(paired, telemetry_status) == expected
 
 
 def test_turn_accepts_and_replays_by_command_id():

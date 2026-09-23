@@ -41,6 +41,7 @@ export function unitStatusFromConditionSeverity(
 
 export type ConditionInputs = {
   paired: boolean;
+  telemetryStatus: "fresh" | "stale" | "offline";
   temp: number;
   targetTemp: { min: number; max: number };
   humidity: number;
@@ -62,10 +63,12 @@ export function deriveConditionSeverity(
     params.humidity > params.targetHumidity.max + 5;
   const batteryCritical =
     params.powerSource === "battery" && params.batteryPct <= 15;
+  const telemetryCritical = params.telemetryStatus === "offline";
   const turningOverdue = new Date(params.nextTurn).getTime() < Date.now();
 
   if (
     !params.paired ||
+    telemetryCritical ||
     !params.waterOk ||
     temperatureCritical ||
     humidityCritical ||
@@ -81,8 +84,15 @@ export function deriveConditionSeverity(
     params.humidity > params.targetHumidity.max;
   const batteryWarning =
     params.powerSource === "battery" && params.batteryPct <= 25;
+  const telemetryWarning = params.telemetryStatus === "stale";
 
-  if (temperatureWarning || humidityWarning || batteryWarning || turningOverdue)
+  if (
+    telemetryWarning ||
+    temperatureWarning ||
+    humidityWarning ||
+    batteryWarning ||
+    turningOverdue
+  )
     return "warning";
   return "info";
 }
@@ -106,8 +116,11 @@ export function conditionSeverityFromLegacyStatus(
   return "info";
 }
 
-export function connectionStateFromPairing(paired: boolean): ConnectionState {
-  return paired ? "connected" : "offline";
+export function connectionStateFromPairing(
+  paired: boolean,
+  telemetryStatus: ConditionInputs["telemetryStatus"] = "offline",
+): ConnectionState {
+  return paired && telemetryStatus === "fresh" ? "connected" : "offline";
 }
 
 export function cyclePhaseFromDay(params: {

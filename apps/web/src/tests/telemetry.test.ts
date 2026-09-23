@@ -20,8 +20,11 @@ describe("telemetry freshness presentation", () => {
     );
   });
 
-  it("falls back to pairing only for the development adapter", () => {
-    expect(resolvedTelemetryStatus({ paired: true })).toBe("fresh");
+  it("does not treat pairing alone as proof of live telemetry", () => {
+    expect(resolvedTelemetryStatus({ paired: true })).toBe("offline");
+    expect(
+      resolvedTelemetryStatus({ paired: true, telemetryStatus: "fresh" }),
+    ).toBe("fresh");
     expect(resolvedTelemetryStatus({ paired: false })).toBe("offline");
     expect(telemetryAgeLabel("invalid", now)).toBe("unknown age");
   });

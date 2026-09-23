@@ -14,7 +14,7 @@ export function resolvedTelemetryStatus(
     if (age > 180_000) return "offline";
     if (age > 45_000 && unit.telemetryStatus === "fresh") return "stale";
   }
-  return unit.telemetryStatus ?? (unit.paired ? "fresh" : "offline");
+  return unit.telemetryStatus ?? "offline";
 }
 
 export function telemetryAgeLabel(

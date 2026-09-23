@@ -29,8 +29,8 @@ def cycle_phase(day_of_incubation: int, incubation_days: int) -> str:
     return "incubating"
 
 
-def connection_state(paired: bool) -> str:
-    return "connected" if paired else "offline"
+def connection_state(paired: bool, telemetry_status: str) -> str:
+    return "connected" if paired and telemetry_status == "fresh" else "offline"
 
 
 def condition_severity(
@@ -107,9 +107,7 @@ def derive(unit: IncubatorDTO, mode: ModeDTO, now: datetime) -> IncubatorDTO:
                 if unit.cycle_phase == "stopped_early" and unit.day_of_incubation > 0
                 else severity_to_status(severity)
             ),
-            "connection_state": connection_state(
-                unit.paired and unit.telemetry_status == "fresh"
-            ),
+            "connection_state": connection_state(unit.paired, unit.telemetry_status),
             "cycle_phase": (
                 "stopped_early"
                 if unit.cycle_phase == "stopped_early" and unit.day_of_incubation > 0
