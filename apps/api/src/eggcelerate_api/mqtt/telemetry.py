@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import AwareDatetime, Field, StrictBool, StrictInt, ValidationError
-from sqlalchemy import select, update
+from sqlalchemy import and_, delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database.readings import TelemetrySample, ingest_sample
@@ -37,8 +37,9 @@ async def ingest_telemetry(
     """Caller owns transaction; farm scope comes from trusted configuration.
 
     Raw samples remain keyed by device and observed instant. The latest projection
-    orders messages by explicit boot identity and sequence, while liveness uses
-    ``last_seen_at`` assigned by this server only when a new projection advances.
+    orders new boots by their start time, regardless of observation-clock skew;
+    within one boot, both sequence and observation time must advance. Liveness
+    uses ``last_seen_at`` assigned by this server only when a projection advances.
     """
     if len(payload) > 16384:
         raise AppError("validation_error", "Telemetry payload exceeds 16 KiB.")
@@ -56,6 +57,10 @@ async def ingest_telemetry(
         raise AppError(
             "validation_error", "Telemetry boot time is after observation time."
         )
+    if message.booted_at > received_at + DEVICE_CLOCK_TOLERANCE:
+        raise AppError(
+            "validation_error", "Telemetry boot time is too far in the future."
+        )
     if message.observed_at > received_at + DEVICE_CLOCK_TOLERANCE:
         raise AppError(
             "validation_error", "Telemetry observation is too far in the future."
@@ -72,12 +77,30 @@ async def ingest_telemetry(
             devices.c.public_id == message.device_id,
             incubators.c.public_id == message.incubator_id,
         )
-        .with_for_update(of=devices)
+        .with_for_update(of=[devices, incubators])
     )
     if device is None:
         raise AppError(
             "not_found", "Telemetry device/chamber is not assigned in this farm."
         )
+    # A chamber has exactly one latest projection. On reassignment, discard its
+    # old device projection; if a device itself moved chambers, discard its old
+    # chamber projection too. Raw telemetry history remains intact.
+    await session.execute(
+        delete(device_telemetry_state).where(
+            device_telemetry_state.c.farm_id == farm_id,
+            or_(
+                and_(
+                    device_telemetry_state.c.incubator_id == message.incubator_id,
+                    device_telemetry_state.c.device_id != device,
+                ),
+                and_(
+                    device_telemetry_state.c.device_id == device,
+                    device_telemetry_state.c.incubator_id != message.incubator_id,
+                ),
+            ),
+        )
+    )
     sample = TelemetrySample.model_validate(
         message.model_dump(include=set(TelemetrySample.model_fields))
     )
@@ -127,18 +150,20 @@ async def ingest_telemetry(
             )
         ):
             raise AppError("conflict", "Sequence reused with different telemetry.")
+    same_boot = (
+        (
+            message.boot_id == current["boot_id"]
+            and message.booted_at == current["booted_at"]
+        )
+        if current is not None
+        else False
+    )
     newer = current is None or (
-        message.observed_at > current["observed_at"]
-        and (
-            (
-                message.boot_id != current["boot_id"]
-                and message.booted_at > current["booted_at"]
-            )
-            or (
-                message.boot_id == current["boot_id"]
-                and message.booted_at == current["booted_at"]
-                and message.seq > current["seq"]
-            )
+        (not same_boot and message.booted_at > current["booted_at"])
+        or (
+            same_boot
+            and message.seq > current["seq"]
+            and message.observed_at > current["observed_at"]
         )
     )
     if current is None:

@@ -250,7 +250,7 @@ def test_migration_has_extension_and_relational_tables(settings):
                     await session.scalar(
                         text("SELECT version_num FROM alembic_version")
                     )
-                    == "0010"
+                    == "0011"
                 )
                 assert await session.scalar(
                     text(
@@ -270,6 +270,26 @@ def test_migration_has_extension_and_relational_tables(settings):
                     assert await session.scalar(
                         text("SELECT to_regclass(:table)"), {"table": table}
                     )
+                assert (
+                    await session.scalar(
+                        text(
+                            "SELECT count(*) FROM pg_indexes WHERE schemaname='public' "
+                            "AND indexname='ix_device_commands_claim' "
+                            "AND indexdef LIKE '%(farm_id, status, next_attempt_at)%'"
+                        )
+                    )
+                    == 1
+                )
+                assert (
+                    await session.scalar(
+                        text(
+                            "SELECT count(*) FROM pg_constraint "
+                            "WHERE conname='fk_device_command_incubator' "
+                            "AND contype='f'"
+                        )
+                    )
+                    == 1
+                )
         finally:
             await database.close()
 

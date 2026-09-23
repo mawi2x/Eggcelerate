@@ -475,6 +475,13 @@ device_commands = Table(
     UniqueConstraint(
         "farm_id", "incubator_id", "request_key", name="uq_device_command_request"
     ),
+    ForeignKeyConstraint(
+        ["farm_id", "incubator_id"],
+        ["incubators.farm_id", "incubators.public_id"],
+        name="fk_device_command_incubator",
+        ondelete="RESTRICT",
+    ),
+    Index("ix_device_commands_claim", "farm_id", "status", "next_attempt_at"),
     CheckConstraint(
         "status IN ('pending','dispatched','acked','rejected','timed_out')",
         name="ck_device_command_status",

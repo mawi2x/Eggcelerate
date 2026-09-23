@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import insert, select, update
 
 from eggcelerate_api.database.readings import telemetry_freshness
 from eggcelerate_api.database.schema import (
@@ -290,6 +290,183 @@ def test_restart_ordering_duplicate_and_offline_recovery(settings):
     asyncio.run(run())
 
 
+def test_new_boot_precedes_observation_time_but_same_boot_keeps_both_gates(settings):
+    async def run():
+        db = PostgresStore(settings.database_url, settings.default_farm_id)
+        now = datetime.now(UTC)
+        topic = "eggcelerate/v1/devices/EGG-1003/telemetry"
+        common = {
+            "schema_v": 1,
+            "device_id": "EGG-1003",
+            "incubator_id": "chamber-1",
+            "temperature_c": 37.6,
+            "humidity_pct": 57,
+            "water_ok": True,
+            "battery_pct": 83,
+            "power_source": "battery",
+        }
+
+        async def send(boot_id: str, boot_offset: int, seq: int, observed_offset: int):
+            message = {
+                **common,
+                "boot_id": boot_id,
+                "booted_at": (now + timedelta(seconds=boot_offset)).isoformat(),
+                "seq": seq,
+                "observed_at": (now + timedelta(seconds=observed_offset)).isoformat(),
+            }
+            async with db.sessions.begin() as session:
+                return await ingest_telemetry(
+                    session, db.farm_id, topic, json.dumps(message).encode()
+                )
+
+        async def current():
+            async with db.sessions() as session:
+                row = (
+                    (
+                        await session.execute(
+                            select(device_telemetry_state).where(
+                                device_telemetry_state.c.farm_id == db.farm_id
+                            )
+                        )
+                    )
+                    .mappings()
+                    .one()
+                )
+                return dict(row)
+
+        try:
+            await send("first", -90, 20, -20)
+            first = await current()
+            # This boot began later, although its device clock reports an
+            # observation older than the previous boot's final observation.
+            await send("second", -55, 1, -50)
+            second = await current()
+            assert second["boot_id"] == "second"
+            assert second["booted_at"] > first["booted_at"]
+            assert second["observed_at"] < first["observed_at"]
+            assert second["last_seen_at"] > first["last_seen_at"]
+            assert (
+                telemetry_freshness(second["last_seen_at"], datetime.now(UTC))
+                == "fresh"
+            )
+
+            # A later observation from an older boot cannot replace the new boot.
+            await send("stale-new-boot", -70, 1, -5)
+            assert await current() == second
+
+            # Within a single boot, sequence alone is insufficient: observation
+            # time must advance too.
+            await send("second", -55, 2, -52)
+            assert await current() == second
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+def test_telemetry_projection_survives_device_reassignment(settings):
+    async def run():
+        db = PostgresStore(settings.database_url, settings.default_farm_id)
+        now = datetime.now(UTC)
+        old_device_id = await _device_uuid(db, "chamber-1")
+        new_device_id = uuid4()
+
+        def message(
+            device_public_id: str, boot_id: str, observed_at: datetime
+        ) -> bytes:
+            return json.dumps(
+                {
+                    "schema_v": 1,
+                    "device_id": device_public_id,
+                    "incubator_id": "chamber-1",
+                    "boot_id": boot_id,
+                    "booted_at": (observed_at - timedelta(minutes=1)).isoformat(),
+                    "seq": 1,
+                    "observed_at": observed_at.isoformat(),
+                    "temperature_c": 37.6,
+                    "humidity_pct": 57,
+                    "water_ok": True,
+                    "battery_pct": 100,
+                    "power_source": "grid",
+                }
+            ).encode()
+
+        try:
+            async with db.sessions.begin() as session:
+                old_public_id = await session.scalar(
+                    select(devices.c.public_id).where(devices.c.id == old_device_id)
+                )
+                await ingest_telemetry(
+                    session,
+                    db.farm_id,
+                    f"eggcelerate/v1/devices/{old_public_id}/telemetry",
+                    message(
+                        old_public_id, "old-device-boot", now - timedelta(seconds=30)
+                    ),
+                )
+                await session.execute(
+                    insert(devices).values(
+                        id=new_device_id,
+                        farm_id=db.farm_id,
+                        public_id="EGG-REPLACEMENT-1",
+                        paired=True,
+                    )
+                )
+                await session.execute(
+                    update(incubators)
+                    .where(
+                        incubators.c.farm_id == db.farm_id,
+                        incubators.c.public_id == "chamber-1",
+                    )
+                    .values(device_id=new_device_id)
+                )
+                assert await ingest_telemetry(
+                    session,
+                    db.farm_id,
+                    "eggcelerate/v1/devices/EGG-REPLACEMENT-1/telemetry",
+                    message("EGG-REPLACEMENT-1", "replacement-boot", now),
+                )
+                projection = (
+                    (
+                        await session.execute(
+                            select(device_telemetry_state).where(
+                                device_telemetry_state.c.farm_id == db.farm_id,
+                                device_telemetry_state.c.incubator_id == "chamber-1",
+                            )
+                        )
+                    )
+                    .mappings()
+                    .one()
+                )
+                assert projection["device_id"] == new_device_id
+                assert projection["boot_id"] == "replacement-boot"
+                assert projection["temperature_c"] == 37.6
+
+                old_projection = await session.scalar(
+                    select(device_telemetry_state.c.device_id).where(
+                        device_telemetry_state.c.farm_id == db.farm_id,
+                        device_telemetry_state.c.device_id == old_device_id,
+                    )
+                )
+                assert old_projection is None
+        finally:
+            await db.close()
+
+    asyncio.run(run())
+
+
+async def _device_uuid(db: PostgresStore, incubator_public_id: str):
+    async with db.sessions() as session:
+        return await session.scalar(
+            select(devices.c.id)
+            .join(incubators, incubators.c.device_id == devices.c.id)
+            .where(
+                incubators.c.farm_id == db.farm_id,
+                incubators.c.public_id == incubator_public_id,
+            )
+        )
+
+
 def test_device_clock_tolerance_is_shared_with_telemetry(settings):
     async def run():
         db = PostgresStore(settings.database_url, settings.default_farm_id)
@@ -327,6 +504,23 @@ def test_device_clock_tolerance_is_shared_with_telemetry(settings):
                                 "observed_at": (
                                     now + timedelta(seconds=61)
                                 ).isoformat(),
+                            }
+                        ).encode(),
+                    )
+                assert error.value.code == "validation_error"
+            future_boot = datetime.now(UTC) + timedelta(seconds=90)
+            async with db.sessions.begin() as session:
+                with pytest.raises(AppError) as error:
+                    await ingest_telemetry(
+                        session,
+                        db.farm_id,
+                        topic,
+                        json.dumps(
+                            {
+                                **body,
+                                "boot_id": "future-boot",
+                                "booted_at": future_boot.isoformat(),
+                                "observed_at": future_boot.isoformat(),
                             }
                         ).encode(),
                     )

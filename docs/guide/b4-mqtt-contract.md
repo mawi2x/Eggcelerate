@@ -28,19 +28,25 @@ persists an atomic command journal, and replays the original ACK after restart.
 | `/commands` | Subscribed QoS1; validated schema_v, command_id, device_id, turn_now, interval, requested_at and expires_at; non-retained dispatch |
 | `/ack` | QoS1 non-retained; command_id, device_id, optional boot_id/booted_at, seq, observed_at, acked/rejected and nullable error_code |
 
-Sequence increments across telemetry and ACKs and resets on process start. The
-projection orders messages by boot_id/booted_at and then seq, so seq is never
-treated as a global identity. Late samples remain in raw history without
-replacing a newer projection. The LWT timestamp is assembled during construction,
+Sequence increments across telemetry and ACKs and resets on process start. For a
+new boot, a strictly later `booted_at` replaces the projection even when its
+`observed_at` is earlier than the previous boot's last observation. Within one
+boot, both `seq` and `observed_at` must advance. Earlier boots remain unable to
+replace a newer projection, and `seq` is never treated as a global identity.
+Late samples remain in raw history. A valid first sample after device
+reassignment removes the previous device's latest row for that chamber while
+preserving its raw history. The LWT timestamp is assembled during construction,
 not at disconnect time; use server receipt time to mark loss of connection. Rate
 is configurable; the agreed live cadence is 15 seconds.
 
 ## Implemented API boundary
 
 `mqtt.telemetry.ingest_telemetry(session, farm_id, topic, payload)` rejects payloads
-above 16 KiB, invalid schema/values/timestamps, extra fields, topic/body mismatch,
-and unassigned farm/device/chamber identity. The caller provides trusted farm scope;
-no tenant is accepted from the payload. `received_at` is server assigned.
+above 16 KiB, invalid schema/values, boot or observation timestamps more than the
+shared 60-second clock tolerance ahead of server receipt time, extra fields,
+topic/body mismatch, and unassigned farm/device/chamber identity. The caller
+provides trusted farm scope; no tenant is accepted from the payload. `received_at`
+is server assigned.
 
 Temperature/humidity/water and observed time enter the B3 raw sample table;
 battery/power, boot identity, sequence, observation time and server receipt times
