@@ -3,9 +3,9 @@ import { ApiRepository } from "../app/data/repositories/api-repository";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
 import type { EggcelerateRepository } from "../app/data/repositories/repository";
 
-// Runs every case against the in-memory adapter, and additionally against a
-// live API when EGG_API_URL is set (fresh server per run — cases mutate):
-//   docker compose up -d api && EGG_API_URL=http://127.0.0.1:8000 pnpm vitest run repository-contract
+// Normal web tests run the memory adapter. The explicit test:contract script
+// requires a local API URL and adds the HTTP transport target; these cases mutate
+// their farm and must never target shared or production data.
 const liveUrl = process.env.EGG_API_URL;
 const targets: [string, () => EggcelerateRepository][] = [
   ["memory", () => new InMemoryEggcelerateRepository({})],

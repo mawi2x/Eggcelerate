@@ -799,7 +799,7 @@ export function TrendsScreen({
                         style={{
                           color: TEXT,
                           fontFamily: "var(--font-display)",
-                          fontSize: "var(--type-heading-sm)",
+                          fontSize: "var(--type-heading-md)",
                           fontWeight: "var(--weight-bold)",
                           lineHeight: "var(--leading-snug)",
                         }}

@@ -10,18 +10,78 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reportsDirectory: "./coverage",
-      // Rendered screens/components stay reported but outside the gate until
-      // rendered coverage exists (see restructuring guide F6). The gate below
-      // pins the tested logic core (domain, data, features, providers,
-      // routing) as a ratchet — raise, never lower.
+      reporter: ["text", "html", "json"],
+      // Core behavior keeps a strict measured floor. Screen and rendered
+      // component groups have separate floors, and the coverage script verifies
+      // that every screen module is present in the JSON report.
       include: [
         "src/app/domain/**",
         "src/app/data/**",
         "src/app/features/**",
         "src/app/providers/**",
         "src/app/routing/**",
+        "src/app/components/screens/**",
+        "src/app/components/auth/**",
+        "src/app/components/AppSidebar.tsx",
+        "src/app/components/PageHeader.tsx",
+        "src/app/components/IncubatorCard.tsx",
+        "src/app/components/settings/HardwarePanel.tsx",
+        "src/app/components/ui/filter-bar.tsx",
+        "src/app/components/ui/typography.tsx",
+        "src/app/components/detail/Timeline.tsx",
       ],
-      thresholds: { lines: 75, functions: 55, branches: 65 },
+      thresholds: {
+        "src/app/{domain,data,features,providers,routing}/**": {
+          lines: 90,
+          functions: 88,
+          branches: 81,
+        },
+        "src/app/components/screens/**": {
+          lines: 50,
+          functions: 28,
+          branches: 60,
+        },
+        "src/app/components/auth/**": {
+          lines: 50,
+          functions: 45,
+          branches: 35,
+        },
+        "src/app/components/AppSidebar.tsx": {
+          lines: 55,
+          functions: 15,
+          branches: 65,
+        },
+        "src/app/components/PageHeader.tsx": {
+          lines: 65,
+          functions: 60,
+          branches: 45,
+        },
+        "src/app/components/IncubatorCard.tsx": {
+          lines: 70,
+          functions: 30,
+          branches: 60,
+        },
+        "src/app/components/settings/HardwarePanel.tsx": {
+          lines: 65,
+          functions: 30,
+          branches: 45,
+        },
+        "src/app/components/ui/filter-bar.tsx": {
+          lines: 80,
+          functions: 75,
+          branches: 65,
+        },
+        "src/app/components/ui/typography.tsx": {
+          lines: 90,
+          functions: 90,
+          branches: 85,
+        },
+        "src/app/components/detail/Timeline.tsx": {
+          lines: 80,
+          functions: 30,
+          branches: 35,
+        },
+      },
     },
   },
 });

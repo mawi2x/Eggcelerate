@@ -28,6 +28,13 @@ apps/api/.venv/bin/python -m pytest -q apps/api/tests --require-database
 apps/api/.venv/bin/python apps/api/scripts/verify_live_contract.py
 ```
 
+`pnpm --filter eggcelerate-ui test:contract` runs the repository contract against
+the local API named by `EGG_API_URL`; it refuses to run without a loopback URL because
+the contract mutates its farm. CI uses `verify_live_contract.py` to migrate and seed
+an isolated farm, start a temporary API, set `EGG_API_URL`, and invoke that same
+package script. `pnpm --filter eggcelerate-ui test` runs the memory adapter only and
+does not count as HTTP transport coverage.
+
 Run `.venv/bin/mypy` from `apps/api`. CI uses the same commands with its installed
 Python tools. The database service uses the same pinned Timescale image as Compose.
 

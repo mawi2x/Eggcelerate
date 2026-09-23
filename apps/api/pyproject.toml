@@ -27,6 +27,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = ["error::pydantic.warnings.UnsupportedFieldAttributeWarning"]
 
 # Update policy: exact pins. Bump one dependency at a time, re-run the full
 # API suite plus the frontend contract gate, record the new pins here.

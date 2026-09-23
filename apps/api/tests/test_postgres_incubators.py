@@ -31,6 +31,10 @@ from .test_postgres_modes import MODE
 CHAMBER = {"name": "Durable chamber", "device_id": "EGG-9001", "mode_id": "broiler"}
 
 
+def seeded_chamber_count() -> int:
+    return len(MemoryStore().incubators)
+
+
 def test_chamber_configuration_pairing_and_replay_survive_restart(settings):
     headers = {"Idempotency-Key": "create-chamber"}
     with TestClient(create_app(settings)) as client:
@@ -72,7 +76,9 @@ def test_chamber_configuration_pairing_and_replay_survive_restart(settings):
         assert (
             client.get("/api/v1/incubators/chamber-2").json()["data"]["paired"] is True
         )
-        assert len(client.get("/api/v1/incubators").json()["data"]) == 13
+        assert len(client.get("/api/v1/incubators").json()["data"]) == (
+            seeded_chamber_count() + 1
+        )
         assert (
             client.post("/api/v1/incubators", json=CHAMBER, headers=headers).json()
             == first.json()
@@ -141,7 +147,9 @@ def test_separate_instances_cannot_double_assign_device(settings, same_key):
     if same_key:
         assert results[0].json() == results[1].json()
     with TestClient(create_app(settings)) as client:
-        assert len(client.get("/api/v1/incubators").json()["data"]) == 13
+        assert len(client.get("/api/v1/incubators").json()["data"]) == (
+            seeded_chamber_count() + 1
+        )
         assert (
             client.post(
                 "/api/v1/incubators", json={**CHAMBER, "device_id": "egg-9001"}

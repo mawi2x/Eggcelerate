@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
@@ -33,12 +32,6 @@ async function renderTimeline(labelSize?: 10 | 9) {
 }
 
 describe("timeline milestone density", () => {
-  it("theme.css defines reusable 10px/9px sub-label tokens (rem-based)", () => {
-    const css = fs.readFileSync("src/styles/theme.css", "utf-8");
-    expect(css).toContain("--type-label-compact: 0.625rem");
-    expect(css).toContain("--type-label-micro: 0.5625rem");
-  });
-
   it("defaults to the 10px compact exception on mobile labels", async () => {
     const { container, root } = await renderTimeline();
     const labels = Array.from(

@@ -1,7 +1,5 @@
 """Alert endpoints. Each action and its replay receipt commit atomically."""
 
-from typing import Annotated
-
 from fastapi import APIRouter, Header
 
 from ... import services
@@ -9,7 +7,6 @@ from ...errors import ok_envelope
 from .dependencies import Store
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
-Key = Annotated[str | None, Header(alias="Idempotency-Key")]
 
 
 @router.get("")
@@ -18,7 +15,11 @@ def list_alerts(store: Store) -> dict:
 
 
 @router.post("/{alert_id}/acknowledge")
-def acknowledge_alert(alert_id: str, store: Store, idempotency_key: Key = None) -> dict:
+def acknowledge_alert(
+    alert_id: str,
+    store: Store,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> dict:
     result = services.idempotent(
         store,
         f"alert-acknowledge-one-{alert_id}",
@@ -31,7 +32,11 @@ def acknowledge_alert(alert_id: str, store: Store, idempotency_key: Key = None) 
 
 
 @router.delete("/{alert_id}")
-def dismiss_alert(alert_id: str, store: Store, idempotency_key: Key = None) -> dict:
+def dismiss_alert(
+    alert_id: str,
+    store: Store,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> dict:
     result = services.idempotent(
         store,
         f"alert-dismiss-{alert_id}",
@@ -42,7 +47,10 @@ def dismiss_alert(alert_id: str, store: Store, idempotency_key: Key = None) -> d
 
 
 @router.post("/actions/acknowledge-all")
-def acknowledge_all(store: Store, idempotency_key: Key = None) -> dict:
+def acknowledge_all(
+    store: Store,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> dict:
     result = services.idempotent(
         store,
         "alert-acknowledge-all",
@@ -56,7 +64,10 @@ def acknowledge_all(store: Store, idempotency_key: Key = None) -> dict:
 
 
 @router.post("/actions/clear-acknowledged")
-def clear_acknowledged(store: Store, idempotency_key: Key = None) -> dict:
+def clear_acknowledged(
+    store: Store,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> dict:
     result = services.idempotent(
         store,
         "alert-clear-acknowledged",

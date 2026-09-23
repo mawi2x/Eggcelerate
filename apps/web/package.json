@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "coverage": "vitest run --coverage",
+    "coverage": "vitest run --coverage && node scripts/verify-coverage-scope.mjs",
     "dev": "vite",
     "test": "vitest run",
+    "test:contract": "node scripts/test-contract.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
