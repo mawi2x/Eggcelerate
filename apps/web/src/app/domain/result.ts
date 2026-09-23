@@ -1,4 +1,19 @@
-export type ResultError = { code: string; message: string; details?: unknown };
+export const RESULT_ERROR_CODES = [
+  "validation_error",
+  "not_found",
+  "conflict",
+  "rejected",
+  "offline",
+  "timeout",
+  "unknown_error",
+] as const;
+
+export type ResultErrorCode = (typeof RESULT_ERROR_CODES)[number];
+export type ResultError = {
+  code: ResultErrorCode;
+  message: string;
+  details?: unknown;
+};
 export type Result<T> =
   | { ok: true; data: T }
   | { ok: false; error: ResultError };

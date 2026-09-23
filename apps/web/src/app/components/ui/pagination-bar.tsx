@@ -83,7 +83,7 @@ export function PaginationBar({
                 type="button"
                 onClick={() => onPageChange(p)}
                 aria-label={`Go to page ${p}`}
-                aria-current={safePage === p ? "true" : undefined}
+                aria-current={safePage === p ? "page" : undefined}
                 className="h-1 cursor-pointer rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                 style={{
                   width: safePage === p ? 12 : 4,
@@ -134,7 +134,10 @@ export function PaginationBar({
           >
             <ChevronLeft size={16} aria-hidden="true" />
           </Button>
-          <span style={{ color: MUTED, fontSize: "var(--type-filter-label)" }}>
+          <span
+            aria-current="page"
+            style={{ color: MUTED, fontSize: "var(--type-filter-label)" }}
+          >
             Page {safePage} of {totalPages}
           </span>
           <Button

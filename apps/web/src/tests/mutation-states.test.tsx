@@ -12,16 +12,23 @@ import type {
 } from "../app/data/repositories/repository";
 import type { SettingsPreferences } from "../app/data/settings";
 import { wireExamples } from "../app/data/transport/examples";
-import { resetChamberToReady } from "../app/domain/incubator";
-import type { Incubator, Mode } from "../app/domain/types";
+import type {
+  AbortedCycleRecord,
+  HatchRecord,
+  Incubator,
+  Mode,
+  TurnCommand,
+} from "../app/domain/types";
 import { farmQueryKeys } from "../app/features/farm/query-keys";
 import {
   mutationErrorPresentation,
   RepositoryQueryError,
 } from "../app/features/farm/repository-query";
+import type { IncubatorUpdateIntent } from "../app/features/farm/use-farm-data";
 import {
   useCycleHistoryActions,
   useFarmActions,
+  useTurnCommandStatus,
 } from "../app/features/farm/use-farm-data";
 import {
   AppProviders,
@@ -56,8 +63,13 @@ interface FarmActionsHandle {
   clearReadAlerts(): Promise<boolean>;
   saveSettings(settings: SettingsPreferences): Promise<boolean>;
   addIncubator(unit: Incubator): Promise<boolean>;
-  updateIncubator(id: string, patch: Partial<Incubator>): Promise<boolean>;
-  actionState: { updatingIncubatorId: string | null };
+  updateIncubator(id: string, intent: IncubatorUpdateIntent): Promise<boolean>;
+  requestTurn(id: string): Promise<boolean>;
+  actionState: {
+    updatingIncubatorId: string | null;
+    requestingTurnIncubatorId: string | null;
+  };
+  turnCommand?: TurnCommand | null;
 }
 
 async function mountActions(repository: EggcelerateRepository) {
@@ -71,7 +83,11 @@ async function mountActions(repository: EggcelerateRepository) {
     current: null,
   };
   function Probe() {
-    observed.current = { ...useFarmActions(), ...useCycleHistoryActions() };
+    observed.current = {
+      ...useFarmActions(),
+      ...useCycleHistoryActions(),
+      turnCommand: useTurnCommandStatus("chamber-1"),
+    };
     return null;
   }
   await act(async () => {
@@ -119,14 +135,7 @@ describe("repository mutation states", () => {
         "clearReadAlerts",
       ] as const
     ).flatMap((operation) =>
-      [
-        false,
-        ...(operation === "complete" ||
-        operation === "stop" ||
-        operation === "turn"
-          ? [true]
-          : []),
-      ].map((loseFollowup) => ({ operation, loseFollowup })),
+      [false].map((loseFollowup) => ({ operation, loseFollowup })),
     ),
   )(
     "reuses $operation key after lost response (follow-up GET: $loseFollowup)",
@@ -177,7 +186,18 @@ describe("repository mutation states", () => {
                     ? preferenceEnvelope
                     : String(url).endsWith(`/incubators/${dto.id}`)
                       ? { ok: true, data: dto }
-                      : envelope,
+                      : String(url).includes("/commands/")
+                        ? {
+                            ok: true,
+                            data: {
+                              command_id: String(url).split("/").pop(),
+                              status: "pending",
+                              requested_at: "2026-09-23T10:00:00+00:00",
+                              executed_at: null,
+                              error_code: null,
+                            },
+                          }
+                        : envelope,
             } as Response;
           }
           const key = new Headers(init.headers).get("Idempotency-Key") ?? "";
@@ -237,21 +257,16 @@ describe("repository mutation states", () => {
               : operation === "deleteMode"
                 ? actions.deleteMode(modes.data[0].id)
                 : operation === "turn"
-                  ? actions.updateIncubator(input.id, {
-                      lastTurned: new Date().toISOString(),
-                      nextTurn: new Date().toISOString(),
-                    })
+                  ? actions.requestTurn(input.id)
                   : operation === "start"
                     ? actions.updateIncubator(input.id, {
-                        modeId: input.modeId,
-                        totalEggsLoaded: 20,
-                        dayOfIncubation: 1,
+                        type: "start-cycle",
+                        input: { modeId: input.modeId, totalEggs: 20 },
                       })
                     : operation === "reset"
-                      ? actions.updateIncubator(
-                          input.id,
-                          resetChamberToReady(input, new Date()),
-                        )
+                      ? actions.updateIncubator(input.id, {
+                          type: "reset-stopped-cycle",
+                        })
                       : operation === "complete"
                         ? actions.completeCycle({
                             incubatorId: input.id,
@@ -286,10 +301,16 @@ describe("repository mutation states", () => {
                                   : actions.updateIncubator(
                                       input.id,
                                       operation === "profile"
-                                        ? { name: "Retry name" }
+                                        ? {
+                                            type: "profile",
+                                            input: { name: "Retry name" },
+                                          }
                                         : operation === "configuration"
-                                          ? { autoTurn: false }
-                                          : { paired: true },
+                                          ? {
+                                              type: "configuration",
+                                              input: { autoTurn: false },
+                                            }
+                                          : { type: "reconnect" },
                                     );
         await act(async () => {
           expect(await invoke()).toBe(false);
@@ -303,7 +324,8 @@ describe("repository mutation states", () => {
         await waitFor(
           () =>
             seen.length === 2 &&
-            !mounted.observed.current?.actionState.updatingIncubatorId,
+            !mounted.observed.current?.actionState.updatingIncubatorId &&
+            !mounted.observed.current?.actionState.requestingTurnIncubatorId,
         );
         expect(seen[0]).not.toBe("");
         expect(seen[1]).toBe(seen[0]);
@@ -421,7 +443,8 @@ describe("repository mutation states", () => {
         await act(async () => {
           expect(
             await mounted.observed.current?.updateIncubator(unit.id, {
-              candlingLog: next,
+              type: "candling",
+              input: { entries: next },
             }),
           ).toBe(false);
         });
@@ -467,7 +490,7 @@ describe("repository mutation states", () => {
     }
   });
 
-  it("shows a pending optimistic value and rolls it back after timeout", async () => {
+  it("keeps the confirmed value while a profile update times out", async () => {
     const repository = new InMemoryEggcelerateRepository({
       latencyMs: 30,
       failureModes: { updateIncubatorProfile: "timeout" },
@@ -500,7 +523,8 @@ describe("repository mutation states", () => {
     act(() => {
       if (!observed.current) throw new Error("Probe did not mount");
       resultPromise = observed.current.updateIncubator("chamber-1", {
-        name: "Pending name",
+        type: "profile",
+        input: { name: "Pending name" },
       });
     });
     await waitFor(
@@ -508,7 +532,7 @@ describe("repository mutation states", () => {
     );
     expect(
       queryClient.getQueryData<Incubator[]>(farmQueryKeys.incubators)?.[0].name,
-    ).toBe("Pending name");
+    ).toBe("Chamber One");
 
     let result = true;
     await act(async () => {
@@ -552,7 +576,7 @@ describe("repository mutation states", () => {
     });
   });
 
-  it("routes turn, reconnect, reset, and unsupported patches to explicit commands", async () => {
+  it("routes turn, reconnect, and reset through explicit command intents", async () => {
     const repository = new InMemoryEggcelerateRepository({});
     const mounted = await mountActions(repository);
     const actions = () => {
@@ -561,12 +585,7 @@ describe("repository mutation states", () => {
     };
 
     const before = storedUnit(mounted.queryClient, "chamber-1");
-    expect(
-      await actions().updateIncubator("chamber-1", {
-        lastTurned: "2000-01-01T00:00:00.000Z",
-        nextTurn: "2000-01-01T04:00:00.000Z",
-      }),
-    ).toBe(true);
+    expect(await actions().requestTurn("chamber-1")).toBe(true);
     expect(storedUnit(mounted.queryClient, "chamber-1").lastTurned).toBe(
       before.lastTurned,
     );
@@ -574,9 +593,9 @@ describe("repository mutation states", () => {
       "pending",
     );
 
-    expect(await actions().updateIncubator("chamber-1", { paired: true })).toBe(
-      true,
-    );
+    expect(
+      await actions().updateIncubator("chamber-1", { type: "reconnect" }),
+    ).toBe(true);
     expect(storedUnit(mounted.queryClient, "chamber-1").connectionState).toBe(
       "offline",
     );
@@ -585,7 +604,9 @@ describe("repository mutation states", () => {
     );
 
     expect(
-      await actions().updateIncubator("chamber-1", resetChamberToReady(before)),
+      await actions().updateIncubator("chamber-1", {
+        type: "reset-stopped-cycle",
+      }),
     ).toBe(true);
     expect(storedUnit(mounted.queryClient, "chamber-1").dayOfIncubation).toBe(
       0,
@@ -594,10 +615,81 @@ describe("repository mutation states", () => {
       "ready",
     );
 
-    expect(
-      await actions().updateIncubator("chamber-1", { status: "optimal" }),
-    ).toBe(false);
     await mounted.cleanup();
+  });
+
+  it("polls a queued manual turn until the device reports confirmation", async () => {
+    const repository = new InMemoryEggcelerateRepository({});
+    const originalGet = repository.getTurnCommand.bind(repository);
+    const getCommand = vi
+      .spyOn(repository, "getTurnCommand")
+      .mockImplementation(async (incubatorId, commandId) => {
+        const result = await originalGet(incubatorId, commandId);
+        return result.ok
+          ? { ok: true, data: { ...result.data, status: "acked" } }
+          : result;
+      });
+    const mounted = await mountActions(repository);
+    try {
+      const actions = mounted.observed.current;
+      if (!actions) throw new Error("Probe did not mount");
+      await act(async () => {
+        expect(await actions.requestTurn("chamber-1")).toBe(true);
+      });
+      await waitFor(
+        () => mounted.observed.current?.turnCommand?.status === "acked",
+      );
+      expect(getCommand).toHaveBeenCalledWith("chamber-1", expect.any(String));
+      expect(
+        mounted.queryClient.getQueryData<TurnCommand>(
+          farmQueryKeys.turnCommand("chamber-1"),
+        )?.status,
+      ).toBe("acked");
+    } finally {
+      await mounted.cleanup();
+    }
+  });
+
+  it("updates completed and aborted history caches from committed records", async () => {
+    const mounted = await mountActions(new InMemoryEggcelerateRepository({}));
+    try {
+      const actions = mounted.observed.current;
+      if (!actions) throw new Error("Probe did not mount");
+      expect(
+        await actions.stopCycle({
+          incubatorId: "chamber-1",
+          incubator: "Chamber One",
+          modeName: "Broiler",
+          dayStopped: 9,
+          totalEggs: 24,
+          fertileEggs: 22,
+        }),
+      ).toBe(true);
+      expect(
+        mounted.queryClient.getQueryData<AbortedCycleRecord[]>(
+          farmQueryKeys.abortedCycles,
+        ),
+      ).toHaveLength(1);
+
+      expect(
+        await actions.completeCycle({
+          incubatorId: "chamber-2",
+          chamber: "Chamber Two",
+          modeName: "Duck",
+          cycleDays: 14,
+          totalEggs: 32,
+          fertileEggs: null,
+          hatchedEggs: 20,
+        }),
+      ).toBe(true);
+      expect(
+        mounted.queryClient.getQueryData<HatchRecord[]>(
+          farmQueryKeys.hatchRecords,
+        ),
+      ).toHaveLength(1);
+    } finally {
+      await mounted.cleanup();
+    }
   });
 
   it("creates and deletes candling entries from log patches", async () => {
@@ -623,7 +715,8 @@ describe("repository mutation states", () => {
     };
     expect(
       await actions().updateIncubator("chamber-1", {
-        candlingLog: [...unit.candlingLog, entry],
+        type: "candling",
+        input: { entries: [...unit.candlingLog, entry] },
       }),
     ).toBe(true);
     const afterAdd = storedUnit(mounted.queryClient, "chamber-1");
@@ -632,7 +725,10 @@ describe("repository mutation states", () => {
 
     expect(
       await actions().updateIncubator("chamber-1", {
-        candlingLog: afterAdd.candlingLog.filter((item) => item.day !== 99),
+        type: "candling",
+        input: {
+          entries: afterAdd.candlingLog.filter((item) => item.day !== 99),
+        },
       }),
     ).toBe(true);
     const afterDelete = storedUnit(mounted.queryClient, "chamber-1");

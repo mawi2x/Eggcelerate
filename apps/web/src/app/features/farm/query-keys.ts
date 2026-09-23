@@ -9,6 +9,8 @@ export const farmQueryKeys = {
   readingsFor: (incubatorId: string) =>
     ["farm", "readings", incubatorId] as const,
   settings: ["farm", "settings"] as const,
+  turnCommand: (incubatorId: string) =>
+    ["farm", "turn-command", incubatorId] as const,
   readingWindow: (incubatorId: string, window: string) =>
     ["farm", "readings", incubatorId, window] as const,
 };

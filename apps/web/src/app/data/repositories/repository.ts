@@ -7,6 +7,7 @@ import type {
   Incubator,
   Mode,
   Reading,
+  TurnCommand,
 } from "../../domain/types";
 import type { SettingsPreferences } from "../settings";
 
@@ -19,6 +20,7 @@ export type RepositoryOperation =
   | "startCycle"
   | "resetStoppedCycle"
   | "requestManualTurn"
+  | "getTurnCommand"
   | "reconnectIncubator"
   | "createCandlingEntry"
   | "updateCandlingEntry"
@@ -93,16 +95,6 @@ export type CandlingEntryInput = {
 
 export type UpdateCandlingEntryInput = Partial<Omit<CandlingEntryInput, "day">>;
 
-export type CompletedCycle = {
-  incubator: Incubator;
-  record: HatchRecord;
-};
-
-export type StoppedCycle = {
-  incubator: Incubator;
-  record: AbortedCycleRecord;
-};
-
 export type ReadingWindow = "24h" | "7d" | "full";
 
 export type ReadingQuery = {
@@ -143,7 +135,11 @@ export interface EggcelerateRepository {
   requestManualTurn(
     id: string,
     options?: MutationOptions,
-  ): Promise<Result<Incubator>>;
+  ): Promise<Result<TurnCommand>>;
+  getTurnCommand(
+    incubatorId: string,
+    commandId: string,
+  ): Promise<Result<TurnCommand>>;
   reconnectIncubator(
     id: string,
     options?: MutationOptions,
@@ -191,12 +187,12 @@ export interface EggcelerateRepository {
   completeCycle(
     input: CompleteCycleInput,
     options?: MutationOptions,
-  ): Promise<Result<CompletedCycle>>;
+  ): Promise<Result<HatchRecord>>;
   listAbortedCycles(): Promise<Result<AbortedCycleRecord[]>>;
   stopCycle(
     input: StopCycleInput,
     options?: MutationOptions,
-  ): Promise<Result<StoppedCycle>>;
+  ): Promise<Result<AbortedCycleRecord>>;
   listSettings(): Promise<Result<SettingsPreferences>>;
   saveSettings(
     settings: SettingsPreferences,

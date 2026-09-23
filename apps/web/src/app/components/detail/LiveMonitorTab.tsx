@@ -24,10 +24,11 @@ import type {
 } from "../../domain/types";
 import {
   resolvedTelemetryStatus,
-  telemetryAgeLabel,
+  telemetryReceiptTimestamp,
   telemetryStatusLabel,
 } from "../../features/farm/telemetry";
 import { GaugeDial } from "../GaugeDial";
+import { Button } from "../ui/button";
 import { useIsMobile } from "../ui/use-mobile";
 import { WaterDroplet } from "../WaterDroplet";
 import { SectionCard } from "./primitives";
@@ -200,12 +201,45 @@ function EnvironmentalSummary({
   readings,
   mode,
   onViewTrends,
+  isLoading,
+  error,
+  onRetry,
 }: {
   readings: Reading[];
   mode: Mode;
   onViewTrends: () => void;
+  isLoading: boolean;
+  error: unknown;
+  onRetry: () => void;
 }) {
-  if (readings.length === 0) return null;
+  if (readings.length === 0) {
+    return (
+      <SectionCard
+        title="History & trends"
+        subtitle="Track trends and catch issues early"
+        divider
+      >
+        {isLoading ? (
+          <p role="status" className="text-sm text-[var(--text-secondary)]">
+            Loading sensor history…
+          </p>
+        ) : error ? (
+          <div role="alert" className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-[var(--text-secondary)]">
+              Sensor history could not be loaded.
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+              Retry
+            </Button>
+          </div>
+        ) : (
+          <p role="status" className="text-sm text-[var(--text-secondary)]">
+            No sensor readings are available for this chamber yet.
+          </p>
+        )}
+      </SectionCard>
+    );
+  }
 
   const highestTemp = readings.reduce(
     (best, reading) => (reading.temp > best.temp ? reading : best),
@@ -267,6 +301,21 @@ function EnvironmentalSummary({
         </button>
       }
     >
+      {error != null && (
+        <div
+          role="alert"
+          className="mx-4 mt-4 flex flex-wrap items-center gap-3 rounded-xl border p-3"
+          style={{ borderColor: "var(--border-default)" }}
+        >
+          <p className="text-sm text-[var(--text-secondary)]">
+            Could not refresh sensor history. Showing the readings already
+            loaded.
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+            Retry
+          </Button>
+        </div>
+      )}
       <details
         className="group scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-[var(--radius-dialog)]"
         style={{
@@ -461,7 +510,11 @@ interface LiveMonitorTabProps {
   candling: CandlingCheckpoint[];
   effectiveCandled: Record<number, boolean>;
   environmentalReadings: Reading[];
+  readingsLoading: boolean;
+  readingsError: unknown;
+  onRetryReadings: () => void;
   onOpenTrends: () => void;
+  onSelectCandlingDay: (day: number) => void;
 }
 
 export function LiveMonitorTab({
@@ -472,7 +525,11 @@ export function LiveMonitorTab({
   candling,
   effectiveCandled,
   environmentalReadings,
+  readingsLoading,
+  readingsError,
+  onRetryReadings,
   onOpenTrends,
+  onSelectCandlingDay,
 }: LiveMonitorTabProps) {
   const isMobile = useIsMobile();
   const dialSize = isMobile ? 96 : 120;
@@ -481,6 +538,17 @@ export function LiveMonitorTab({
   const fanOn = heaterOn || overheating;
   const mistOn = unit.humidity < mode.targetHumidity.max && unit.waterOk;
   const telemetryStatus = resolvedTelemetryStatus(unit);
+  const telemetryVerified = telemetryStatus === "fresh";
+  const receiptTimestamp = telemetryReceiptTimestamp(unit);
+  const unverifiedTone: StatusTone = {
+    fg: "var(--text-secondary)",
+    bg: "var(--surface-subtle)",
+    ring: "var(--border-default)",
+  };
+  const actuatorTone = (active: boolean, activeTone: StatusTone) =>
+    telemetryVerified && active ? activeTone : unverifiedTone;
+  const actuatorValue = (active: boolean, on: string, off: string) =>
+    telemetryVerified ? (active ? on : off) : "Unavailable";
   const telemetryTone =
     telemetryStatus === "fresh"
       ? {
@@ -502,11 +570,11 @@ export function LiveMonitorTab({
 
   return (
     <div className="space-y-3 md:space-y-5">
-      {unit.telemetryStatus !== undefined && (
+      {!telemetryVerified && (
         <p className="text-sm text-[var(--text-secondary)]" role="status">
-          {unit.telemetryObservedAt
-            ? `Last observation ${telemetryAgeLabel(unit.telemetryObservedAt)}. ${telemetryStatus === "fresh" ? "" : "Showing last known readings."}`
-            : "Waiting for device telemetry. Displayed sensor values are development previews."}
+          {receiptTimestamp
+            ? "Showing last-received sensor readings; actuator states are unavailable."
+            : "Waiting for device telemetry. Sensor values are development previews and actuator states are unavailable."}
         </p>
       )}
       <SectionCard
@@ -522,6 +590,7 @@ export function LiveMonitorTab({
           candling={candling}
           candled={effectiveCandled}
           labelSize={9}
+          onSelectMilestone={onSelectCandlingDay}
         />
         <div
           className="my-2.5 md:my-4"
@@ -561,56 +630,32 @@ export function LiveMonitorTab({
           <SystemStatusTile
             icon={<Flame size={18} weight="fill" />}
             label="Heating element"
-            value={heaterOn ? "Heating" : "Standby"}
-            tone={
-              heaterOn
-                ? {
-                    fg: "var(--status-warning-fg)",
-                    bg: "var(--status-warning-bg)",
-                    ring: "var(--status-warning-fg)",
-                  }
-                : {
-                    fg: "var(--text-secondary)",
-                    bg: "var(--surface-subtle)",
-                    ring: "var(--border-default)",
-                  }
-            }
+            value={actuatorValue(heaterOn, "Heating", "Standby")}
+            tone={actuatorTone(heaterOn, {
+              fg: "var(--status-warning-fg)",
+              bg: "var(--status-warning-bg)",
+              ring: "var(--status-warning-fg)",
+            })}
           />
           <SystemStatusTile
             icon={<Waves size={18} weight="fill" />}
             label="Mist maker"
-            value={mistOn ? "Misting" : "Off"}
-            tone={
-              mistOn
-                ? {
-                    fg: "var(--status-success-fg)",
-                    bg: "var(--status-success-bg)",
-                    ring: "var(--status-success-fg)",
-                  }
-                : {
-                    fg: "var(--text-secondary)",
-                    bg: "var(--surface-subtle)",
-                    ring: "var(--border-default)",
-                  }
-            }
+            value={actuatorValue(mistOn, "Misting", "Off")}
+            tone={actuatorTone(mistOn, {
+              fg: "var(--status-success-fg)",
+              bg: "var(--status-success-bg)",
+              ring: "var(--status-success-fg)",
+            })}
           />
           <SystemStatusTile
             icon={<Fan size={18} weight="fill" />}
             label="Circulation fan"
-            value={fanOn ? "Active" : "Off"}
-            tone={
-              fanOn
-                ? {
-                    fg: "var(--status-success-fg)",
-                    bg: "var(--status-success-bg)",
-                    ring: "var(--status-success-fg)",
-                  }
-                : {
-                    fg: "var(--text-secondary)",
-                    bg: "var(--surface-subtle)",
-                    ring: "var(--border-default)",
-                  }
-            }
+            value={actuatorValue(fanOn, "Active", "Off")}
+            tone={actuatorTone(fanOn, {
+              fg: "var(--status-success-fg)",
+              bg: "var(--status-success-bg)",
+              ring: "var(--status-success-fg)",
+            })}
           />
           <SystemStatusTile
             icon={<Lightning size={18} weight="fill" />}
@@ -641,10 +686,7 @@ export function LiveMonitorTab({
               )
             }
             label="Telemetry"
-            value={telemetryStatusLabel(
-              telemetryStatus,
-              unit.telemetryLastSeenAt,
-            )}
+            value={telemetryStatusLabel(telemetryStatus, receiptTimestamp)}
             tone={telemetryTone}
           />
           <SystemStatusTile
@@ -676,6 +718,9 @@ export function LiveMonitorTab({
         readings={environmentalReadings}
         mode={mode}
         onViewTrends={onOpenTrends}
+        isLoading={readingsLoading}
+        error={readingsError}
+        onRetry={onRetryReadings}
       />
     </div>
   );

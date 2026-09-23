@@ -5,7 +5,7 @@ import {
 import { localDateString } from "../../domain/date";
 import { validateHarvestCounts } from "../../domain/fertility";
 import { resetChamberToReady } from "../../domain/incubator";
-import type { Result } from "../../domain/result";
+import type { Result, ResultErrorCode } from "../../domain/result";
 import type {
   AbortedCycleRecord,
   AlertEntry,
@@ -13,6 +13,7 @@ import type {
   HatchRecord,
   Incubator,
   Mode,
+  TurnCommand,
 } from "../../domain/types";
 import { createAlertFixtures } from "../fixtures/alerts";
 import { createHatchRecordFixtures } from "../fixtures/hatch-records";
@@ -46,7 +47,7 @@ export interface InMemoryRepositoryOptions {
 const clone = <T>(value: T): T => structuredClone(value);
 const ok = <T>(data: T): Result<T> => ({ ok: true, data: clone(data) });
 const error = (
-  code: string,
+  code: ResultErrorCode,
   message: string,
   details?: unknown,
 ): Result<never> => ({
@@ -66,6 +67,10 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
   private alerts: AlertEntry[];
   private hatchRecords: HatchRecord[];
   private abortedCycles: AbortedCycleRecord[] = [];
+  private readonly turnCommands = new Map<
+    string,
+    TurnCommand & { incubatorId: string }
+  >();
   private settings: SettingsPreferences;
   private sequence = 0;
   private readonly now: () => Date;
@@ -99,7 +104,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     }
     if (this.failOperations.has(operation)) {
       return error(
-        "simulated_failure",
+        "unknown_error",
         `${operation} failed in the in-memory repository.`,
       );
     }
@@ -428,7 +433,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     });
   }
 
-  requestManualTurn(id: string) {
+  requestManualTurn(id: string, options?: { idempotencyKey: string }) {
     return this.execute("requestManualTurn", () => {
       const index = this.findUnitIndex(id);
       if (index < 0)
@@ -443,7 +448,39 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       });
       if (!updated.ok) return updated;
       this.incubators[index] = updated.data;
-      return ok(updated.data);
+      const commandId = options?.idempotencyKey ?? this.nextId("turn");
+      const command = {
+        id: commandId,
+        status: "pending" as const,
+        requestedAt: this.now().toISOString(),
+        executedAt: null,
+        errorCode: null,
+        incubatorId: id,
+      };
+      this.turnCommands.set(commandId, command);
+      return ok({
+        id: command.id,
+        status: command.status,
+        requestedAt: command.requestedAt,
+        executedAt: command.executedAt,
+        errorCode: command.errorCode,
+      });
+    });
+  }
+
+  getTurnCommand(incubatorId: string, commandId: string) {
+    return this.execute("getTurnCommand", () => {
+      const command = this.turnCommands.get(commandId);
+      if (!command || command.incubatorId !== incubatorId) {
+        return error("not_found", `Turn command ${commandId} was not found.`);
+      }
+      return ok({
+        id: command.id,
+        status: command.status,
+        requestedAt: command.requestedAt,
+        executedAt: command.executedAt,
+        errorCode: command.errorCode,
+      });
     });
   }
 
@@ -780,7 +817,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       };
       this.hatchRecords.push(result.data);
       this.incubators[index] = incubator;
-      return ok({ incubator, record: result.data });
+      return ok(result.data);
     });
   }
 
@@ -857,7 +894,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       };
       this.abortedCycles.push(result.data);
       this.incubators[index] = incubator;
-      return ok({ incubator, record: result.data });
+      return ok(result.data);
     });
   }
 

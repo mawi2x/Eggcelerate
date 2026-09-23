@@ -89,6 +89,87 @@ describe("application screens render their accessible page structure", () => {
           expect(
             window.getComputedStyle(chartTitle as HTMLElement).fontSize,
           ).toBe("var(--type-heading-md)");
+          const compareToggle =
+            mounted.container.querySelector<HTMLButtonElement>(
+              'button[aria-label="Compare Chambers"]',
+            );
+          await act(async () => compareToggle?.click());
+          const readingsButton = [
+            ...mounted.container.querySelectorAll<HTMLButtonElement>("button"),
+          ].find((button) =>
+            button.textContent?.includes("Readings for compared chambers"),
+          );
+          expect(readingsButton).not.toBeNull();
+          await act(async () => readingsButton?.click());
+          await waitFor(
+            () => document.body.querySelector('[role="dialog"]') !== null,
+          );
+          const readingsDialog =
+            document.body.querySelector<HTMLElement>('[role="dialog"]');
+          expect(readingsDialog?.textContent).toContain("2 chambers");
+          expect(readingsDialog?.textContent).toContain("Chamber One");
+          expect(readingsDialog?.textContent).toContain("Chamber Two");
+          expect(readingsDialog?.querySelectorAll("tbody tr").length).toBe(26);
+          await act(async () =>
+            document.dispatchEvent(
+              new KeyboardEvent("keydown", {
+                key: "Escape",
+                bubbles: true,
+                cancelable: true,
+              }),
+            ),
+          );
+          await waitFor(
+            () => document.body.querySelector('[role="dialog"]') === null,
+          );
+          const hatchHistory = [
+            ...mounted.container.querySelectorAll<HTMLButtonElement>("button"),
+          ].find((button) => button.textContent?.includes("Hatch History"));
+          await act(async () => hatchHistory?.click());
+          await waitFor(
+            () =>
+              mounted.container.querySelector(
+                'section[aria-label="Hatch history"]',
+              ) !== null,
+          );
+          expect(
+            mounted.container.querySelectorAll(
+              'nav[aria-label="records pagination"]',
+            ),
+          ).toHaveLength(1);
+          const nextPage = mounted.container.querySelector<HTMLButtonElement>(
+            'nav[aria-label="records pagination"] button[aria-label="Next page"]',
+          );
+          expect(nextPage).not.toBeNull();
+          await act(async () => nextPage?.click());
+          expect(
+            mounted.container.querySelector(
+              'nav[aria-label="records pagination"] [aria-current="page"]',
+            )?.textContent,
+          ).toContain("Page 2 of");
+        }
+
+        if (route === "/incubators/chamber-1") {
+          const firstMilestone =
+            mounted.container.querySelector<HTMLButtonElement>(
+              'button[aria-label="First candling, Day 6"]',
+            );
+          expect(firstMilestone).not.toBeNull();
+          await act(async () => firstMilestone?.click());
+          await waitFor(
+            () =>
+              mounted.container.querySelector(
+                'button[aria-label="Hide details for Day 6"][aria-expanded="true"]',
+              ) !== null,
+            "Selecting a timeline target did not open its journal entry.",
+          );
+          const journalIds = [
+            ...mounted.container.querySelectorAll<HTMLElement>(
+              '[id^="journal-entry-"]',
+            ),
+          ].map((element) => element.id);
+          expect(journalIds.length).toBeGreaterThan(1);
+          expect(new Set(journalIds).size).toBe(journalIds.length);
         }
       }
     } finally {

@@ -6,15 +6,35 @@ export const TELEMETRY_REFRESH_ENABLED =
   import.meta.env.VITE_LIVE_REFRESH_ENABLED !== "false";
 
 export function resolvedTelemetryStatus(
-  unit: Pick<Incubator, "paired" | "telemetryStatus" | "telemetryLastSeenAt">,
+  unit: Pick<
+    Incubator,
+    "paired" | "telemetryStatus" | "telemetryReceivedAt" | "telemetryLastSeenAt"
+  >,
   now = Date.now(),
 ): TelemetryStatus {
-  if (unit.telemetryStatus !== undefined && unit.telemetryLastSeenAt) {
-    const age = now - Date.parse(unit.telemetryLastSeenAt);
+  const receivedAt = telemetryReceiptTimestamp(unit);
+  if (!receivedAt)
+    return unit.telemetryStatus === "stale" ? "stale" : "offline";
+
+  const timestamp = Date.parse(receivedAt);
+  if (!Number.isFinite(timestamp)) return "offline";
+  const age = Math.max(0, now - timestamp);
+  if (unit.telemetryStatus !== "offline") {
     if (age > 180_000) return "offline";
-    if (age > 45_000 && unit.telemetryStatus === "fresh") return "stale";
+    if (
+      age > 45_000 &&
+      (unit.telemetryStatus === "fresh" || unit.telemetryStatus === undefined)
+    ) {
+      return "stale";
+    }
   }
-  return unit.telemetryStatus ?? "offline";
+  return unit.telemetryStatus ?? "fresh";
+}
+
+export function telemetryReceiptTimestamp(
+  unit: Pick<Incubator, "telemetryReceivedAt" | "telemetryLastSeenAt">,
+): string | null | undefined {
+  return unit.telemetryReceivedAt ?? unit.telemetryLastSeenAt;
 }
 
 export function telemetryAgeLabel(

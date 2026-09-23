@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Result, ResultError } from "../../domain/result";
+import type { Result, ResultError, ResultErrorCode } from "../../domain/result";
 import type {
   AbortedCycleRecord,
   AlertEntry,
@@ -9,6 +9,7 @@ import type {
   Incubator,
   Mode,
   Reading,
+  TurnCommand,
 } from "../../domain/types";
 import { ModeDTOSchema } from "../dto";
 import type { SettingsPreferences } from "../settings";
@@ -18,6 +19,7 @@ import {
   abortedCycleFromDTO,
   alertFromDTO,
   CandlingEntryDTOSchema,
+  ErrorEnvelopeSchema,
   HatchHistoryDTOSchema,
   hatchHistoryFromDTO,
   IncubatorDTOSchema,
@@ -34,25 +36,27 @@ import {
 import { createIdempotencyKey } from "../transport/idempotency";
 import type {
   CompleteCycleInput,
-  CompletedCycle,
   EggcelerateRepository,
   MutationOptions,
   ReadingQuery,
   StopCycleInput,
-  StoppedCycle,
 } from "./repository";
 
 const REQUEST_TIMEOUT_MS = 10_000;
-const KNOWN_CODES = [
-  "validation_error",
-  "not_found",
-  "conflict",
+const TurnCommandStatusSchema = z.enum([
+  "pending",
+  "dispatched",
+  "acked",
   "rejected",
-  "offline",
-  "timeout",
-  "unknown_error",
-];
-
+  "timed_out",
+]);
+const TurnCommandDTOSchema = z.object({
+  command_id: z.string().min(1),
+  status: TurnCommandStatusSchema,
+  requested_at: z.string().datetime({ offset: true }),
+  executed_at: z.string().datetime({ offset: true }).nullable(),
+  error_code: z.string().nullable(),
+});
 export interface ApiRepositoryOptions {
   baseUrl: string;
   timeoutMs?: number;
@@ -60,9 +64,8 @@ export interface ApiRepositoryOptions {
   newIdempotencyKey?: () => string;
 }
 
-function failure(code: string, message: string): Result<never> {
-  const known = KNOWN_CODES.includes(code) ? code : "unknown_error";
-  const error: ResultError = { code: known, message };
+function failure(code: ResultErrorCode, message: string): Result<never> {
+  const error: ResultError = { code, message };
   return { ok: false, error };
 }
 
@@ -163,39 +166,28 @@ export class ApiRepository implements EggcelerateRepository {
       );
     }
     if (
-      typeof payload !== "object" ||
-      payload === null ||
-      !("ok" in payload) ||
-      payload.ok !== false
+      typeof payload === "object" &&
+      payload !== null &&
+      "ok" in payload &&
+      payload.ok === false
     ) {
-      const parsed = resultEnvelopeSchema(schema).safeParse(payload);
-      if (!parsed.success || !parsed.data.ok) {
-        // eslint-disable-next-line no-console
-        console.error("API contract breach", path, parsed);
+      const parsedError = ErrorEnvelopeSchema.safeParse(payload);
+      if (!parsedError.success) {
+        console.error("API error contract breach", path, parsedError.error);
         return failure(
           "unknown_error",
-          "The API returned an unexpected shape.",
+          "The API returned an unexpected error shape.",
         );
       }
-      return { ok: true, data: parsed.data.data };
+      return { ok: false, error: parsedError.data.error };
     }
-    const error: unknown = "error" in payload ? payload.error : undefined;
-    const code =
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      typeof error.code === "string"
-        ? error.code
-        : "unknown_error";
-    const message =
-      typeof error === "object" &&
-      error !== null &&
-      "message" in error &&
-      typeof error.message === "string" &&
-      error.message.length > 0
-        ? error.message
-        : "The API request failed.";
-    return failure(code, message);
+
+    const parsed = resultEnvelopeSchema(schema).safeParse(payload);
+    if (!parsed.success || !parsed.data.ok) {
+      console.error("API contract breach", path, parsed);
+      return failure("unknown_error", "The API returned an unexpected shape.");
+    }
+    return { ok: true, data: parsed.data.data };
   }
 
   private async getIncubatorDTO(id: string): Promise<Result<Incubator>> {
@@ -331,10 +323,16 @@ export class ApiRepository implements EggcelerateRepository {
   async requestManualTurn(
     id: string,
     options?: MutationOptions,
-  ): Promise<Result<Incubator>> {
-    const turned = await this.request<unknown>(
+  ): Promise<Result<TurnCommand>> {
+    const turned = await this.request<{
+      command_id: string;
+      status: "accepted";
+    }>(
       `/api/v1/incubators/${encodeURIComponent(id)}/commands/turn`,
-      z.object({ command_id: z.string(), status: z.string() }),
+      z.object({
+        command_id: z.string().min(1),
+        status: z.literal("accepted"),
+      }),
       {
         method: "POST",
         body: {},
@@ -343,7 +341,31 @@ export class ApiRepository implements EggcelerateRepository {
       },
     );
     if (!turned.ok) return turned;
-    return this.getIncubatorDTO(id);
+    return {
+      ok: true,
+      data: { id: turned.data.command_id, status: "pending" },
+    };
+  }
+
+  async getTurnCommand(
+    incubatorId: string,
+    commandId: string,
+  ): Promise<Result<TurnCommand>> {
+    const result = await this.request<z.infer<typeof TurnCommandDTOSchema>>(
+      `/api/v1/incubators/${encodeURIComponent(incubatorId)}/commands/${encodeURIComponent(commandId)}`,
+      TurnCommandDTOSchema,
+    );
+    if (!result.ok) return result;
+    return {
+      ok: true,
+      data: {
+        id: result.data.command_id,
+        status: result.data.status,
+        requestedAt: result.data.requested_at,
+        executedAt: result.data.executed_at,
+        errorCode: result.data.error_code,
+      },
+    };
   }
 
   async reconnectIncubator(
@@ -366,15 +388,20 @@ export class ApiRepository implements EggcelerateRepository {
 
   private readonly candlingTargets = new Map<string, string>();
 
+  private clearCandlingTarget(incubatorId: string, day: number): void {
+    const prefix = `${incubatorId}:${day}:`;
+    for (const key of this.candlingTargets.keys()) {
+      if (key.startsWith(prefix)) this.candlingTargets.delete(key);
+    }
+  }
+
   private async resolveEntryId(
     id: string,
     day: number,
     operationKey?: string,
   ): Promise<Result<string>> {
-    const cached = operationKey
-      ? this.candlingTargets.get(operationKey)
-      : undefined;
-    if (cached) return { ok: true, data: cached };
+    const targetKey = operationKey ? `${id}:${day}:${operationKey}` : undefined;
+    const cached = targetKey ? this.candlingTargets.get(targetKey) : undefined;
     const listed = await this.request<unknown[]>(
       `/api/v1/incubators/${encodeURIComponent(id)}/cycles/current/candling-entries`,
       z.array(CandlingEntryDTOSchema),
@@ -384,13 +411,21 @@ export class ApiRepository implements EggcelerateRepository {
       (entry) => (entry as { day?: unknown }).day === day,
     ) as { id?: unknown } | undefined;
     if (!match || typeof match.id !== "string") {
+      // This key is scoped to a single idempotent mutation attempt. If a
+      // delete committed but its response was lost, the live list proves the
+      // target is gone while the cached ID lets the same request replay.
+      if (cached) return { ok: true, data: cached };
+      if (targetKey) this.candlingTargets.delete(targetKey);
       return failure(
         "not_found",
         `Candling entry for day ${day} was not found.`,
       );
     }
-    if (operationKey) this.candlingTargets.set(operationKey, match.id);
-    return { ok: true, data: match.id };
+    // A retry may use a cached ID, but the live list remains authoritative in
+    // case the entry was removed or recreated for this incubator and day.
+    const resolvedId = cached === match.id ? cached : match.id;
+    if (targetKey) this.candlingTargets.set(targetKey, resolvedId);
+    return { ok: true, data: resolvedId };
   }
 
   async createCandlingEntry(
@@ -439,7 +474,9 @@ export class ApiRepository implements EggcelerateRepository {
       },
     );
     if (!created.ok) return created;
-    return this.getIncubatorDTO(id);
+    const latest = await this.getIncubatorDTO(id);
+    if (latest.ok) this.clearCandlingTarget(id, input.day);
+    return latest;
   }
 
   async updateCandlingEntry(
@@ -504,7 +541,9 @@ export class ApiRepository implements EggcelerateRepository {
       },
     );
     if (!updated.ok) return updated;
-    return this.getIncubatorDTO(id);
+    const latest = await this.getIncubatorDTO(id);
+    if (latest.ok) this.clearCandlingTarget(id, day);
+    return latest;
   }
 
   async deleteCandlingEntry(
@@ -528,7 +567,9 @@ export class ApiRepository implements EggcelerateRepository {
       },
     );
     if (!deleted.ok) return deleted;
-    return this.getIncubatorDTO(id);
+    const latest = await this.getIncubatorDTO(id);
+    if (latest.ok) this.clearCandlingTarget(id, day);
+    return latest;
   }
 
   async listReadings(query: ReadingQuery): Promise<Result<Reading[]>> {
@@ -701,7 +742,7 @@ export class ApiRepository implements EggcelerateRepository {
   async completeCycle(
     input: CompleteCycleInput,
     options?: MutationOptions,
-  ): Promise<Result<CompletedCycle>> {
+  ): Promise<Result<HatchRecord>> {
     const recorded = await this.request<unknown>(
       `/api/v1/incubators/${encodeURIComponent(input.incubatorId)}/cycles/current/complete`,
       HatchHistoryDTOSchema,
@@ -713,15 +754,7 @@ export class ApiRepository implements EggcelerateRepository {
       },
     );
     if (!recorded.ok) return recorded;
-    const unit = await this.getIncubatorDTO(input.incubatorId);
-    if (!unit.ok) return unit;
-    return {
-      ok: true,
-      data: {
-        incubator: unit.data,
-        record: hatchHistoryFromDTO(recorded.data),
-      },
-    };
+    return { ok: true, data: hatchHistoryFromDTO(recorded.data) };
   }
 
   async listAbortedCycles(): Promise<Result<AbortedCycleRecord[]>> {
@@ -739,7 +772,7 @@ export class ApiRepository implements EggcelerateRepository {
   async stopCycle(
     input: StopCycleInput,
     options?: MutationOptions,
-  ): Promise<Result<StoppedCycle>> {
+  ): Promise<Result<AbortedCycleRecord>> {
     const recorded = await this.request<unknown>(
       `/api/v1/incubators/${encodeURIComponent(input.incubatorId)}/cycles/current/stop`,
       AbortedCycleDTOSchema,
@@ -751,15 +784,7 @@ export class ApiRepository implements EggcelerateRepository {
       },
     );
     if (!recorded.ok) return recorded;
-    const unit = await this.getIncubatorDTO(input.incubatorId);
-    if (!unit.ok) return unit;
-    return {
-      ok: true,
-      data: {
-        incubator: unit.data,
-        record: abortedCycleFromDTO(recorded.data),
-      },
-    };
+    return { ok: true, data: abortedCycleFromDTO(recorded.data) };
   }
 
   async listSettings(): Promise<Result<SettingsPreferences>> {

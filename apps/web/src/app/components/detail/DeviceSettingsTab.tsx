@@ -2,7 +2,13 @@ import { Egg, WifiSlash } from "@phosphor-icons/react";
 import { ChevronRight, RotateCw, Wifi, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { CandlingCheckpoint, Incubator, Mode } from "../../domain/types";
+import type {
+  CandlingCheckpoint,
+  Incubator,
+  Mode,
+  TurnCommandStatus,
+} from "../../domain/types";
+import type { IncubatorUpdateIntent } from "../../features/farm/use-farm-data";
 import { IncubatingIcon } from "../icons";
 import { Button } from "../ui/button";
 import { Progress } from "../ui/progress";
@@ -30,7 +36,9 @@ interface DeviceSettingsTabProps {
   cycleEnded: boolean;
   turningStopped: boolean;
   isUpdating: boolean;
-  onUpdate: (patch: Partial<Incubator>) => Promise<boolean>;
+  isRequestingTurn: boolean;
+  turnCommandStatus?: TurnCommandStatus;
+  onUpdate: (intent: IncubatorUpdateIntent) => Promise<boolean>;
   onStopCycle: () => Promise<boolean>;
   onTurnClick: () => Promise<boolean>;
 }
@@ -43,6 +51,8 @@ export function DeviceSettingsTab({
   cycleEnded,
   turningStopped,
   isUpdating,
+  isRequestingTurn,
+  turnCommandStatus,
   onUpdate,
   onStopCycle,
   onTurnClick,
@@ -57,7 +67,15 @@ export function DeviceSettingsTab({
   const changeMode = async (modeId: string) => {
     const m = modes.find((x) => x.id === modeId);
     if (!m) return;
-    if (!(await onUpdate({ modeId, turnInterval: m.defaultTurnInterval })))
+    if (
+      !(await onUpdate({
+        type: "configuration",
+        input: {
+          modeId,
+          turnIntervalHours: m.defaultTurnInterval,
+        },
+      }))
+    )
       return;
     toast(`Mode changed to ${m.name}`, {
       description: "Turning interval reset to mode default.",
@@ -68,8 +86,7 @@ export function DeviceSettingsTab({
     toast("Reconnecting to incubator...", {
       description: `Attempting handshake with ${unit.deviceId}`,
     });
-    if (!(await onUpdate({ paired: true, connectionState: "connected" })))
-      return;
+    if (!(await onUpdate({ type: "reconnect" }))) return;
     toast.success("Connected", {
       description: `${unit.name} paired successfully.`,
     });
@@ -86,6 +103,8 @@ export function DeviceSettingsTab({
     return { text: `in ${h > 0 ? `${h}h ` : ""}${m}m`, overdue: false };
   };
   const next = nextTurnLabel();
+  const turnInProgress =
+    turnCommandStatus === "pending" || turnCommandStatus === "dispatched";
 
   const outlineBtn = {
     borderColor: "var(--border-default)",
@@ -438,7 +457,12 @@ export function DeviceSettingsTab({
                 <Switch
                   checked={unit.autoTurn}
                   disabled={turningStopped || isUpdating}
-                  onCheckedChange={(v) => void onUpdate({ autoTurn: v })}
+                  onCheckedChange={(autoTurn) =>
+                    void onUpdate({
+                      type: "configuration",
+                      input: { autoTurn },
+                    })
+                  }
                 />
               </div>
               {turningStopped && (
@@ -467,7 +491,10 @@ export function DeviceSettingsTab({
                   disabled={turningStopped || isUpdating}
                   value={String(unit.turnInterval)}
                   onValueChange={(v) =>
-                    void onUpdate({ turnInterval: Number(v) })
+                    void onUpdate({
+                      type: "configuration",
+                      input: { turnIntervalHours: Number(v) },
+                    })
                   }
                 >
                   <SelectTrigger
@@ -505,7 +532,7 @@ export function DeviceSettingsTab({
                   Next: {next.text}
                   <br />
                   Last confirmed: {relTime(unit.lastTurned)}
-                  {unit.turnCommandStatus && (
+                  {turnCommandStatus && (
                     <span className="block" role="status">
                       {
                         {
@@ -514,22 +541,28 @@ export function DeviceSettingsTab({
                           acked: "Turn confirmed by device",
                           rejected: "Turn rejected by device",
                           timed_out: "Turn confirmation timed out",
-                        }[unit.turnCommandStatus]
+                        }[turnCommandStatus]
                       }
                     </span>
                   )}
                 </span>
                 <Button
-                  disabled={turningStopped || isUpdating}
+                  disabled={
+                    turningStopped || isRequestingTurn || turnInProgress
+                  }
                   onClick={() => void onTurnClick()}
-                  aria-busy={isUpdating}
+                  aria-busy={isRequestingTurn || turnInProgress}
                   variant="outline"
                   size="sm"
                   className="shrink-0 rounded-full"
                   style={outlineBtn}
                 >
                   <RotateCw size={14} />{" "}
-                  {isUpdating ? "Confirming…" : "Turn Now"}
+                  {isRequestingTurn
+                    ? "Requesting…"
+                    : turnInProgress
+                      ? "Waiting…"
+                      : "Turn Now"}
                 </Button>
               </div>
             </div>

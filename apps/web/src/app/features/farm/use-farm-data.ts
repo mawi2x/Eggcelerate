@@ -6,17 +6,22 @@ import type {
   CompleteCycleInput,
   EggcelerateRepository,
   MutationOptions,
+  StartCycleInput,
   StopCycleInput,
+  UpdateIncubatorConfigurationInput,
+  UpdateIncubatorProfileInput,
 } from "../../data/repositories/repository";
 import { initialSettings, type SettingsPreferences } from "../../data/settings";
 import { createIdempotencyKey } from "../../data/transport/idempotency";
 import type { Result } from "../../domain/result";
 import type {
+  AbortedCycleRecord,
   AlertEntry,
   CandlingLogEntry,
   HatchRecord,
   Incubator,
   Mode,
+  TurnCommand,
 } from "../../domain/types";
 import { useRepository } from "../../providers/repository-context";
 import { farmQueryKeys } from "./query-keys";
@@ -29,6 +34,20 @@ import {
   TELEMETRY_POLL_INTERVAL_MS,
   TELEMETRY_REFRESH_ENABLED,
 } from "./telemetry";
+
+export type CandlingUpdateInput = {
+  entries: CandlingLogEntry[];
+  candled?: Record<number, boolean>;
+  fertileEggs?: number;
+};
+
+export type IncubatorUpdateIntent =
+  | { type: "profile"; input: UpdateIncubatorProfileInput }
+  | { type: "configuration"; input: UpdateIncubatorConfigurationInput }
+  | { type: "start-cycle"; input: StartCycleInput }
+  | { type: "reset-stopped-cycle" }
+  | { type: "reconnect" }
+  | { type: "candling"; input: CandlingUpdateInput };
 
 async function runMutation(
   action: () => Promise<unknown>,
@@ -99,14 +118,10 @@ export function useFarmData() {
 
   return {
     modes: modesQuery.data ?? [],
-    incubators: (incubatorsQuery.data ?? []).map((unit) =>
-      unit.telemetryStatus === undefined
-        ? unit
-        : {
-            ...unit,
-            telemetryStatus: resolvedTelemetryStatus(unit, now),
-          },
-    ),
+    incubators: (incubatorsQuery.data ?? []).map((unit) => ({
+      ...unit,
+      telemetryStatus: resolvedTelemetryStatus(unit, now),
+    })),
     alerts: alertsQuery.data ?? [],
     hatchRecords: hatchRecordsQuery.data ?? [],
     settings: settingsQuery.data ?? initialSettings,
@@ -120,34 +135,6 @@ export function useFarmData() {
       await Promise.all(queries.map((query) => query.refetch()));
     },
   };
-}
-
-const CONFIG_PATCH_KEYS = ["modeId", "autoTurn", "turnInterval"];
-const TURN_PATCH_KEYS = ["lastTurned", "nextTurn"];
-// Exact key set produced by resetChamberToReady(). repository.test.ts pins
-// this against the helper so the reset route cannot silently drift.
-const RESET_PATCH_KEYS = [
-  "autoTurn",
-  "candled",
-  "candlingLog",
-  "conditionSeverity",
-  "connectionState",
-  "cyclePhase",
-  "dayOfIncubation",
-  "fertileEggs",
-  "lastTurned",
-  "nextTurn",
-  "status",
-  "totalEggsLoaded",
-];
-
-function sameKeySet(keys: string[], wanted: string[]): boolean {
-  if (keys.length !== wanted.length) return false;
-  return keys.every((key) => wanted.includes(key));
-}
-
-function validationFailure(message: string): Result<Incubator> {
-  return { ok: false, error: { code: "validation_error", message } };
 }
 
 function candlingEntryInput(entry: CandlingLogEntry): CandlingEntryInput {
@@ -173,13 +160,13 @@ const candlingPlans = new WeakMap<
   Array<() => Promise<Result<Incubator>>>
 >();
 
-async function routeCandlingPatch(
+async function routeCandlingUpdate(
   repository: EggcelerateRepository,
   id: string,
-  patch: Partial<Incubator>,
+  input: CandlingUpdateInput,
   options: MutationOptions,
 ): Promise<Result<Incubator>> {
-  const identity = JSON.stringify({ id, patch });
+  const identity = JSON.stringify({ id, input });
   const original = candlingPlanInputs.get(options);
   if (original !== undefined && original !== identity)
     return {
@@ -193,9 +180,7 @@ async function routeCandlingPatch(
   if (!plan) {
     const current = await repository.getIncubator(id);
     if (!current.ok) return current;
-    const nextLog = patch.candlingLog;
-    if (!Array.isArray(nextLog))
-      return validationFailure("Candling patch must include the entry list.");
+    const nextLog = input.entries;
     const previousByDay = new Map(
       current.data.candlingLog.map((entry) => [entry.day, entry] as const),
     );
@@ -243,70 +228,31 @@ async function routeCandlingPatch(
   return latest ?? repository.getIncubator(id);
 }
 
-// Screen-facing updateIncubator() keeps its signature so screens and the App
-// funnel stay untouched. Every patch shape routes to exactly one explicit
-// repository command; derived-only or unknown patches fail loudly instead of
-// writing arbitrary state. ApiRepository will expose the commands directly
-// and this router retires with the mock-era funnel.
-async function routeIncubatorPatch(
+async function routeIncubatorUpdate(
   repository: EggcelerateRepository,
   id: string,
-  patch: Partial<Incubator>,
+  intent: IncubatorUpdateIntent,
   options?: MutationOptions,
 ): Promise<Result<Incubator>> {
-  const keys = Object.keys(patch);
-  if (keys.length === 1 && keys[0] === "name") {
-    return repository.updateIncubatorProfile(
-      id,
-      { name: patch.name ?? "" },
-      options,
-    );
+  switch (intent.type) {
+    case "profile":
+      return repository.updateIncubatorProfile(id, intent.input, options);
+    case "configuration":
+      return repository.updateIncubatorConfiguration(id, intent.input, options);
+    case "start-cycle":
+      return repository.startCycle(id, intent.input, options);
+    case "reset-stopped-cycle":
+      return repository.resetStoppedCycle(id, options);
+    case "reconnect":
+      return repository.reconnectIncubator(id, options);
+    case "candling":
+      return routeCandlingUpdate(
+        repository,
+        id,
+        intent.input,
+        options ?? { idempotencyKey: createIdempotencyKey() },
+      );
   }
-  if (sameKeySet(keys, RESET_PATCH_KEYS)) {
-    return repository.resetStoppedCycle(id, options);
-  }
-  if ("dayOfIncubation" in patch || "totalEggsLoaded" in patch) {
-    if (
-      typeof patch.modeId !== "string" ||
-      typeof patch.totalEggsLoaded !== "number"
-    ) {
-      return validationFailure("Cycle start needs a mode and an egg count.");
-    }
-    return repository.startCycle(
-      id,
-      {
-        modeId: patch.modeId,
-        totalEggs: patch.totalEggsLoaded,
-      },
-      options,
-    );
-  }
-  if (keys.length > 0 && keys.every((key) => CONFIG_PATCH_KEYS.includes(key))) {
-    return repository.updateIncubatorConfiguration(
-      id,
-      {
-        modeId: patch.modeId,
-        autoTurn: patch.autoTurn,
-        turnIntervalHours: patch.turnInterval,
-      },
-      options,
-    );
-  }
-  if (sameKeySet(keys, TURN_PATCH_KEYS)) {
-    return repository.requestManualTurn(id, options);
-  }
-  if (patch.paired === true) {
-    return repository.reconnectIncubator(id, options);
-  }
-  if ("candled" in patch || "candlingLog" in patch) {
-    return routeCandlingPatch(
-      repository,
-      id,
-      patch,
-      options ?? { idempotencyKey: createIdempotencyKey() },
-    );
-  }
-  return validationFailure("Unsupported incubator patch for the command port.");
 }
 
 export function useFarmActions() {
@@ -334,32 +280,16 @@ export function useFarmActions() {
   const updateIncubatorMutation = useMutation({
     mutationFn: async ({
       id,
-      patch,
+      intent,
       options,
     }: {
       id: string;
-      patch: Partial<Incubator>;
+      intent: IncubatorUpdateIntent;
       options: MutationOptions;
     }) =>
       requireResultData(
-        await routeIncubatorPatch(repository, id, patch, options),
+        await routeIncubatorUpdate(repository, id, intent, options),
       ),
-    onMutate: async ({ id, patch }) => {
-      await queryClient.cancelQueries({ queryKey: farmQueryKeys.incubators });
-      const previous = queryClient
-        .getQueryData<Incubator[]>(farmQueryKeys.incubators)
-        ?.find((unit) => unit.id === id);
-      queryClient.setQueryData<Incubator[]>(
-        farmQueryKeys.incubators,
-        (current = []) =>
-          current.map((unit) =>
-            unit.id === id && !sameKeySet(Object.keys(patch), TURN_PATCH_KEYS)
-              ? { ...unit, ...patch, id }
-              : unit,
-          ),
-      );
-      return { previous };
-    },
     onSuccess: (updated) => {
       queryClient.setQueryData<Incubator[]>(
         farmQueryKeys.incubators,
@@ -370,13 +300,25 @@ export function useFarmActions() {
         queryKey: farmQueryKeys.readingsFor(updated.id),
       });
     },
-    onError: (_error, { id }, context) => {
-      const previous = context?.previous;
-      if (!previous) return;
+  });
+  const requestTurnMutation = useMutation({
+    mutationFn: async ({
+      id,
+      options,
+    }: {
+      id: string;
+      options: MutationOptions;
+    }) => requireResultData(await repository.requestManualTurn(id, options)),
+    onSuccess: (command, { id }) => {
+      queryClient.setQueryData(farmQueryKeys.turnCommand(id), command);
       queryClient.setQueryData<Incubator[]>(
         farmQueryKeys.incubators,
         (current = []) =>
-          current.map((unit) => (unit.id === id ? previous : unit)),
+          current.map((unit) =>
+            unit.id === id
+              ? { ...unit, turnCommandStatus: command.status }
+              : unit,
+          ),
       );
     },
   });
@@ -497,16 +439,23 @@ export function useFarmActions() {
   }
   async function updateIncubator(
     id: string,
-    patch: Partial<Incubator>,
+    intent: IncubatorUpdateIntent,
     options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
   ): Promise<boolean> {
     return runMutation(
-      () => updateIncubatorMutation.mutateAsync({ id, patch, options }),
+      () => updateIncubatorMutation.mutateAsync({ id, intent, options }),
       {
-        retry: () => void updateIncubator(id, patch, options),
-        rolledBack: true,
+        retry: () => void updateIncubator(id, intent, options),
       },
     );
+  }
+  async function requestTurn(
+    id: string,
+    options: MutationOptions = { idempotencyKey: createIdempotencyKey() },
+  ): Promise<boolean> {
+    return runMutation(() => requestTurnMutation.mutateAsync({ id, options }), {
+      retry: () => void requestTurn(id, options),
+    });
   }
   async function addMode(
     mode: Mode,
@@ -587,6 +536,7 @@ export function useFarmActions() {
   return {
     addIncubator,
     updateIncubator,
+    requestTurn,
     addMode,
     updateMode,
     deleteMode,
@@ -600,6 +550,9 @@ export function useFarmActions() {
       updatingIncubatorId: updateIncubatorMutation.isPending
         ? (updateIncubatorMutation.variables?.id ?? null)
         : null,
+      requestingTurnIncubatorId: requestTurnMutation.isPending
+        ? (requestTurnMutation.variables?.id ?? null)
+        : null,
       pendingAlertId: acknowledgeAlertMutation.isPending
         ? (acknowledgeAlertMutation.variables?.id ?? null)
         : dismissAlertMutation.isPending
@@ -610,6 +563,33 @@ export function useFarmActions() {
       savingSettings: saveSettingsMutation.isPending,
     },
   };
+}
+
+export function useTurnCommandStatus(incubatorId: string): TurnCommand | null {
+  const repository = useRepository();
+  const queryClient = useQueryClient();
+  const queryKey = farmQueryKeys.turnCommand(incubatorId);
+  const cachedCommand = queryClient.getQueryData<TurnCommand>(queryKey);
+  const query = useQuery({
+    queryKey,
+    staleTime: 0,
+    enabled: Boolean(cachedCommand?.id),
+    queryFn: async () => {
+      const command = queryClient.getQueryData<TurnCommand>(queryKey);
+      if (!command) throw new Error("No manual turn command is available.");
+      return requireResultData(
+        await repository.getTurnCommand(incubatorId, command.id),
+      );
+    },
+    refetchInterval: (current) =>
+      current.state.data?.status === "pending" ||
+      current.state.data?.status === "dispatched"
+        ? 2_000
+        : false,
+    refetchIntervalInBackground: false,
+    retry: 1,
+  });
+  return query.data ?? cachedCommand ?? null;
 }
 
 export function useCycleHistoryActions() {
@@ -624,18 +604,19 @@ export function useCycleHistoryActions() {
       input: CompleteCycleInput;
       options: MutationOptions;
     }) => requireResultData(await repository.completeCycle(input, options)),
-    onSuccess: ({ incubator, record }) => {
+    onSuccess: (record, { input }) => {
       queryClient.setQueryData<HatchRecord[]>(
         farmQueryKeys.hatchRecords,
-        (current = []) => [...current, record],
-      );
-      queryClient.setQueryData<Incubator[]>(
-        farmQueryKeys.incubators,
-        (current = []) =>
-          current.map((unit) => (unit.id === incubator.id ? incubator : unit)),
+        (current = []) => [
+          ...current.filter((item) => item.id !== record.id),
+          record,
+        ],
       );
       void queryClient.invalidateQueries({
-        queryKey: farmQueryKeys.readingsFor(incubator.id),
+        queryKey: farmQueryKeys.incubators,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: farmQueryKeys.readingsFor(input.incubatorId),
       });
     },
   });
@@ -647,14 +628,19 @@ export function useCycleHistoryActions() {
       input: StopCycleInput;
       options: MutationOptions;
     }) => requireResultData(await repository.stopCycle(input, options)),
-    onSuccess: ({ incubator }) => {
-      queryClient.setQueryData<Incubator[]>(
-        farmQueryKeys.incubators,
-        (current = []) =>
-          current.map((unit) => (unit.id === incubator.id ? incubator : unit)),
+    onSuccess: (record, { input }) => {
+      queryClient.setQueryData<AbortedCycleRecord[]>(
+        farmQueryKeys.abortedCycles,
+        (current = []) => [
+          ...current.filter((item) => item.id !== record.id),
+          record,
+        ],
       );
       void queryClient.invalidateQueries({
-        queryKey: farmQueryKeys.abortedCycles,
+        queryKey: farmQueryKeys.incubators,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: farmQueryKeys.readingsFor(input.incubatorId),
       });
     },
   });

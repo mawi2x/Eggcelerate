@@ -1,10 +1,10 @@
-import type { Result } from "../../domain/result";
+import type { Result, ResultErrorCode } from "../../domain/result";
 
 export class RepositoryQueryError extends Error {
-  readonly code: string;
+  readonly code: ResultErrorCode;
   readonly details?: unknown;
 
-  constructor(code: string, message: string, details?: unknown) {
+  constructor(code: ResultErrorCode, message: string, details?: unknown) {
     super(message);
     this.name = "RepositoryQueryError";
     this.code = code;

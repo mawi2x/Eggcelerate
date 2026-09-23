@@ -119,7 +119,8 @@ describe("InMemoryEggcelerateRepository", () => {
     const records = await repository.listHatchRecords();
     const chamber = await repository.getIncubator("chamber-1");
 
-    expect(result.ok && result.data.incubator.cyclePhase).toBe("ready");
+    expect(result.ok && result.data.hatchedEggs).toBe(9);
+    expect(chamber.ok && chamber.data.cyclePhase).toBe("ready");
     expect(records.ok && records.data).toHaveLength(13);
     expect(chamber.ok && chamber.data.totalEggsLoaded).toBe(0);
   });
@@ -166,7 +167,7 @@ describe("InMemoryEggcelerateRepository", () => {
     const records = await repository.listAbortedCycles();
     const chamber = await repository.getIncubator("chamber-1");
 
-    expect(result.ok && result.data.incubator.cyclePhase).toBe("stopped_early");
+    expect(result.ok && result.data.dayStopped).toBe(8);
     expect(records.ok && records.data).toHaveLength(1);
     expect(chamber.ok && chamber.data.status).toBe("warning");
   });
@@ -193,7 +194,7 @@ describe("InMemoryEggcelerateRepository", () => {
     });
     const result = await repository.listAlerts();
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.code).toBe("simulated_failure");
+    if (!result.ok) expect(result.error.code).toBe("unknown_error");
   });
   it("validates profile and configuration commands", async () => {
     const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
@@ -261,10 +262,21 @@ describe("InMemoryEggcelerateRepository", () => {
     );
 
     const turned = await repository.requestManualTurn("chamber-1");
-    expect(turned.ok && turned.data.lastTurned).toBe(
+    expect(turned.ok && turned.data.status).toBe("pending");
+    if (turned.ok) {
+      const command = await repository.getTurnCommand(
+        "chamber-1",
+        turned.data.id,
+      );
+      expect(command.ok && command.data.status).toBe("pending");
+    }
+    const unchanged = await repository.getIncubator("chamber-1");
+    expect(unchanged.ok && unchanged.data.lastTurned).toBe(
       "2026-09-03T12:00:00.000Z",
     );
-    expect(turned.ok && turned.data.nextTurn).toBe("2026-09-03T16:00:00.000Z");
+    expect(unchanged.ok && unchanged.data.nextTurn).toBe(
+      "2026-09-03T16:00:00.000Z",
+    );
     const missing = await repository.requestManualTurn("nope");
     expect(missing.ok).toBe(false);
   });

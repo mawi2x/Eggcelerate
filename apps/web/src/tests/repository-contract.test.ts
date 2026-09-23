@@ -68,9 +68,23 @@ describe.each(targets)("repository contract (%s)", (_name, factory) => {
     const turned = await repository.requestManualTurn("chamber-7");
     expect(turned.ok).toBe(true);
     if (!turned.ok) return;
-    expect(turned.data.lastTurned).toBe(before.data.lastTurned);
-    expect(turned.data.nextTurn).toBe(before.data.nextTurn);
-    expect(turned.data.turnCommandStatus).toBe("pending");
+    expect(turned.data.status).toBe("pending");
+    const command = await repository.getTurnCommand(
+      "chamber-7",
+      turned.data.id,
+    );
+    expect(command.ok).toBe(true);
+    if (command.ok)
+      expect([
+        "pending",
+        "dispatched",
+        "acked",
+        "rejected",
+        "timed_out",
+      ]).toContain(command.data.status);
+    const after = await repository.getIncubator("chamber-7");
+    expect(after.ok && after.data.lastTurned).toBe(before.data.lastTurned);
+    expect(after.ok && after.data.nextTurn).toBe(before.data.nextTurn);
   });
 
   it("reconnects a chamber without claiming it has reported telemetry", async () => {
@@ -125,10 +139,9 @@ describe.each(targets)("repository contract (%s)", (_name, factory) => {
       totalEggs: 16,
       fertileEggs: null,
     });
-    expect(stopped.ok && stopped.data.incubator.cyclePhase).toBe(
-      "stopped_early",
-    );
-    expect(stopped.ok && stopped.data.record.dayStopped).toBe(29);
+    expect(stopped.ok && stopped.data.dayStopped).toBe(29);
+    const unit = await repository.getIncubator("chamber-11");
+    expect(unit.ok && unit.data.cyclePhase).toBe("stopped_early");
   });
 
   it("completes a cycle atomically with a record", async () => {
@@ -142,8 +155,9 @@ describe.each(targets)("repository contract (%s)", (_name, factory) => {
       fertileEggs: null,
       hatchedEggs: 20,
     });
-    expect(completed.ok && completed.data.record.hatchedEggs).toBe(20);
-    expect(completed.ok && completed.data.incubator.dayOfIncubation).toBe(0);
+    expect(completed.ok && completed.data.hatchedEggs).toBe(20);
+    const unit = await repository.getIncubator("chamber-10");
+    expect(unit.ok && unit.data.dayOfIncubation).toBe(0);
   });
 
   it.each(["stop", "complete"] as const)(

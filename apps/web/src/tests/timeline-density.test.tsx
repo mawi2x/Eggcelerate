@@ -14,7 +14,10 @@ const candling = [
   { day: 24, label: "Lockdown" },
 ];
 
-async function renderTimeline(labelSize?: 10 | 9) {
+async function renderTimeline(
+  labelSize?: 10 | 9,
+  onSelectMilestone: (day: number) => void = () => {},
+) {
   const container = document.createElement("div");
   const root = createRoot(container);
   await act(async () =>
@@ -24,6 +27,7 @@ async function renderTimeline(labelSize?: 10 | 9) {
         totalDays={28}
         candling={candling}
         candled={{}}
+        onSelectMilestone={onSelectMilestone}
         {...(labelSize === undefined ? {} : { labelSize })}
       />,
     ),
@@ -61,6 +65,22 @@ describe("timeline milestone density", () => {
         "var(--type-label-micro)",
       );
     }
+    await act(async () => root.unmount());
+  });
+
+  it("sends milestone selections to the journal navigator", async () => {
+    let selectedDay: number | null = null;
+    const { container, root } = await renderTimeline(undefined, (day) => {
+      selectedDay = day;
+    });
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>(
+          'button[aria-label="First candling, Day 8"]',
+        )
+        ?.click();
+    });
+    expect(selectedDay).toBe(8);
     await act(async () => root.unmount());
   });
 });

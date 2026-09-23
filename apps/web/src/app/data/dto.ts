@@ -21,7 +21,7 @@ export function toResult<T>(fn: () => T): Result<T> {
     return {
       ok: false,
       error: {
-        code: "unknown",
+        code: "unknown_error",
         message: e instanceof Error ? e.message : String(e),
       },
     };

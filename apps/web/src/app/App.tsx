@@ -73,6 +73,7 @@ export default function App() {
     markAllAlertsRead,
     clearReadAlerts,
     updateIncubator,
+    requestTurn,
     addIncubator,
     updateMode,
     addMode,
@@ -501,8 +502,12 @@ export default function App() {
                   initialTab={detailTab}
                   onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
                   onTabChange={(tab) => openIncubator(activeUnit.id, tab)}
-                  onUpdate={(patch) => updateIncubator(activeUnit.id, patch)}
+                  onUpdate={(intent) => updateIncubator(activeUnit.id, intent)}
+                  onRequestTurn={() => requestTurn(activeUnit.id)}
                   isUpdating={actionState.updatingIncubatorId === activeUnit.id}
+                  isRequestingTurn={
+                    actionState.requestingTurnIncubatorId === activeUnit.id
+                  }
                 />
               </Suspense>
             )}

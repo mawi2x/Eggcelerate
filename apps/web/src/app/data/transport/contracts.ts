@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RESULT_ERROR_CODES } from "../../domain/result";
 import type {
   AbortedCycleRecord,
   AlertEntry,
@@ -16,15 +17,7 @@ const IdentifierSchema = z.string().trim().min(1);
 const UtcTimestampSchema = z.string().datetime({ offset: true });
 const DateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-export const ApiErrorCodeSchema = z.enum([
-  "validation_error",
-  "not_found",
-  "conflict",
-  "rejected",
-  "offline",
-  "timeout",
-  "unknown_error",
-]);
+export const ApiErrorCodeSchema = z.enum(RESULT_ERROR_CODES);
 
 export const ApiErrorSchema = z
   .object({

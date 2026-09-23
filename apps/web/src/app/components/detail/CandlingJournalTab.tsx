@@ -32,6 +32,7 @@ import {
   selectCandlingTallyValidation,
   selectPendingCheckpoint,
 } from "../../features/candling/selectors";
+import type { IncubatorUpdateIntent } from "../../features/farm/use-farm-data";
 import { CheckIcon } from "../icons/CheckIcon";
 import {
   AlertDialog,
@@ -1676,8 +1677,20 @@ interface CandlingJournalTabProps {
   currentDay: number;
   totalDays: number;
   totalEggsSet: number;
-  onUpdate: (patch: Partial<Incubator>) => Promise<boolean>;
+  onUpdate: (intent: IncubatorUpdateIntent) => Promise<boolean>;
   isUpdating: boolean;
+  focusDay: number | null;
+  onFocusHandled: () => void;
+  onSelectDay: (day: number) => void;
+}
+
+function journalEntryTargetId(incubatorId: string, entry: CandlingLogEntry) {
+  const identity = entry.id ?? `${entry.day}-${entry.date}-${entry.label}`;
+  return `journal-entry-${encodeURIComponent(incubatorId)}-${encodeURIComponent(identity)}`;
+}
+
+function candlingMilestoneTargetId(incubatorId: string, day: number) {
+  return `candling-milestone-${encodeURIComponent(incubatorId)}-${day}`;
 }
 
 export function CandlingJournalTab({
@@ -1690,6 +1703,9 @@ export function CandlingJournalTab({
   totalEggsSet,
   onUpdate,
   isUpdating,
+  focusDay,
+  onFocusHandled,
+  onSelectDay,
 }: CandlingJournalTabProps) {
   const [showLogForm, setShowLogForm] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
@@ -1700,7 +1716,7 @@ export function CandlingJournalTab({
   const [entryToDelete, setEntryToDelete] = useState<CandlingLogEntry | null>(
     null,
   );
-  const [expandedDays, setExpandedDays] = useState<Set<number>>(
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(
     () => new Set(),
   );
 
@@ -1857,10 +1873,35 @@ export function CandlingJournalTab({
 
   const feedNodes = selectCandlingFeedNodes(candling, unit.candlingLog);
 
+  useEffect(() => {
+    if (focusDay === null) return;
+    const targetNode = feedNodes.find((node) => node.day === focusDay);
+    if (!targetNode) {
+      onFocusHandled();
+      return;
+    }
+    const targetId =
+      targetNode.kind === "logged"
+        ? journalEntryTargetId(unit.id, targetNode.entry)
+        : candlingMilestoneTargetId(unit.id, targetNode.day);
+    if (targetNode.kind === "logged") {
+      setExpandedDays((days) => new Set(days).add(targetId));
+    }
+    requestAnimationFrame(() => {
+      document
+        .getElementById(targetId)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    onFocusHandled();
+  }, [focusDay, feedNodes, onFocusHandled, unit.id]);
+
   const deleteJournalEntry = async (day: number) => {
     const saved = await onUpdate({
-      candled: { ...unit.candled, [day]: false },
-      candlingLog: unit.candlingLog.filter((e) => e.day !== day),
+      type: "candling",
+      input: {
+        candled: { ...unit.candled, [day]: false },
+        entries: unit.candlingLog.filter((e) => e.day !== day),
+      },
     });
     if (!saved) return false;
     toast.success(`Day ${day} journal entry deleted`);
@@ -1951,16 +1992,20 @@ export function CandlingJournalTab({
         : {}),
     };
 
+    const fertileEggs =
+      checkpointType === "first"
+        ? counts.fertile
+        : (unit.fertileEggs ?? baselineFertile ?? undefined);
     const saved = await onUpdate({
-      candled: { ...unit.candled, [form.targetDay]: true },
-      fertileEggs:
-        checkpointType === "first"
-          ? counts.fertile
-          : (unit.fertileEggs ?? (baselineFertile || undefined)),
-      candlingLog: [
-        entry,
-        ...unit.candlingLog.filter((e) => e.day !== form.targetDay),
-      ],
+      type: "candling",
+      input: {
+        candled: { ...unit.candled, [form.targetDay]: true },
+        ...(fertileEggs === undefined ? {} : { fertileEggs }),
+        entries: [
+          entry,
+          ...unit.candlingLog.filter((e) => e.day !== form.targetDay),
+        ],
+      },
     });
     if (!saved) return false;
 
@@ -1981,25 +2026,34 @@ export function CandlingJournalTab({
 
   const addPhotosToEntry = (day: number, urls: string[]) =>
     onUpdate({
-      candlingLog: unit.candlingLog.map((e) =>
-        e.day === day ? { ...e, photos: [...e.photos, ...urls] } : e,
-      ),
+      type: "candling",
+      input: {
+        entries: unit.candlingLog.map((e) =>
+          e.day === day ? { ...e, photos: [...e.photos, ...urls] } : e,
+        ),
+      },
     });
 
   const deletePhotoFromEntry = (day: number, photoIndex: number) =>
     onUpdate({
-      candlingLog: unit.candlingLog.map((e) =>
-        e.day === day
-          ? { ...e, photos: e.photos.filter((_, idx) => idx !== photoIndex) }
-          : e,
-      ),
+      type: "candling",
+      input: {
+        entries: unit.candlingLog.map((e) =>
+          e.day === day
+            ? { ...e, photos: e.photos.filter((_, idx) => idx !== photoIndex) }
+            : e,
+        ),
+      },
     });
 
   const updateEntryNote = (day: number, note: string) =>
     onUpdate({
-      candlingLog: unit.candlingLog.map((e) =>
-        e.day === day ? { ...e, note } : e,
-      ),
+      type: "candling",
+      input: {
+        entries: unit.candlingLog.map((e) =>
+          e.day === day ? { ...e, note } : e,
+        ),
+      },
     });
 
   const rustBtn = {
@@ -2017,6 +2071,7 @@ export function CandlingJournalTab({
           candling={candling}
           candled={effectiveCandled}
           labelSize={9}
+          onSelectMilestone={onSelectDay}
         />
         <div
           className="my-4"
@@ -2391,12 +2446,14 @@ export function CandlingJournalTab({
                 {feedNodes.map((n) =>
                   n.kind === "logged" ? (
                     <li
-                      key={`log-${n.day}`}
+                      key={journalEntryTargetId(unit.id, n.entry)}
                       className="group relative flex items-start"
                     >
                       <div
                         className={
-                          expandedDays.has(n.day)
+                          expandedDays.has(
+                            journalEntryTargetId(unit.id, n.entry),
+                          )
                             ? "shrink-0 relative z-10 flex justify-center self-start"
                             : "shrink-0 relative z-10 flex justify-center self-center"
                         }
@@ -2428,8 +2485,12 @@ export function CandlingJournalTab({
                             onClick={() =>
                               setExpandedDays((days) => {
                                 const next = new Set(days);
-                                if (next.has(n.day)) next.delete(n.day);
-                                else next.add(n.day);
+                                const entryId = journalEntryTargetId(
+                                  unit.id,
+                                  n.entry,
+                                );
+                                if (next.has(entryId)) next.delete(entryId);
+                                else next.add(entryId);
                                 return next;
                               })
                             }
@@ -2439,9 +2500,14 @@ export function CandlingJournalTab({
                               fontWeight: "var(--weight-bold)",
                               color: "var(--text-primary)",
                             }}
-                            aria-expanded={expandedDays.has(n.day)}
-                            aria-controls={`journal-entry-${n.day}`}
-                            aria-label={`${expandedDays.has(n.day) ? "Hide" : "Show"} details for Day ${n.entry.day}`}
+                            aria-expanded={expandedDays.has(
+                              journalEntryTargetId(unit.id, n.entry),
+                            )}
+                            aria-controls={journalEntryTargetId(
+                              unit.id,
+                              n.entry,
+                            )}
+                            aria-label={`${expandedDays.has(journalEntryTargetId(unit.id, n.entry)) ? "Hide" : "Show"} details for Day ${n.entry.day}`}
                           >
                             <span>
                               {n.idx >= 0
@@ -2456,7 +2522,7 @@ export function CandlingJournalTab({
                             />
                             <ChevronDown
                               size={16}
-                              className={`ml-0.5 text-[var(--text-muted)] transition-transform duration-200 ${expandedDays.has(n.day) ? "rotate-180" : ""}`}
+                              className={`ml-0.5 text-[var(--text-muted)] transition-transform duration-200 ${expandedDays.has(journalEntryTargetId(unit.id, n.entry)) ? "rotate-180" : ""}`}
                               aria-hidden="true"
                             />
                           </button>
@@ -2494,9 +2560,11 @@ export function CandlingJournalTab({
                           </div>
                         </div>
                         <div
-                          id={`journal-entry-${n.day}`}
+                          id={journalEntryTargetId(unit.id, n.entry)}
                           className={`grid transition-[grid-template-rows,opacity,margin] duration-200 ease-out ${
-                            expandedDays.has(n.day)
+                            expandedDays.has(
+                              journalEntryTargetId(unit.id, n.entry),
+                            )
                               ? "visible mt-3 grid-rows-[1fr] opacity-100"
                               : "invisible grid-rows-[0fr] opacity-0 group-hover:visible group-hover:mt-3 group-hover:grid-rows-[1fr] group-hover:opacity-100"
                           }`}
@@ -2517,7 +2585,8 @@ export function CandlingJournalTab({
                       const isDue = n.cp.day <= currentDay;
                       return (
                         <li
-                          key={`cp-${n.day}`}
+                          key={candlingMilestoneTargetId(unit.id, n.day)}
+                          id={candlingMilestoneTargetId(unit.id, n.day)}
                           className="relative flex items-center min-h-[var(--control-height-compact)]"
                         >
                           <div

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolvedTelemetryStatus,
   telemetryAgeLabel,
+  telemetryReceiptTimestamp,
   telemetryStatusLabel,
 } from "../app/features/farm/telemetry";
 
@@ -24,8 +25,51 @@ describe("telemetry freshness presentation", () => {
     expect(resolvedTelemetryStatus({ paired: true })).toBe("offline");
     expect(
       resolvedTelemetryStatus({ paired: true, telemetryStatus: "fresh" }),
-    ).toBe("fresh");
+    ).toBe("offline");
     expect(resolvedTelemetryStatus({ paired: false })).toBe("offline");
     expect(telemetryAgeLabel("invalid", now)).toBe("unknown age");
+  });
+
+  it("requires a recent server receipt before reporting Live", () => {
+    expect(
+      resolvedTelemetryStatus(
+        {
+          paired: true,
+          telemetryStatus: "fresh",
+          telemetryReceivedAt: "2026-09-22T23:59:50Z",
+        },
+        now,
+      ),
+    ).toBe("fresh");
+    expect(
+      resolvedTelemetryStatus(
+        {
+          paired: true,
+          telemetryStatus: "fresh",
+          telemetryReceivedAt: "2026-09-22T23:58:50Z",
+        },
+        now,
+      ),
+    ).toBe("stale");
+    expect(
+      resolvedTelemetryStatus(
+        {
+          paired: true,
+          telemetryStatus: "fresh",
+          telemetryReceivedAt: "2026-09-22T23:56:00Z",
+        },
+        now,
+      ),
+    ).toBe("offline");
+  });
+
+  it("prefers receipt time for the displayed server-freshness age", () => {
+    const receivedAt = telemetryReceiptTimestamp({
+      telemetryReceivedAt: "2026-09-22T23:59:50Z",
+      telemetryLastSeenAt: "2026-09-22T23:50:00Z",
+    });
+    expect(telemetryStatusLabel("fresh", receivedAt, now)).toBe(
+      "Live · 10s ago",
+    );
   });
 });

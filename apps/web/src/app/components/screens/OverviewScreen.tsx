@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { Incubator, Mode, UnitStatus } from "../../domain/types";
 import {
   resolvedTelemetryStatus,
+  telemetryReceiptTimestamp,
   telemetryStatusLabel,
 } from "../../features/farm/telemetry";
 import { ExclamationIcon, IncubatorDeviceIcon } from "../icons";
@@ -304,7 +305,10 @@ function MiniCard({
           }}
           title="Server-received telemetry freshness"
         >
-          {telemetryStatusLabel(telemetryStatus, unit.telemetryLastSeenAt)}
+          {telemetryStatusLabel(
+            telemetryStatus,
+            telemetryReceiptTimestamp(unit),
+          )}
         </span>
       </div>
 

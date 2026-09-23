@@ -14,8 +14,8 @@ interface TimelineProps {
    * scales them.
    */
   labelSize?: 10 | 9;
-  /** Optional callback when a milestone node is tapped. */
-  onSelectMilestone?: (day: number) => void;
+  /** Opens the journal at this checkpoint. */
+  onSelectMilestone: (day: number) => void;
 }
 
 export function Timeline({
@@ -106,16 +106,7 @@ export function Timeline({
     : isEndZone
       ? 38 * ((fillPct - 88) / 12)
       : 0;
-  const handleNodeClick = (day: number) => {
-    if (onSelectMilestone) {
-      onSelectMilestone(day);
-      return;
-    }
-    const journalEl = document.getElementById(`journal-entry-${day}`);
-    if (journalEl) {
-      journalEl.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  };
+  const handleNodeClick = (day: number) => onSelectMilestone(day);
 
   return (
     <div className="w-full">

@@ -23,7 +23,12 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import type { ReadingWindow } from "../../data/repositories/repository";
-import type { HatchRecord, Incubator, Mode } from "../../domain/types";
+import type { HatchRecord, Incubator, Mode, Reading } from "../../domain/types";
+import {
+  resolvedTelemetryStatus,
+  telemetryReceiptTimestamp,
+  telemetryStatusLabel,
+} from "../../features/farm/telemetry";
 import { useIncubatorReadingMap } from "../../features/farm/use-incubator-readings";
 import {
   dedupeTickLabels,
@@ -170,6 +175,27 @@ function formatMeasurement(value: number, unit: string) {
   return `${value.toLocaleString(undefined, {
     maximumFractionDigits: unit === "°C" ? 1 : 0,
   })}${unit}`;
+}
+
+export function buildReadingsCsv(
+  rows: { chamber: string; reading: Reading }[],
+): string {
+  const csvCell = (value: string | number) => {
+    const text = String(value);
+    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+  const header = "Chamber,Timestamp,Temperature (C),Humidity (%)";
+  const records = rows.map(({ chamber, reading }) =>
+    [
+      chamber,
+      new Date(reading.ts).toISOString(),
+      reading.temp,
+      reading.humidity,
+    ]
+      .map(csvCell)
+      .join(","),
+  );
+  return [header, ...records].join("\n");
 }
 
 function ChartTooltip({
@@ -387,7 +413,20 @@ export function TrendsScreen({
       ),
     [activeUnits, unit.id],
   );
-  const { readingsByIncubator } = useIncubatorReadingMap(readingUnitIds, range);
+  const {
+    readingsByIncubator,
+    isLoading: readingsLoading,
+    error: readingsError,
+    retry: retryReadings,
+  } = useIncubatorReadingMap(readingUnitIds, range);
+  const activeReadingCount = activeUnits.reduce(
+    (total, activeUnit) =>
+      total + (readingsByIncubator[activeUnit.id]?.length ?? 0),
+    0,
+  );
+  const staleTelemetryUnits = activeUnits.filter(
+    (activeUnit) => resolvedTelemetryStatus(activeUnit) !== "fresh",
+  );
 
   // Merge each active chamber's readings for the chosen metric onto a shared axis.
   const chartData = useMemo(() => {
@@ -409,7 +448,19 @@ export function TrendsScreen({
   }, [activeUnits, metric, readingsByIncubator]);
 
   // Raw readings for the single selected chamber (used by the export modal).
-  const singleReadings = readingsByIncubator[unit.id] ?? [];
+  const readingGroups = compare ? activeUnits : [unit];
+  const readingsForExport = readingGroups
+    .flatMap((readingUnit) =>
+      (readingsByIncubator[readingUnit.id] ?? []).map((reading) => ({
+        chamber: readingUnit.name,
+        reading,
+      })),
+    )
+    .sort(
+      (left, right) =>
+        left.reading.ts - right.reading.ts ||
+        left.chamber.localeCompare(right.chamber),
+    );
 
   // Unique safe bands across the active chambers, so we can shade the target zone.
   const bands = useMemo(() => {
@@ -514,20 +565,25 @@ export function TrendsScreen({
   };
 
   const exportCsv = () => {
-    const header = "Timestamp,Temperature (C),Humidity (%)";
-    const rows = singleReadings.map(
-      (p) => `${new Date(p.ts).toISOString()},${p.temp},${p.humidity}`,
-    );
-    const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
+    const blob = new Blob([buildReadingsCsv(readingsForExport)], {
+      type: "text/csv",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${unit.name.replace(/\s+/g, "-").toLowerCase()}-readings-${range}.csv`;
+    const scopeName = compare
+      ? "compared-chambers"
+      : unit.name.replace(/\s+/g, "-").toLowerCase();
+    a.download = `${scopeName}-readings-${range}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    toast.success(`Exported ${singleReadings.length} readings as CSV`);
+    toast.success(
+      compare
+        ? `Exported ${readingsForExport.length} readings from ${readingGroups.length} chambers`
+        : `Exported ${readingsForExport.length} readings for ${unit.name}`,
+    );
   };
 
   // ── Hatch-history derived data ──────────────────────────────────────────────
@@ -558,9 +614,6 @@ export function TrendsScreen({
     (page - 1) * hatchRowsPerPage,
     page * hatchRowsPerPage,
   );
-  const hatchRangeStart =
-    filteredHatch.length === 0 ? 0 : (page - 1) * hatchRowsPerPage + 1;
-  const hatchRangeEnd = Math.min(page * hatchRowsPerPage, filteredHatch.length);
   const viewOptions: {
     key: TrendView;
     label: string;
@@ -754,22 +807,22 @@ export function TrendsScreen({
                   />
                   Compare Chambers
                 </div>
-                {!compare && (
-                  <button
-                    type="button"
-                    onClick={() => setReadingsOpen(true)}
-                    className="flex h-[var(--control-height-mobile)] shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-[var(--control-height-compact)]"
-                    style={{
-                      color: "var(--brand-primary)",
-                      fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-caption)",
-                      fontWeight: "var(--weight-bold)",
-                    }}
-                  >
-                    <TableProperties size={16} aria-hidden="true" /> See all
-                    readings
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setReadingsOpen(true)}
+                  className="flex h-[var(--control-height-mobile)] shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-1 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-[var(--control-height-compact)]"
+                  style={{
+                    color: "var(--brand-primary)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--type-caption)",
+                    fontWeight: "var(--weight-bold)",
+                  }}
+                >
+                  <TableProperties size={16} aria-hidden="true" />
+                  {compare
+                    ? "Readings for compared chambers"
+                    : "See all readings"}
+                </button>
               </div>
             </div>
 
@@ -786,6 +839,60 @@ export function TrendsScreen({
                 options={ranges.map((r) => ({ key: r.key, label: r.label }))}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            {staleTelemetryUnits.length > 0 && (
+              <p
+                role="status"
+                className="rounded-xl border px-3 py-2 text-sm text-[var(--text-secondary)]"
+                style={{ borderColor: BORDER }}
+              >
+                Telemetry is not current for{" "}
+                {staleTelemetryUnits
+                  .map((activeUnit) => {
+                    const status = resolvedTelemetryStatus(activeUnit);
+                    return `${activeUnit.name} (${telemetryStatusLabel(
+                      status,
+                      telemetryReceiptTimestamp(activeUnit),
+                    )})`;
+                  })
+                  .join(", ")}
+                . The chart shows historical readings.
+              </p>
+            )}
+            {readingsLoading && (
+              <p role="status" className="text-sm text-[var(--text-secondary)]">
+                Loading environmental readings…
+              </p>
+            )}
+            {readingsError && (
+              <div
+                role="alert"
+                className="flex flex-wrap items-center gap-3 rounded-xl border p-3"
+                style={{ borderColor: BORDER }}
+              >
+                <p className="text-sm text-[var(--text-secondary)]">
+                  {activeReadingCount > 0
+                    ? "Some readings could not be loaded. Showing available readings."
+                    : "Environmental readings could not be loaded."}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void retryReadings()}
+                >
+                  Retry
+                </Button>
+              </div>
+            )}
+            {!readingsLoading && !readingsError && activeReadingCount === 0 && (
+              <p role="status" className="text-sm text-[var(--text-secondary)]">
+                No historical readings are available for this selection and time
+                range.
+              </p>
+            )}
           </div>
 
           <Card style={{ ...cardStyle, backgroundColor: SURFACE }}>
@@ -1196,55 +1303,6 @@ export function TrendsScreen({
             </div>
           </div>
 
-          {/* Sub-toolbar row: records range count + horizontal mini page indicator dots */}
-          <div className="mt-2 flex items-center justify-between px-1 md:mt-3">
-            <span
-              aria-live="polite"
-              style={{
-                color: MUTED,
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-filter-label)",
-              }}
-            >
-              Showing {hatchRangeStart} to {hatchRangeEnd} of{" "}
-              {filteredHatch.length} records
-            </span>
-
-            {hatchPages > 1 && (
-              <fieldset
-                aria-label={`Page selection. Page ${page} of ${hatchPages}`}
-                className="m-0 min-w-0 flex items-center gap-1.5 border-0 px-0 py-1"
-              >
-                {Array.from({ length: hatchPages }, (_, i) => i + 1).map(
-                  (p) => {
-                    const isActive = page === p;
-                    return (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setHatchPage(p)}
-                        aria-label={`Go to page ${p} of ${hatchPages}`}
-                        aria-current={isActive ? "page" : undefined}
-                        className="flex h-4 items-center justify-center border-0 bg-transparent p-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                      >
-                        <span
-                          className="rounded-full transition-all duration-200 motion-reduce:transition-none"
-                          style={{
-                            width: isActive ? 16 : 5,
-                            height: 5,
-                            backgroundColor: isActive
-                              ? "var(--brand-primary)"
-                              : "var(--wash-checkbox)",
-                          }}
-                        />
-                      </button>
-                    );
-                  },
-                )}
-              </fieldset>
-            )}
-          </div>
-
           {/* Main content: Cards view (Mobile & Desktop Grid) vs Table view (Desktop List) */}
           {isMobile || hatchView === "grid" ? (
             <div className="mt-2 md:mt-4 space-y-4">
@@ -1462,19 +1520,6 @@ export function TrendsScreen({
                 backgroundColor: CARD,
               }}
             >
-              <PaginationBar
-                className="border-b border-t-0 px-4 py-2.5"
-                page={page}
-                pageSize={hatchRowsPerPage}
-                totalItems={filteredHatch.length}
-                itemLabel="records"
-                pageSizeOptions={[10, 20, 50]}
-                onPageSizeChange={(value) => {
-                  setHatchRowsPerPage(value);
-                  setHatchPage(1);
-                }}
-                onPageChange={setHatchPage}
-              />
               <div className="h-[520px] overflow-auto">
                 <Table className="min-w-[640px]">
                   <TableHeader
@@ -1639,7 +1684,9 @@ export function TrendsScreen({
                     lineHeight: "var(--leading-snug)",
                   }}
                 >
-                  {unit.name} Readings
+                  {compare
+                    ? "Compared Chamber Readings"
+                    : `${unit.name} Readings`}
                 </DialogTitle>
                 <DialogDescription
                   className="text-left"
@@ -1650,9 +1697,10 @@ export function TrendsScreen({
                   }}
                 >
                   <strong style={{ fontWeight: "var(--weight-bold)" }}>
-                    {singleReadings.length}
+                    {readingsForExport.length}
                   </strong>{" "}
-                  readings recorded for this chamber
+                  readings across {readingGroups.length}{" "}
+                  {readingGroups.length === 1 ? "chamber" : "chambers"}
                 </DialogDescription>
               </div>
               <Button
@@ -1679,14 +1727,23 @@ export function TrendsScreen({
                 style={{ backgroundColor: "var(--surface-tile)" }}
               >
                 <TableRow>
+                  <TableHead>Chamber</TableHead>
                   <TableHead>Timestamp</TableHead>
                   <TableHead className="text-right">Temperature</TableHead>
                   <TableHead className="text-right">Humidity</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {singleReadings.map((p) => (
-                  <TableRow key={p.ts}>
+                {readingsForExport.map(({ chamber, reading }) => (
+                  <TableRow key={`${reading.ts}-${chamber}`}>
+                    <TableCell
+                      style={{
+                        fontSize: "var(--type-body)",
+                        lineHeight: "var(--leading-normal)",
+                      }}
+                    >
+                      {chamber}
+                    </TableCell>
                     <TableCell
                       style={{
                         color: MUTED,
@@ -1694,7 +1751,7 @@ export function TrendsScreen({
                         lineHeight: "var(--leading-normal)",
                       }}
                     >
-                      {new Date(p.ts).toLocaleString()}
+                      {new Date(reading.ts).toLocaleString()}
                     </TableCell>
                     <TableCell
                       className="text-right"
@@ -1703,7 +1760,7 @@ export function TrendsScreen({
                         lineHeight: "var(--leading-normal)",
                       }}
                     >
-                      {p.temp}°C
+                      {reading.temp}°C
                     </TableCell>
                     <TableCell
                       className="text-right"
@@ -1712,7 +1769,7 @@ export function TrendsScreen({
                         lineHeight: "var(--leading-normal)",
                       }}
                     >
-                      {p.humidity}%
+                      {reading.humidity}%
                     </TableCell>
                   </TableRow>
                 ))}

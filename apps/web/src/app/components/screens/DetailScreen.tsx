@@ -7,16 +7,19 @@ import {
   Settings2,
   Thermometer,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CURRENT_TRAY_CAPACITY, computeCandling } from "../../domain/candling";
 import {
   getKnownFertileEggs,
   validateHarvestCounts,
 } from "../../domain/fertility";
-import { resetChamberToReady } from "../../domain/incubator";
 import type { Incubator, Mode } from "../../domain/types";
-import { useCycleHistoryActions } from "../../features/farm/use-farm-data";
+import {
+  type IncubatorUpdateIntent,
+  useCycleHistoryActions,
+  useTurnCommandStatus,
+} from "../../features/farm/use-farm-data";
 import { useIncubatorReadings } from "../../features/farm/use-incubator-readings";
 import { CandlingJournalTab } from "../detail/CandlingJournalTab";
 import { DeviceSettingsTab } from "../detail/DeviceSettingsTab";
@@ -100,21 +103,27 @@ export function DetailScreen({
   modes,
   initialTab = "monitor",
   onUpdate,
+  onRequestTurn,
   isUpdating,
+  isRequestingTurn,
   onOpenTrends,
   onTabChange,
 }: {
   unit: Incubator;
   modes: Mode[];
   initialTab?: DetailTab;
-  onUpdate: (patch: Partial<Incubator>) => Promise<boolean>;
+  onUpdate: (intent: IncubatorUpdateIntent) => Promise<boolean>;
+  onRequestTurn: () => Promise<boolean>;
   isUpdating: boolean;
+  isRequestingTurn: boolean;
   onOpenTrends: () => void;
   onTabChange?: (tab: DetailTab) => void;
 }) {
   const { completeCycle, stopCycle: archiveStoppedCycle } =
     useCycleHistoryActions();
-  const { readings } = useIncubatorReadings(unit.id, "full");
+  const turnCommand = useTurnCommandStatus(unit.id);
+  const readingsQuery = useIncubatorReadings(unit.id, "full");
+  const readings = readingsQuery.readings;
   const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
   const totalDays = mode.incubationDays;
   const currentDay = unit.dayOfIncubation;
@@ -126,6 +135,18 @@ export function DetailScreen({
 
   const [tab, setTab] = useState<DetailTab>(initialTab);
   useEffect(() => setTab(initialTab), [initialTab]);
+  const [candlingFocusDay, setCandlingFocusDay] = useState<number | null>(null);
+  const selectCandlingDay = useCallback(
+    (day: number) => {
+      setCandlingFocusDay(day);
+      setTab("candling");
+      onTabChange?.("candling");
+    },
+    [onTabChange],
+  );
+  const clearCandlingFocus = useCallback(() => {
+    setCandlingFocusDay(null);
+  }, []);
   const [setupModeId, setSetupModeId] = useState("");
   const [setupEggs, setSetupEggs] = useState("");
   const [setupOpen, setSetupOpen] = useState(false);
@@ -151,18 +172,8 @@ export function DetailScreen({
     if (!setupMode || !setupEggsValid) return;
     const eggs = setupEggsCount;
     const saved = await onUpdate({
-      modeId: setupMode.id,
-      dayOfIncubation: 1,
-      totalEggsLoaded: eggs,
-      cyclePhase: "incubating",
-      status: "optimal",
-      turnInterval: setupMode.defaultTurnInterval,
-      candled: {},
-      candlingLog: [],
-      lastTurned: new Date().toISOString(),
-      nextTurn: new Date(
-        Date.now() + setupMode.defaultTurnInterval * 3_600_000,
-      ).toISOString(),
+      type: "start-cycle",
+      input: { modeId: setupMode.id, totalEggs: eggs },
     });
     if (!saved) return false;
     setSetupEggs("");
@@ -194,7 +205,7 @@ export function DetailScreen({
   };
 
   const resetStoppedCycle = async () => {
-    if (!(await onUpdate(resetChamberToReady(unit)))) return;
+    if (!(await onUpdate({ type: "reset-stopped-cycle" }))) return;
     toast.success("Incubator reset to Ready");
   };
 
@@ -791,7 +802,11 @@ export function DetailScreen({
           candling={candling}
           effectiveCandled={effectiveCandled}
           environmentalReadings={environmentalReadings}
+          readingsLoading={readingsQuery.isPending}
+          readingsError={readingsQuery.error}
+          onRetryReadings={() => void readingsQuery.refetch()}
           onOpenTrends={onOpenTrends}
+          onSelectCandlingDay={selectCandlingDay}
         />
       )}
 
@@ -806,6 +821,9 @@ export function DetailScreen({
           totalEggsSet={totalEggsSet}
           onUpdate={onUpdate}
           isUpdating={isUpdating}
+          focusDay={candlingFocusDay}
+          onFocusHandled={clearCandlingFocus}
+          onSelectDay={setCandlingFocusDay}
         />
       )}
 
@@ -818,6 +836,8 @@ export function DetailScreen({
           cycleEnded={cycleEnded}
           turningStopped={turningStopped}
           isUpdating={isUpdating}
+          isRequestingTurn={isRequestingTurn}
+          turnCommandStatus={turnCommand?.status ?? unit.turnCommandStatus}
           onUpdate={onUpdate}
           onStopCycle={stopCycle}
           onTurnClick={async () => {
@@ -825,15 +845,10 @@ export function DetailScreen({
               toast("Turning is stopped during this cycle phase.");
               return false;
             }
-            const saved = await onUpdate({
-              lastTurned: new Date().toISOString(),
-              nextTurn: new Date(
-                Date.now() + unit.turnInterval * 3_600_000,
-              ).toISOString(),
-            });
+            const saved = await onRequestTurn();
             if (!saved) return false;
             toast.success(
-              "Turn request accepted. Waiting for device confirmation.",
+              "Turn request queued. Waiting for device confirmation.",
             );
             return true;
           }}
