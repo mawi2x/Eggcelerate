@@ -73,9 +73,8 @@ export function PaginationBar({
         (!show || show.includes("dots")) &&
         totalPages > 1 &&
         totalPages <= 7 && (
-          <span
-            className="flex flex-1 items-center justify-center gap-1.5"
-            role="group"
+          <fieldset
+            className="m-0 min-w-0 flex flex-1 items-center justify-center gap-1.5 border-0 p-0"
             aria-label="Pages"
           >
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
@@ -93,7 +92,7 @@ export function PaginationBar({
                 }}
               />
             ))}
-          </span>
+          </fieldset>
         )}
       {showPageSize && (!show || show.includes("pageSize")) && (
         <div className="hidden sm:flex shrink-0 items-center gap-2">

@@ -14,8 +14,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { developmentCheckLabels } from "../../domain/candling";
 import { calculateFertilityRate } from "../../domain/fertility";

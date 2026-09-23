@@ -1,6 +1,5 @@
 import { WifiSlash } from "@phosphor-icons/react";
 import { BatteryMedium, Info, Minus, Plug, Plus, Wifi } from "lucide-react";
-import { useState } from "react";
 import type { Incubator } from "../../domain/types";
 import { Input } from "../ui/input";
 import {
@@ -37,12 +36,6 @@ interface Props {
 export type HardwarePanelView = "devices" | "preferences";
 
 export function HardwarePanel({ units, view, onViewChange }: Props) {
-  const [ledIndicators, setLedIndicators] = useState(true);
-  const [batterySaver, setBatterySaver] = useState(false);
-  const [pollInterval, setPollInterval] = useState("30");
-  const [calibration, setCalibration] = useState("0");
-  const [calibrationSaved, setCalibrationSaved] = useState(false);
-
   return (
     <div>
       <PanelHeader
@@ -214,6 +207,14 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           aria-labelledby="hardware-preferences-tab"
           className="grid grid-cols-1 gap-4 pt-5"
         >
+          <p
+            id="hardware-unavailable"
+            className="text-sm"
+            style={{ color: MUTED }}
+          >
+            Hardware preferences are not available yet. The values below are
+            previews, not confirmed device settings.
+          </p>
           <section
             aria-labelledby="hardware-group-sampling"
             className="rounded-[var(--radius-dialog)] p-4"
@@ -228,8 +229,10 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                 hint="How often each controller reports temperature and humidity."
                 layout="stacked"
                 control={
-                  <Select value={pollInterval} onValueChange={setPollInterval}>
+                  <Select value="30" disabled>
                     <SelectTrigger
+                      aria-label="Sensor Sampling Interval"
+                      aria-describedby="hardware-unavailable"
                       className={`${inputClass} w-full sm:w-[180px]`}
                       style={inputStyle}
                     >
@@ -266,8 +269,9 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                 borderless
                 control={
                   <Switch
-                    checked={batterySaver}
-                    onCheckedChange={(value) => setBatterySaver(Boolean(value))}
+                    checked={false}
+                    disabled
+                    aria-describedby="hardware-unavailable"
                     aria-label="Battery saver mode"
                   />
                 }
@@ -303,14 +307,14 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                   lineHeight: "var(--leading-snug)",
                 }}
               >
-                Calibration changes every temperature record. Use a trusted
-                reference thermometer before saving an offset.
+                Calibration is unavailable until device configuration is
+                supported. No offset is being applied by this control.
               </p>
             </div>
             <div className="mt-2">
               <SettingRow
                 label="Temperature Calibration Offset"
-                hint="Applied to every temperature reading, in °C."
+                hint="Preview offset in °C. Changes cannot be saved or applied yet."
                 htmlFor="calibration"
                 layout="stacked"
                 borderless
@@ -325,15 +329,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                     >
                       <button
                         type="button"
-                        onClick={() => {
-                          const curr = parseFloat(calibration) || 0;
-                          const next = Math.max(
-                            -10,
-                            Math.round((curr - 0.1) * 10) / 10,
-                          );
-                          setCalibration(next.toString());
-                          setCalibrationSaved(false);
-                        }}
+                        disabled
                         aria-label="Decrease offset by 0.1"
                         className="flex h-10 w-9 items-center justify-center text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none"
                       >
@@ -345,11 +341,9 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                         step={0.1}
                         min={-10}
                         max={10}
-                        value={calibration}
-                        onChange={(event) => {
-                          setCalibration(event.target.value);
-                          setCalibrationSaved(false);
-                        }}
+                        value="0"
+                        disabled
+                        aria-describedby="hardware-unavailable"
                         className="h-10 w-16 border-0 bg-transparent px-1 text-center font-semibold focus-visible:ring-0"
                         style={{
                           color: TEXT,
@@ -365,15 +359,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                       </span>
                       <button
                         type="button"
-                        onClick={() => {
-                          const curr = parseFloat(calibration) || 0;
-                          const next = Math.min(
-                            10,
-                            Math.round((curr + 0.1) * 10) / 10,
-                          );
-                          setCalibration(next.toString());
-                          setCalibrationSaved(false);
-                        }}
+                        disabled
                         aria-label="Increase offset by 0.1"
                         className="flex h-10 w-9 items-center justify-center text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none"
                       >
@@ -382,21 +368,18 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setCalibrationSaved(true)}
-                      className="min-h-10 min-w-16 cursor-pointer rounded-xl px-3 py-1.5 transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                      disabled
+                      aria-describedby="hardware-unavailable"
+                      className="min-h-10 min-w-16 cursor-not-allowed rounded-xl px-3 py-1.5 opacity-60"
                       style={{
-                        backgroundColor: calibrationSaved
-                          ? "var(--status-success-bg)"
-                          : "var(--surface-tile)",
-                        color: calibrationSaved
-                          ? "var(--status-success-deep)"
-                          : RUST,
+                        backgroundColor: "var(--surface-tile)",
+                        color: MUTED,
                         fontSize: "var(--type-caption)",
                         fontWeight: "var(--weight-bold)",
-                        border: `1px solid ${calibrationSaved ? "transparent" : BORDER}`,
+                        border: `1px solid ${BORDER}`,
                       }}
                     >
-                      {calibrationSaved ? "Saved" : "Save"}
+                      Unavailable
                     </button>
                   </div>
                 }
@@ -419,10 +402,9 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                 borderless
                 control={
                   <Switch
-                    checked={ledIndicators}
-                    onCheckedChange={(value) =>
-                      setLedIndicators(Boolean(value))
-                    }
+                    checked={true}
+                    disabled
+                    aria-describedby="hardware-unavailable"
                     aria-label="Status LED indicators"
                   />
                 }

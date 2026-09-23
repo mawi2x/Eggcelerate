@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsScreen } from "../app/components/screens/SettingsScreen";
+import { HardwarePanel } from "../app/components/settings/HardwarePanel";
 import { validateNotificationPreferences } from "../app/components/settings/NotificationsPanel";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
 import { initialSettings } from "../app/data/settings";
@@ -16,6 +17,41 @@ const actEnvironment = globalThis as typeof globalThis & {
 actEnvironment.IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("settings contracts", () => {
+  it("keeps unsupported hardware controls unavailable across remounts", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    try {
+      for (const key of ["first", "remounted"]) {
+        await act(async () =>
+          root.render(
+            <HardwarePanel
+              key={key}
+              units={[]}
+              view="preferences"
+              onViewChange={() => {}}
+            />,
+          ),
+        );
+        const panel = container.querySelector("#hardware-preferences-panel");
+        if (!panel) throw new Error("Missing hardware preferences");
+        expect(panel.textContent).toContain("not confirmed device settings");
+        const controls = panel.querySelectorAll<
+          HTMLButtonElement | HTMLInputElement
+        >("button, input");
+        expect(controls.length).toBeGreaterThanOrEqual(6);
+        for (const control of controls) expect(control.disabled).toBe(true);
+        await act(async () => {
+          for (const control of controls) control.click();
+        });
+        expect(panel.textContent).not.toContain("Saved");
+        expect(
+          panel.querySelector<HTMLInputElement>("#calibration")?.value,
+        ).toBe("0");
+      }
+    } finally {
+      await act(async () => root.unmount());
+    }
+  });
   beforeEach(() => {
     vi.stubGlobal(
       "matchMedia",

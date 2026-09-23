@@ -258,7 +258,10 @@ export function Timeline({
                     letterSpacing: "var(--tracking-label)",
                     lineHeight: "var(--leading-snug)",
                     textTransform: "uppercase",
-                    color: currentDay >= 1 ? "var(--text-secondary)" : "var(--text-muted)",
+                    color:
+                      currentDay >= 1
+                        ? "var(--text-secondary)"
+                        : "var(--text-muted)",
                   }}
                 >
                   SET
@@ -293,7 +296,8 @@ export function Timeline({
                     style={{
                       left: `${pct}%`,
                       top: "calc(100% + 10px)",
-                      transform: i === 2 ? "translateX(-58%)" : "translateX(-50%)",
+                      transform:
+                        i === 2 ? "translateX(-58%)" : "translateX(-50%)",
                       zIndex: "var(--z-raised)",
                       maxWidth: 88,
                       overflow: "hidden",
@@ -311,7 +315,9 @@ export function Timeline({
                         letterSpacing: "var(--tracking-label)",
                         lineHeight: "var(--leading-snug)",
                         textTransform: "uppercase",
-                        color: isPassed ? "var(--text-secondary)" : "var(--text-muted)",
+                        color: isPassed
+                          ? "var(--text-secondary)"
+                          : "var(--text-muted)",
                       }}
                     >
                       {compactLabel}
@@ -325,7 +331,9 @@ export function Timeline({
                         letterSpacing: "var(--tracking-label)",
                         lineHeight: "var(--leading-snug)",
                         textTransform: "uppercase",
-                        color: isPassed ? "var(--text-secondary)" : "var(--text-muted)",
+                        color: isPassed
+                          ? "var(--text-secondary)"
+                          : "var(--text-muted)",
                       }}
                     >
                       {fullLabel}
@@ -384,9 +392,10 @@ export function Timeline({
                     letterSpacing: "var(--tracking-label)",
                     lineHeight: "var(--leading-snug)",
                     textTransform: "uppercase",
-                    color: isHatchDay || isOverdue
-                      ? "var(--status-success-deep)"
-                      : "var(--text-muted)",
+                    color:
+                      isHatchDay || isOverdue
+                        ? "var(--status-success-deep)"
+                        : "var(--text-muted)",
                   }}
                 >
                   HATCH
@@ -421,9 +430,10 @@ export function Timeline({
               <div
                 className="h-3 w-3 rounded-full"
                 style={{
-                  backgroundColor: currentDay >= 1
-                    ? "var(--brand-primary)"
-                    : "var(--surface-card)",
+                  backgroundColor:
+                    currentDay >= 1
+                      ? "var(--brand-primary)"
+                      : "var(--surface-card)",
                   border: `2px solid ${currentDay >= 1 ? "var(--brand-primary)" : "var(--border-default)"}`,
                   boxShadow: "0 0 0 2px var(--surface-card)",
                 }}
@@ -498,13 +508,15 @@ export function Timeline({
               <div
                 className="flex h-5 w-5 items-center justify-center rounded-full"
                 style={{
-                  backgroundColor: isHatchDay || isOverdue
-                    ? "var(--status-success-fg)"
-                    : "var(--surface-card)",
+                  backgroundColor:
+                    isHatchDay || isOverdue
+                      ? "var(--status-success-fg)"
+                      : "var(--surface-card)",
                   border: `2px solid ${isHatchDay || isOverdue ? "var(--status-success-fg)" : "var(--border-default)"}`,
-                  color: isHatchDay || isOverdue
-                    ? "var(--on-brand)"
-                    : "var(--text-muted)",
+                  color:
+                    isHatchDay || isOverdue
+                      ? "var(--on-brand)"
+                      : "var(--text-muted)",
                   boxShadow: "0 0 0 2.5px var(--surface-card)",
                 }}
               >
