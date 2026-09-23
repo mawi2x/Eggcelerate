@@ -14,7 +14,9 @@ sessions. Database restore, migration, and software gates have now passed. Phase
 implementation checkpoint is `0709075` (`feat: add farm-scoped account sessions`); its
 verification record is in the [Phase 8 handoff](project-review-handoff-2026-09-23-phase8.md).
 Phase 9's in-progress implementation checkpoint is `4c5c095`
-(`feat: harden owner and device onboarding`); its current limits and evidence are in the
+(`feat: harden owner and device onboarding`), extended by `48bfd7f` (secure MQTT client and
+isolated database restart drill) and sibling simulator commit `b04d304` (TLS/auth client
+support). Its current limits and evidence are in the
 [Phase 9 progress checkpoint](project-review-handoff-2026-09-24-phase9-progress.md).
 Phase 7's implementation checkpoint is `8d5252b` (`fix: make dashboard states truthful and actionable`);
 its verification record is in the [Phase 7 handoff](project-review-handoff-2026-09-23-phase7.md).
@@ -723,9 +725,11 @@ implementation progress:
   persistent login buckets; `0014` adds the expiry-cleanup index. Session-mode API writes
   that assign or reassign a device require an exact registry entry. The simulator worker
   routes registered IDs across farms and claims only that farm's provisioned IDs.
-- The worker refuses `APP_ENV=production` because the current anonymous broker and
-  simulator messages have no per-device authentication. The sibling simulator and ESP32
-  firmware have not been extended with a device credential or signed-message protocol.
+- The worker refuses `APP_ENV=production` because the current broker allows anonymous
+  connections and has no per-device ACLs. The worker and sibling Python simulator support
+  broker credentials over verified TLS, including optional mutual TLS. The local broker
+  remains anonymous, no broker-credential provisioning flow exists, and the actual ESP32
+  firmware source is absent. The simulator also checks boot identity and stale commands.
   See the [device provisioning guide](../guide/device-provisioning-guide.md).
 - The simulator overlay now configures both API and worker for session auth, PostgreSQL,
   and closed self-registration; the API waits for database readiness. Its broker stays
@@ -750,9 +754,22 @@ measurements, not production SLOs. Reproduce them with
 `apps/api/scripts/verify_live_contract.py`, and
 `apps/api/scripts/measure_session_startup.py`.
 
+The isolated persistent-volume database restart drill also passed: a new TimescaleDB
+container migrated to `0014`, seeded a farm/device/telemetry sample, restarted with its
+named volume retained, and returned ready in 0.63 seconds with all checked data present.
+Run it from `apps/api` using
+`PYTHONPATH=src ./.venv/bin/python scripts/verify_database_restart.py`; it creates and
+removes only uniquely named resources for that invocation. This covers the database
+restart path only; API, broker, and worker outage/restart behavior still needs an isolated
+deployment drill.
+
+The simulator suite now passes 27 tests, its 11-payload contract gate passes, and five
+worker tests cover verified-TLS credential setup. These checks validate client behavior;
+the anonymous local broker still has no per-device accounts or ACLs.
+
 The phase is **in progress**, not release-ready. Email verification/self-service recovery,
-commissioned hardware authentication and tests, database/broker/worker restart and outage
-drills with retained volumes, and a production-environment restore exercise remain open.
+commissioned hardware authentication and tests, API/broker/worker restart and outage drills
+with retained volumes, and a production-environment restore exercise remain open.
 The local bundle/startup guardrails passed the measured build and readiness smoke test;
 they have not been observed on the deployment host. Existing farm-local serials duplicated
 across farms are not auto-claimed; an operator must verify and provision a new globally

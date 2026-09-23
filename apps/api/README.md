@@ -178,13 +178,17 @@ export TEST_DATABASE_URL=postgresql+asyncpg://eggcelerate:eggcelerate_test@127.0
 ./.venv/bin/ruff format --check src tests migrations
 DATABASE_URL="$TEST_DATABASE_URL" ./.venv/bin/alembic check
 PYTHONPATH=src ./.venv/bin/python scripts/verify_backup_restore.py
+PYTHONPATH=src ./.venv/bin/python scripts/verify_database_restart.py
 TEST_DATABASE_URL="$TEST_DATABASE_URL" ./.venv/bin/python scripts/measure_session_startup.py
 ```
 
-Integration tests and destructive verification scripts require loopback
-`eggcelerate_test` on port `55432`; migration/restore scripts create and drop only their
-own uniquely named temporary databases, never the supplied database. Each test uses an
-isolated farm. Without `TEST_DATABASE_URL`, database-dependent cases skip.
+Integration tests and verification scripts that use the disposable test server require
+loopback `eggcelerate_test` on port `55432`; migration/restore scripts create and drop only
+their own uniquely named temporary databases, never the supplied database. The separate
+`verify_database_restart.py` drill creates a uniquely named container and volume, migrates
+and seeds them, restarts only its own database container, then removes those resources.
+Each integration test uses an isolated farm. Without `TEST_DATABASE_URL`, database-dependent
+cases skip.
 Covered: migration/extension existence, populated 0001→0002 upgrade with mode
 edits/replays preserved, CRUD parity, repeated seed preservation, API restart,
 create/patch replay, changed-payload rejection, cross-farm foreign-key rejection,

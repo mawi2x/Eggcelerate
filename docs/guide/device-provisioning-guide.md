@@ -50,6 +50,23 @@ and command acknowledgments use the topic and payload schemas in the
 registry, then constrains reads and command claims to the owning farm. With `AUTH_MODE=sessions`,
 unregistered devices do not receive commands or write telemetry.
 
+## Protected MQTT client settings
+
+The bundled worker and Python simulator support MQTT username/password authentication over
+TLS with broker certificate verification. They accept `MQTT_USERNAME`, `MQTT_PASSWORD`,
+`MQTT_TLS_CA_FILE`, and optionally the mutual-TLS pair `MQTT_TLS_CERT_FILE` plus
+`MQTT_TLS_KEY_FILE`. Supplying credentials without a CA file fails closed; TLS hostname
+verification stays enabled. With a CA file, the clients default to port `8883`; set
+`MQTT_PORT` when the broker uses another port. Use one broker username per device and
+configure ACLs so it can publish only its own telemetry/state/ack topics and subscribe only
+to its own commands topic. Give the worker a separate service identity that can read
+telemetry/ack topics and publish commands.
+
+The bundled local broker remains anonymous, unencrypted, and loopback-only. The current
+operator command reserves device IDs in the application database; it does not create broker
+credentials, broker ACLs, or firmware secrets. Do not expose that local broker or treat the
+client options as a completed hardware commissioning flow.
+
 ## Simulator boundary
 
 The local simulator overlay sets the API and worker to `APP_ENV=development` and
@@ -86,8 +103,9 @@ opt-in with `SIMULATOR_DISPATCH_ENABLED=true`. The worker refuses `APP_ENV=produ
 because the bundled anonymous broker and simulator messages are not authenticated per
 device.
 
-Before connecting a real board, add a device credential or signed-message protocol, broker
-ACLs and TLS, firmware-side identity verification, and recovery tests. Then verify
+Before connecting a real board, provision its broker credential, configure broker
+authentication and per-device ACLs, implement the same TLS trust and device identity rules
+in firmware, and add credential recovery/revocation tests. Then verify
 telemetry replay, cross-farm command isolation, acknowledgments, clock behavior, network
 loss, and local safety cutoffs on the selected hardware. Never use a public serial number
 alone as proof that a device belongs to a farm.
