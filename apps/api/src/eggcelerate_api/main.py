@@ -58,7 +58,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if database is not None:
             try:
                 ready = await database.ready()
-            except (SQLAlchemyError, OSError, TimeoutError):
+            except SQLAlchemyError, OSError, TimeoutError:
                 ready = False
             return JSONResponse(
                 status_code=200 if ready else 503,

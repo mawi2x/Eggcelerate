@@ -44,6 +44,9 @@ docker compose ps
 
 The web is exposed on host port 80. The API is bound to host loopback port 8000 for local diagnostics; the browser should use `VITE_API_URL=/api` so it does not call a team member's localhost. The database is not started unless the `database` profile is enabled.
 
+Set `VITE_LIVE_REFRESH_ENABLED=false` in the build environment to disable periodic
+incubator-summary polling while keeping the dashboard's local freshness clock active.
+
 ## Team preview with durable notifications
 
 The checked-in defaults are intentionally mock and in-memory for local work. A VPS preview that must retain cleared notifications across refreshes and restarts needs the API repository and PostgreSQL enabled at **build time** and **run time**:
@@ -64,5 +67,5 @@ curl -fsS http://127.0.0.1/healthz
 curl -fsS http://127.0.0.1/api/v1/alerts | grep -q '"ok":true'
 ```
 
-The overlay forces `VITE_DATA_SOURCE=api`, `VITE_API_URL=/api`, and `STORAGE_BACKEND=postgres_incubators`; it also removes the API and database host ports. The web image fails its build if API mode contains a loopback URL, and its healthcheck probes the Nginx `/api` proxy. Run those commands from the repository checkout on the VPS. Do not run `docker compose down -v`; the named database volume contains the alert dismissal tombstones. The API currently has authentication disabled pending B6, so keep this preview behind a VPN, firewall, or an authenticated outer proxy rather than publishing it as a public service.
+The overlay forces `VITE_DATA_SOURCE=api`, `VITE_API_URL=/api`, and `STORAGE_BACKEND=postgres_incubators`; it also removes the API and database host ports. The web image's build-time check catches literal `http(s)://localhost` or `http(s)://127.0.0.1` strings followed by `:` or `/` when API mode is selected; it does not validate other loopback spellings or prove API reachability. Its healthcheck probes the Nginx `/api` proxy. Run those commands from the repository checkout on the VPS. Do not run `docker compose down -v`; the named database volume contains the alert dismissal tombstones. The API currently has authentication disabled pending B6, so keep this preview behind a VPN, firewall, or an authenticated outer proxy rather than publishing it as a public service.
 The overlay uses the Compose `!override` tag; use Docker Compose v2.24 or newer.

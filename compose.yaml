@@ -8,6 +8,7 @@ services:
         # The production build is same-origin. Set VITE_DATA_SOURCE=api in
         # the VPS .env so requests go through the Nginx /api proxy.
         VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_LIVE_REFRESH_ENABLED: ${VITE_LIVE_REFRESH_ENABLED:-true}
     ports:
       - "80:80"
     restart: unless-stopped

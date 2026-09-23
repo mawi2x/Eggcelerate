@@ -220,7 +220,7 @@ async def run() -> None:
                             queues.dropped_ack_count,
                         )
                 acknowledge(inbound)
-            except (SQLAlchemyError, OSError, TimeoutError):
+            except SQLAlchemyError, OSError, TimeoutError:
                 log.warning("MQTT database operation unavailable; retrying")
                 if inbound is not None and inbound.is_ack:
                     queues.enqueue(inbound)

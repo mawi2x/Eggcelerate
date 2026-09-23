@@ -15,10 +15,10 @@ key remains separate from the server-generated MQTT dispatch UUID.
 
 ## Inspected implementation
 
-Separate repository: `/home/mawi/Projects/eggcelerate-simulate`, modified working
-tree at the handoff revision recorded in the system refinement note. Sources:
-`sim/mqtt.py`, `sim/physics.py`, examples and `tests/test_mqtt_logic.py`. Its 24
-unit tests pass. The simulator now validates schema/device/interval/request/expiry,
+Separate repository: `eggcelerate-simulate` at committed revision `2b85e15`
+(`feat(sim): correlate commands with device boot`). Sources: `sim/mqtt.py`,
+`sim/physics.py`, examples and `tests/test_mqtt_logic.py`. Its 25 unit tests pass.
+The simulator validates schema/device/interval/request/expiry,
 persists an atomic command journal, and replays the original ACK after restart.
 
 | Topic suffix under `eggcelerate/v1/devices/{device_id}` | Current simulator behavior |
@@ -50,9 +50,10 @@ is server assigned.
 
 Temperature/humidity/water and observed time enter the B3 raw sample table;
 battery/power, boot identity, sequence, observation time and server receipt times
-also update `device_telemetry_state` in migration `0009`. Exact retries preserve
-the first raw receipt; conflicting samples at the same observed instant use B3
-conflict handling. Late samples and exact retries cannot refresh liveness or replace a newer
+also update `device_telemetry_state` in migration `0009`. Command identity and claim
+constraints continue through migrations `0010` and `0011`. Exact retries preserve the
+first raw receipt; conflicting samples at the same observed instant use B3 conflict
+handling. Late samples and exact retries cannot refresh liveness or replace a newer
 latest projection. Freshness uses `last_seen_at`: fresh through 45 seconds, stale
 through 180 seconds, then offline. The caller owns commit/rollback and catches
 invalid messages individually; invalid input never marks a device healthy. No
@@ -80,18 +81,21 @@ or physical actuator path is claimed here.
 
 ## Verification — command closure, 2026-09-23
 
-- 87 API tests pass against the disposable Timescale database with no skips.
-- Fresh and populated migrations pass at head `0009`.
-- 36 frontend files / 298 tests pass; strict frontend coverage passes.
+- The full API suite passes with 104 tests and no skips against disposable TimescaleDB.
+- Fresh and populated migrations pass through head `0011`.
+- The live HTTP repository contract passes 28/28 cases; current frontend commands and
+  totals are defined by the [web CI workflow](../../.github/workflows/web.yml).
 - The shared live HTTP repository contract passes 28/28 cases.
-- The simulator passes 24 unit tests.
+- The pinned simulator revision passes 25 unit tests.
 - An end-to-end local proof passes: REST acceptance → durable outbox → MQTT
   worker → simulator → ACK → confirmed turn cursor.
 - Rejection, timeout, mismatched ACK, duplicate ACK, delayed terminal conflict,
   and command restart replay are covered by API/simulator tests.
 
 The local proof uses a temporary Mosquitto listener on loopback and an isolated
-test farm. It is not a public deployment or hardware qualification.
+test farm. The pinned simulator revision and host-to-overlay broker workflow are
+documented in [local infrastructure](../../infrastructure/README.md). It is not a public
+deployment or hardware qualification.
 
 ## Phase 5 live dashboard slice — 2026-09-23
 

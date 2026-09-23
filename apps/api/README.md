@@ -20,7 +20,7 @@ Accepted technology decisions (local-only ADRs under `docs/archive/adr/`):
 
 ```text
 pyproject.toml          exact pins + update policy (pytest/ruff under test extra)
-Dockerfile              python:3.13-slim, loopback Compose service on :8000
+Dockerfile              python:3.14-slim, non-root loopback Compose service on :8000
 src/eggcelerate_api/
   main.py               application factory, CORS, /healthz, /readyz
   config.py             local settings + production-without-auth refusal

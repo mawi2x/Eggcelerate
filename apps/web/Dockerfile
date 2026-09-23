@@ -11,8 +11,10 @@ RUN corepack enable && corepack prepare pnpm@9.12.3 --activate \
 COPY apps/web apps/web
 ARG VITE_DATA_SOURCE=mock
 ARG VITE_API_URL=/api
+ARG VITE_LIVE_REFRESH_ENABLED=true
 ENV VITE_DATA_SOURCE=$VITE_DATA_SOURCE
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_LIVE_REFRESH_ENABLED=$VITE_LIVE_REFRESH_ENABLED
 RUN pnpm --filter eggcelerate-ui build \
     && if [ "$VITE_DATA_SOURCE" = "api" ] \
       && grep -R -E 'https?://(localhost|127\.0\.0\.1)(:|/)' apps/web/dist >/dev/null; then \

@@ -6,7 +6,7 @@ entries (44 modified, 17 untracked) containing refinement Phase 4 (durable devic
 commands, migration `0008`) and Phase 5 (telemetry projection/freshness, migration
 `0009`). Sibling repository `eggcelerate-simulate` @ `e112a25` with 4 modified files.
 
-**Execution status (2026-09-23):** Phases 0–4 complete; Phase 5 is next. Main
+**Execution status (2026-09-23):** Phases 0–5 complete; Phase 6 is next. Main
 repository checkpoints are `6fd0869` (earlier UI refinements), `0db4a94`
 (command outbox), `6b53341` (telemetry), `d5f6b44` (CI/migration gates), and the Phase 1
 commit `5221ca4`, Phase 2 API commit `b4bbc7e`, and simulator commits `5746c94` (Phase 0)
@@ -189,9 +189,9 @@ uninformed code review as its input" — is now satisfied by §2.
 |---|---|---|---|
 | D-1 | What should a **paired chamber that has never reported telemetry** look like? | (a) `offline` until proven live — change the memory fixture and the shared contract expectation; (b) keep a third "never reported" presentation and stop defaulting to `fresh`; (c) seed `device_telemetry_state` for the development seed so the preview mirrors the mock | **(b) + (a) for the API**: never-reported must not read as Live anywhere (WS-1), and the Postgres answer (offline) becomes the single truth. Option (c) alone is rejected: seeded rows age out after 180 s, so the preview returns to "12 critical" within minutes |
 | D-2 | Does `docs/refine` become tracked? | (a) add `!docs/refine` to `.gitignore`; (b) move handoffs into `docs/guide/` and update citations | (a) — one line makes every existing citation honest and version-controls the evidence |
-| D-3 | Python version policy | (a) declare what ships (3.13) and keep CI at the floor; (b) run CI on 3.14 and raise the floor; (c) matrix | (b) for CI (already true) + raise `requires-python`/`mypy python_version` to the shipped interpreter, then align the image |
+| D-3 | Python version policy | (a) declare what ships (3.13) and keep CI at the floor; (b) run CI on 3.14 and raise the floor; (c) matrix | Selected and applied in Phase 5: (b), with image, `requires-python`, and mypy aligned to 3.14 |
 | D-4 | Is the HTTP transport contract a required local gate? | (a) wire `EGG_API_URL` into a documented `test:contract` script; (b) document `verify_live_contract.py` as the transport gate and stop citing 298 as contract coverage | (a) — otherwise the red gate in §1 stays invisible to `pnpm test` |
-| D-5 | Simulator revision pin | (a) commit the sibling tree and record the SHA in the tracked guides; (b) keep citing a dirty tree | (a) |
+| D-5 | Simulator revision pin | (a) commit the sibling tree and record the SHA in the tracked guides; (b) keep citing a dirty tree | Selected and applied: clean sibling revision `2b85e15` is pinned in the integration guide |
 | D-6 | Do the preview containers get rebuilt in this work? | (a) yes, as part of Phase 1 exit; (b) no, out of scope | (a) — GATE-11 means the preview currently lies about both health and chamber status |
 
 ---
@@ -506,7 +506,7 @@ See [`project-review-handoff-2026-09-23-phase4.md`](project-review-handoff-2026-
 **Outcome:** the documented switches and version policy work as written, and the API
 container runs unprivileged.
 
-**Why:** `docs/guide/b4-mqtt-contract.md:120-121` instructs operators to build with
+**Initial-review finding:** `docs/guide/b4-mqtt-contract.md:120-121` instructed operators to build with
 `VITE_LIVE_REFRESH_ENABLED=false`, but `apps/web/Dockerfile:12-15` declares no such ARG,
 so the documented rollback requires editing the image definition. Python is declared
 3.11 (`pyproject.toml:8,33`), shipped as 3.13 (`apps/api/Dockerfile:1`) and tested as
@@ -516,23 +516,42 @@ cancels superseded runs, so a 15-minute Timescale job queues behind every push.
 simulator cannot reach it.
 
 **Work**
-- [ ] Add `ARG`/`ENV VITE_LIVE_REFRESH_ENABLED` to `apps/web/Dockerfile` and pass it from
+- [x] Add `ARG`/`ENV VITE_LIVE_REFRESH_ENABLED` to `apps/web/Dockerfile` and pass it from
       `compose.yaml`'s `web.build.args`.
-- [ ] Apply **D-3**: declare the shipped interpreter, keep CI on the tested version.
-- [ ] Add `USER` to `apps/api/Dockerfile` (and ensure the workdir is writable if any
+- [x] Apply **D-3**: declare the shipped interpreter, keep CI on the tested version.
+- [x] Add `USER` to `apps/api/Dockerfile` (and ensure the workdir is writable if any
       runtime path needs it).
-- [ ] Add `concurrency` groups to `.github/workflows/api.yml` and `web.yml`.
-- [ ] Document how the simulator is expected to reach `broker` (or publish a loopback
+- [x] Add `concurrency` groups to `.github/workflows/api.yml` and `web.yml`.
+- [x] Document how the simulator is expected to reach `broker` (or publish a loopback
       port for the documented workflow), and pin the sibling revision per **D-5**.
-- [ ] Document the narrow guarantee of the web image's loopback guard
+- [x] Document the narrow guarantee of the web image's loopback guard
       (`apps/web/Dockerfile:16-21` catches only literal `http(s)://localhost` and
       `127.0.0.1` followed by `:` or `/`, and only when `VITE_DATA_SOURCE=api`).
 
 **Exit gate:** `docker compose config` renders; a local web build with
-`VITE_DATA_SOURCE=api VITE_LIVE_REFRESH_ENABLED=false` succeeds and the built bundle
-contains no polling interval wiring; the API image starts as a non-root user.
+`VITE_DATA_SOURCE=api VITE_LIVE_REFRESH_ENABLED=false` succeeds, and its incubator
+summary query compiles with `refetchInterval: false` (the separate five-second local
+freshness clock remains); the API image starts as a non-root user.
 
 **Recovery:** each change is a single-file revert; none affect runtime data.
+
+**Execution record (2026-09-23):** the web Docker image built in API mode with live
+refresh disabled; its bundled query sets `refetchInterval` to false and has no Vite
+switch left at runtime. Compose config passed for the base, production and simulator
+overlays; the simulator publishes Mosquitto only at `127.0.0.1:1883`. The API image
+built from Python 3.14 and served `/healthz` with UID/GID `10001:10001`. The declared
+Python floor, mypy target and container now match CI's 3.14 runtime; Ruff formatting
+was refreshed for 3.14 syntax. Both CI workflows now cancel superseded runs.
+
+The simulator checkout was clean at pinned revision `2b85e15`; all 25 unit tests and
+the payload contract gate passed. A host-run simulator published a valid EGG-1003
+telemetry message to the Compose broker through `127.0.0.1:1883`. The PostgreSQL API
+suite passed `104` tests with no skips and three warnings (two dependency deprecations
+and the known Pydantic field-alias warning); Ruff passed on 72 files and mypy on 36.
+The local simulator path does not qualify physical hardware or LAN reachability, and
+the five-second UI freshness clock remains active when periodic polling is disabled.
+
+See [`project-review-handoff-2026-09-23-phase5.md`](project-review-handoff-2026-09-23-phase5.md).
 
 ---
 

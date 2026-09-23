@@ -2,7 +2,7 @@
 name = "eggcelerate-api"
 version = "0.1.0"
 description = "EGGCELERATE dashboard backend with staged PostgreSQL persistence"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 dependencies = [
   "fastapi==0.141.1",
   "pydantic==2.13.5",
@@ -32,7 +32,7 @@ testpaths = ["tests"]
 # API suite plus the frontend contract gate, record the new pins here.
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.14"
 files = ["src/eggcelerate_api"]
 check_untyped_defs = true
 warn_unused_ignores = true

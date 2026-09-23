@@ -72,7 +72,7 @@ def main():
                     ) as response:
                         if response.status == 200:
                             break
-                except (OSError, urllib.error.URLError):
+                except OSError, urllib.error.URLError:
                     time.sleep(0.1)
             else:
                 raise RuntimeError("Isolated API did not become ready.")
