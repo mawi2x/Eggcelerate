@@ -1,26 +1,66 @@
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   type ReactNode,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 import { Redirect } from "wouter";
+import {
+  ApiAuthClient,
+  type ApiAuthIdentity,
+  type RegisterAccountInput,
+} from "../data/auth/api-auth-client";
+import { setCsrfToken } from "../data/transport/session";
 
-export interface MockAuthUser {
+export interface AuthUser {
   id: string;
-  role: "farmer";
+  email: string;
+  displayName: string;
+  farmName: string;
+  role: "owner" | "farmer";
 }
 
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+
 interface AuthContextValue {
-  user: MockAuthUser | null;
+  user: AuthUser | null;
+  mode: "mock" | "api";
+  status: AuthStatus;
+  isLoading: boolean;
   isAuthenticated: boolean;
-  signIn: () => void;
+  error: string | null;
+  signIn: (
+    email: string,
+    password: string,
+    rememberMe?: boolean,
+  ) => Promise<void>;
+  register: (input: RegisterAccountInput) => Promise<void>;
   completeOnboarding: () => void;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+const mockUser: AuthUser = {
+  id: "mock-farmer",
+  email: "farmer@example.test",
+  displayName: "Farmer Juan",
+  farmName: "Sunrise Poultry",
+  role: "farmer",
+};
+
+function userFromApi(identity: ApiAuthIdentity): AuthUser {
+  return {
+    id: identity.user.id,
+    email: identity.user.email,
+    displayName: identity.user.display_name,
+    farmName: identity.farm.name,
+    role: identity.user.role,
+  };
+}
 
 export function MockAuthProvider({
   children,
@@ -29,18 +69,115 @@ export function MockAuthProvider({
   children: ReactNode;
   initiallyAuthenticated?: boolean;
 }) {
-  const [user, setUser] = useState<MockAuthUser | null>(
-    initiallyAuthenticated ? { id: "mock-farmer", role: "farmer" } : null,
+  const [user, setUser] = useState<AuthUser | null>(
+    initiallyAuthenticated ? mockUser : null,
   );
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
+      mode: "mock",
+      status: user ? "authenticated" : "unauthenticated",
+      isLoading: false,
       isAuthenticated: user !== null,
-      signIn: () => setUser({ id: "mock-farmer", role: "farmer" }),
-      completeOnboarding: () => setUser({ id: "mock-farmer", role: "farmer" }),
-      signOut: () => setUser(null),
+      error: null,
+      signIn: async (email) => setUser({ ...mockUser, email, role: "farmer" }),
+      register: async (input) =>
+        setUser({
+          id: "mock-farmer",
+          email: input.email,
+          displayName: input.displayName,
+          farmName: input.farmName,
+          role: "farmer",
+        }),
+      completeOnboarding: () => setUser(mockUser),
+      signOut: async () => setUser(null),
     }),
     [user],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function ApiAuthProvider({
+  baseUrl,
+  children,
+}: {
+  baseUrl: string;
+  children: ReactNode;
+}) {
+  const queryClient = useQueryClient();
+  const client = useMemo(() => new ApiAuthClient(baseUrl), [baseUrl]);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [status, setStatus] = useState<AuthStatus>("loading");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const expireSession = () => {
+      setCsrfToken(null);
+      queryClient.clear();
+      setUser(null);
+      setStatus("unauthenticated");
+      setError("Your session has ended. Sign in again to continue.");
+    };
+    window.addEventListener("eggcelerate:session-expired", expireSession);
+    void client
+      .session()
+      .then((identity) => {
+        if (!active) return;
+        setUser(identity ? userFromApi(identity) : null);
+        setStatus(identity ? "authenticated" : "unauthenticated");
+        setError(null);
+      })
+      .catch((cause: unknown) => {
+        if (!active) return;
+        setCsrfToken(null);
+        setUser(null);
+        setStatus("unauthenticated");
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Could not check your sign-in session.",
+        );
+      });
+    return () => {
+      active = false;
+      window.removeEventListener("eggcelerate:session-expired", expireSession);
+    };
+  }, [client, queryClient]);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      mode: "api",
+      status,
+      isLoading: status === "loading",
+      isAuthenticated: status === "authenticated" && user !== null,
+      error,
+      signIn: async (email, password, rememberMe = false) => {
+        const identity = await client.signIn(email, password, rememberMe);
+        queryClient.clear();
+        setUser(userFromApi(identity));
+        setStatus("authenticated");
+        setError(null);
+      },
+      register: async (input) => {
+        const identity = await client.register(input);
+        queryClient.clear();
+        setUser(userFromApi(identity));
+        setStatus("authenticated");
+        setError(null);
+      },
+      completeOnboarding: () => undefined,
+      signOut: async () => {
+        await client.signOut();
+        queryClient.clear();
+        setUser(null);
+        setStatus("unauthenticated");
+        setError(null);
+      },
+    }),
+    [client, error, queryClient, status, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

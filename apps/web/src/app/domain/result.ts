@@ -1,4 +1,5 @@
 export const RESULT_ERROR_CODES = [
+  "unauthorized",
   "validation_error",
   "not_found",
   "conflict",

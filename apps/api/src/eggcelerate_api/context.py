@@ -1,4 +1,4 @@
-"""Dormant request-context boundary. Local-only until B6 replaces it."""
+"""Request identity and tenant context shared by local and authenticated APIs."""
 
 from __future__ import annotations
 
@@ -11,12 +11,14 @@ class RequestContext:
     actor_id: str = "local-dashboard"
     role: str = "development"
     authenticated: bool = False
+    session_hash: str | None = None
+    csrf_hash: str | None = None
 
 
 def disabled_context(default_farm_id: str) -> RequestContext:
-    """AUTH_MODE=disabled resolution: the server supplies the farm.
+    """AUTH_MODE=disabled resolution: the server supplies the local farm.
 
     Never accept a caller-selected farm ID as proof of authorization;
-    authenticated mode (B6) will derive it from the verified session.
+    sessions mode derives it from the verified membership.
     """
     return RequestContext(farm_id=default_farm_id)

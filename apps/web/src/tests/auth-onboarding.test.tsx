@@ -1,8 +1,10 @@
 import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { CreateAccountScreen } from "../app/components/auth/CreateAccountScreen";
 import { SignInScreen } from "../app/components/auth/SignInScreen";
 import { StepperBar } from "../app/components/auth/StepperBar";
 import {
+  CreateAccountSchema,
   OnboardingStep1Schema,
   OnboardingStep2Schema,
   OnboardingStep3Schema,
@@ -43,6 +45,27 @@ describe("onboarding schemas", () => {
         species: ["chicken"],
       }).species,
     ).toContain("chicken");
+  });
+
+  it("requires a long matching password for app-managed accounts", () => {
+    expect(() =>
+      CreateAccountSchema.parse({
+        email: "a@b.co",
+        password: "short",
+        confirmPassword: "short",
+        displayName: "Farmer",
+        farmName: "Sunrise",
+      }),
+    ).toThrow();
+    expect(
+      CreateAccountSchema.parse({
+        email: "a@b.co",
+        password: "correct horse battery staple",
+        confirmPassword: "correct horse battery staple",
+        displayName: "Farmer",
+        farmName: "Sunrise",
+      }).email,
+    ).toBe("a@b.co");
   });
 });
 
@@ -93,7 +116,11 @@ describe("sign-in and onboarding controls", () => {
 
       await act(async () => setValue(email, "farmer@example.com"));
       await act(async () => submit.click());
-      expect(onSignIn).toHaveBeenCalledWith("farmer@example.com");
+      expect(onSignIn).toHaveBeenCalledWith(
+        "farmer@example.com",
+        "12345678",
+        false,
+      );
 
       const showPassword = mounted.container.querySelector<HTMLButtonElement>(
         'button[aria-label="Show password"]',
@@ -114,6 +141,46 @@ describe("sign-in and onboarding controls", () => {
       );
       await act(async () => setup?.click());
       expect(onSetup).toHaveBeenCalledOnce();
+    } finally {
+      await mounted.unmount();
+    }
+  });
+
+  it("creates an account with the typed farm identity and matching password", async () => {
+    const onRegister = vi.fn().mockResolvedValue(undefined);
+    const mounted = await render(
+      <CreateAccountScreen onRegister={onRegister} onHaveAccount={vi.fn()} />,
+    );
+    try {
+      const setValue = (selector: string, value: string) => {
+        const input =
+          mounted.container.querySelector<HTMLInputElement>(selector);
+        if (!input) throw new Error(`Missing input ${selector}`);
+        const setter = Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value",
+        )?.set;
+        if (!setter) throw new Error("Missing input value setter");
+        setter.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+      await act(async () => {
+        setValue("#register-name", "A. Farmer");
+        setValue("#register-farm", "Sunrise Farm");
+        setValue("#register-email", "farmer@example.com");
+        setValue("#register-password", "correct horse battery staple");
+        setValue("#register-confirm-password", "correct horse battery staple");
+      });
+      const submit = [...mounted.container.querySelectorAll("button")].find(
+        (button) => button.textContent?.includes("Create account"),
+      );
+      await act(async () => submit?.click());
+      expect(onRegister).toHaveBeenCalledWith({
+        displayName: "A. Farmer",
+        farmName: "Sunrise Farm",
+        email: "farmer@example.com",
+        password: "correct horse battery staple",
+      });
     } finally {
       await mounted.unmount();
     }

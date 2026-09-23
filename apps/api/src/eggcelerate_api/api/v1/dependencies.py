@@ -10,19 +10,58 @@ from fastapi import Depends, Request
 from fastapi.concurrency import contextmanager_in_threadpool
 from sqlalchemy.exc import SQLAlchemyError
 
+from ...context import RequestContext, disabled_context
 from ...database.queries import read_state
 from ...database.store import PostgresStore
 from ...errors import AppError
+from ...session_auth import SESSION_COOKIE_NAME, require_csrf, resolve_session
 from ...storage import StoreState
 
 
-async def get_store(request: Request) -> AsyncIterator[StoreState]:
+async def get_request_context(request: Request) -> RequestContext:
+    settings = request.app.state.settings
+    if settings.auth_mode == "disabled":
+        return disabled_context(settings.default_farm_id)
+    database: PostgresStore | None = request.app.state.database
+    if database is None:
+        raise AppError("unauthorized", "Session authentication is unavailable.")
+    try:
+        identity = await resolve_session(
+            database, request.cookies.get(SESSION_COOKIE_NAME)
+        )
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "The account service is unavailable.") from exc
+    if identity is None:
+        raise AppError("unauthorized", "Sign in to access farm data.")
+    return identity.context
+
+
+async def require_api_session(
+    request: Request, context: RequestContext = Depends(get_request_context)
+) -> RequestContext:
+    if request.app.state.settings.auth_mode == "sessions" and not context.authenticated:
+        raise AppError("unauthorized", "Sign in to access farm data.")
+    return context
+
+
+async def require_api_csrf(
+    request: Request, context: RequestContext = Depends(require_api_session)
+) -> None:
+    if request.app.state.settings.auth_mode == "sessions":
+        require_csrf(request, context)
+
+
+async def get_store(
+    request: Request,
+    context: RequestContext = Depends(get_request_context),
+) -> AsyncIterator[StoreState]:
     memory = request.app.state.store
     database: PostgresStore | None = request.app.state.database
     if database is None:
         async with contextmanager_in_threadpool(memory.transaction()) as state:
             yield state
         return
+    database = database.for_farm(context.farm_id)
     if request.method == "GET":
         resource = request.url.path.removeprefix("/api/v1/").split("/")[0]
         public_id = request.path_params.get("incubator_id") or request.path_params.get(

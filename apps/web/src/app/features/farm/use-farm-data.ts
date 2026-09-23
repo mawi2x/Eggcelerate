@@ -23,6 +23,7 @@ import type {
   Mode,
   TurnCommand,
 } from "../../domain/types";
+import { useAuth } from "../../providers/auth-context";
 import { useRepository } from "../../providers/repository-context";
 import { farmQueryKeys } from "./query-keys";
 import {
@@ -69,6 +70,7 @@ async function runMutation(
 }
 
 export function useFarmData() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -77,13 +79,16 @@ export function useFarmData() {
     return () => window.clearInterval(timer);
   }, []);
   const repository = useRepository();
+  const enabled = isAuthenticated && !authLoading;
   const modesQuery = useQuery({
     queryKey: farmQueryKeys.modes,
     queryFn: async () => requireResultData(await repository.listModes()),
+    enabled,
   });
   const incubatorsQuery = useQuery({
     queryKey: farmQueryKeys.incubators,
     queryFn: async () => requireResultData(await repository.listIncubators()),
+    enabled,
     staleTime: TELEMETRY_POLL_INTERVAL_MS,
     refetchInterval: TELEMETRY_REFRESH_ENABLED
       ? TELEMETRY_POLL_INTERVAL_MS
@@ -93,14 +98,17 @@ export function useFarmData() {
   const alertsQuery = useQuery({
     queryKey: farmQueryKeys.alerts,
     queryFn: async () => requireResultData(await repository.listAlerts()),
+    enabled,
   });
   const hatchRecordsQuery = useQuery({
     queryKey: farmQueryKeys.hatchRecords,
     queryFn: async () => requireResultData(await repository.listHatchRecords()),
+    enabled,
   });
   const settingsQuery = useQuery({
     queryKey: farmQueryKeys.settings,
     queryFn: async () => requireResultData(await repository.listSettings()),
+    enabled,
   });
   const queries = [
     modesQuery,

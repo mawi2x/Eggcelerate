@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 CODE_STATUS: dict[str, int] = {
+    "unauthorized": 401,
     "validation_error": 422,
     "not_found": 404,
     "conflict": 409,

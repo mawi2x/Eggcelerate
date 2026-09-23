@@ -250,7 +250,7 @@ def test_migration_has_extension_and_relational_tables(settings):
                     await session.scalar(
                         text("SELECT version_num FROM alembic_version")
                     )
-                    == "0011"
+                    == "0012"
                 )
                 assert await session.scalar(
                     text(

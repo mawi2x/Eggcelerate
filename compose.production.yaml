@@ -1,6 +1,5 @@
-# Team-preview deployment overlay. Keep compose.yaml's mock/memory defaults
-# for local work; use this file when the dashboard must talk to durable API
-# storage through the web container's same-origin /api proxy.
+# Authenticated production-shaped overlay. Public release still depends on the
+# Phase 9 operational gates documented in the Phase 8 handoff.
 services:
   web:
     build:
@@ -10,15 +9,9 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    # A static shell can still return 200 when the /api proxy is missing.
-    # Probe the proxied API so an old or misconfigured web image cannot report
-    # healthy while the dashboard is pointed at a team member's localhost.
+    # Check API readiness without requiring an authenticated dashboard session.
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget -q -O - http://127.0.0.1/api/v1/alerts | grep -q '\"ok\":true'",
-        ]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/readyz"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -28,11 +21,9 @@ services:
     environment:
       STORAGE_BACKEND: postgres_incubators
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for the production database}
-      # The API is intentionally auth-disabled until B6. Protect this preview
-      # with a VPN, firewall, or authenticated outer reverse proxy.
-      APP_ENV: development
-      AUTH_MODE: disabled
-      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      APP_ENV: production
+      AUTH_MODE: sessions
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS to the HTTPS web origin}
     depends_on:
       db:
         condition: service_healthy

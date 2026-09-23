@@ -35,6 +35,19 @@ export const SignInSchema = z.object({
   rememberMe: z.boolean().optional().default(false),
 });
 
+export const CreateAccountSchema = z
+  .object({
+    email: z.string().trim().email(),
+    password: z.string().min(12).max(128),
+    confirmPassword: z.string(),
+    displayName: z.string().trim().min(1).max(ACCOUNT_HOLDER_MAX),
+    farmName: z.string().trim().min(1).max(FARM_NAME_MAX),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match.",
+  });
+
 export const OnboardingStep1Schema = z.object({
   name: z.string().min(1).max(ACCOUNT_HOLDER_MAX).trim(),
   farmName: z.string().min(1).max(FARM_NAME_MAX).trim(),

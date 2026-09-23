@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import type { EggcelerateRepository } from "../data/repositories/repository";
-import { MockAuthProvider } from "./auth-context";
+import { ApiAuthProvider, MockAuthProvider } from "./auth-context";
 import { RepositoryProvider } from "./repository-context";
 
 export function createAppQueryClient(): QueryClient {
@@ -22,23 +22,29 @@ export function AppProviders({
   children,
   queryClient: providedQueryClient,
   initiallyAuthenticated = true,
+  authApiBaseUrl,
 }: {
   repository: EggcelerateRepository;
   children: ReactNode;
   queryClient?: QueryClient;
   initiallyAuthenticated?: boolean;
+  authApiBaseUrl?: string | null;
 }) {
   const [queryClient] = useState(
     () => providedQueryClient ?? createAppQueryClient(),
   );
 
   return (
-    <MockAuthProvider initiallyAuthenticated={initiallyAuthenticated}>
-      <RepositoryProvider repository={repository}>
-        <QueryClientProvider client={queryClient}>
-          {children}
-        </QueryClientProvider>
-      </RepositoryProvider>
-    </MockAuthProvider>
+    <RepositoryProvider repository={repository}>
+      <QueryClientProvider client={queryClient}>
+        {authApiBaseUrl ? (
+          <ApiAuthProvider baseUrl={authApiBaseUrl}>{children}</ApiAuthProvider>
+        ) : (
+          <MockAuthProvider initiallyAuthenticated={initiallyAuthenticated}>
+            {children}
+          </MockAuthProvider>
+        )}
+      </QueryClientProvider>
+    </RepositoryProvider>
   );
 }

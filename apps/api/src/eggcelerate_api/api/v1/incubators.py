@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Header, Request
+from fastapi import APIRouter, Depends, Header, Request
 from fastapi.concurrency import contextmanager_in_threadpool
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from ... import services
+from ...context import RequestContext
 from ...database.readings import chamber_readings
-from ...database.schema import device_commands
+from ...database.schema import device_commands, incubators
 from ...errors import AppError, ok_envelope, validated, validation_error
 from ...models import (
     CandlingEntryCreate,
@@ -23,16 +24,22 @@ from ...models import (
     UpdateConfigurationRequest,
     UpdateProfileRequest,
 )
-from .dependencies import Store
+from .dependencies import Store, get_request_context
 
 router = APIRouter(prefix="/incubators", tags=["incubators"])
 
 
 @router.get("/{incubator_id}/commands/{command_id}")
-async def command_status(incubator_id: str, command_id: str, request: Request) -> dict:
+async def command_status(
+    incubator_id: str,
+    command_id: str,
+    request: Request,
+    context: RequestContext = Depends(get_request_context),
+) -> dict:
     database = request.app.state.database
     if database is None:
         raise AppError("not_found", "Device dispatch is unavailable in memory mode.")
+    database = database.for_farm(context.farm_id)
     try:
         async with database.sessions() as session:
             row = (
@@ -230,13 +237,25 @@ def manual_turn(
 
 @router.get("/{incubator_id}/readings")
 async def list_readings(
-    incubator_id: str, request: Request, window: str = "24h"
+    incubator_id: str,
+    request: Request,
+    window: str = "24h",
+    context: RequestContext = Depends(get_request_context),
 ) -> dict:
     database = request.app.state.database
     now = services.utcnow()
     if database is not None:
+        database = database.for_farm(context.farm_id)
         try:
             async with database.sessions() as session:
+                owned_incubator = await session.scalar(
+                    select(incubators.c.id).where(
+                        incubators.c.farm_id == database.farm_id,
+                        incubators.c.public_id == incubator_id,
+                    )
+                )
+                if owned_incubator is None:
+                    raise AppError("not_found", "Incubator was not found.")
                 points = await chamber_readings(
                     session, database.farm_id, incubator_id, window, now
                 )

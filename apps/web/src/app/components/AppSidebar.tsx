@@ -5,6 +5,7 @@ import {
   ChevronRight,
   LayoutGrid,
   LineChart,
+  LogOut,
   MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
@@ -56,6 +57,7 @@ interface Props {
   account: Account;
   collapsed: boolean;
   onToggleCollapsed: () => void;
+  onSignOut: () => void;
 }
 
 export function AppSidebar({
@@ -65,6 +67,7 @@ export function AppSidebar({
   account,
   collapsed,
   onToggleCollapsed,
+  onSignOut,
 }: Props) {
   const isMobile = useIsMobile();
   const [hoverToggle, setHoverToggle] = useState(false);
@@ -316,6 +319,18 @@ export function AppSidebar({
                 </button>
               );
             })}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMobileMoreOpen(false);
+                onSignOut();
+              }}
+              className="mt-1 flex min-h-[var(--control-height-default)] w-full cursor-pointer items-center gap-3 rounded-xl border-t px-3 py-2.5 text-left text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <LogOut size={18} />
+              <span>Sign out</span>
+            </button>
           </div>
         )}
       </>
@@ -545,24 +560,21 @@ export function AppSidebar({
             />
           </button>
 
-          {/* Profile avatar */}
-          <span
-            className="flex shrink-0 items-center justify-center rounded-full"
+          {/* Sign-out control */}
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="flex shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            aria-label="Sign out"
+            title="Sign out"
             style={{
               width: "var(--control-size-sm)",
               height: "var(--control-size-sm)",
-              backgroundColor: "var(--brand-primary)",
-              color: "var(--on-brand)",
-              fontFamily: "var(--font-body)",
-              fontSize: "var(--type-caption)",
-              fontWeight: "var(--weight-bold)",
-              lineHeight: "var(--leading-normal)",
-              cursor: "default",
+              color: "var(--text-secondary)",
             }}
-            title={`${resolveDisplayName(account)}, ${account.farmName}`}
           >
-            {accountInitials(account)}
-          </span>
+            <LogOut size={18} />
+          </button>
         </div>
       </div>
     );
@@ -695,6 +707,15 @@ export function AppSidebar({
             {account.farmName}
           </span>
         </span>
+        <button
+          type="button"
+          onClick={onSignOut}
+          aria-label="Sign out"
+          title="Sign out"
+          className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        >
+          <LogOut size={18} />
+        </button>
       </div>
     </div>
   );

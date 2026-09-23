@@ -37,6 +37,26 @@ class Settings:
             from uuid import UUID
 
             UUID(self.default_farm_id)
+        if self.auth_mode not in ("disabled", "sessions"):
+            raise ValueError("AUTH_MODE must be disabled|sessions.")
+        if (
+            self.auth_mode == "sessions"
+            and self.storage_backend != "postgres_incubators"
+        ):
+            raise ValueError(
+                "AUTH_MODE=sessions requires STORAGE_BACKEND=postgres_incubators."
+            )
+        if self.app_env == "production" and self.auth_mode == "disabled":
+            raise RuntimeError(
+                "Refusing production startup with disabled auth (B6 gate)."
+            )
+        if self.app_env == "production" and (
+            not self.cors_origins
+            or any(not origin.startswith("https://") for origin in self.cors_origins)
+        ):
+            raise ValueError(
+                "Production CORS_ORIGINS must contain the HTTPS web origin."
+            )
 
 
 def load_settings(environ: dict[str, str] | None = None) -> Settings:
@@ -47,21 +67,19 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
             f"APP_ENV must be development|test|production, got {app_env!r}."
         )
     auth_mode = env.get("AUTH_MODE", "disabled")
-    if auth_mode != "disabled":
-        raise ValueError("Only AUTH_MODE=disabled exists until the B6 auth phase.")
-    if app_env == "production" and auth_mode == "disabled":
-        raise RuntimeError("Refusing production startup with disabled auth (B6 gate).")
+    if auth_mode not in ("disabled", "sessions"):
+        raise ValueError("AUTH_MODE must be disabled|sessions.")
     try:
         api_port = int(env.get("API_PORT", "8000"))
     except ValueError:
         raise ValueError("API_PORT must be an integer.") from None
-    cors = tuple(
-        origin.strip()
-        for origin in env.get(
-            "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
-        ).split(",")
-        if origin.strip()
+    cors_value = env.get(
+        "CORS_ORIGINS",
+        ""
+        if app_env == "production"
+        else "http://localhost:5173,http://127.0.0.1:5173",
     )
+    cors = tuple(origin.strip() for origin in cors_value.split(",") if origin.strip())
     return Settings(
         app_env=app_env,
         auth_mode=auth_mode,

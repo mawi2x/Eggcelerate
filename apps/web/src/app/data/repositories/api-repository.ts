@@ -34,6 +34,7 @@ import {
   resultEnvelopeSchema,
 } from "../transport/contracts";
 import { createIdempotencyKey } from "../transport/idempotency";
+import { getCsrfToken, notifySessionExpired } from "../transport/session";
 import type {
   CompleteCycleInput,
   EggcelerateRepository,
@@ -75,7 +76,7 @@ function toWireChecks(
   return checks.map((check) => (check === "airCell" ? "air_cell" : check));
 }
 
-function normalizeBaseUrl(baseUrl: string): string {
+export function normalizeBaseUrl(baseUrl: string): string {
   const normalized = baseUrl.replace(/\/+$/, "");
   if (normalized === "/api" || normalized === "/api/v1") return "";
   try {
@@ -127,11 +128,16 @@ export class ApiRepository implements EggcelerateRepository {
     });
     let response: Response;
     try {
+      const method = init?.method ?? "GET";
+      const csrfToken = getCsrfToken();
       response = (await Promise.race([
         this.fetchImpl(`${this.baseUrl}${path}`, {
-          method: init?.method ?? "GET",
+          method,
           headers: {
             "Content-Type": "application/json",
+            ...(method === "GET" || !csrfToken
+              ? {}
+              : { "X-CSRF-Token": csrfToken }),
             ...(init?.idempotent === true
               ? {
                   "Idempotency-Key":
@@ -141,6 +147,7 @@ export class ApiRepository implements EggcelerateRepository {
           },
           body:
             init?.body === undefined ? undefined : JSON.stringify(init.body),
+          credentials: "include",
         }),
         timeout,
       ])) as Response;
@@ -156,6 +163,7 @@ export class ApiRepository implements EggcelerateRepository {
     } finally {
       clearTimeout(timer);
     }
+    if (response.status === 401) notifySessionExpired();
     let payload: unknown;
     try {
       payload = await response.json();

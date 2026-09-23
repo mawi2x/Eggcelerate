@@ -7,27 +7,50 @@ import { FormInput } from "./FormInput";
 export function SignInScreen({
   onSignIn,
   onSetup,
+  onSetupLabel = "Set up your farm",
+  authError,
 }: {
-  onSignIn: (email: string) => void;
+  onSignIn: (
+    email: string,
+    password: string,
+    rememberMe: boolean,
+  ) => Promise<void> | void;
   onSetup: () => void;
+  onSetupLabel?: string;
+  authError?: string | null;
 }) {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [show, setShow] = useState(false);
   const [err, setErr] = useState<string | undefined>();
+  const [submitError, setSubmitError] = useState<string | undefined>();
+  const [rememberMe, setRememberMe] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     const r = SignInSchema.safeParse({
       email,
       password: pw,
-      rememberMe: false,
+      rememberMe,
     });
     if (!r.success) {
       setErr(r.error.issues[0].message);
       return;
     }
     setErr(undefined);
-    onSignIn(email);
+    setSubmitError(undefined);
+    setBusy(true);
+    try {
+      await onSignIn(r.data.email, r.data.password, r.data.rememberMe);
+    } catch (cause) {
+      setSubmitError(
+        cause instanceof Error
+          ? cause.message
+          : "Sign in could not be completed.",
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -111,25 +134,33 @@ export function SignInScreen({
         >
           <input
             type="checkbox"
+            checked={rememberMe}
+            onChange={(event) => setRememberMe(event.target.checked)}
             className="cursor-pointer rounded border-[var(--border-default)]"
           />{" "}
           Keep me signed in
         </label>
         <button
           type="button"
-          onClick={() => alert("Coming soon")}
+          disabled
           aria-disabled="true"
           className="flex min-h-11 items-center justify-center rounded px-1 text-sm font-semibold text-[var(--brand-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-8"
         >
-          Forgot password?
+          Password recovery coming soon
         </button>
       </div>
+      {(submitError ?? authError) && (
+        <p className="mt-2 text-sm text-[var(--status-danger-fg)]" role="alert">
+          {submitError ?? authError}
+        </p>
+      )}
       <button
         type="button"
-        onClick={submit}
-        className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        disabled={busy}
+        onClick={() => void submit()}
+        className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
-        Sign in →
+        {busy ? "Signing in…" : "Sign in →"}
       </button>
       <div className="my-4 flex items-center gap-3">
         <div className="h-px flex-1 bg-[var(--border-default)]" />
@@ -149,7 +180,7 @@ export function SignInScreen({
         onClick={onSetup}
         className="w-full cursor-pointer rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
-        Set up your farm
+        {onSetupLabel}
       </button>
     </AuthCard>
   );

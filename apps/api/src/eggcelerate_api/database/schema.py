@@ -12,6 +12,7 @@ from sqlalchemy import (
     Index,
     Integer,
     MetaData,
+    PrimaryKeyConstraint,
     Table,
     Text,
     UniqueConstraint,
@@ -29,6 +30,57 @@ farms = Table(
     Column(
         "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
     ),
+)
+users = Table(
+    "users",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("email", Text, nullable=False, unique=True),
+    Column("password_hash", Text, nullable=False),
+    Column("display_name", Text, nullable=False),
+    Column(
+        "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+    Column("disabled_at", DateTime(timezone=True)),
+    CheckConstraint("length(trim(email)) > 0", name="ck_users_email"),
+    CheckConstraint("length(trim(display_name)) > 0", name="ck_users_display_name"),
+)
+farm_memberships = Table(
+    "farm_memberships",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id", ondelete="CASCADE")),
+    Column("user_id", Uuid, ForeignKey("users.id", ondelete="CASCADE")),
+    Column("role", Text, nullable=False),
+    Column(
+        "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+    CheckConstraint("role IN ('owner')", name="ck_farm_memberships_role"),
+    PrimaryKeyConstraint("farm_id", "user_id", name="uq_farm_memberships_pair"),
+)
+auth_sessions = Table(
+    "auth_sessions",
+    metadata,
+    Column("session_hash", Text, primary_key=True),
+    Column("farm_id", Uuid, nullable=False),
+    Column("user_id", Uuid, nullable=False),
+    Column("csrf_token", Text, nullable=False),
+    Column(
+        "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+    Column("expires_at", DateTime(timezone=True), nullable=False),
+    Column("revoked_at", DateTime(timezone=True)),
+    ForeignKeyConstraint(
+        ["farm_id", "user_id"],
+        ["farm_memberships.farm_id", "farm_memberships.user_id"],
+        ondelete="CASCADE",
+        name="fk_auth_sessions_membership",
+    ),
+    CheckConstraint("length(session_hash) = 64", name="ck_auth_sessions_hash"),
+    CheckConstraint("length(csrf_token) >= 32", name="ck_auth_sessions_csrf_token"),
+    CheckConstraint("expires_at > created_at", name="ck_auth_sessions_expiry"),
+)
+Index(
+    "ix_auth_sessions_user_expiry", auth_sessions.c.user_id, auth_sessions.c.expires_at
 )
 modes = Table(
     "modes",

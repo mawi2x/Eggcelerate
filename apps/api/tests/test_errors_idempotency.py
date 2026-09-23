@@ -49,6 +49,19 @@ def test_unknown_auth_mode_is_rejected():
         load_settings({"APP_ENV": "development", "AUTH_MODE": "token"})
 
 
+def test_production_sessions_require_https_cors_origin():
+    with pytest.raises(ValueError, match="HTTPS web origin"):
+        load_settings(
+            {
+                "APP_ENV": "production",
+                "AUTH_MODE": "sessions",
+                "STORAGE_BACKEND": "postgres_incubators",
+                "DATABASE_URL": "postgresql+asyncpg://user:pass@db/eggcelerate",
+                "CORS_ORIGINS": "",
+            }
+        )
+
+
 def test_test_settings_resolve_cleanly():
     settings = Settings(app_env="test")
     assert settings.api_port == 8000

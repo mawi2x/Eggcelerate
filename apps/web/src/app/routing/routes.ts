@@ -9,6 +9,7 @@ export type ScreenId =
   | "alerts"
   | "settings"
   | "login"
+  | "register"
   | "onboarding";
 
 export interface AppRouteState {
@@ -67,6 +68,8 @@ export function screenPath(screen: ScreenId): string {
       return "/settings";
     case "login":
       return "/login";
+    case "register":
+      return "/register";
     case "onboarding":
       return onboardingPath(1);
     case "detail":
@@ -86,6 +89,8 @@ export function parseAppPath(pathname: string): AppRouteState {
   if (normalized === "/settings")
     return { ...defaultRoute(), screen: "settings" };
   if (normalized === "/login") return { ...defaultRoute(), screen: "login" };
+  if (normalized === "/register")
+    return { ...defaultRoute(), screen: "register" };
   if (normalized === "/onboarding") {
     return {
       ...defaultRoute(),

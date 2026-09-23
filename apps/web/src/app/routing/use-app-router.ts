@@ -49,5 +49,6 @@ export function useAppRouter(validIncubatorIds?: readonly string[]) {
     openOnboarding: (step: number, replace = false) =>
       navigate(onboardingPath(step), { replace }),
     openLogin: (replace = false) => navigate("/login", { replace }),
+    openRegister: (replace = false) => navigate("/register", { replace }),
   };
 }

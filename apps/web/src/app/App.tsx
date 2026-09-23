@@ -1,6 +1,8 @@
 import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
+import { Redirect } from "wouter";
 import { AppSidebar } from "./components/AppSidebar";
+import { CreateAccountScreen } from "./components/auth/CreateAccountScreen";
 import { OnboardingStep1 } from "./components/auth/OnboardingStep1";
 import { SignInScreen } from "./components/auth/SignInScreen";
 import { FarmDataStatus } from "./components/FarmDataStatus";
@@ -54,6 +56,7 @@ export default function App() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [onboardingState, setOnboardingState] =
     useState<OnboardingState>(defaultOnboarding);
+  const auth = useAuth();
 
   const {
     modes,
@@ -82,7 +85,7 @@ export default function App() {
     actionState,
   } = useFarmActions();
   const account = settings.account;
-  const { signIn, completeOnboarding, isAuthenticated } = useAuth();
+  const { signIn, register, completeOnboarding, isAuthenticated } = auth;
   const {
     screen,
     selectedUnit,
@@ -93,6 +96,7 @@ export default function App() {
     openTrends,
     openOnboarding,
     openLogin,
+    openRegister,
   } = useAppRouter(
     farmDataLoading ? undefined : incubators.map((unit) => unit.id),
   );
@@ -104,18 +108,51 @@ export default function App() {
   const openTrendsForUnit = (id: string) => openTrends(id);
 
   // Mock auth routes stay available even if farm-data hydration is unavailable.
-  if (screen === "login") {
+  if (auth.isLoading) {
+    return <SuspenseFallback label="Checking sign-in session..." />;
+  }
+  if (screen === "register") {
+    if (auth.mode === "mock") return <Redirect to="/onboarding/1" replace />;
+    if (isAuthenticated) return <Redirect to="/incubators" replace />;
     return (
       <>
-        <SignInScreen
-          onSignIn={() => {
-            signIn();
-            navigate("overview");
+        <CreateAccountScreen
+          onRegister={async (input) => {
+            await register(input);
+            navigate("incubators", true);
           }}
-          onSetup={() => openOnboarding(1)}
+          onHaveAccount={() => openLogin()}
         />
         <Toaster position="top-right" richColors />
       </>
+    );
+  }
+  if (screen === "login") {
+    if (isAuthenticated && auth.mode === "api") {
+      return <Redirect to="/" replace />;
+    }
+    return (
+      <>
+        <SignInScreen
+          onSignIn={async (email, password, rememberMe) => {
+            await signIn(email, password, rememberMe);
+            navigate("overview", true);
+          }}
+          onSetup={() =>
+            auth.mode === "api" ? openRegister() : openOnboarding(1)
+          }
+          onSetupLabel={
+            auth.mode === "api" ? "Create your farm account" : undefined
+          }
+          authError={auth.error}
+        />
+        <Toaster position="top-right" richColors />
+      </>
+    );
+  }
+  if (screen === "onboarding" && auth.mode === "api") {
+    return (
+      <Redirect to={isAuthenticated ? "/incubators" : "/register"} replace />
     );
   }
   if (screen === "onboarding" && onboardingStep === 1) {
@@ -184,7 +221,7 @@ export default function App() {
   if (farmDataLoading) {
     return <SuspenseFallback label="Loading farm data..." />;
   }
-  if (modes.length === 0 || incubators.length === 0) {
+  if (modes.length === 0) {
     return (
       <div
         className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center gap-4 px-6 text-center"
@@ -212,6 +249,84 @@ export default function App() {
         >
           Reload data
         </Button>
+      </div>
+    );
+  }
+  if (incubators.length === 0 && screen !== "incubators") {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center gap-4 px-6 text-center">
+        <div>
+          <h1
+            className="text-(length:--type-heading-lg) font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Your farm is ready
+          </h1>
+          <p
+            className="mt-2 text-(length:--type-body)"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Add a chamber with the device ID printed on your incubator to begin
+            monitoring it.
+          </p>
+        </div>
+        <Button type="button" onClick={() => navigate("incubators")}>
+          Add your first incubator
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void signOutAndReturn()}
+        >
+          Sign out
+        </Button>
+      </div>
+    );
+  }
+
+  if (incubators.length === 0 && screen === "incubators") {
+    return (
+      <div
+        className="min-h-dvh w-full overflow-x-clip"
+        style={{ backgroundColor: "var(--surface-app)" }}
+      >
+        <AppSidebar
+          active={screen}
+          onNavigate={navigate}
+          alertCount={unreadAlerts}
+          account={account}
+          collapsed={navCollapsed}
+          onToggleCollapsed={() => setNavCollapsed((value) => !value)}
+          onSignOut={() => void signOutAndReturn()}
+        />
+        <main
+          className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
+        >
+          <div className="mx-auto max-w-6xl px-3 pb-44 sm:px-4 sm:pb-28 md:px-6 md:pb-20 lg:px-8">
+            <IncubatorsScreen
+              units={incubators}
+              modes={modes}
+              onOpenUnit={openUnit}
+              onAddIncubator={addIncubator}
+              isAddingIncubator={actionState.addingIncubator}
+              header={
+                <PageHeader
+                  title="Incubators"
+                  subtitle="Add your first real chamber to this farm."
+                  alertCount={unreadAlerts}
+                  onViewAlerts={() => navigate("alerts")}
+                  alerts={alerts}
+                  onMarkAllRead={markAllAlertsRead}
+                  onDismissAlert={dismissAlert}
+                  pendingAlertId={actionState.pendingAlertId}
+                  markingAllRead={actionState.markingAllAlertsRead}
+                />
+              }
+            />
+          </div>
+        </main>
+        <Toaster position="top-right" richColors />
+        <HelpWidget />
       </div>
     );
   }
@@ -325,6 +440,10 @@ export default function App() {
       title: "Onboarding",
       subtitle: "Set up your farm",
     },
+    register: {
+      title: "Create account",
+      subtitle: "Set up your farm account",
+    },
   };
 
   if (screen === "onboarding") {
@@ -396,6 +515,19 @@ export default function App() {
     );
   }
 
+  async function signOutAndReturn() {
+    try {
+      await auth.signOut();
+      navigate("login", true);
+    } catch (cause) {
+      toast.error(
+        cause instanceof Error
+          ? cause.message
+          : "Sign out could not be completed.",
+      );
+    }
+  }
+
   // Routes whose screen owns the header inside its sticky toolbar.
   const headerInScreen =
     screen === "candling" ||
@@ -438,6 +570,7 @@ export default function App() {
           account={account}
           collapsed={navCollapsed}
           onToggleCollapsed={() => setNavCollapsed((v) => !v)}
+          onSignOut={() => void signOutAndReturn()}
         />
 
         <main

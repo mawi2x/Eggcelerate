@@ -45,6 +45,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_origins=list(settings.cors_origins),
         allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
         allow_headers=["*"],
+        allow_credentials=True,
     )
     register_error_handlers(app)
     app.include_router(v1_router)
@@ -57,7 +58,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def readyz() -> dict | JSONResponse:
         if database is not None:
             try:
-                ready = await database.ready()
+                ready = await database.ready(
+                    require_seeded_farm=settings.auth_mode == "disabled"
+                )
             except SQLAlchemyError, OSError, TimeoutError:
                 ready = False
             return JSONResponse(
@@ -67,7 +70,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "checks": {
                         "store": "postgres_incubators",
                         "database": "up" if ready else "unavailable_or_uninitialized",
-                        "remaining_state": "auth_and_deployment",
+                        "remaining_state": (
+                            "release_validation"
+                            if settings.auth_mode == "sessions"
+                            else "auth_and_deployment"
+                        ),
                     },
                 },
             )

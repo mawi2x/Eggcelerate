@@ -6,6 +6,7 @@ Configuration, alerts, cycles, terminal history and replay records are relationa
 
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
+from copy import copy
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4, uuid5
@@ -25,6 +26,7 @@ from ..models import (
     IncubatorDTO,
     ModeDTO,
     PreferencesDTO,
+    RangeModel,
     TurnAccepted,
 )
 from ..store import MemoryStore
@@ -77,8 +79,10 @@ def mode_from_row(row: Mapping[str, Any]) -> ModeDTO:
         id=row["public_id"],
         name=row["name"],
         built_in=row["built_in"],
-        target_temp_c={"min": row["temp_min"], "max": row["temp_max"]},
-        target_humidity_pct={"min": row["humidity_min"], "max": row["humidity_max"]},
+        target_temp_c=RangeModel(min=row["temp_min"], max=row["temp_max"]),
+        target_humidity_pct=RangeModel(
+            min=row["humidity_min"], max=row["humidity_max"]
+        ),
         incubation_days=row["incubation_days"],
         default_turn_interval_min=row["turn_interval_min"],
         temp_hysteresis_c=row["temp_hysteresis_c"],
@@ -99,10 +103,16 @@ class PostgresStore:
         )
         self.sessions = async_sessionmaker(self.engine, expire_on_commit=False)
 
+    def for_farm(self, farm_id: str) -> PostgresStore:
+        """Share the engine while binding this request's SQL unit of work to a farm."""
+        scoped = copy(self)
+        scoped.farm_id = UUID(farm_id)
+        return scoped
+
     async def close(self) -> None:
         await self.engine.dispose()
 
-    async def ready(self) -> bool:
+    async def ready(self, *, require_seeded_farm: bool = True) -> bool:
         async with self.sessions() as session:
             revision = await session.scalar(
                 text("SELECT version_num FROM alembic_version")
@@ -110,6 +120,8 @@ class PostgresStore:
             extension = await session.scalar(
                 text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
             )
+            if not require_seeded_farm:
+                return revision == "0012" and extension is not None
             farm = await session.scalar(
                 select(farms.c.id).where(farms.c.id == self.farm_id)
             )
@@ -142,7 +154,7 @@ class PostgresStore:
                 runtime_count == chamber_count
                 and alert_seed is not None
                 and preferences is not None
-                and revision == "0011"
+                and revision == "0012"
                 and extension is not None
                 and farm is not None
                 and seeded is not None
@@ -224,8 +236,6 @@ class PostgresStore:
                 incubator_rows = await load_incubators(
                     session, self.farm_id, state, previous_modes
                 )
-                if not incubator_rows:
-                    raise AppError("offline", "Development chambers are not seeded.")
                 await load_cycles(session, self.farm_id, state)
                 await load_candling(session, self.farm_id, state)
                 before_journals = {

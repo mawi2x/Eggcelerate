@@ -28,8 +28,8 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     environment:
-      APP_ENV: development
-      AUTH_MODE: disabled
+      APP_ENV: ${APP_ENV:-development}
+      AUTH_MODE: ${AUTH_MODE:-disabled}
       DEFAULT_FARM_ID: "00000000-0000-0000-0000-000000000001"
       API_HOST: 0.0.0.0
       API_PORT: 8000

@@ -13,18 +13,22 @@ from contextlib import contextmanager
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from threading import Lock
-from typing import Any
+from typing import Any, cast
 
 from . import domain
 from .lifecycle import CycleState
 from .models import (
     AbortedCycleDTO,
     AlertDTO,
+    AlertSeverity,
     CandlingEntryDTO,
     HatchHistoryDTO,
     IncubatorDTO,
     ModeDTO,
+    NotificationsModel,
+    PowerSource,
     PreferencesDTO,
+    RangeModel,
 )
 
 FARM_MODES = [
@@ -438,8 +442,8 @@ class MemoryStore:
                 id=mid,
                 name=name,
                 built_in=built_in,
-                target_temp_c={"min": tmin, "max": tmax},
-                target_humidity_pct={"min": hmin, "max": hmax},
+                target_temp_c=RangeModel(min=tmin, max=tmax),
+                target_humidity_pct=RangeModel(min=hmin, max=hmax),
                 incubation_days=days,
                 default_turn_interval_min=turn_min,
             )
@@ -479,7 +483,7 @@ class MemoryStore:
                 water_ok=water,
                 temperature_trend_c=ttrend,
                 humidity_trend_pct=htrend,
-                power_source=power,
+                power_source=cast(PowerSource, power),
                 battery_pct=battery,
                 status="optimal",
                 last_turned_at=boot - timedelta(minutes=ago),
@@ -558,7 +562,7 @@ class MemoryStore:
                 id=aid,
                 incubator_id=chamber,
                 unit_name=UNIT_NAMES.get(chamber),
-                severity=severity,
+                severity=cast(AlertSeverity, severity),
                 code=code,
                 title=title,
                 message=message,
@@ -598,13 +602,13 @@ class MemoryStore:
             farm_name="Sunrise Poultry",
             account_holder="Farmer Juan Dela Cruz",
             display_name="Farmer Juan",
-            notifications={
-                "enabled": {"temp": True, "humidity": True, "water": True},
-                "sms": True,
-                "email": True,
-                "phone": "",
-                "email_address": "",
-            },
+            notifications=NotificationsModel(
+                enabled={"temp": True, "humidity": True, "water": True},
+                sms=True,
+                email=True,
+                phone="",
+                email_address="",
+            ),
             temperature_unit="c",
             time_zone="gmt8",
         )
