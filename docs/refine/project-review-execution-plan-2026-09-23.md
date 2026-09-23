@@ -6,8 +6,10 @@ entries (44 modified, 17 untracked) containing refinement Phase 4 (durable devic
 commands, migration `0008`) and Phase 5 (telemetry projection/freshness, migration
 `0009`). Sibling repository `eggcelerate-simulate` @ `e112a25` with 4 modified files.
 
-**Execution status (2026-09-23):** Phases 0–6 complete; Phase 7 is next. Phase 6's
-implementation checkpoint is `fc6e353` (`test: harden verification gates and UI behavior coverage`);
+**Execution status (2026-09-23):** Phases 0–7 complete; Phase 8 is next. Phase 7's
+implementation checkpoint is `8d5252b` (`fix: make dashboard states truthful and actionable`);
+its verification record is in the [Phase 7 handoff](project-review-handoff-2026-09-23-phase7.md).
+Phase 6's implementation checkpoint is `fc6e353` (`test: harden verification gates and UI behavior coverage`);
 its verification record is in the [Phase 6 handoff](project-review-handoff-2026-09-23-phase6.md).
 Main
 repository checkpoints are `6fd0869` (earlier UI refinements), `0db4a94`
@@ -609,7 +611,8 @@ lowered.
 ## Phase 7 — Frontend truthfulness and states
 
 **Outcome:** the dashboard never presents unverified data as live, and a user action is
-never silently lost.
+never silently lost. Completed in `8d5252b`; detailed behavior and verification are in
+the [Phase 7 handoff](project-review-handoff-2026-09-23-phase7.md).
 
 **Why:** the highest-impact items are the ones the operator would act on. A chamber that
 has never reported is badged **Live** (`telemetry.ts:17`), stale chambers still assert
@@ -619,29 +622,30 @@ empty-but-loaded chart (`TrendsScreen.tsx:390`), and compare-mode export silentl
 one chamber while the toast implies all (`TrendsScreen.tsx:412,520-535`).
 
 **Work**
-- [ ] Freshness truth: WS-1 (never-reported must not be Live), WS-2 (actuator tiles must
+- [x] Freshness truth: WS-1 (never-reported must not be Live), WS-2 (actuator tiles must
       not assert inferred states when telemetry is stale/offline), WS-3 (one freshness
       clock per surface, and either render or remove `telemetryReceivedAt`), D6 (make both
       adapters resolve freshness identically).
-- [ ] Turn feedback: WS-6 + D4 — surface the command response, poll or subscribe the
+- [x] Turn feedback: WS-6 + D4 — surface the command response, poll or subscribe the
       command status, and keep the accepted toast only when pending status is actually
-      reflected. Decide finding 8 (wire `GET /incubators/{id}/commands/{command_id}` for
-      faster pending→acked feedback, or document it as integration-only).
-- [ ] States: WS-4 (history loading/error/empty), F1 (Trends loading/error/retry),
+      reflected. Finding 8 is resolved by polling
+      `GET /incubators/{id}/commands/{command_id}`.
+- [x] States: WS-4 (history loading/error/empty), F1 (Trends loading/error/retry),
       F2 (Trends freshness), F6 (export scope), F5 (one pager, consistent `aria-current`).
-- [ ] Contract hygiene: D1 (validate error envelopes), D3 and D7 (one error-code
+- [x] Contract hygiene: D1 (validate error envelopes), D3 and D7 (one error-code
       vocabulary; no `simulated_failure`, no `unknown`), D5 (candling id cache scoping,
       atomic cycle finish reporting, subscribe or append the aborted-cycles key).
-- [ ] WS-5: key timeline nodes and journal anchors by a unique checkpoint identity and
+- [x] WS-5: key timeline nodes and journal anchors by a unique checkpoint identity and
       make a collapsed target a defined outcome instead of a silent no-op.
-- [ ] Replace the key-set patch router (`use-farm-data.ts:295`) with an explicit intent
+- [x] Replace the key-set patch router (`use-farm-data.ts:295`) with an explicit intent
       argument so a future screen patch can never issue a device turn (finding 7).
 
-**Exit gate:** with a fixture that has never reported telemetry, no screen renders `Live`;
-with a stale fixture, no actuator tile asserts an active state; a failing readings query
-renders a retry path in Detail and Trends; the turn toast appears only with a pending
-command status; `repository-contract.test.ts` passes for both adapters under the new
-rules; `pnpm lint`, `typecheck`, `test`, `coverage`, `build` green.
+**Exit gate — passed:** never-reported telemetry does not render `Live`; stale/offline
+fixtures do not assert actuator states; Detail and Trends provide retry paths after
+readings failures; turn acceptance is reflected as a pending command and polled through
+terminal status; repository contracts pass for both adapters. `pnpm lint`, UI typecheck,
+all 234 tests across 30 files, coverage thresholds plus all seven screen modules, and the
+production build passed. Vite retains its advisory that the main bundle exceeds 500 kB.
 
 **Recovery:** per-screen reverts; the freshness rule change is shared with Phase 1 and must
 be reverted with it.
@@ -659,6 +663,9 @@ identity/membership persistence and session lifecycle including expiry and revoc
 derive farm context from authenticated membership and enforce it on reads, mutations,
 history, command status and replay lookup; replace the default mock auth in API mode; keep
 mock development behaviour without letting it bypass the production gate.
+
+**Account approach selected:** app-managed email and password, as requested. Define the
+password hashing, recovery, verification, and session policy as part of this phase.
 
 **Exit gate:** unauthenticated farm access is rejected; another farm's IDs cannot be read,
 mutated or replayed; logout and expiry revoke access and clear cached private data;
