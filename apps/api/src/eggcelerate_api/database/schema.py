@@ -466,6 +466,9 @@ device_commands = Table(
     Column("next_attempt_at", DateTime(timezone=True), nullable=False),
     Column("attempts", Integer, nullable=False, server_default="0"),
     Column("turn_interval_min", Integer, nullable=False),
+    Column("dispatch_boot_id", Text),
+    Column("dispatch_booted_at", DateTime(timezone=True)),
+    Column("dispatch_seq", Integer),
     Column("executed_at", DateTime(timezone=True)),
     Column("ack_received_at", DateTime(timezone=True)),
     Column("error_code", Text),
@@ -475,5 +478,11 @@ device_commands = Table(
     CheckConstraint(
         "status IN ('pending','dispatched','acked','rejected','timed_out')",
         name="ck_device_command_status",
+    ),
+    CheckConstraint(
+        "(dispatch_boot_id IS NULL AND dispatch_booted_at IS NULL AND dispatch_seq IS NULL) "
+        "OR (dispatch_boot_id IS NOT NULL AND dispatch_booted_at IS NOT NULL "
+        "AND dispatch_seq IS NOT NULL AND dispatch_seq >= 0)",
+        name="ck_device_command_dispatch_identity",
     ),
 )

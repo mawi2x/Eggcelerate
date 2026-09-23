@@ -288,3 +288,63 @@ def test_restart_ordering_duplicate_and_offline_recovery(settings):
             await db.close()
 
     asyncio.run(run())
+
+
+def test_device_clock_tolerance_is_shared_with_telemetry(settings):
+    async def run():
+        db = PostgresStore(settings.database_url, settings.default_farm_id)
+        now = datetime.now(UTC)
+        topic = "eggcelerate/v1/devices/EGG-1003/telemetry"
+        body = {
+            "schema_v": 1,
+            "device_id": "EGG-1003",
+            "incubator_id": "chamber-1",
+            "boot_id": "clock-boundary",
+            "booted_at": (now - timedelta(minutes=1)).isoformat(),
+            "seq": 1,
+            "observed_at": (now + timedelta(seconds=30)).isoformat(),
+            "temperature_c": 37.6,
+            "humidity_pct": 57,
+            "water_ok": True,
+            "battery_pct": 100,
+            "power_source": "grid",
+        }
+        try:
+            async with db.sessions.begin() as session:
+                assert await ingest_telemetry(
+                    session, db.farm_id, topic, json.dumps(body).encode()
+                )
+            async with db.sessions.begin() as session:
+                with pytest.raises(AppError) as error:
+                    await ingest_telemetry(
+                        session,
+                        db.farm_id,
+                        topic,
+                        json.dumps(
+                            {
+                                **body,
+                                "seq": 2,
+                                "observed_at": (
+                                    now + timedelta(seconds=61)
+                                ).isoformat(),
+                            }
+                        ).encode(),
+                    )
+                assert error.value.code == "validation_error"
+            async with db.sessions() as session:
+                projection = (
+                    (
+                        await session.execute(
+                            select(device_telemetry_state).where(
+                                device_telemetry_state.c.farm_id == db.farm_id
+                            )
+                        )
+                    )
+                    .mappings()
+                    .one()
+                )
+                assert projection["seq"] == 1
+        finally:
+            await db.close()
+
+    asyncio.run(run())

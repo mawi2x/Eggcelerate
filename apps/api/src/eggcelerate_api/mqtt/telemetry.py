@@ -1,6 +1,6 @@
 """Validate device telemetry and update the durable latest-device projection."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.readings import TelemetrySample, ingest_sample
 from ..database.schema import device_telemetry_state, devices, incubators
 from ..errors import AppError
+from .clock import DEVICE_CLOCK_TOLERANCE
 
 
 class DeviceTelemetry(TelemetrySample):
@@ -55,7 +56,7 @@ async def ingest_telemetry(
         raise AppError(
             "validation_error", "Telemetry boot time is after observation time."
         )
-    if message.observed_at > received_at + timedelta(minutes=5):
+    if message.observed_at > received_at + DEVICE_CLOCK_TOLERANCE:
         raise AppError(
             "validation_error", "Telemetry observation is too far in the future."
         )
