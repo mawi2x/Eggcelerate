@@ -567,8 +567,11 @@ describe("repository mutation states", () => {
         nextTurn: "2000-01-01T04:00:00.000Z",
       }),
     ).toBe(true);
-    expect(storedUnit(mounted.queryClient, "chamber-1").lastTurned).not.toBe(
+    expect(storedUnit(mounted.queryClient, "chamber-1").lastTurned).toBe(
       before.lastTurned,
+    );
+    expect(storedUnit(mounted.queryClient, "chamber-1").turnCommandStatus).toBe(
+      "pending",
     );
 
     expect(await actions().updateIncubator("chamber-1", { paired: true })).toBe(

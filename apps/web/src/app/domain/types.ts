@@ -14,6 +14,7 @@ export type HatchRecordId = string;
 
 export type UnitStatus = "optimal" | "warning" | "alert";
 export type PowerSource = "grid" | "battery";
+export type TelemetryStatus = "fresh" | "stale" | "offline";
 export type AlertSeverity = "critical" | "warning" | "info";
 export type ReadingState = "ok" | "warning" | "critical";
 export type DevelopmentCheck = "veining" | "airCell" | "movement";
@@ -73,6 +74,12 @@ export interface Incubator {
   powerSource: PowerSource;
   batteryPct: number;
   status: UnitStatus;
+  turnCommandStatus?:
+    | "pending"
+    | "dispatched"
+    | "acked"
+    | "rejected"
+    | "timed_out";
   lastTurned: string;
   nextTurn: string;
   /** Domain/UI value in hours. */
@@ -82,6 +89,10 @@ export interface Incubator {
   cyclePhase: CyclePhase;
   conditionSeverity: ConditionSeverity;
   connectionState: ConnectionState;
+  telemetryStatus?: TelemetryStatus;
+  telemetryObservedAt?: string | null;
+  telemetryReceivedAt?: string | null;
+  telemetryLastSeenAt?: string | null;
   candled: Record<number, boolean>;
   candlingLog: CandlingLogEntry[];
 }

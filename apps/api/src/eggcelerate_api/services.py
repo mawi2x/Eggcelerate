@@ -226,17 +226,9 @@ def reset_stopped_cycle(
 def request_turn(
     store: StoreState, incubator_id: str, command_id: str, now: datetime
 ) -> TurnAccepted:
-    unit = require_incubator(store, incubator_id)
-    save(
-        store,
-        unit.model_copy(
-            update={
-                "last_turned_at": now,
-                "next_turn_at": now + timedelta(minutes=unit.turn_interval_min),
-            }
-        ),
-        now,
-    )
+    require_incubator(store, incubator_id)
+    # Acceptance is not execution. Only correlated successful device ACKs may
+    # advance confirmed cursors in persistent mode.
     return TurnAccepted(command_id=command_id, status="accepted")
 
 

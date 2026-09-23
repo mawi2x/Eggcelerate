@@ -6,8 +6,9 @@ Configuration, alerts, cycles, terminal history and replay records are relationa
 
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import UUID, uuid5
+from uuid import UUID, uuid4, uuid5
 
 from fastapi.concurrency import contextmanager_in_threadpool
 from fastapi.encoders import jsonable_encoder
@@ -37,6 +38,7 @@ from .schema import (
     alerts,
     candling_idempotency,
     cycle_idempotency,
+    device_commands,
     farm_preferences,
     farms,
     incubator_idempotency,
@@ -140,7 +142,7 @@ class PostgresStore:
                 runtime_count == chamber_count
                 and alert_seed is not None
                 and preferences is not None
-                and revision == "0007"
+                and revision == "0008"
                 and extension is not None
                 and farm is not None
                 and seeded is not None
@@ -389,6 +391,25 @@ class PostgresStore:
                     scope, key, fingerprint, kind = replay
                     result = state.idempotency.get(f"{scope}:{key}")
                     if result is not None:
+                        if kind == "turn":
+                            unit_id = scope.removeprefix("turn-")
+                            unit = state.incubators[unit_id]
+                            now = datetime.now(UTC)
+                            await session.execute(
+                                insert(device_commands).values(
+                                    id=uuid4(),
+                                    farm_id=self.farm_id,
+                                    incubator_id=unit_id,
+                                    device_id=unit.device_id,
+                                    request_key=key,
+                                    status="pending",
+                                    requested_at=now,
+                                    expires_at=now + timedelta(seconds=60),
+                                    next_attempt_at=now,
+                                    attempts=0,
+                                    turn_interval_min=unit.turn_interval_min,
+                                )
+                            )
                         await session.execute(
                             insert(receipt_table).values(
                                 farm_id=self.farm_id,

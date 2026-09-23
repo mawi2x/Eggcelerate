@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type {
   CandlingEntryInput,
@@ -23,6 +24,11 @@ import {
   mutationErrorPresentation,
   requireResultData,
 } from "./repository-query";
+import {
+  resolvedTelemetryStatus,
+  TELEMETRY_POLL_INTERVAL_MS,
+  TELEMETRY_REFRESH_ENABLED,
+} from "./telemetry";
 
 async function runMutation(
   action: () => Promise<unknown>,
@@ -44,6 +50,13 @@ async function runMutation(
 }
 
 export function useFarmData() {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "hidden") setNow(Date.now());
+    }, 5_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const repository = useRepository();
   const modesQuery = useQuery({
     queryKey: farmQueryKeys.modes,
@@ -52,6 +65,11 @@ export function useFarmData() {
   const incubatorsQuery = useQuery({
     queryKey: farmQueryKeys.incubators,
     queryFn: async () => requireResultData(await repository.listIncubators()),
+    staleTime: TELEMETRY_POLL_INTERVAL_MS,
+    refetchInterval: TELEMETRY_REFRESH_ENABLED
+      ? TELEMETRY_POLL_INTERVAL_MS
+      : false,
+    refetchIntervalInBackground: false,
   });
   const alertsQuery = useQuery({
     queryKey: farmQueryKeys.alerts,
@@ -81,7 +99,14 @@ export function useFarmData() {
 
   return {
     modes: modesQuery.data ?? [],
-    incubators: incubatorsQuery.data ?? [],
+    incubators: (incubatorsQuery.data ?? []).map((unit) =>
+      unit.telemetryStatus === undefined
+        ? unit
+        : {
+            ...unit,
+            telemetryStatus: resolvedTelemetryStatus(unit, now),
+          },
+    ),
     alerts: alertsQuery.data ?? [],
     hatchRecords: hatchRecordsQuery.data ?? [],
     settings: settingsQuery.data ?? initialSettings,
@@ -328,7 +353,9 @@ export function useFarmActions() {
         farmQueryKeys.incubators,
         (current = []) =>
           current.map((unit) =>
-            unit.id === id ? { ...unit, ...patch, id } : unit,
+            unit.id === id && !sameKeySet(Object.keys(patch), TURN_PATCH_KEYS)
+              ? { ...unit, ...patch, id }
+              : unit,
           ),
       );
       return { previous };

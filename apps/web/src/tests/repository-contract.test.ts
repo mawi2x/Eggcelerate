@@ -59,15 +59,16 @@ describe.each(targets)("repository contract (%s)", (_name, factory) => {
     expect(changed.ok && changed.data.turnInterval).toBe(6);
   });
 
-  it("advances turn cursors on manual turn", async () => {
+  it("accepts a manual turn without claiming device execution", async () => {
     const repository = factory();
     const before = await repository.getIncubator("chamber-7");
     if (!before.ok) throw new Error("chamber-7 missing");
     const turned = await repository.requestManualTurn("chamber-7");
     expect(turned.ok).toBe(true);
     if (!turned.ok) return;
-    expect(turned.data.lastTurned).not.toBe(before.data.lastTurned);
-    expect(turned.data.nextTurn > turned.data.lastTurned).toBe(true);
+    expect(turned.data.lastTurned).toBe(before.data.lastTurned);
+    expect(turned.data.nextTurn).toBe(before.data.nextTurn);
+    expect(turned.data.turnCommandStatus).toBe("pending");
   });
 
   it("reconnects a chamber to connected", async () => {

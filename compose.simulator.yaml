@@ -1,0 +1,25 @@
+# Opt-in protected local simulator infrastructure. Physical hardware is excluded.
+services:
+  broker:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./infrastructure/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - eggcelerate-broker:/mosquitto/data
+    restart: unless-stopped
+  mqtt-worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ["python", "-m", "eggcelerate_api.mqtt.worker"]
+    environment:
+      APP_ENV: development
+      STORAGE_BACKEND: postgres_incubators
+      DATABASE_URL: ${DATABASE_URL:?Set simulator DATABASE_URL}
+      DEFAULT_FARM_ID: ${DEFAULT_FARM_ID:-00000000-0000-0000-0000-000000000001}
+      MQTT_HOST: broker
+      SIMULATOR_DISPATCH_ENABLED: ${SIMULATOR_DISPATCH_ENABLED:-false}
+    depends_on:
+      - broker
+    restart: unless-stopped
+volumes:
+  eggcelerate-broker:

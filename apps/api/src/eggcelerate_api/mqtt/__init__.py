@@ -1,1 +1,1 @@
-"""MQTT wire boundaries; broker transport is introduced separately."""
+"""Validated MQTT telemetry, durable command dispatch, and ACK boundaries."""

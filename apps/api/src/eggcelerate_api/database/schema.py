@@ -407,3 +407,73 @@ telemetry_samples = Table(
         "humidity_pct >= 0 AND humidity_pct <= 100", name="ck_telemetry_humidity"
     ),
 )
+
+device_telemetry_state = Table(
+    "device_telemetry_state",
+    metadata,
+    Column("farm_id", Uuid, primary_key=True),
+    Column("device_id", Uuid, primary_key=True),
+    Column("incubator_id", Text, nullable=False),
+    Column("boot_id", Text, nullable=False),
+    Column("booted_at", DateTime(timezone=True), nullable=False),
+    Column("seq", Integer, nullable=False),
+    Column("observed_at", DateTime(timezone=True), nullable=False),
+    Column("received_at", DateTime(timezone=True), nullable=False),
+    Column("last_seen_at", DateTime(timezone=True), nullable=False),
+    Column("temperature_c", Double, nullable=False),
+    Column("humidity_pct", Double, nullable=False),
+    Column("water_ok", Boolean, nullable=False),
+    Column("battery_pct", Double, nullable=False),
+    Column("power_source", Text, nullable=False),
+    ForeignKeyConstraint(
+        ["farm_id", "device_id"],
+        ["devices.farm_id", "devices.id"],
+        name="fk_telemetry_state_device",
+    ),
+    ForeignKeyConstraint(
+        ["farm_id", "incubator_id"],
+        ["incubators.farm_id", "incubators.public_id"],
+        name="fk_telemetry_state_incubator",
+    ),
+    UniqueConstraint("farm_id", "incubator_id", name="uq_telemetry_state_incubator"),
+    CheckConstraint("seq >= 0", name="ck_telemetry_state_seq"),
+    CheckConstraint(
+        "humidity_pct >= 0 AND humidity_pct <= 100",
+        name="ck_telemetry_state_humidity",
+    ),
+    CheckConstraint(
+        "battery_pct >= 0 AND battery_pct <= 100",
+        name="ck_telemetry_state_battery",
+    ),
+    CheckConstraint(
+        "power_source IN ('grid', 'battery')", name="ck_telemetry_state_power"
+    ),
+)
+
+# Acceptance/replay and dispatch identity are separate: request keys are scoped
+# to a farm/chamber; dispatch IDs are globally unique on the MQTT wire.
+device_commands = Table(
+    "device_commands",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("farm_id", Uuid, ForeignKey("farms.id"), nullable=False),
+    Column("incubator_id", Text, nullable=False),
+    Column("device_id", Text, nullable=False),
+    Column("request_key", Text, nullable=False),
+    Column("status", Text, nullable=False),
+    Column("requested_at", DateTime(timezone=True), nullable=False),
+    Column("expires_at", DateTime(timezone=True), nullable=False),
+    Column("next_attempt_at", DateTime(timezone=True), nullable=False),
+    Column("attempts", Integer, nullable=False, server_default="0"),
+    Column("turn_interval_min", Integer, nullable=False),
+    Column("executed_at", DateTime(timezone=True)),
+    Column("ack_received_at", DateTime(timezone=True)),
+    Column("error_code", Text),
+    UniqueConstraint(
+        "farm_id", "incubator_id", "request_key", name="uq_device_command_request"
+    ),
+    CheckConstraint(
+        "status IN ('pending','dispatched','acked','rejected','timed_out')",
+        name="ck_device_command_status",
+    ),
+)

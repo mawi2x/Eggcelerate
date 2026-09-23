@@ -425,15 +425,13 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       const index = this.findUnitIndex(id);
       if (index < 0)
         return error("not_found", `Incubator ${id} was not found.`);
-      const now = this.now();
       const current = this.incubators[index];
       const updated = this.applyDerived({
         ...current,
         id,
-        lastTurned: now.toISOString(),
-        nextTurn: new Date(
-          now.getTime() + current.turnInterval * 3_600_000,
-        ).toISOString(),
+        // Acceptance is distinct from physical execution. The memory adapter
+        // mirrors the API's pending command state for contract parity.
+        turnCommandStatus: "pending",
       });
       if (!updated.ok) return updated;
       this.incubators[index] = updated.data;

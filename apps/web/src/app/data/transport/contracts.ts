@@ -80,6 +80,10 @@ export const IncubatorDTOSchema = z
     power_source: z.enum(["grid", "battery"]),
     battery_pct: z.number().min(0).max(100),
     status: z.enum(["optimal", "warning", "alert"]),
+    turn_command_status: z
+      .enum(["pending", "dispatched", "acked", "rejected", "timed_out"])
+      .nullable()
+      .optional(),
     last_turned_at: UtcTimestampSchema,
     next_turn_at: UtcTimestampSchema,
     turn_interval_min: z.number().int().min(1),
@@ -101,6 +105,10 @@ export const IncubatorDTOSchema = z
       "connected",
       "connection_failed",
     ]),
+    telemetry_status: z.enum(["fresh", "stale", "offline"]).default("offline"),
+    telemetry_observed_at: UtcTimestampSchema.nullable().optional(),
+    telemetry_received_at: UtcTimestampSchema.nullable().optional(),
+    telemetry_last_seen_at: UtcTimestampSchema.nullable().optional(),
     candled_days: z.array(z.number().int().positive()),
     candling_entries: z.array(CandlingEntryDTOSchema),
   })
@@ -326,6 +334,7 @@ export function incubatorFromDTO(input: unknown): Incubator {
     powerSource: dto.power_source,
     batteryPct: dto.battery_pct,
     status: dto.status,
+    turnCommandStatus: dto.turn_command_status ?? undefined,
     lastTurned: dto.last_turned_at,
     nextTurn: dto.next_turn_at,
     turnInterval: dto.turn_interval_min / 60,
@@ -334,6 +343,10 @@ export function incubatorFromDTO(input: unknown): Incubator {
     cyclePhase: dto.cycle_phase,
     conditionSeverity: dto.condition_severity,
     connectionState: dto.connection_state,
+    telemetryStatus: dto.telemetry_status,
+    telemetryObservedAt: dto.telemetry_observed_at ?? null,
+    telemetryReceivedAt: dto.telemetry_received_at ?? null,
+    telemetryLastSeenAt: dto.telemetry_last_seen_at ?? null,
     candled: Object.fromEntries(dto.candled_days.map((day) => [day, true])),
     candlingLog: dto.candling_entries.map((entry) =>
       candlingEntryFromDTO(entry),

@@ -504,7 +504,20 @@ export function DeviceSettingsTab({
                 >
                   Next: {next.text}
                   <br />
-                  Last: {relTime(unit.lastTurned)}
+                  Last confirmed: {relTime(unit.lastTurned)}
+                  {unit.turnCommandStatus && (
+                    <span className="block" role="status">
+                      {
+                        {
+                          pending: "Turn requested",
+                          dispatched: "Waiting for device confirmation",
+                          acked: "Turn confirmed by device",
+                          rejected: "Turn rejected by device",
+                          timed_out: "Turn confirmation timed out",
+                        }[unit.turnCommandStatus]
+                      }
+                    </span>
+                  )}
                 </span>
                 <Button
                   disabled={turningStopped || isUpdating}

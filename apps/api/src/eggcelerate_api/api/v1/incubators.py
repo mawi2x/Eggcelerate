@@ -6,10 +6,12 @@ import uuid
 
 from fastapi import APIRouter, Header, Request
 from fastapi.concurrency import contextmanager_in_threadpool
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from ... import services
 from ...database.readings import chamber_readings
+from ...database.schema import device_commands
 from ...errors import AppError, ok_envelope, validated, validation_error
 from ...models import (
     CandlingEntryCreate,
@@ -24,6 +26,43 @@ from ...models import (
 from .dependencies import Store
 
 router = APIRouter(prefix="/incubators", tags=["incubators"])
+
+
+@router.get("/{incubator_id}/commands/{command_id}")
+async def command_status(incubator_id: str, command_id: str, request: Request) -> dict:
+    database = request.app.state.database
+    if database is None:
+        raise AppError("not_found", "Device dispatch is unavailable in memory mode.")
+    try:
+        async with database.sessions() as session:
+            row = (
+                (
+                    await session.execute(
+                        select(device_commands).where(
+                            device_commands.c.farm_id == database.farm_id,
+                            device_commands.c.incubator_id == incubator_id,
+                            device_commands.c.request_key == command_id,
+                        )
+                    )
+                )
+                .mappings()
+                .first()
+            )
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "Database is unavailable.") from exc
+    if row is None:
+        raise AppError("not_found", "Command was not found.")
+    return ok_envelope(
+        {
+            "command_id": command_id,
+            "status": row["status"],
+            "requested_at": row["requested_at"].isoformat(),
+            "executed_at": row["executed_at"].isoformat()
+            if row["executed_at"]
+            else None,
+            "error_code": row["error_code"],
+        }
+    )
 
 
 @router.get("")

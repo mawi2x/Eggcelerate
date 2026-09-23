@@ -34,6 +34,7 @@ CyclePhase = Literal[
 ]
 ConditionSeverity = Literal["critical", "warning", "info"]
 ConnectionState = Literal["offline", "connecting", "connected", "connection_failed"]
+TelemetryStatus = Literal["fresh", "stale", "offline"]
 AlertSeverity = Literal["critical", "warning", "info"]
 TemperatureUnit = Literal["c", "f"]
 TimeZone = Literal["gmt8", "gmt0", "est", "pst"]
@@ -188,6 +189,9 @@ class IncubatorDTO(BaseModel):
     power_source: PowerSource
     battery_pct: Annotated[float, Field(ge=0, le=100)]
     status: UnitStatus
+    turn_command_status: (
+        Literal["pending", "dispatched", "acked", "rejected", "timed_out"] | None
+    ) = None
     last_turned_at: datetime
     next_turn_at: datetime
     turn_interval_min: Annotated[int, Field(ge=1)]
@@ -198,6 +202,10 @@ class IncubatorDTO(BaseModel):
     connection_state: ConnectionState
     candled_days: list[Annotated[int, Field(gt=0)]]
     candling_entries: list[CandlingEntryDTO]
+    telemetry_status: TelemetryStatus = "fresh"
+    telemetry_observed_at: datetime | None = None
+    telemetry_received_at: datetime | None = None
+    telemetry_last_seen_at: datetime | None = None
 
 
 class ReadingDTO(BaseModel):
