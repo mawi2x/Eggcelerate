@@ -2,7 +2,7 @@
 
 **Status:** complete. Phase 5 (deployment and CI hygiene) is next.
 
-**Commit:** `45ddca3` (`docs: align project guides with current implementation`).
+**Commit:** `a6dbc99` (`docs: align project guides with current implementation`).
 
 ## What changed
 

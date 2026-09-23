@@ -11,7 +11,7 @@ repository checkpoints are `6fd0869` (earlier UI refinements), `0db4a94`
 (command outbox), `6b53341` (telemetry), `d5f6b44` (CI/migration gates), and the Phase 1
 commit `5221ca4`, Phase 2 API commit `b4bbc7e`, and simulator commits `5746c94` (Phase 0)
 and `2b85e15` (Phase 2), plus Phase 3 API commit `5703ceb`.
-Phase 4 documentation and refinement-record commit: `45ddca3`.
+Phase 4 documentation and refinement-record commit: `a6dbc99`.
 
 **Scope of this review:** `apps/api` source/migrations/tests, `apps/web` source and
 tests, Compose/Dockerfiles/CI/`.env.example`/`.gitignore`, and the tracked documentation
