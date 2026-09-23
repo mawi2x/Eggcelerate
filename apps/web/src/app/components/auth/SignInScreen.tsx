@@ -8,6 +8,7 @@ export function SignInScreen({
   onSignIn,
   onSetup,
   onSetupLabel = "Set up your farm",
+  canRegister = true,
   authError,
 }: {
   onSignIn: (
@@ -17,6 +18,7 @@ export function SignInScreen({
   ) => Promise<void> | void;
   onSetup: () => void;
   onSetupLabel?: string;
+  canRegister?: boolean;
   authError?: string | null;
 }) {
   const [email, setEmail] = useState("");
@@ -162,26 +164,34 @@ export function SignInScreen({
       >
         {busy ? "Signing in…" : "Sign in →"}
       </button>
-      <div className="my-4 flex items-center gap-3">
-        <div className="h-px flex-1 bg-[var(--border-default)]" />
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "var(--type-caption)",
-            color: "var(--text-muted)",
-          }}
-        >
-          or
-        </span>
-        <div className="h-px flex-1 bg-[var(--border-default)]" />
-      </div>
-      <button
-        type="button"
-        onClick={onSetup}
-        className="w-full cursor-pointer rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
-      >
-        {onSetupLabel}
-      </button>
+      {canRegister ? (
+        <>
+          <div className="my-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[var(--border-default)]" />
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--type-caption)",
+                color: "var(--text-muted)",
+              }}
+            >
+              or
+            </span>
+            <div className="h-px flex-1 bg-[var(--border-default)]" />
+          </div>
+          <button
+            type="button"
+            onClick={onSetup}
+            className="w-full cursor-pointer rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          >
+            {onSetupLabel}
+          </button>
+        </>
+      ) : (
+        <p className="mt-4 text-center text-sm text-[var(--text-muted)]">
+          New accounts are created by an authorized operator.
+        </p>
+      )}
     </AuthCard>
   );
 }

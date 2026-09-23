@@ -121,7 +121,7 @@ class PostgresStore:
                 text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
             )
             if not require_seeded_farm:
-                return revision == "0012" and extension is not None
+                return revision == "0014" and extension is not None
             farm = await session.scalar(
                 select(farms.c.id).where(farms.c.id == self.farm_id)
             )
@@ -154,7 +154,7 @@ class PostgresStore:
                 runtime_count == chamber_count
                 and alert_seed is not None
                 and preferences is not None
-                and revision == "0012"
+                and revision == "0014"
                 and extension is not None
                 and farm is not None
                 and seeded is not None

@@ -149,16 +149,20 @@ def test_failed_receipt_insert_rolls_back_mode_and_memory(settings):
 
 def test_concurrent_separate_api_instances_replay_once(settings):
     barrier = Barrier(2)
+    # Build route graphs before concurrent requests. The concurrency under test is
+    # storage/idempotency across two running API instances, not FastAPI's shared
+    # router metadata initialization in this single test process.
+    clients = [TestClient(create_app(settings)) for _ in range(2)]
 
-    def create():
-        with TestClient(create_app(settings)) as client:
+    def create(client):
+        with client:
             barrier.wait(timeout=10)
             return client.post(
                 "/api/v1/modes", json=MODE, headers={"Idempotency-Key": "concurrent"}
             )
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        first, second = list(executor.map(lambda _: create(), range(2)))
+        first, second = list(executor.map(create, clients))
     assert first.status_code == second.status_code == 201
     assert first.json() == second.json()
     with TestClient(create_app(settings)) as client:
@@ -250,7 +254,7 @@ def test_migration_has_extension_and_relational_tables(settings):
                     await session.scalar(
                         text("SELECT version_num FROM alembic_version")
                     )
-                    == "0012"
+                    == "0014"
                 )
                 assert await session.scalar(
                     text(

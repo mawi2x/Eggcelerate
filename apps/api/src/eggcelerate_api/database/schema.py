@@ -82,6 +82,16 @@ auth_sessions = Table(
 Index(
     "ix_auth_sessions_user_expiry", auth_sessions.c.user_id, auth_sessions.c.expires_at
 )
+auth_rate_limits = Table(
+    "auth_rate_limits",
+    metadata,
+    Column("bucket_hash", Text, primary_key=True),
+    Column("window_started_at", DateTime(timezone=True), nullable=False),
+    Column("attempts", Integer, nullable=False),
+    CheckConstraint("length(bucket_hash) = 64", name="ck_auth_rate_limit_hash"),
+    CheckConstraint("attempts >= 1", name="ck_auth_rate_limit_attempts"),
+)
+Index("ix_auth_rate_limits_window", auth_rate_limits.c.window_started_at)
 modes = Table(
     "modes",
     metadata,
@@ -137,6 +147,27 @@ devices = Table(
     UniqueConstraint("farm_id", "identity_key", name="uq_devices_farm_identity"),
     UniqueConstraint("farm_id", "id", name="uq_devices_farm_id"),
 )
+device_registry = Table(
+    "device_registry",
+    metadata,
+    Column("identity_key", Text, primary_key=True),
+    Column("public_id", Text, nullable=False),
+    Column("farm_id", Uuid, ForeignKey("farms.id", ondelete="CASCADE"), nullable=False),
+    Column(
+        "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+    Column("disabled_at", DateTime(timezone=True)),
+    CheckConstraint(
+        "identity_key = upper(public_id)", name="ck_device_registry_identity"
+    ),
+    CheckConstraint(
+        "length(public_id) BETWEEN 1 AND 128", name="ck_device_registry_public_id"
+    ),
+    UniqueConstraint(
+        "farm_id", "identity_key", name="uq_device_registry_farm_identity"
+    ),
+)
+Index("ix_device_registry_farm", device_registry.c.farm_id)
 incubators = Table(
     "incubators",
     metadata,

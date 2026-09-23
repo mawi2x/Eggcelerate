@@ -84,6 +84,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "checks": {"store": "memory", "incubators": str(len(store.incubators))},
         }
 
+    # FastAPI resolves included-router dependencies lazily. Build the route graph
+    # before accepting concurrent requests so shared Header FieldInfo metadata
+    # cannot be initialized by two request threads at the same time.
+    app.openapi()
     return app
 
 

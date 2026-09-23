@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import re
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
@@ -10,21 +12,21 @@ from uuid import uuid4
 from fastapi import APIRouter, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import insert, select, update
+from sqlalchemy import case, delete, insert, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from ...auth_security import hash_password, new_secret, secret_hash, verify_password
 from ...context import RequestContext
-from ...database.preferences import preference_values
+from ...database.accounts import create_farm_owner
 from ...database.schema import (
+    auth_rate_limits,
     auth_sessions,
     farm_memberships,
-    farm_preferences,
     farms,
-    modes,
     users,
 )
-from ...database.store import PostgresStore, mode_values
+from ...database.store import PostgresStore
 from ...errors import AppError, conflict, ok_envelope
 from ...session_auth import (
     SESSION_COOKIE_NAME,
@@ -34,12 +36,69 @@ from ...session_auth import (
     require_csrf,
     resolve_session,
 )
-from ...store import MemoryStore
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 SESSION_SECONDS = 12 * 60 * 60
 REMEMBERED_SESSION_SECONDS = 30 * 24 * 60 * 60
+LOGIN_WINDOW_SECONDS = 15 * 60
+LOGIN_ATTEMPT_LIMIT = 5
+
+
+def login_bucket_hash(settings, email: str) -> str:
+    digest = hmac.new(
+        settings.auth_rate_limit_key.encode("utf-8"),
+        f"login\0{email}".encode("utf-8"),
+        hashlib.sha256,
+    )
+    return digest.hexdigest()
+
+
+async def _reserve_login_attempt(database: PostgresStore, email: str, settings) -> str:
+    now = datetime.now(UTC)
+    window_start = datetime.fromtimestamp(
+        int(now.timestamp() // LOGIN_WINDOW_SECONDS) * LOGIN_WINDOW_SECONDS, UTC
+    )
+    bucket_hash = login_bucket_hash(settings, email)
+    statement = (
+        pg_insert(auth_rate_limits)
+        .values(
+            bucket_hash=bucket_hash,
+            window_started_at=window_start,
+            attempts=1,
+        )
+        .on_conflict_do_update(
+            index_elements=[auth_rate_limits.c.bucket_hash],
+            set_={
+                "window_started_at": window_start,
+                "attempts": case(
+                    (
+                        auth_rate_limits.c.window_started_at == window_start,
+                        auth_rate_limits.c.attempts + 1,
+                    ),
+                    else_=1,
+                ),
+            },
+        )
+        .returning(auth_rate_limits.c.attempts)
+    )
+    try:
+        async with database.sessions.begin() as session:
+            await session.execute(
+                delete(auth_rate_limits).where(
+                    auth_rate_limits.c.window_started_at < now - timedelta(days=1)
+                )
+            )
+            attempts = await session.scalar(statement)
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "The account service is unavailable.") from exc
+    if attempts is None:
+        raise AppError("offline", "The account service is unavailable.")
+    if attempts > LOGIN_ATTEMPT_LIMIT:
+        raise AppError(
+            "rate_limited", "Too many sign-in attempts. Try again in 15 minutes."
+        )
+    return bucket_hash
 
 
 class RegisterRequest(BaseModel):
@@ -171,46 +230,26 @@ def _identity(
 @router.post("/register", status_code=201)
 async def register(body: RegisterRequest, request: Request, response: Response) -> dict:
     require_allowed_origin(request)
+    if not request.app.state.settings.public_registration_enabled:
+        raise AppError(
+            "rejected", "Account creation is currently managed by an operator."
+        )
     database = _database(request)
     user_id = uuid4()
     farm_id = uuid4()
     password_hash = await run_in_threadpool(hash_password, body.password)
-    seed = MemoryStore()
-    seed.preferences = seed.preferences.model_copy(
-        update={
-            "farm_name": body.farm_name,
-            "account_holder": body.display_name,
-            "display_name": body.display_name,
-        }
-    )
     token = csrf_token = session_hash = ""
     max_age = SESSION_SECONDS
     try:
         async with database.sessions.begin() as session:
-            await session.execute(
-                insert(users).values(
-                    id=user_id,
-                    email=body.email,
-                    password_hash=password_hash,
-                    display_name=body.display_name,
-                )
-            )
-            await session.execute(insert(farms).values(id=farm_id, name=body.farm_name))
-            await session.execute(
-                insert(farm_memberships).values(
-                    farm_id=farm_id,
-                    user_id=user_id,
-                    role="owner",
-                )
-            )
-            for position, mode in enumerate(seed.modes.values()):
-                await session.execute(
-                    insert(modes).values(**mode_values(farm_id, mode, position))
-                )
-            await session.execute(
-                insert(farm_preferences).values(
-                    **preference_values(farm_id, seed.preferences)
-                )
+            await create_farm_owner(
+                session,
+                user_id=user_id,
+                farm_id=farm_id,
+                email=body.email,
+                password_hash=password_hash,
+                display_name=body.display_name,
+                farm_name=body.farm_name,
             )
             (
                 token,
@@ -242,6 +281,8 @@ async def register(body: RegisterRequest, request: Request, response: Response) 
 async def login(body: LoginRequest, request: Request, response: Response) -> dict:
     require_allowed_origin(request)
     database = _database(request)
+    settings = request.app.state.settings
+    login_bucket = await _reserve_login_attempt(database, body.email, settings)
     query = (
         select(
             users.c.id.label("user_id"),
@@ -276,6 +317,11 @@ async def login(body: LoginRequest, request: Request, response: Response) -> dic
 
     try:
         async with database.sessions.begin() as session:
+            await session.execute(
+                delete(auth_rate_limits).where(
+                    auth_rate_limits.c.bucket_hash == login_bucket
+                )
+            )
             (
                 token,
                 csrf_token,
@@ -307,10 +353,16 @@ async def login(body: LoginRequest, request: Request, response: Response) -> dic
 
 @router.get("/session")
 async def current_session(request: Request, response: Response) -> dict:
+    settings = request.app.state.settings
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
-    if request.app.state.settings.auth_mode != "sessions":
-        return ok_envelope({"authenticated": False})
+    if settings.auth_mode != "sessions":
+        return ok_envelope(
+            {
+                "authenticated": False,
+                "registration_enabled": settings.public_registration_enabled,
+            }
+        )
     database = _database(request)
     token = request.cookies.get(SESSION_COOKIE_NAME)
     try:
@@ -320,8 +372,15 @@ async def current_session(request: Request, response: Response) -> dict:
     if identity is None:
         if token:
             _clear_session_cookie(request, response)
-        return ok_envelope({"authenticated": False})
-    return ok_envelope(identity_payload(identity, identity.csrf_token))
+        return ok_envelope(
+            {
+                "authenticated": False,
+                "registration_enabled": settings.public_registration_enabled,
+            }
+        )
+    payload = identity_payload(identity, identity.csrf_token)
+    payload["registration_enabled"] = settings.public_registration_enabled
+    return ok_envelope(payload)
 
 
 @router.post("/logout")

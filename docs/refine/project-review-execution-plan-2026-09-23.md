@@ -6,7 +6,11 @@ entries (44 modified, 17 untracked) containing refinement Phase 4 (durable devic
 commands, migration `0008`) and Phase 5 (telemetry projection/freshness, migration
 `0009`). Sibling repository `eggcelerate-simulate` @ `e112a25` with 4 modified files.
 
-**Execution status (2026-09-23):** Phases 0–8 are complete; Phase 9 is next. Phase 8's
+**Execution status (updated 2026-09-24):** Phases 0–8 are complete; Phase 9's code and
+disposable-environment verification are in place, but its release gates remain open.
+Phase 9 closes production self-registration, adds email-keyed login throttling and
+operator-provisioned device routing, and configures the local simulator API to require
+sessions. Database restore, migration, and software gates have now passed. Phase 8's
 implementation checkpoint is `0709075` (`feat: add farm-scoped account sessions`); its
 verification record is in the [Phase 8 handoff](project-review-handoff-2026-09-23-phase8.md).
 Phase 7's implementation checkpoint is `8d5252b` (`fix: make dashboard states truthful and actionable`);
@@ -705,12 +709,52 @@ worker while preserving volumes; restore a backup into a clean environment and r
 recovery time and data age; exercise outages and recovery; verify the deployed auth
 boundary and secrets handling; record the release decision with remaining limitations.
 
-Phase 9 also closes the limits discovered while wiring real owner accounts: rate-limit
-registration/login and provide a verified email/password-recovery policy (or keep public
-signup disabled); map authenticated farms to provisioned device identities and teach the
-MQTT worker to dispatch their commands rather than only the configured development farm;
-verify that device status, ownership, telemetry, and command ACK paths remain tenant-bound.
-Physical relay/motor/heater operation remains outside the authorization granted here.
+Phase 9 also closes the limits discovered while wiring real owner accounts. Current
+implementation progress:
+
+- Production refuses public self-registration until email verification is configured.
+  Owners can be created and passwords manually reset with an interactive operator CLI;
+  resetting a password revokes all sessions. Login attempts are limited to five per
+  normalized email in a 15-minute window using an HMAC-keyed bucket and `Retry-After`.
+- Migration `0013` adds a globally unique, operator-provisioned device registry and the
+  persistent login buckets; `0014` adds the expiry-cleanup index. Session-mode API writes
+  that assign or reassign a device require an exact registry entry. The simulator worker
+  routes registered IDs across farms and claims only that farm's provisioned IDs.
+- The worker refuses `APP_ENV=production` because the current anonymous broker and
+  simulator messages have no per-device authentication. The sibling simulator and ESP32
+  firmware have not been extended with a device credential or signed-message protocol.
+  See the [device provisioning guide](../guide/device-provisioning-guide.md).
+- The simulator overlay now configures both API and worker for session auth, PostgreSQL,
+  and closed self-registration; the API waits for database readiness. Its broker stays
+  loopback-only and dispatch remains opt-in.
+- The clean-database restore drill passed with Timescale's required pre/post-restore
+  hooks. Fresh and populated migration upgrades and the live API/web contract also pass.
+
+See the [Phase 9 handoff checkpoint](project-review-handoff-2026-09-24-phase9-progress.md)
+for the verification results, measured budgets, and the exact gates still open.
+
+**Verification checkpoint (2026-09-24):** API 113 tests passed; web 241 tests passed and
+coverage scope passed; API/web contract 28 tests passed; fresh and populated migrations
+passed; `alembic check`, Ruff, mypy, Biome, and production/simulator Compose config checks
+passed. The restore script recovered migration `0014`, farm configuration, one Timescale
+telemetry sample, device routing, and owner membership; the isolated custom archive was
+73,506 bytes and the dump/restore interval was 0.59 seconds. Session-mode local `/readyz`
+startup measured 959 ms. The production-mode frontend build's main JavaScript chunk was
+573.27 kB (155.43 kB gzip); provisional local guardrails are 160 kB gzip for the entry
+chunk and 5 seconds for API readiness. These are development
+measurements, not production SLOs. Reproduce them with
+`apps/api/scripts/verify_backup_restore.py`,
+`apps/api/scripts/verify_live_contract.py`, and
+`apps/api/scripts/measure_session_startup.py`.
+
+The phase is **in progress**, not release-ready. Email verification/self-service recovery,
+commissioned hardware authentication and tests, database/broker/worker restart and outage
+drills with retained volumes, and a production-environment restore exercise remain open.
+The local bundle/startup guardrails passed the measured build and readiness smoke test;
+they have not been observed on the deployment host. Existing farm-local serials duplicated
+across farms are not auto-claimed; an operator must verify and provision a new globally
+unique ID. Physical relay/motor/heater operation remains outside the authorization granted
+here.
 
 **Exit gate:** evidence identifies revision, configuration, commands and results; restore
 and restart drills pass; no unresolved authentication or command-integrity blocker remains.

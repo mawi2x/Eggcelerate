@@ -5,13 +5,19 @@ import json
 import logging
 import os
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from uuid import UUID
 
 import paho.mqtt.client as mqtt
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..config import load_settings
+from ..database.device_registry import (
+    registered_device_targets,
+    resolve_registered_farm,
+)
 from ..database.store import PostgresStore
 from ..errors import AppError
 from .commands import apply_ack, claim_commands, expire_commands
@@ -92,6 +98,10 @@ class MqttInputQueues:
 
 async def run() -> None:
     settings = load_settings()
+    if settings.app_env == "production":
+        raise RuntimeError(
+            "The bundled MQTT worker is simulator-only; production dispatch requires a commissioned device-authentication protocol."
+        )
     if settings.storage_backend != "postgres_incubators":
         raise ValueError("MQTT worker requires PostgreSQL")
     database = PostgresStore(settings.database_url, settings.default_farm_id)
@@ -166,12 +176,23 @@ async def run() -> None:
         while True:
             inbound = None
             try:
+                targets: Mapping[UUID, tuple[str, ...] | None]
+                async with database.sessions() as session:
+                    if settings.auth_mode == "sessions":
+                        targets = await registered_device_targets(session)
+                    else:
+                        targets = {database.farm_id: None}
                 async with database.sessions.begin() as session:
-                    await expire_commands(session, database.farm_id, datetime.now(UTC))
-                if client.is_connected() and dispatch:
+                    await expire_commands(session, None, datetime.now(UTC))
+                for farm_id, device_ids in targets.items():
+                    if not client.is_connected() or not dispatch:
+                        continue
                     async with database.sessions.begin() as session:
                         messages = await claim_commands(
-                            session, database.farm_id, datetime.now(UTC)
+                            session,
+                            farm_id,
+                            datetime.now(UTC),
+                            device_ids=device_ids,
                         )
                     for body in messages:
                         # Non-retained QoS1 + durable retry avoids stale retained
@@ -188,10 +209,29 @@ async def run() -> None:
                     continue
                 try:
                     async with database.sessions.begin() as session:
+                        farm_id = database.farm_id
+                        if settings.auth_mode == "sessions":
+                            parts = inbound.topic.split("/")
+                            if (
+                                len(parts) != 5
+                                or parts[:3] != ["eggcelerate", "v1", "devices"]
+                                or parts[4] not in ("telemetry", "ack")
+                            ):
+                                raise AppError(
+                                    "validation_error", "Invalid MQTT device topic."
+                                )
+                            registered_farm = await resolve_registered_farm(
+                                session, parts[3]
+                            )
+                            if registered_farm is None:
+                                raise AppError(
+                                    "not_found", "MQTT device is not provisioned."
+                                )
+                            farm_id = registered_farm
                         if inbound.is_ack:
                             await apply_ack(
                                 session,
-                                database.farm_id,
+                                farm_id,
                                 inbound.topic,
                                 inbound.payload,
                                 received_at=inbound.received_at,
@@ -199,7 +239,7 @@ async def run() -> None:
                         else:
                             await ingest_telemetry(
                                 session,
-                                database.farm_id,
+                                farm_id,
                                 inbound.topic,
                                 inbound.payload,
                             )

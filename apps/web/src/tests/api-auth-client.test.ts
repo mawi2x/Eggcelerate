@@ -25,12 +25,30 @@ function response(data: unknown, status = 200): Response {
 afterEach(() => setCsrfToken(null));
 
 describe("ApiAuthClient", () => {
+  it("hydrates the operator-controlled registration switch", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      response({
+        ok: true,
+        data: { authenticated: false, registration_enabled: false },
+      }),
+    );
+    const client = new ApiAuthClient("/api", fetchImpl);
+
+    await expect(client.session()).resolves.toEqual({
+      identity: null,
+      registrationEnabled: false,
+    });
+  });
+
   it("uses cookie credentials and carries CSRF into logout", async () => {
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(response({ ok: true, data: identity }))
       .mockResolvedValueOnce(
-        response({ ok: true, data: { authenticated: false } }),
+        response({
+          ok: true,
+          data: { authenticated: false, registration_enabled: false },
+        }),
       );
     const client = new ApiAuthClient("/api", fetchImpl);
 

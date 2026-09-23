@@ -15,6 +15,8 @@ class Settings:
     api_port: int = 8000
     storage_backend: str = "memory"
     database_url: str = ""
+    public_registration_enabled: bool = True
+    auth_rate_limit_key: str = "development-only-rate-limit-key"
     cors_origins: tuple[str, ...] = (
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -24,6 +26,10 @@ class Settings:
     )
 
     def __post_init__(self) -> None:
+        if self.app_env == "production" and self.public_registration_enabled:
+            raise ValueError(
+                "Public registration must remain disabled until email verification is configured."
+            )
         # Existing B3 mode-only configuration upgrades to the next slice.
         if self.storage_backend == "postgres_modes":
             object.__setattr__(self, "storage_backend", "postgres_incubators")
@@ -56,6 +62,10 @@ class Settings:
         ):
             raise ValueError(
                 "Production CORS_ORIGINS must contain the HTTPS web origin."
+            )
+        if self.app_env == "production" and len(self.auth_rate_limit_key) < 32:
+            raise ValueError(
+                "Production AUTH_RATE_LIMIT_KEY must contain at least 32 characters."
             )
 
 
@@ -91,4 +101,15 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
         cors_origins=cors,
         storage_backend=env.get("STORAGE_BACKEND", "memory"),
         database_url=env.get("DATABASE_URL", ""),
+        public_registration_enabled=env.get(
+            "PUBLIC_REGISTRATION_ENABLED",
+            "false" if app_env == "production" else "true",
+        )
+        .strip()
+        .lower()
+        == "true",
+        auth_rate_limit_key=env.get(
+            "AUTH_RATE_LIMIT_KEY",
+            "" if app_env == "production" else "development-only-rate-limit-key",
+        ),
     )

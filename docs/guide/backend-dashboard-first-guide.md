@@ -1,30 +1,29 @@
 # EGGCELERATE Dashboard-First Backend Guide
 
-> **Status:** B4 simulator command dispatch and telemetry are implemented through migration `0011`; B6 app-managed email/password sessions and farm authorization are implemented through migration `0012`. Public release and physical hardware remain gated.
+> **Status:** Simulator command dispatch/telemetry and B6 app-managed sessions are implemented through migrations `0011`–`0012`; Phase 9 adds login throttling and operator-provisioned device routing through `0014`. Public release and physical hardware remain gated.
 > **Prepared:** 2026-09-04
 > **Current status updated:** 2026-09-23
 > **Scope:** Local FastAPI backend for the existing dashboard, followed by persistence and device simulation
-> **Deferred:** Real authentication, user administration, production deployment, and physical actuator control
+> **Deferred:** Email verification/self-service recovery, production device authentication, release operations, and physical actuator control
 
-## 0. Current handoff (2026-09-15)
+## 0. Current handoff (2026-09-23)
 
-### Current handoff — 2026-09-23
+Phases 0–8 of the current [project review plan](../refine/project-review-execution-plan-2026-09-23.md)
+are complete; Phase 9 remains in progress. App-managed cookie sessions and farm-scoped
+HTTP authorization are implemented. Production self-registration is closed, operator
+commands create/reset owners, and persistent login throttling limits sign-in attempts.
 
-The API now stores validated MQTT telemetry in raw history and a durable
-`device_telemetry_state` projection with boot identity, battery/power, device
-observation time, accepted server receipt time, and `last_seen_at`. A later boot
-can replace the projection despite an older observation clock; within one boot,
-sequence and observation time must both advance. Boot and observation times more
-than 60 seconds ahead of receipt are rejected. Freshness is fresh through 45
-seconds, stale through 180 seconds, then offline. The worker gives QoS 1 ACKs
-priority over queued QoS 0 telemetry and rate-limits rejection diagnostics. The
-dashboard polls summaries and reading windows every 15 seconds while visible.
+The API requires an operator-provisioned device ID for authenticated chamber creation
+and reassignment. Session-mode MQTT routing resolves IDs to one farm and limits command
+claims to that farm. The worker refuses production startup because Mosquitto and the
+simulator messages do not authenticate devices. The ESP32 firmware is not present here;
+physical actuators and public MQTT remain outside the tested boundary.
 
-The latest implementation details and test evidence are in the [Phase 3
-handoff](../refine/project-review-handoff-2026-09-23-phase3.md). The repository's
-current sequence schedules authentication after the reliability and UI phases;
-the selected account approach is application-managed email/password. Physical
-actuation and shared/public broker deployment remain disabled.
+Phase 9 also requires startup/bundle targets, restart and outage evidence, and a backup
+restore into a clean environment. Those operations have not been certified. The Phase 8
+implementation and verification are in the [authentication handoff](../refine/project-review-handoff-2026-09-23-phase8.md);
+the [device provisioning guide](device-provisioning-guide.md) records the current device
+boundary.
 
 B0–B2 are recorded complete. B3 now persists farms, modes, chamber/device configuration, farm preferences, alerts, cycle runtime, terminal history, candling journals/photo references, and their replay records. Migration 0007 adds internal telemetry ingestion and raw/five-minute research queries; PostgreSQL dashboard readings now use stored samples. The local dashboard B3 exit passed; see [the final review](b3-exit-review.md) for evidence and recorded scope limits.
 The dated checkpoints below are historical evidence, not current resume instructions.
@@ -42,11 +41,11 @@ are historical; use the current handoff above for present status.
 
 ### Implemented versus planned
 
-The main repository has FastAPI, API Docker/Compose configuration, `ApiRepository`, the mock/API switch, app-managed sessions in API mode, and an opt-in `postgres_incubators` backend (`postgres_modes` remains a configuration alias). PostgreSQL persists farm/chamber configuration, preferences, alerts, cycle runtime and history, candling journals/photo references, telemetry samples and latest state, device-command/ACK state, users, memberships and sessions. MQTT ingestion and a simulator worker are implemented; WebSockets, multi-farm device dispatch, production broker security, and physical hardware integration remain future work.
+The main repository has FastAPI, API Docker/Compose configuration, `ApiRepository`, the mock/API switch, app-managed sessions in API mode, and an opt-in `postgres_incubators` backend (`postgres_modes` remains a configuration alias). PostgreSQL persists farm/chamber configuration, preferences, alerts, cycle runtime and history, candling journals/photo references, telemetry samples and latest state, device-command/ACK state, users, memberships, sessions, login throttles, and the operator device registry. MQTT ingestion and simulator-only multi-farm worker routing are implemented; production broker/device authentication and physical hardware integration remain future work.
 
-The simulator contract uses QoS 0 non-retained telemetry and QoS 1 non-retained commands/ACKs; the worker is opt-in and simulator dispatch defaults off. Dashboard refresh is 15 seconds and database reading queries support five-minute research aggregates. No retention policy, authenticated production broker, or physical device deployment is claimed. HTTP authentication is implemented; public release remains gated on email verification/recovery, rate limits, tenant-to-device binding, multi-farm worker behavior, and operational evidence.
+The simulator contract uses QoS 0 non-retained telemetry and QoS 1 non-retained commands/ACKs; the worker is opt-in and simulator dispatch defaults off. Dashboard refresh is 15 seconds and database reading queries support five-minute research aggregates. No retention policy, authenticated production broker, or physical device deployment is claimed. HTTP authentication, account throttling, and registry-based farm routing are implemented; public release remains gated on email verification/self-service recovery, device credentials and firmware support, and operational evidence.
 
-Error mapping: `validation_error` → 422; `not_found` → 404; `conflict` and `rejected` → 409; `offline` → 503; `timeout` → 504; `unknown_error` → 500.
+Error mapping: `validation_error` → 422; `not_found` → 404; `conflict` and `rejected` → 409; `rate_limited` → 429; `offline` → 503; `timeout` → 504; `unknown_error` → 500.
 
 ### B3 candling checkpoint (2026-09-14)
 

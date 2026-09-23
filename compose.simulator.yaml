@@ -1,5 +1,17 @@
 # Opt-in protected local simulator infrastructure. Physical hardware is excluded.
 services:
+  api:
+    environment:
+      APP_ENV: development
+      AUTH_MODE: sessions
+      PUBLIC_REGISTRATION_ENABLED: "false"
+      STORAGE_BACKEND: postgres_incubators
+      DATABASE_URL: ${DATABASE_URL:?Set simulator DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz')"]
   broker:
     image: eclipse-mosquitto:2
     ports:
@@ -15,6 +27,8 @@ services:
     command: ["python", "-m", "eggcelerate_api.mqtt.worker"]
     environment:
       APP_ENV: development
+      AUTH_MODE: sessions
+      PUBLIC_REGISTRATION_ENABLED: "false"
       STORAGE_BACKEND: postgres_incubators
       DATABASE_URL: ${DATABASE_URL:?Set simulator DATABASE_URL}
       DEFAULT_FARM_ID: ${DEFAULT_FARM_ID:-00000000-0000-0000-0000-000000000001}

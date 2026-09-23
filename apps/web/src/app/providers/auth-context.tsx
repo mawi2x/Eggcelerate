@@ -28,6 +28,7 @@ export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 interface AuthContextValue {
   user: AuthUser | null;
   mode: "mock" | "api";
+  registrationEnabled: boolean;
   status: AuthStatus;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -76,6 +77,7 @@ export function MockAuthProvider({
     () => ({
       user,
       mode: "mock",
+      registrationEnabled: true,
       status: user ? "authenticated" : "unauthenticated",
       isLoading: false,
       isAuthenticated: user !== null,
@@ -110,6 +112,7 @@ export function ApiAuthProvider({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -123,9 +126,10 @@ export function ApiAuthProvider({
     window.addEventListener("eggcelerate:session-expired", expireSession);
     void client
       .session()
-      .then((identity) => {
+      .then(({ identity, registrationEnabled: canRegister }) => {
         if (!active) return;
         setUser(identity ? userFromApi(identity) : null);
+        setRegistrationEnabled(canRegister);
         setStatus(identity ? "authenticated" : "unauthenticated");
         setError(null);
       })
@@ -150,6 +154,7 @@ export function ApiAuthProvider({
     () => ({
       user,
       mode: "api",
+      registrationEnabled,
       status,
       isLoading: status === "loading",
       isAuthenticated: status === "authenticated" && user !== null,
@@ -177,7 +182,7 @@ export function ApiAuthProvider({
         setError(null);
       },
     }),
-    [client, error, queryClient, status, user],
+    [client, error, queryClient, registrationEnabled, status, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

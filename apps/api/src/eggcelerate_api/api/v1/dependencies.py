@@ -8,10 +8,13 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 from fastapi.concurrency import contextmanager_in_threadpool
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from ...context import RequestContext, disabled_context
+from ...database.device_registry import DEVICE_ID_PATTERN
 from ...database.queries import read_state
+from ...database.schema import device_registry
 from ...database.store import PostgresStore
 from ...errors import AppError
 from ...session_auth import SESSION_COOKIE_NAME, require_csrf, resolve_session
@@ -62,6 +65,37 @@ async def get_store(
             yield state
         return
     database = database.for_farm(context.farm_id)
+    if request.app.state.settings.auth_mode == "sessions" and request.method in (
+        "POST",
+        "PATCH",
+    ):
+        try:
+            body = await request.json()
+        except ValueError, TypeError:
+            body = None
+        device_id = body.get("device_id") if isinstance(body, dict) else None
+        if isinstance(device_id, str):
+            if not DEVICE_ID_PATTERN.fullmatch(device_id):
+                raise AppError("validation_error", "Device ID has an invalid format.")
+            try:
+                async with database.sessions() as session:
+                    provision = (
+                        await session.execute(
+                            select(device_registry).where(
+                                device_registry.c.identity_key == device_id.upper(),
+                                device_registry.c.public_id == device_id,
+                                device_registry.c.farm_id == database.farm_id,
+                                device_registry.c.disabled_at.is_(None),
+                            )
+                        )
+                    ).first()
+            except (SQLAlchemyError, OSError, TimeoutError) as exc:
+                raise AppError("offline", "Device registry is unavailable.") from exc
+            if provision is None:
+                raise AppError(
+                    "rejected",
+                    "This device is not provisioned for this farm. Contact the operator with its device ID.",
+                )
     if request.method == "GET":
         resource = request.url.path.removeprefix("/api/v1/").split("/")[0]
         public_id = request.path_params.get("incubator_id") or request.path_params.get(

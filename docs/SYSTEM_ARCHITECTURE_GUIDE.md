@@ -62,11 +62,11 @@ The memory adapter remains a deterministic option for demos and tests, while API
 | Mock repository boundary | **Implemented** | `EggcelerateRepository` and `InMemoryEggcelerateRepository` own fixture copies, mutable farm records, and deterministic reading queries. Screens do not import fixtures. |
 | Navigation | **Implemented** | Wouter 3.10 owns canonical paths, Back/Forward updates, legacy-query migration, and safe parameter redirects through the routing module. |
 | Server-state layer | **Implemented** | TanStack Query 5 and farm feature query/mutation hooks wrap the injected memory or API repository. |
-| Auth and onboarding | **Implemented for API mode** | App-managed email/password sessions, CSRF-protected writes, and server-derived farm membership scope protect dashboard HTTP routes. Mock onboarding remains for local demo mode; email verification/recovery and invitations remain open. |
+| Auth and onboarding | **Implemented for API mode** | App-managed email/password sessions, CSRF-protected writes, and server-derived farm membership scope protect dashboard HTTP routes. Production signup is closed; operator account/reset tools and persistent login throttling are available. Email verification and self-service recovery remain open. |
 | API contract and runtime | **Implemented** | FastAPI/Pydantic, strict DTOs, error envelopes, health/readiness, and `ApiRepository` are present; see `apps/api/README.md`. |
-| Database | **Implemented, opt-in** | PostgreSQL/TimescaleDB persistence and Alembic revisions `0001`–`0012`; raw telemetry, latest device state, users, memberships, and sessions are durable. |
-| MQTT | **Implemented for local simulation** | Mosquitto config and a worker exist in the simulator overlay; command dispatch defaults off and physical hardware is excluded. |
-| Authentication | **Implemented with release limits** | `AUTH_MODE=sessions` uses opaque server sessions and owner memberships; production refuses disabled auth. Email verification/recovery, rate limiting, invitations, and per-device authorization remain open. |
+| Database | **Implemented, opt-in** | PostgreSQL/TimescaleDB persistence and Alembic revisions `0001`–`0014`; raw telemetry, latest device state, users, memberships, sessions, auth throttles, and the operator-provisioned device registry are durable. |
+| MQTT | **Implemented for local simulation** | The simulator overlay runs the API and worker in sessions mode, routes provisioned device IDs across farms, and filters claims by farm. It closes signup and keeps the anonymous broker loopback-only. The worker refuses production because the device protocol has no per-device authentication; physical hardware is excluded. |
+| Authentication | **Implemented with release limits** | `AUTH_MODE=sessions` uses opaque server sessions and owner memberships; production refuses disabled auth and public signup. Login throttling and manual operator recovery exist. Email verification, self-service recovery, invitations, and hardware device authentication remain open. |
 | Web deployment | **Implemented/configured** | Docker multi-stage build and Nginx SPA/API proxy; Compose includes API and opt-in database profiles. |
 | Automated checks | **Implemented** | Web and API checks run in CI; see `.github/workflows/web.yml`, `.github/workflows/api.yml`, and `docs/guide/verification-gates.md` for current gates rather than a stale test count. Rendered accessibility and browser E2E remain open. |
 
@@ -153,9 +153,9 @@ remain before public or actuator deployment.
 
 | Component | Current responsibility | Status and limit |
 |---|---|---|
-| FastAPI + Pydantic | REST validation, result envelopes, services, readiness, and sessions | Implemented through migration `0012`; no WebSocket bridge. |
-| PostgreSQL + TimescaleDB | Farm configuration, histories, telemetry, command audit, users, memberships and sessions | Implemented as an opt-in local store through Alembic revision `0012`. |
-| Mosquitto MQTT | Device telemetry and command/ACK transport | Local anonymous broker config and worker overlay exist; dispatch is opt-in and not production secured. |
+| FastAPI + Pydantic | REST validation, result envelopes, services, readiness, and sessions | Implemented through migration `0014`; no WebSocket bridge. |
+| PostgreSQL + TimescaleDB | Farm configuration, histories, telemetry, command audit, users, memberships, sessions, auth throttles, and provisioned device IDs | Implemented as an opt-in local store through Alembic revision `0014`. |
+| Mosquitto MQTT | Device telemetry and command/ACK transport | Local anonymous broker config and simulator worker overlay exist; registry-based farm routing is available in session mode, but production startup is refused until device authentication is implemented. |
 | Python simulator | Exercise firmware-facing telemetry and command contracts | Implemented in a separate repository; it does not establish physical hardware behavior. |
 | ESP32 firmware | Local sensing, actuation and safety control | Not present in this repository and not hardware-verified. |
 | Docker Compose | Run web/API, optional database, and simulator worker/broker overlay | Implemented for local work; public deployment still requires security and recovery gates. |
@@ -417,10 +417,10 @@ evidence live in the [project review plan](refine/project-review-execution-plan-
 | Area | Status |
 |---|---|
 | Frontend contracts and responsive dashboard | Implemented; mock and HTTP repositories use the same DTO/result boundary. |
-| API and local persistence | Implemented for the current dashboard slices; PostgreSQL/TimescaleDB is opt-in and migrations are at `0012`. |
-| Telemetry and commands | Validated telemetry, durable projection, command outbox, worker and simulator contract are implemented; worker dispatch remains off by default. |
-| Sign-in | App-managed email/password sessions and server farm authorization are implemented; verification, recovery, rate limits, invites, and farm switching remain open. |
-| Production and electronics | Per-device ownership, multi-farm MQTT dispatch, secure broker/deployment settings, backup restore proof, ESP32 firmware and physical actuator tests remain open. |
+| API and local persistence | Implemented for the current dashboard slices; PostgreSQL/TimescaleDB is opt-in and migrations are at `0014`. |
+| Telemetry and commands | Validated telemetry, durable projection, command outbox, simulator worker, and registry-based farm routing are implemented; physical hardware authentication is not. |
+| Sign-in | App-managed email/password sessions and server farm authorization are implemented; production signup is closed, login is throttled, and recovery is operator-managed. Email verification, self-service recovery, invites, and farm switching remain open. |
+| Production and electronics | Production worker startup is refused until per-device authentication is added. Backup restore, restart/outage evidence, ESP32 firmware, and physical actuator tests remain open. |
 
 The [backend guide](guide/backend-dashboard-first-guide.md) describes the current
 API boundaries. The [database guide](guide/database-setup-guide.md) lists the

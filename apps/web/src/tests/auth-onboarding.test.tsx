@@ -149,7 +149,11 @@ describe("sign-in and onboarding controls", () => {
   it("creates an account with the typed farm identity and matching password", async () => {
     const onRegister = vi.fn().mockResolvedValue(undefined);
     const mounted = await render(
-      <CreateAccountScreen onRegister={onRegister} onHaveAccount={vi.fn()} />,
+      <CreateAccountScreen
+        onRegister={onRegister}
+        onHaveAccount={vi.fn()}
+        registrationEnabled
+      />,
     );
     try {
       const setValue = (selector: string, value: string) => {
@@ -181,6 +185,30 @@ describe("sign-in and onboarding controls", () => {
         email: "farmer@example.com",
         password: "correct horse battery staple",
       });
+    } finally {
+      await mounted.unmount();
+    }
+  });
+
+  it("shows the operator path when public account creation is closed", async () => {
+    const onHaveAccount = vi.fn();
+    const mounted = await render(
+      <CreateAccountScreen
+        onRegister={vi.fn()}
+        onHaveAccount={onHaveAccount}
+        registrationEnabled={false}
+      />,
+    );
+    try {
+      expect(mounted.container.textContent).toContain(
+        "Account creation is closed.",
+      );
+      expect(mounted.container.querySelector("#register-email")).toBeNull();
+      const returnToSignIn = [
+        ...mounted.container.querySelectorAll("button"),
+      ].find((button) => button.textContent?.includes("Return to sign in"));
+      await act(async () => returnToSignIn?.click());
+      expect(onHaveAccount).toHaveBeenCalledOnce();
     } finally {
       await mounted.unmount();
     }

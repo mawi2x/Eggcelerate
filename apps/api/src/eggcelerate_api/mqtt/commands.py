@@ -31,20 +31,27 @@ class CommandAck(BaseModel):
     error_code: str | None = None
 
 
-async def expire_commands(session: AsyncSession, farm_id: UUID, now: datetime) -> None:
+async def expire_commands(
+    session: AsyncSession, farm_id: UUID | None, now: datetime
+) -> None:
+    conditions = [
+        commands.c.status.in_(("pending", "dispatched")),
+        commands.c.expires_at <= now - DEVICE_CLOCK_TOLERANCE,
+    ]
+    if farm_id is not None:
+        conditions.append(commands.c.farm_id == farm_id)
     await session.execute(
         update(commands)
-        .where(
-            commands.c.farm_id == farm_id,
-            commands.c.status.in_(("pending", "dispatched")),
-            commands.c.expires_at <= now - DEVICE_CLOCK_TOLERANCE,
-        )
+        .where(*conditions)
         .values(status="timed_out", error_code="ack_deadline_exceeded")
     )
 
 
 async def claim_commands(
-    session: AsyncSession, farm_id: UUID, now: datetime
+    session: AsyncSession,
+    farm_id: UUID,
+    now: datetime,
+    device_ids: tuple[str, ...] | None = None,
 ) -> list[dict]:
     await expire_commands(session, farm_id, now)
     rows = (
@@ -56,6 +63,11 @@ async def claim_commands(
                 commands.c.next_attempt_at <= now,
                 commands.c.expires_at > now,
                 commands.c.attempts < 5,
+                *(
+                    [commands.c.device_id.in_(device_ids)]
+                    if device_ids is not None
+                    else []
+                ),
             )
             .order_by(commands.c.requested_at)
             .limit(50)

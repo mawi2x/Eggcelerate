@@ -8,6 +8,13 @@ validated simulator commands, persistent simulator replay, and correlated ACK
 application. The worker and dispatch path are opt-in; physical hardware is still
 excluded.
 
+Phase 9 adds an operator-provisioned, globally unique device registry. In
+`AUTH_MODE=sessions`, the worker resolves each registered ID to one farm and
+limits command claims to that farm. The worker refuses production startup until
+devices authenticate cryptographically; the local broker remains anonymous and
+the simulator/firmware do not sign messages. See the [device provisioning
+guide](device-provisioning-guide.md).
+
 The API accepts a turn request without changing the confirmed turn cursor. The
 cursor advances only after a matching successful ACK. Pending, dispatched,
 acked, rejected, and timed-out command states are durable. The client idempotency
@@ -107,16 +114,20 @@ windows every 15 seconds while visible, and monitoring views show the server
 receipt age as Live, Stale, or Offline. The selected thresholds are a local
 15-second-cadence target and should be revalidated against deployed device rate.
 
-No WebSocket path is enabled. Broker security, authenticated farm scope, and
-physical actuation remain gated on later phases.
+No WebSocket path is enabled. Authenticated HTTP farm scope exists, but production
+broker security, per-device message authentication, and physical actuation remain
+gated on firmware and hardware work.
 
-## Next implementation slice
+## Remaining device work
 
-1. Add app-managed email/password authentication and farm-scoped sessions (B6).
-2. Reconcile worker broker security and deployment secrets before any shared or
-   public environment uses the simulator profile.
+1. Add device credentials or signed messages and broker TLS/ACLs; verify that a
+   registered board can authenticate without allowing another device to spoof its ID.
+2. Add the matching firmware behavior and run cross-farm telemetry/command/ACK tests.
 3. Qualify one physical device against the command and telemetry contract before
    enabling any actuator path.
+
+Backup/restore, restart/outage, and production deployment gates are tracked in the
+[Phase 9 execution plan](../refine/project-review-execution-plan-2026-09-23.md#phase-9--release-readiness-and-measurement).
 
 ### Phase 5 timing and recovery
 

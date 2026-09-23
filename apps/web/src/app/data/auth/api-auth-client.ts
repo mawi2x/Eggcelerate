@@ -19,11 +19,20 @@ const IdentitySchema = z
   .strict();
 
 const SessionSchema = z.union([
-  z.object({ authenticated: z.literal(false) }).strict(),
-  IdentitySchema,
+  z
+    .object({
+      authenticated: z.literal(false),
+      registration_enabled: z.boolean(),
+    })
+    .strict(),
+  IdentitySchema.extend({ registration_enabled: z.boolean() }),
 ]);
 
 export type ApiAuthIdentity = z.infer<typeof IdentitySchema>;
+export interface ApiAuthSession {
+  identity: ApiAuthIdentity | null;
+  registrationEnabled: boolean;
+}
 
 export interface RegisterAccountInput {
   email: string;
@@ -49,15 +58,21 @@ export class ApiAuthClient {
     this.fetchImpl = fetchImpl;
   }
 
-  async session(): Promise<ApiAuthIdentity | null> {
+  async session(): Promise<ApiAuthSession> {
     const data = await this.request("/session");
     const parsed = SessionSchema.parse(data);
     if (!parsed.authenticated) {
       setCsrfToken(null);
-      return null;
+      return {
+        identity: null,
+        registrationEnabled: parsed.registration_enabled,
+      };
     }
     setCsrfToken(parsed.csrf_token);
-    return parsed;
+    return {
+      identity: parsed,
+      registrationEnabled: parsed.registration_enabled,
+    };
   }
 
   async signIn(

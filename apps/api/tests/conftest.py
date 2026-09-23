@@ -1,4 +1,4 @@
-"""Pytest bootstrap: import the package from src/, fresh app per test."""
+"""Pytest bootstrap: import from src/ and restrict DB tests to loopback test data."""
 
 from __future__ import annotations
 
@@ -31,9 +31,10 @@ def pytest_addoption(parser):
 def pytest_sessionstart(session):
     if session.config.getoption("--require-database"):
         url = os.environ.get("TEST_DATABASE_URL", "")
-        if not url or make_url(url).database != "eggcelerate_test":
+        if not _is_disposable_test_url(url):
             raise pytest.UsageError(
-                "--require-database requires TEST_DATABASE_URL targeting eggcelerate_test"
+                "--require-database requires TEST_DATABASE_URL targeting loopback "
+                "eggcelerate_test on port 55432"
             )
 
 
@@ -42,6 +43,17 @@ def pytest_sessionfinish(session, exitstatus):
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")
         if reporter and reporter.stats.get("skipped"):
             session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
+def _is_disposable_test_url(url: str) -> bool:
+    if not url:
+        return False
+    parsed = make_url(url)
+    return (
+        parsed.database == "eggcelerate_test"
+        and parsed.host in {"localhost", "127.0.0.1", "::1"}
+        and parsed.port == 55432
+    )
 
 
 def make_client() -> TestClient:
@@ -54,10 +66,8 @@ def database_url():
     url = os.environ.get("TEST_DATABASE_URL")
     if not url:
         pytest.skip("Set TEST_DATABASE_URL for PostgreSQL integration tests")
-    if make_url(url).database != "eggcelerate_test":
-        pytest.fail(
-            "Integration tests require the disposable eggcelerate_test database"
-        )
+    if not _is_disposable_test_url(url):
+        pytest.fail("Integration tests require loopback eggcelerate_test on port 55432")
     subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "head"],
         cwd=Path(__file__).resolve().parents[1],

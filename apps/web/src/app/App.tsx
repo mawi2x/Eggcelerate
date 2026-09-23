@@ -117,6 +117,7 @@ export default function App() {
     return (
       <>
         <CreateAccountScreen
+          registrationEnabled={auth.registrationEnabled}
           onRegister={async (input) => {
             await register(input);
             navigate("incubators", true);
@@ -144,6 +145,7 @@ export default function App() {
           onSetupLabel={
             auth.mode === "api" ? "Create your farm account" : undefined
           }
+          canRegister={auth.mode === "mock" || auth.registrationEnabled}
           authError={auth.error}
         />
         <Toaster position="top-right" richColors />

@@ -1,9 +1,12 @@
 # EGGCELERATE API
 
-> **Current status:** PostgreSQL persistence, the simulator command dispatch/ACK path,
-> and app-managed email/password sessions are implemented through migration `0012`.
-> HTTP farm access is membership-scoped. Physical hardware and public-release readiness
-> remain open. See the [Phase 8 handoff](../../docs/refine/project-review-handoff-2026-09-23-phase8.md).
+> **Current status:** PostgreSQL persistence, app-managed sessions, persistent login
+> throttling, and operator-provisioned device routing are implemented through migration
+> `0014`. HTTP farm access is membership-scoped. The MQTT worker remains simulator-only;
+> hardware authentication and public-release evidence remain open. See the [Phase 8
+> handoff](../../docs/refine/project-review-handoff-2026-09-23-phase8.md), the [Phase 9
+> checkpoint](../../docs/refine/project-review-handoff-2026-09-24-phase9-progress.md), and
+> [device provisioning guide](../../docs/guide/device-provisioning-guide.md).
 > See `docs/guide/backend-dashboard-first-guide.md`.
 
 Accepted technology decisions (local-only ADRs under `docs/archive/adr/`):
@@ -22,7 +25,7 @@ pyproject.toml          exact pins + update policy (pytest/ruff under test extra
 Dockerfile              python:3.14-slim, non-root loopback Compose service on :8000
 src/eggcelerate_api/
   main.py               application factory, CORS, /healthz, /readyz
-  config.py             local settings + production auth/CORS refusal
+  config.py             local settings + production auth/registration/secret guards
   context.py            request identity and tenant context
   errors.py             result envelope, error codes, exception normalization
   models.py             Pydantic wire DTOs mirroring the frontend Zod contracts
@@ -33,9 +36,10 @@ src/eggcelerate_api/
   api/v1/               auth routes plus farm-scoped dashboard routers
   auth_security.py      Argon2id password hashes and opaque session tokens
   session_auth.py       server session resolution, membership and CSRF checks
+  admin.py              operator-created owners, password resets, device provisioning
   database/             async store + farm/device persistence, metadata, explicit seed
 alembic.ini
-migrations/             Alembic-only DDL, revisions 0001–0012; see the database setup guide for the mapping
+migrations/             Alembic-only DDL, revisions 0001–0014; see the database setup guide for the mapping
 tests/                  unit and PostgreSQL integration tests; CI is the source for current totals
 ```
 
@@ -71,10 +75,25 @@ farm requests return 401 and cross-farm resource identifiers return 404.
 Passwords use Argon2id (19 MiB, two iterations, one lane); raw session credentials
 are random opaque values held in `HttpOnly`, `SameSite=Lax` cookies and only their
 SHA-256 digests are stored. Production cookies are `Secure`. Normal sessions expire
-after 12 hours and “remember me” sessions after 30 days; logout revokes them. Email
-verification, password recovery, login rate limiting, membership invitations, and
-farm switching remain unavailable. Keep open registration on a private preview
-until those Phase 9 controls are addressed.
+after 12 hours and “remember me” sessions after 30 days; logout revokes them. Production
+refuses public registration until email verification is configured. Operators create
+accounts and perform manual password resets, which revoke sessions. Sign-in allows five
+requests per normalized email per 15-minute window; `AUTH_RATE_LIMIT_KEY` must be a
+private random value of at least 32 characters in production. Email verification,
+self-service recovery, membership invitations, and farm switching remain unavailable.
+
+Operator commands require `AUTH_MODE=sessions`, PostgreSQL storage, and `DATABASE_URL`:
+
+```sh
+python -m eggcelerate_api.admin create-owner --email owner@example.com --name 'Farm Owner' --farm 'Sunrise Farm'
+python -m eggcelerate_api.admin reset-password --email owner@example.com
+python -m eggcelerate_api.admin provision-device --farm-id <farm-uuid> --device-id <printed-id>
+```
+
+Password commands prompt without echo. Device provisioning reserves an exact device ID
+for one farm; authenticated chamber create/reassignment rejects IDs that are not
+provisioned for the session's farm. Historical duplicate farm-local IDs are not
+auto-claimed. A reservation does not cryptographically authenticate physical hardware.
 
 Memory request transactions roll back all state and idempotency results on failure.
 The lock protects one process only; this is not persistence or distributed command
@@ -94,9 +113,10 @@ idempotency key across a retry; a new key denotes a separate user action.
 chamber configuration, device assignments and pairing state, farm preferences,
 alerts, cycle state and history, candling journals/photo references, raw telemetry,
 the latest device projection, and command state.
-Pairing here is a configuration flag, not proof of physical hardware
-connectivity. Account identities and sessions are implemented through migration
-`0012`; real device enrollment and physical connectivity remain outside this API checkpoint.
+Pairing here is a configuration flag, not proof of physical hardware connectivity.
+Account identities and sessions use migration `0012`; login throttling and operator
+device routing use migrations `0013`–`0014`. Firmware-backed device authentication and
+physical connectivity remain outside this API checkpoint.
 
 The database image is TimescaleDB 2.30.0 / PostgreSQL 17, pinned by digest in
 Compose. Development port 5432 and disposable test port 55432 bind to loopback.
@@ -124,7 +144,7 @@ preserves existing edits. Deleted default modes can return when explicitly seede
 deletion markers prevent those entries from reappearing.
 
 The previous `postgres_modes` configuration is accepted as an alias for
-`postgres_incubators`; local disabled-auth readiness requires migration `0012` and farm, chamber,
+`postgres_incubators`; local disabled-auth readiness requires migration `0014` and farm, chamber,
 preferences, alert, and runtime seed data.
 
 `GET /readyz` reports `store: postgres_incubators`, database availability, and
@@ -133,7 +153,12 @@ or unavailable database. `GET /healthz` remains a database-independent liveness
 check. Dashboard DTOs remain stable; OpenAPI now includes the four authentication
 routes alongside the dashboard routes. Device assignment conflicts return 409 in both the
 Python API and frontend memory repository. Farm-scoped foreign keys enforce
-mode/device isolation, and hardware IDs are unique per farm without case sensitivity.
+mode/device isolation. Legacy device rows remain unique per farm; the separate operator
+registry reserves IDs globally for authenticated live farms.
+
+The simulator Compose overlay configures both its API and worker with `AUTH_MODE=sessions`,
+PostgreSQL storage, and closed public registration. Its `DATABASE_URL` must use Compose's
+`db` hostname, and migrations must be applied before the API passes its readiness check.
 
 ## Database verification
 
@@ -152,10 +177,14 @@ export TEST_DATABASE_URL=postgresql+asyncpg://eggcelerate:eggcelerate_test@127.0
 ./.venv/bin/ruff check src tests migrations
 ./.venv/bin/ruff format --check src tests migrations
 DATABASE_URL="$TEST_DATABASE_URL" ./.venv/bin/alembic check
+PYTHONPATH=src ./.venv/bin/python scripts/verify_backup_restore.py
+TEST_DATABASE_URL="$TEST_DATABASE_URL" ./.venv/bin/python scripts/measure_session_startup.py
 ```
 
-Tests refuse to migrate any database not named `eggcelerate_test`; each case uses
-an isolated farm. Without `TEST_DATABASE_URL`, database-dependent cases skip.
+Integration tests and destructive verification scripts require loopback
+`eggcelerate_test` on port `55432`; migration/restore scripts create and drop only their
+own uniquely named temporary databases, never the supplied database. Each test uses an
+isolated farm. Without `TEST_DATABASE_URL`, database-dependent cases skip.
 Covered: migration/extension existence, populated 0001→0002 upgrade with mode
 edits/replays preserved, CRUD parity, repeated seed preservation, API restart,
 create/patch replay, changed-payload rejection, cross-farm foreign-key rejection,
@@ -163,6 +192,17 @@ failure after inserts before replay persistence, separate-instance concurrency
 and double-assignment rejection, and database availability checks. Frontend
 tests simulate a committed request whose response is lost, exercise Retry, and
 verify one server operation plus a new key for a separate user action.
+
+`verify_backup_restore.py` creates two uniquely named databases on the disposable test
+server, restores a custom-format archive into a clean one, verifies the farm, Timescale
+telemetry, owner, and device registry, and drops only those temporary databases. It
+requires the disposable `eggcelerate-db-test-1` container for `pg_dump`/`pg_restore`; do
+not point `TEST_DATABASE_URL` at a development or production database. From the repository
+root, `TEST_DATABASE_URL=... apps/api/.venv/bin/python
+apps/api/scripts/verify_live_contract.py` runs the live API/frontend contract smoke test
+and contract results. `measure_session_startup.py` measures readiness with
+`AUTH_MODE=sessions`; both scripts only start local processes and use the disposable test
+database.
 
 The 2026-09-13 chamber checkpoint restarted the actual API and database with the
 named volume retained. A chamber profile/configuration, device assignment and

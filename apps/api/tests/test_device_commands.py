@@ -109,6 +109,42 @@ def test_command_waits_for_a_telemetry_boot_before_dispatch(settings):
     asyncio.run(verify())
 
 
+def test_worker_claim_can_be_restricted_to_provisioned_device_ids(settings):
+    seed_current_boot(settings)
+    with TestClient(create_app(settings)) as client:
+        response = client.post(
+            BASE + "/commands/turn", headers={"Idempotency-Key": "registered-only"}
+        )
+        response.raise_for_status()
+
+    async def verify():
+        database = PostgresStore(settings.database_url, settings.default_farm_id)
+        try:
+            async with database.sessions.begin() as session:
+                assert (
+                    await claim_commands(
+                        session,
+                        database.farm_id,
+                        datetime.now(UTC),
+                        device_ids=("EGG-NOT-REGISTERED",),
+                    )
+                    == []
+                )
+            async with database.sessions.begin() as session:
+                messages = await claim_commands(
+                    session,
+                    database.farm_id,
+                    datetime.now(UTC),
+                    device_ids=("EGG-1003",),
+                )
+            assert len(messages) == 1
+            assert messages[0]["device_id"] == "EGG-1003"
+        finally:
+            await database.close()
+
+    asyncio.run(verify())
+
+
 def command_ack(
     message: dict,
     observed_at: datetime,

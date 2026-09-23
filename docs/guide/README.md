@@ -8,6 +8,7 @@ Source of truth for behavior is code + `../SYSTEM_ARCHITECTURE_GUIDE.md`.
 - [Typography — experimental](./typography-experimental.md) — EXPERIMENTAL filter-value/filter-label tablet+mobile tiers only; stable contract stays in Typography guidelines.
 - [UI control-size guidelines](./ui-control-size-guidelines.md) — search, select, button, chip, toggle, segment, and tab geometry.
 - [Auth & Onboarding](./auth-onboarding-guide.md) — app-managed API sessions, farm ownership, local mock flow, and remaining release gates.
+- [Device provisioning](./device-provisioning-guide.md) — operator-owned device IDs, farm routing, and the local simulator-only boundary.
 - [Frontend restructuring](./frontend-restructuring-guide.md) — active F0–F6 execution checklist (domain → repository → Query → routing/auth → states → gate).
 - [Backend dashboard-first](./backend-dashboard-first-guide.md) — B0B resume point; refine mock writes to service commands before HTTP.
 - [Database setup](./database-setup-guide.md) — contract-first FastAPI, PostgreSQL/TimescaleDB, migrations, adapter integration, verification, and operational handoff plan.

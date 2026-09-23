@@ -5,6 +5,7 @@ export const RESULT_ERROR_CODES = [
   "conflict",
   "rejected",
   "offline",
+  "rate_limited",
   "timeout",
   "unknown_error",
 ] as const;

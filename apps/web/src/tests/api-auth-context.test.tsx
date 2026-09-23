@@ -19,6 +19,7 @@ const identity = {
   },
   farm: { id: "farm-1", name: "Sunrise Farm" },
   csrf_token: "c".repeat(43),
+  registration_enabled: false,
 };
 
 describe("API auth state", () => {
@@ -44,6 +45,7 @@ describe("API auth state", () => {
       await waitFor(
         () => mounted.container.textContent?.includes("authenticated") ?? false,
       );
+      expect(mounted.container.textContent).toContain("authenticated");
       expect(getCsrfToken()).toBe(identity.csrf_token);
       expect(fetchMock.mock.calls[0][1]).toMatchObject({
         method: "GET",
@@ -70,6 +72,6 @@ describe("API auth state", () => {
 });
 
 function AuthStatus() {
-  const { status } = useAuth();
-  return <span>{status}</span>;
+  const { status, registrationEnabled } = useAuth();
+  return <span>{`${status}:${registrationEnabled}`}</span>;
 }

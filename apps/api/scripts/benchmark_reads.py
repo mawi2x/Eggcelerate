@@ -18,8 +18,13 @@ from eggcelerate_api.database.store import PostgresStore
 from eggcelerate_api.main import create_app
 
 URL = os.environ["TEST_DATABASE_URL"]
-if make_url(URL).database != "eggcelerate_test":
-    raise ValueError("Only disposable eggcelerate_test is allowed")
+SOURCE = make_url(URL)
+if (
+    SOURCE.database != "eggcelerate_test"
+    or SOURCE.host not in {"localhost", "127.0.0.1", "::1"}
+    or SOURCE.port != 55432
+):
+    raise ValueError("Only loopback eggcelerate_test on port 55432 is allowed")
 s = Settings(
     app_env="test",
     storage_backend="postgres_incubators",

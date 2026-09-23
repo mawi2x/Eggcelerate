@@ -1,7 +1,7 @@
 """Prove fresh and populated upgrades using databases owned by this invocation.
 
-Requires TEST_DATABASE_URL pointing to eggcelerate_test and a disposable role
-with CREATEDB. Never drops or alters the supplied database.
+Requires TEST_DATABASE_URL pointing to loopback eggcelerate_test on port 55432
+and a disposable role with CREATEDB. Never drops or alters the supplied database.
 """
 
 import asyncio
@@ -29,8 +29,12 @@ def migrate(url: str, revision: str) -> None:
 
 async def verify() -> None:
     source = make_url(os.environ["TEST_DATABASE_URL"])
-    if source.database != "eggcelerate_test":
-        raise ValueError("Only disposable eggcelerate_test is allowed")
+    if (
+        source.database != "eggcelerate_test"
+        or source.host not in {"localhost", "127.0.0.1", "::1"}
+        or source.port != 55432
+    ):
+        raise ValueError("Only loopback eggcelerate_test on port 55432 is allowed")
     admin = create_async_engine(source, isolation_level="AUTOCOMMIT")
     try:
         for populated in (False, True):

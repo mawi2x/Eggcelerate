@@ -62,6 +62,44 @@ def test_production_sessions_require_https_cors_origin():
         )
 
 
+def test_production_defaults_registration_closed_and_requires_rate_limit_secret():
+    settings = load_settings(
+        {
+            "APP_ENV": "production",
+            "AUTH_MODE": "sessions",
+            "STORAGE_BACKEND": "postgres_incubators",
+            "DATABASE_URL": "postgresql+asyncpg://user:pass@db/eggcelerate",
+            "CORS_ORIGINS": "https://farm.example.com",
+            "AUTH_RATE_LIMIT_KEY": "a" * 32,
+        }
+    )
+    assert settings.public_registration_enabled is False
+
+    with pytest.raises(ValueError, match="AUTH_RATE_LIMIT_KEY"):
+        load_settings(
+            {
+                "APP_ENV": "production",
+                "AUTH_MODE": "sessions",
+                "STORAGE_BACKEND": "postgres_incubators",
+                "DATABASE_URL": "postgresql+asyncpg://user:pass@db/eggcelerate",
+                "CORS_ORIGINS": "https://farm.example.com",
+            }
+        )
+
+    with pytest.raises(ValueError, match="Public registration"):
+        load_settings(
+            {
+                "APP_ENV": "production",
+                "AUTH_MODE": "sessions",
+                "STORAGE_BACKEND": "postgres_incubators",
+                "DATABASE_URL": "postgresql+asyncpg://user:pass@db/eggcelerate",
+                "CORS_ORIGINS": "https://farm.example.com",
+                "AUTH_RATE_LIMIT_KEY": "a" * 32,
+                "PUBLIC_REGISTRATION_ENABLED": "true",
+            }
+        )
+
+
 def test_test_settings_resolve_cleanly():
     settings = Settings(app_env="test")
     assert settings.api_port == 8000

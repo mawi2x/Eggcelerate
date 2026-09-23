@@ -23,6 +23,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for the production database}
       APP_ENV: production
       AUTH_MODE: sessions
+      PUBLIC_REGISTRATION_ENABLED: "false"
+      AUTH_RATE_LIMIT_KEY: ${AUTH_RATE_LIMIT_KEY:?Set a random 32+ character AUTH_RATE_LIMIT_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS to the HTTPS web origin}
     depends_on:
       db:

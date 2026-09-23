@@ -21,6 +21,7 @@ CODE_STATUS: dict[str, int] = {
     "conflict": 409,
     "rejected": 409,
     "offline": 503,
+    "rate_limited": 429,
     "timeout": 504,
     "unknown_error": 500,
 }
@@ -90,6 +91,7 @@ def register_error_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status,
             content=error_envelope(exc.code, exc.message, exc.details),
+            headers={"Retry-After": "900"} if exc.code == "rate_limited" else None,
         )
 
     @app.exception_handler(RequestValidationError)

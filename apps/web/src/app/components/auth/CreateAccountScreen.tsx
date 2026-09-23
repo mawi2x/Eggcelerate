@@ -8,9 +8,11 @@ import { FormInput } from "./FormInput";
 export function CreateAccountScreen({
   onRegister,
   onHaveAccount,
+  registrationEnabled = true,
 }: {
   onRegister: (input: RegisterAccountInput) => Promise<void>;
   onHaveAccount: () => void;
+  registrationEnabled?: boolean;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,6 +62,28 @@ export function CreateAccountScreen({
       setBusy(false);
     }
   };
+
+  if (!registrationEnabled) {
+    return (
+      <AuthCard>
+        <div className="flex flex-col items-center text-center">
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+            Account creation is closed.
+          </h1>
+          <p className="mt-3 text-sm text-[var(--text-secondary)]">
+            Contact an authorized Eggcelerate operator to create your account.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onHaveAccount}
+          className="mt-6 w-full rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        >
+          Return to sign in
+        </button>
+      </AuthCard>
+    );
+  }
 
   return (
     <AuthCard>
