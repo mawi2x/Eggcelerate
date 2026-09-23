@@ -6,8 +6,10 @@ entries (44 modified, 17 untracked) containing refinement Phase 4 (durable devic
 commands, migration `0008`) and Phase 5 (telemetry projection/freshness, migration
 `0009`). Sibling repository `eggcelerate-simulate` @ `e112a25` with 4 modified files.
 
-**Execution status (2026-09-23):** Phases 0–7 complete; Phase 8 is next. Phase 7's
-implementation checkpoint is `8d5252b` (`fix: make dashboard states truthful and actionable`);
+**Execution status (2026-09-23):** Phases 0–8 are complete; Phase 9 is next. Phase 8's
+implementation checkpoint is `0709075` (`feat: add farm-scoped account sessions`); its
+verification record is in the [Phase 8 handoff](project-review-handoff-2026-09-23-phase8.md).
+Phase 7's implementation checkpoint is `8d5252b` (`fix: make dashboard states truthful and actionable`);
 its verification record is in the [Phase 7 handoff](project-review-handoff-2026-09-23-phase7.md).
 Phase 6's implementation checkpoint is `fc6e353` (`test: harden verification gates and UI behavior coverage`);
 its verification record is in the [Phase 6 handoff](project-review-handoff-2026-09-23-phase6.md).
@@ -664,12 +666,26 @@ derive farm context from authenticated membership and enforce it on reads, mutat
 history, command status and replay lookup; replace the default mock auth in API mode; keep
 mock development behaviour without letting it bypass the production gate.
 
-**Account approach selected:** app-managed email and password, as requested. Define the
-password hashing, recovery, verification, and session policy as part of this phase.
+**Account approach selected:** app-managed email and password, as requested. Password
+hashing and session policy are implemented here; verified email and password recovery
+remain Phase 9 release controls.
+
+**Implementation decisions:** passwords use Argon2id (19 MiB, two iterations, one lane),
+normalized email is the login key, and sessions use opaque 256-bit random values with
+only SHA-256 digests persisted. Sessions expire after 12 hours or 30 days when remembered;
+logout revokes the row. The first registrant is the sole `owner` of a fresh farm; invites,
+extra roles, and farm switching are deferred. Signup does not verify email and there is
+no password recovery or login throttling, so open registration is for a private preview
+until Phase 9 closes those controls or changes registration policy. No chamber is seeded.
+HTTP writes use a `HttpOnly`, `SameSite=Lax`, production-`Secure` cookie plus an in-memory
+CSRF token; production origins must be HTTPS.
 
 **Exit gate:** unauthenticated farm access is rejected; another farm's IDs cannot be read,
 mutated or replayed; logout and expiry revoke access and clear cached private data;
 production startup refuses disabled auth. Exercise through the HTTP API, not route guards.
+
+**Status:** passed for authenticated HTTP access and farm isolation. Verification and
+rollout limitations are recorded in the [Phase 8 handoff](project-review-handoff-2026-09-23-phase8.md).
 
 **Recovery:** roll back to the protected-preview boundary; never restore public service by
 disabling authentication.
@@ -682,12 +698,19 @@ disabling authentication.
 startup budget.
 
 Carried forward from the prior plan's Phases 7–8: measure the post-auth production bundle
-and startup on a recorded profile (current main chunk 558.04 kB / 152.18 kB gzip is the
-historical context, not a target); set explicit bundle/startup targets; upgrade an empty
+and startup on a recorded profile (Phase 8 build: main chunk 571.97 kB / 155.14 kB gzip);
+set explicit bundle/startup targets; upgrade an empty
 and a populated database and verify data after migration; restart API, database, broker and
 worker while preserving volumes; restore a backup into a clean environment and record
 recovery time and data age; exercise outages and recovery; verify the deployed auth
 boundary and secrets handling; record the release decision with remaining limitations.
+
+Phase 9 also closes the limits discovered while wiring real owner accounts: rate-limit
+registration/login and provide a verified email/password-recovery policy (or keep public
+signup disabled); map authenticated farms to provisioned device identities and teach the
+MQTT worker to dispatch their commands rather than only the configured development farm;
+verify that device status, ownership, telemetry, and command ACK paths remain tenant-bound.
+Physical relay/motor/heater operation remains outside the authorization granted here.
 
 **Exit gate:** evidence identifies revision, configuration, commands and results; restore
 and restart drills pass; no unresolved authentication or command-integrity blocker remains.

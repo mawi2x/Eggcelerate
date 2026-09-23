@@ -1,6 +1,6 @@
 # EGGCELERATE Dashboard-First Backend Guide
 
-> **Status:** B4 command dispatch and telemetry are implemented through migration `0011`; app-managed email/password authentication is selected but not implemented.
+> **Status:** B4 simulator command dispatch and telemetry are implemented through migration `0011`; B6 app-managed email/password sessions and farm authorization are implemented through migration `0012`. Public release and physical hardware remain gated.
 > **Prepared:** 2026-09-04
 > **Current status updated:** 2026-09-23
 > **Scope:** Local FastAPI backend for the existing dashboard, followed by persistence and device simulation
@@ -42,9 +42,9 @@ are historical; use the current handoff above for present status.
 
 ### Implemented versus planned
 
-The main repository has FastAPI, API Docker/Compose configuration, `ApiRepository`, the mock/API switch, and an opt-in `postgres_incubators` backend (`postgres_modes` remains a configuration alias). PostgreSQL persists farm/chamber configuration, preferences, alerts, cycle runtime and history, candling journals/photo references, telemetry samples and latest state, and device-command/ACK state. MQTT ingestion and a simulator worker are implemented; WebSockets, real authentication, production broker security, and physical hardware integration remain future work.
+The main repository has FastAPI, API Docker/Compose configuration, `ApiRepository`, the mock/API switch, app-managed sessions in API mode, and an opt-in `postgres_incubators` backend (`postgres_modes` remains a configuration alias). PostgreSQL persists farm/chamber configuration, preferences, alerts, cycle runtime and history, candling journals/photo references, telemetry samples and latest state, device-command/ACK state, users, memberships and sessions. MQTT ingestion and a simulator worker are implemented; WebSockets, multi-farm device dispatch, production broker security, and physical hardware integration remain future work.
 
-The simulator contract uses QoS 0 non-retained telemetry and QoS 1 non-retained commands/ACKs; the worker is opt-in and simulator dispatch defaults off. Dashboard refresh is 15 seconds and database reading queries support five-minute research aggregates. No retention policy, authenticated production broker, or physical device deployment is claimed. Authentication remains a deployment gate.
+The simulator contract uses QoS 0 non-retained telemetry and QoS 1 non-retained commands/ACKs; the worker is opt-in and simulator dispatch defaults off. Dashboard refresh is 15 seconds and database reading queries support five-minute research aggregates. No retention policy, authenticated production broker, or physical device deployment is claimed. HTTP authentication is implemented; public release remains gated on email verification/recovery, rate limits, tenant-to-device binding, multi-farm worker behavior, and operational evidence.
 
 Error mapping: `validation_error` → 422; `not_found` → 404; `conflict` and `rejected` → 409; `offline` → 503; `timeout` → 504; `unknown_error` → 500.
 
@@ -176,7 +176,12 @@ The frontend never imports backend models, SQL, or MQTT code. FastAPI never beco
 
 ## 2. Authentication decision for this milestone
 
-Authentication is deliberately deferred while the dashboard data path is built.
+The original decision below deferred auth while the dashboard path was built. That
+deferral ended in Phase 8: the current implementation and policy are in the
+[authentication guide](auth-onboarding-guide.md) and the [Phase 8 handoff](../refine/project-review-handoff-2026-09-23-phase8.md).
+
+At the B1 dashboard milestone, authentication was deliberately deferred while the API
+and persistence path was built. The following checklist records that historical choice.
 
 - Keep `MockAuthProvider` and the existing login/onboarding screens as frontend-only demonstration behavior.
 - Do not add FastAPI login, logout, refresh, registration, password hashing, JWT dependencies, cookies, user administration, or role enforcement yet.
@@ -394,7 +399,7 @@ Recorded complete with the retry limitation in section 0. The original acceptanc
 - [ ] Add SQLAlchemy 2.x async sessions and Alembic-only migrations.
 - [ ] Initially create `farms`, `devices`, `incubators`, `modes`, `cycles`, `candling_entries`, `candling_photos`, `alerts`, `farm_preferences`, `device_commands`, and `telemetry_samples`.
 - [ ] Seed one deterministic development farm matching `DEFAULT_FARM_ID`.
-- [ ] Defer `users`, `refresh_tokens`, and `farm_memberships` until authentication work begins.
+- [x] Defer users, sessions, and memberships until B6; they were added later in migration `0012`.
 - [ ] Port vertical slices in this order: modes, incubators, preferences, alerts, cycles/candling/history, readings.
 - [ ] Prove restart persistence, migration upgrade, transaction rollback, and shared adapter behavior.
 
@@ -420,15 +425,15 @@ Recorded complete with the retry limitation in section 0. The original acceptanc
 
 **Exit:** the hardware protocol is demonstrated safely without treating LEDs as proof of actuator safety.
 
-### B6 — Add authentication later
+### B6 — Add authentication later (completed in Phase 8)
 
-- [ ] Review ADR-004 rather than activating it automatically; choose the final server-session/token design at that time.
-- [ ] Add users and memberships through new migrations.
-- [ ] Replace disabled `RequestContext` resolution with verified identity and farm membership.
-- [ ] Add login/logout/session endpoints, secure cookie behavior, authorization, and cross-farm denial tests.
-- [ ] Refuse public deployment until this phase and production hardening pass.
+- [x] Choose app-managed email/password and opaque server-side sessions; define password and session policy in the Phase 8 handoff.
+- [x] Add users, owner memberships, and revocable sessions through migration `0012`.
+- [x] Derive `RequestContext` from verified session membership and scope farm-owned API reads/writes.
+- [x] Add register/login/session/logout endpoints, secure cookie behavior, CSRF protection, expiry/revocation, and cross-farm HTTP tests.
+- [x] Keep production startup behind sessions mode and HTTPS-origin configuration.
 
-**Exit:** every HTTP and WebSocket operation is tenant-authorized. This phase is not required for the local dashboard backend milestone.
+**Exit:** HTTP farm routes, history, readings, command status, and replay are tenant-scoped. There is no WebSocket route. This does not authenticate MQTT/device clients; public release remains gated by Phase 9 controls and device-fleet work.
 
 ## 8. Environment contract
 
@@ -460,11 +465,11 @@ than environment overrides. The simulator overlay sets `MQTT_HOST=broker` inside
 its private network; do not expose its anonymous listener outside that network.
 
 Compose publishes API port 8000 to host `127.0.0.1` only. `AUTH_MODE=disabled` is a local-development capability, not a deployment shortcut.
-The web Nginx container forwards `/api/*` to the internal `api:8000` service. A VPS
-preview should use `compose.production.yaml`, which builds with
-`VITE_DATA_SOURCE=api`, enables durable `postgres_incubators` storage, and
-removes unnecessary host ports; Vite variables are baked into the static bundle
-during `docker compose build`.
+The web Nginx container forwards `/api/*` to the internal `api:8000` service. The
+authenticated production-shaped overlay builds with `VITE_DATA_SOURCE=api`, enables
+durable `postgres_incubators` storage and sessions, and removes unnecessary host ports.
+Use the `--profile database` commands in the [auth guide](auth-onboarding-guide.md); Vite
+variables are baked into the static bundle during `docker compose build`.
 
 ## 9. Checkpoint gates
 
@@ -482,14 +487,15 @@ git diff --check
 
 Database checkpoints additionally run migrations against a disposable empty database and adapter integration tests. MQTT checkpoints additionally run simulator integration tests. Browser automation is not part of these gates.
 
-## 10. Current implementation batch: telemetry through migration 0011
+## 10. Historical implementation batch: telemetry through migration 0011
 
 Migrations `0007`–`0011` add raw telemetry, the latest projection, durable
 commands, dispatch identity, and the command-claim integrity/index changes. The
 15-second dashboard polling and receipt-based freshness are described in the
 [B4 contract](b4-mqtt-contract.md) and [Phase 3 handoff](../refine/project-review-handoff-2026-09-23-phase3.md).
-The separate B5 LED harness has not been qualified. The selected sign-in approach
-is app-managed email/password; authentication remains a later gated phase.
+The separate B5 LED harness has not been qualified. At the time of this batch,
+authentication was still gated; Phase 8 later implemented app-managed sessions and
+farm authorization. See the current [auth guide](auth-onboarding-guide.md).
 
 ### B3 verification matrix
 
@@ -514,7 +520,7 @@ is app-managed email/password; authentication remains a later gated phase.
 
 ## 12. Decisions that must survive each phase
 
-- Dashboard first; authentication remains dormant until B6.
+- Dashboard first; B6 app-managed sessions now protect API-mode farm data, while local mock and disabled-auth behavior remain development-only.
 - Disabled auth is local-only, supplies a configured development farm, and is forbidden in production.
 - The server owns durable IDs; display names are never identifiers.
 - Domain/UI turning intervals use hours; HTTP/device wire values use minutes.

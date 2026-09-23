@@ -41,13 +41,13 @@ Use the same UI with FastAPI and optional persistence
               ↓
 Exercise MQTT commands and telemetry through a separate simulator
               ↓
-Add authentication, production broker security, and hardware qualification
+Extend farm identity to device provisioning, then qualify production broker and hardware security
 
 The frontend contract is implemented and connects to both memory and HTTP
 repositories. The local backend includes an opt-in PostgreSQL/TimescaleDB store
-and simulator-focused MQTT command/telemetry paths. WebSockets, real
-authentication, production broker security, and physical firmware remain outside
-the verified system boundary.
+and simulator-focused MQTT command/telemetry paths. HTTP authentication and farm
+authorization are implemented. WebSockets, multi-farm device ownership, production
+broker security, and physical firmware remain outside the verified system boundary.
 
 The memory adapter remains a deterministic option for demos and tests, while API mode exercises the same dashboard contract against the local service. Neither mode establishes behavior on a physical ESP32.
 
@@ -62,11 +62,11 @@ The memory adapter remains a deterministic option for demos and tests, while API
 | Mock repository boundary | **Implemented** | `EggcelerateRepository` and `InMemoryEggcelerateRepository` own fixture copies, mutable farm records, and deterministic reading queries. Screens do not import fixtures. |
 | Navigation | **Implemented** | Wouter 3.10 owns canonical paths, Back/Forward updates, legacy-query migration, and safe parameter redirects through the routing module. |
 | Server-state layer | **Implemented** | TanStack Query 5 and farm feature query/mutation hooks wrap the injected memory or API repository. |
-| Auth and onboarding | **Simulated with boundary** | `/login` and `/onboarding/:step` are public mock routes. `MockAuthProvider` and `RequireAuth` guard dashboard navigation; there is no server session or real authorization. |
+| Auth and onboarding | **Implemented for API mode** | App-managed email/password sessions, CSRF-protected writes, and server-derived farm membership scope protect dashboard HTTP routes. Mock onboarding remains for local demo mode; email verification/recovery and invitations remain open. |
 | API contract and runtime | **Implemented** | FastAPI/Pydantic, strict DTOs, error envelopes, health/readiness, and `ApiRepository` are present; see `apps/api/README.md`. |
-| Database | **Implemented, opt-in** | PostgreSQL/TimescaleDB persistence and Alembic revisions `0001`–`0011`; raw telemetry and latest device state are durable. |
+| Database | **Implemented, opt-in** | PostgreSQL/TimescaleDB persistence and Alembic revisions `0001`–`0012`; raw telemetry, latest device state, users, memberships, and sessions are durable. |
 | MQTT | **Implemented for local simulation** | Mosquitto config and a worker exist in the simulator overlay; command dispatch defaults off and physical hardware is excluded. |
-| Authentication | **Selected, not implemented** | Sign-in will use app-managed email/password. Local `AUTH_MODE=disabled` is not a production authorization boundary. |
+| Authentication | **Implemented with release limits** | `AUTH_MODE=sessions` uses opaque server sessions and owner memberships; production refuses disabled auth. Email verification/recovery, rate limiting, invitations, and per-device authorization remain open. |
 | Web deployment | **Implemented/configured** | Docker multi-stage build and Nginx SPA/API proxy; Compose includes API and opt-in database profiles. |
 | Automated checks | **Implemented** | Web and API checks run in CI; see `.github/workflows/web.yml`, `.github/workflows/api.yml`, and `docs/guide/verification-gates.md` for current gates rather than a stale test count. Rendered accessibility and browser E2E remain open. |
 
@@ -81,7 +81,7 @@ The current web checks are:
 
 The web suite and live HTTP contract verify frontend/API behavior. The database
 suite exercises persistence and migrations. These checks do not qualify physical
-device safety, production broker security, or public authentication.
+device safety, production broker security, email recovery, or public-release readiness.
 
 ### 3.1 Current repository topology
 
@@ -112,7 +112,7 @@ Current implementation measurements:
 - mockData.ts has been removed; application imports from the old compatibility barrel are zero, down from 24 before F1.
 - CandlingJournalTab.tsx is 2,475 formatted lines, TrendsScreen.tsx is 1,178 lines, and IncubatorsScreen.tsx is 953 lines. Pure incubator filter/natural-order sort, trends filtering/KPIs, candling timing/feed merge, and tally validation have moved to focused selectors under `features/` with regression tests.
 - `.env.example` defines local API, database, MQTT worker and web repository settings;
-- `ApiRepository`, TanStack Query integration, Wouter routing, Biome lint config, and web CI (`.github/workflows/web.yml`) are implemented. Real server authentication is not.
+- `ApiRepository`, TanStack Query integration, Wouter routing, Biome lint config, and web CI (`.github/workflows/web.yml`) are implemented. API mode uses server-backed sessions; mock mode remains for the local demo.
 
 Large file size is an indicator, not the acceptance criterion. Refactoring is complete when ownership and dependencies are clear, not when a file reaches an arbitrary line count.
 
@@ -123,11 +123,12 @@ Large file size is an indicator, not the acceptance criterion. Refactoring is co
 3. FastAPI delegates to services and persistence boundaries. The default API store is memory; `postgres_incubators` opts into farm-scoped PostgreSQL transactions and explicit Alembic migrations/seeding.
 4. PostgreSQL persists dashboard configuration and journals, raw telemetry, a boot-aware latest-device projection, and durable turn-command outcomes. Timescale samples retain observation and server receipt times.
 5. The MQTT worker validates telemetry and acknowledgements and claims commands from the outbox. Its dedicated simulator overlay provides a private Mosquitto network; dispatch defaults off. A separate simulator repository exercises the wire contract.
-6. Readiness reports database/migration/seed state in PostgreSQL mode. `AUTH_MODE=disabled` is limited to local development and is not farm authorization for a public service.
+6. Readiness checks database/migration/seed state in disabled-auth mode and schema/Timescale readiness in sessions mode. `AUTH_MODE=disabled` is local-only and is not farm authorization.
 
-This is a working local integration path, not a production or physical-electronics
-qualification. Authentication, secure remote broker access, restore drills and
-ESP32 firmware/hardware verification remain before public or actuator deployment.
+This is a working HTTP-authenticated integration path, not a production or
+physical-electronics qualification. Secure remote broker access, tenant-to-device
+binding, restore drills, account recovery, and ESP32 firmware/hardware verification
+remain before public or actuator deployment.
 
 ## 4. Stack alignment
 
@@ -152,8 +153,8 @@ ESP32 firmware/hardware verification remain before public or actuator deployment
 
 | Component | Current responsibility | Status and limit |
 |---|---|---|
-| FastAPI + Pydantic | REST validation, result envelopes, services and readiness | Implemented; no real user authentication or WebSocket bridge. |
-| PostgreSQL + TimescaleDB | Farm configuration, histories, telemetry, and command audit | Implemented as an opt-in local store through Alembic revision `0011`. |
+| FastAPI + Pydantic | REST validation, result envelopes, services, readiness, and sessions | Implemented through migration `0012`; no WebSocket bridge. |
+| PostgreSQL + TimescaleDB | Farm configuration, histories, telemetry, command audit, users, memberships and sessions | Implemented as an opt-in local store through Alembic revision `0012`. |
 | Mosquitto MQTT | Device telemetry and command/ACK transport | Local anonymous broker config and worker overlay exist; dispatch is opt-in and not production secured. |
 | Python simulator | Exercise firmware-facing telemetry and command contracts | Implemented in a separate repository; it does not establish physical hardware behavior. |
 | ESP32 firmware | Local sensing, actuation and safety control | Not present in this repository and not hardware-verified. |
@@ -416,15 +417,15 @@ evidence live in the [project review plan](refine/project-review-execution-plan-
 | Area | Status |
 |---|---|
 | Frontend contracts and responsive dashboard | Implemented; mock and HTTP repositories use the same DTO/result boundary. |
-| API and local persistence | Implemented for the current dashboard slices; PostgreSQL/TimescaleDB is opt-in and migrations are at `0011`. |
+| API and local persistence | Implemented for the current dashboard slices; PostgreSQL/TimescaleDB is opt-in and migrations are at `0012`. |
 | Telemetry and commands | Validated telemetry, durable projection, command outbox, worker and simulator contract are implemented; worker dispatch remains off by default. |
-| Sign-in | The selected approach is app-managed email/password; server sessions and farm authorization remain to be implemented. |
-| Production and electronics | Secure broker/deployment settings, backup restore proof, ESP32 firmware and physical actuator tests remain open. |
+| Sign-in | App-managed email/password sessions and server farm authorization are implemented; verification, recovery, rate limits, invites, and farm switching remain open. |
+| Production and electronics | Per-device ownership, multi-farm MQTT dispatch, secure broker/deployment settings, backup restore proof, ESP32 firmware and physical actuator tests remain open. |
 
 The [backend guide](guide/backend-dashboard-first-guide.md) describes the current
 API boundaries. The [database guide](guide/database-setup-guide.md) lists the
 actual migration history. The [auth guide](guide/auth-onboarding-guide.md)
-documents the current mock-only sign-in UI and future server boundary.
+documents API sessions, farm ownership, the retained mock flow, and the remaining release boundary.
 
 ## 10. Historical frontend-first execution plan
 

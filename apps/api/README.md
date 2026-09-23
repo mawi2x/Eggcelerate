@@ -1,10 +1,9 @@
 # EGGCELERATE API
 
-> **Current status:** The opt-in PostgreSQL backend, validated telemetry projection,
-> and simulator command dispatch/ACK path are implemented through migration `0011`.
-> Physical hardware is excluded. App-managed email/password authentication remains a
-> later gated phase. See the [Phase 3 handoff](../../docs/refine/project-review-handoff-2026-09-23-phase3.md)
-> for the latest API verification record.
+> **Current status:** PostgreSQL persistence, the simulator command dispatch/ACK path,
+> and app-managed email/password sessions are implemented through migration `0012`.
+> HTTP farm access is membership-scoped. Physical hardware and public-release readiness
+> remain open. See the [Phase 8 handoff](../../docs/refine/project-review-handoff-2026-09-23-phase8.md).
 > See `docs/guide/backend-dashboard-first-guide.md`.
 
 Accepted technology decisions (local-only ADRs under `docs/archive/adr/`):
@@ -23,18 +22,20 @@ pyproject.toml          exact pins + update policy (pytest/ruff under test extra
 Dockerfile              python:3.14-slim, non-root loopback Compose service on :8000
 src/eggcelerate_api/
   main.py               application factory, CORS, /healthz, /readyz
-  config.py             local settings + production-without-auth refusal
-  context.py            dormant disabled-auth request context (B6 replaces it)
+  config.py             local settings + production auth/CORS refusal
+  context.py            request identity and tenant context
   errors.py             result envelope, error codes, exception normalization
   models.py             Pydantic wire DTOs mirroring the frontend Zod contracts
   domain.py             condition/status/phase derivation ported from cycle.ts
   storage.py            state/unit-of-work protocols (transitional collection surface)
   store.py              deterministic memory seed + serialized rollback transactions
   services.py           use cases: validation, derivation, atomicity, idempotency
-  api/v1/               routers (incubators, modes, alerts, history, preferences)
-  database/             async store + chamber/device persistence, metadata, explicit seed
+  api/v1/               auth routes plus farm-scoped dashboard routers
+  auth_security.py      Argon2id password hashes and opaque session tokens
+  session_auth.py       server session resolution, membership and CSRF checks
+  database/             async store + farm/device persistence, metadata, explicit seed
 alembic.ini
-migrations/             Alembic-only DDL, revisions 0001–0011; see the database setup guide for the mapping
+migrations/             Alembic-only DDL, revisions 0001–0012; see the database setup guide for the mapping
 tests/                  unit and PostgreSQL integration tests; CI is the source for current totals
 ```
 
@@ -49,13 +50,31 @@ python3 -m venv .venv && ./.venv/bin/pip install -e ".[test]"
 docker compose up -d api  # from the repo root
 ```
 
-The dashboard-first backend keeps authentication disabled for local development,
-with a production startup guard. Do not treat that setting as suitable for a
-public deployment. The opt-in database slice persists farm configuration,
+The dashboard-first backend keeps authentication disabled for local mock/API
+development, with a production startup guard. Production sessions require
+PostgreSQL and an explicitly configured HTTPS `CORS_ORIGINS`. The database persists farm configuration,
 preferences, alerts, cycles/history, candling, raw telemetry, the latest telemetry
 projection, and durable device-command state. The MQTT worker is available for
 local simulator dispatch; physical hardware and production broker security are
-not implemented.
+not included. Readiness in session mode checks the migrated database and TimescaleDB
+extension without requiring a pre-seeded demo farm.
+
+## App-managed authentication
+
+Session routes are `POST /api/v1/auth/register`, `POST /api/v1/auth/login`,
+`GET /api/v1/auth/session`, and `POST /api/v1/auth/logout`. Registration creates
+an owner membership and an empty farm with built-in modes/preferences; it does not
+create a demo chamber. Protected dashboard routes derive `farm_id` from the verified
+session membership. Mutations require the session's `X-CSRF-Token`; unauthenticated
+farm requests return 401 and cross-farm resource identifiers return 404.
+
+Passwords use Argon2id (19 MiB, two iterations, one lane); raw session credentials
+are random opaque values held in `HttpOnly`, `SameSite=Lax` cookies and only their
+SHA-256 digests are stored. Production cookies are `Secure`. Normal sessions expire
+after 12 hours and “remember me” sessions after 30 days; logout revokes them. Email
+verification, password recovery, login rate limiting, membership invitations, and
+farm switching remain unavailable. Keep open registration on a private preview
+until those Phase 9 controls are addressed.
 
 Memory request transactions roll back all state and idempotency results on failure.
 The lock protects one process only; this is not persistence or distributed command
@@ -76,7 +95,8 @@ chamber configuration, device assignments and pairing state, farm preferences,
 alerts, cycle state and history, candling journals/photo references, raw telemetry,
 the latest device projection, and command state.
 Pairing here is a configuration flag, not proof of physical hardware
-connectivity. Account identities and authentication sessions are not implemented.
+connectivity. Account identities and sessions are implemented through migration
+`0012`; real device enrollment and physical connectivity remain outside this API checkpoint.
 
 The database image is TimescaleDB 2.30.0 / PostgreSQL 17, pinned by digest in
 Compose. Development port 5432 and disposable test port 55432 bind to loopback.
@@ -104,14 +124,14 @@ preserves existing edits. Deleted default modes can return when explicitly seede
 deletion markers prevent those entries from reappearing.
 
 The previous `postgres_modes` configuration is accepted as an alias for
-`postgres_incubators`; readiness requires migration `0011` and farm, chamber,
+`postgres_incubators`; local disabled-auth readiness requires migration `0012` and farm, chamber,
 preferences, alert, and runtime seed data.
 
 `GET /readyz` reports `store: postgres_incubators`, database availability, and
-`remaining_state: auth_and_deployment`. It returns 503 for a missing migration, missing farm/chamber/preferences/alert/runtime seed,
+`remaining_state: release_validation` in session mode. It returns 503 for a missing migration or unavailable database; disabled-auth mode also requires farm/chamber/preferences/alert/runtime seed,
 or unavailable database. `GET /healthz` remains a database-independent liveness
-check. Dashboard DTOs and all 22 paths are preserved; OpenAPI is unchanged from the
-previous modes checkpoint. Device assignment conflicts return 409 in both the
+check. Dashboard DTOs remain stable; OpenAPI now includes the four authentication
+routes alongside the dashboard routes. Device assignment conflicts return 409 in both the
 Python API and frontend memory repository. Farm-scoped foreign keys enforce
 mode/device isolation, and hardware IDs are unique per farm without case sensitivity.
 
@@ -270,7 +290,8 @@ farm; coverage 89.30% lines, 82.87% branches, 82.66% functions; lint/typecheck/b
 Ruff/mypy (28 source files); populated 0005→0006 upgrade/downgrade preservation;
 API Docker build, migration `0006 (head)` and clean schema drift. Pre-0006 volatile
 journal edits cannot be recovered by migration. Full B3 remains open for readings
-and remaining command/retry gates; B4 MQTT and B6 auth remain deferred.
+and remaining command/retry gates at that historical checkpoint; B4 and B6 have since
+been implemented for simulator transport and HTTP sessions, respectively.
 
 Journal contents, ordered photo references, deletion markers and exact replay
 responses survived an actual API/database restart and repeated seeding on an

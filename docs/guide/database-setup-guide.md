@@ -4,7 +4,7 @@
 > **Prepared:** 2026-09-04
 > **Updated:** 2026-09-23
 > **Scope:** Local backend and database preparation for PostgreSQL + TimescaleDB
-> **Current limits:** Authentication and production deployment remain gated; physical actuator control is excluded.
+> **Current limits:** HTTP authentication and farm authorization are implemented; public release, device-fleet authorization, and physical actuator control remain gated.
 
 This guide began as a proposal before the API and database existed. The current API,
 Compose profiles, environment names and migration history are documented here for
@@ -76,7 +76,7 @@ Cycle phase, condition severity, percentages, and display status remain derived 
 | Table | Purpose | Important relationships and constraints |
 |---|---|---|
 | `users` | Login identity | Unique normalized email; password hash only; timestamps |
-| `refresh_tokens` | Revocable sessions | User FK; store a token hash, expiry, revocation time, and rotation lineage |
+| `auth_sessions` | Revocable sessions | User/farm membership FK; store a token hash, expiry, and revocation time |
 | `farms` | Tenant/account boundary | Name, timezone, timestamps |
 | `farm_memberships` | User access to farms | Composite unique `(farm_id, user_id)`; role constraint |
 | `devices` | Provisioned physical controllers | Farm FK; unique serial/provisioning identity; firmware and last-seen fields |
@@ -137,6 +137,7 @@ Create versioned Zod and Pydantic transport schemas for these shapes. Keep compa
 | `0009` | Latest device telemetry projection |
 | `0010` | Boot identity snapshot for each command dispatch |
 | `0011` | Command claim index and restrictive incubator foreign key |
+| `0012` | App-managed users, owner memberships, and revocable sessions |
 
 Migrations and development seed data run explicitly. Fresh and populated upgrade
 proofs are in `apps/api/scripts/verify_migrations.py`; Alembic's schema drift
@@ -146,10 +147,10 @@ check is part of the API verification gate.
 |---|---|
 | API contract and memory adapter | FastAPI/Pydantic endpoints and the in-memory repository are implemented; the web `ApiRepository` shares a tested HTTP contract with it. |
 | Local database services | TimescaleDB/PostgreSQL 17 is opt-in through Compose profiles, with loopback-only development access and a separate disposable test database. |
-| Schema and migrations | SQLAlchemy async sessions and Alembic migrations are implemented through revision `0011`; see the migration table above. |
-| Persistent adapter | Farm configuration, alerts, cycles/history, candling, raw telemetry, latest telemetry state, and durable turn commands are persisted in the opt-in PostgreSQL backend. User accounts and authentication sessions are not implemented. |
+| Schema and migrations | SQLAlchemy async sessions and Alembic migrations are implemented through revision `0012`; see the migration table above. |
+| Persistent adapter | Farm configuration, alerts, cycles/history, candling, raw telemetry, latest telemetry state, durable turn commands, users, memberships, and sessions are persisted in PostgreSQL. |
 | MQTT and device boundary | Validated telemetry, command outbox, and opt-in worker are implemented. The anonymous Mosquitto broker is limited to the local simulator network; physical hardware and production broker security are not included. |
-| Authentication and public deployment | App-managed email/password is the selected sign-in approach, but implementation remains gated. Do not treat the local preview as a public service. |
+| Authentication and public deployment | Cookie sessions and farm membership authorization are implemented. Email verification, recovery, login throttling, invites, device-fleet authorization, and Phase 9 production evidence remain open; keep open registration on a private preview. |
 | Operations | Readiness, fresh/populated migration verification, and schema drift checks exist. A verified production backup/restore drill has not been recorded. |
 
 For implementation detail and runnable commands, use the [API README](../../apps/api/README.md)
@@ -220,8 +221,8 @@ Browser automation is not part of this gate. Use Vitest/jsdom, API tests, databa
 
 ## 11. Definition of database-ready
 
-The API, local database, migrations, frontend HTTP adapter and simulator-facing
-MQTT path are implemented through migration `0011`. Public release remains gated
-on app-managed sign-in and tenant authorization, broker security, backup restore
-proof, and physical-device qualification; merely running the Compose stack does
-not complete those gates.
+The API, local database, migrations, frontend HTTP adapter, simulator-facing MQTT
+path, and app-managed sessions are implemented through migration `0012`. Public
+release remains gated on account verification/recovery and throttling, device-fleet
+authorization, broker security, backup restore proof, and physical-device
+qualification; merely running the Compose stack does not complete those gates.

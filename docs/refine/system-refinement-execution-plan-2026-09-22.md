@@ -131,20 +131,22 @@ Default execution is sequential. Dependencies allow phase 4 preparation after ph
 
 ## Phase 6 — Add real identity and farm authorization
 
+**Status:** complete in project-review Phase 8; see the [Phase 8 handoff](project-review-handoff-2026-09-23-phase8.md).
+
 **Outcome:** production mode uses authenticated sessions and enforces ownership on the server.
 
 ### Work
 
-- [ ] Reconcile the existing [auth/onboarding guide](../guide/auth-onboarding-guide.md) with B6. Record the identity/session approach, role matrix, membership rules and onboarding ownership before implementation.
-- [ ] Add identity/membership persistence and session lifecycle, including expiry and revocation; select appropriate secure transport and CSRF protection for the chosen session mechanism.
-- [ ] Derive request farm context from authenticated membership. Enforce it on reads, mutations, history, command status and replay lookup; protect any live subscription with the same scope.
-- [ ] Replace default mock authentication in API mode with session hydration, sign-in, sign-out and expiry handling. Clear farm-scoped query state on account/farm changes.
-- [ ] Preserve explicit mock development behavior without allowing it to bypass the production gate.
-- [ ] Configure authenticated production startup and clarify protected-preview versus production deployment instructions.
+- [x] Reconcile the auth/onboarding guide. App-managed email/password is selected; the first registrant is the sole farm owner; new accounts create an empty farm.
+- [x] Add user, membership, and session persistence (migration `0012`), expiry/revocation, secure cookie transport, and CSRF protection.
+- [x] Derive request farm context from authenticated membership and enforce it on HTTP reads, mutations, history, readings, command status, and replay lookup. No WebSocket/subscription route exists in the current API.
+- [x] Replace default mock authentication in API mode with session hydration, sign-in, sign-out, and expiry handling; clear private query state.
+- [x] Preserve explicit mock development behavior and refuse disabled auth in production.
+- [x] Configure sessions-mode production startup and update protected-preview/production instructions.
 
 **Primary areas:** API context/dependencies/configuration, identity migrations, auth provider/routes, query cache scope, Compose and deployment documentation.
 
-**Exit gate:** unauthenticated farm access is rejected; another farm's IDs cannot be read, mutated, subscribed to or replayed; logout/expiry revokes access and clears cached private data; production startup succeeds with real auth and refuses disabled auth. Exercise these cases through the HTTP API, not just frontend route guards.
+**Exit gate:** passed for HTTP farm data; tests reject unauthenticated requests and cross-farm reads, writes, command status, history, and idempotency replay; logout/expiry deny access and clear client cache; production refuses disabled auth and requires HTTPS origins. MQTT/device identities and physical hardware remain outside B6.
 
 **Recovery:** roll back to the protected preview boundary if authentication fails. Never restore public service by disabling authentication.
 
