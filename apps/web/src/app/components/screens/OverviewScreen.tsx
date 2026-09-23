@@ -1,6 +1,10 @@
 import { Check, ChevronRight, Clock, Egg } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Incubator, Mode, UnitStatus } from "../../domain/types";
+import {
+  resolvedTelemetryStatus,
+  telemetryStatusLabel,
+} from "../../features/farm/telemetry";
 import { ExclamationIcon, IncubatorDeviceIcon } from "../icons";
 import { KpiCard, type KpiFooter } from "../KpiCard";
 import {
@@ -218,6 +222,7 @@ function MiniCard({
   mode: Mode;
   onOpen: (id: string) => void;
 }) {
+  const telemetryStatus = resolvedTelemetryStatus(unit);
   const pct = Math.min(
     100,
     Math.round((unit.dayOfIncubation / mode.incubationDays) * 100),
@@ -283,6 +288,23 @@ function MiniCard({
           title={`Progress: Day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
         >
           Progress: Day {unit.dayOfIncubation} of {mode.incubationDays}
+        </span>
+        <span
+          className="mt-1 block min-w-0 break-words text-[var(--type-label)]"
+          style={{
+            color:
+              telemetryStatus === "fresh"
+                ? "var(--status-success-fg)"
+                : telemetryStatus === "stale"
+                  ? "var(--status-warning-fg)"
+                  : "var(--status-danger-fg)",
+            fontFamily: "var(--font-body)",
+            fontWeight: "var(--weight-semibold)",
+            lineHeight: "var(--leading-normal)",
+          }}
+          title="Server-received telemetry freshness"
+        >
+          {telemetryStatusLabel(telemetryStatus, unit.telemetryLastSeenAt)}
         </span>
       </div>
 
@@ -370,7 +392,7 @@ export function OverviewScreen({
   const stats = useMemo(() => {
     const count = (s: UnitStatus) => units.filter((u) => u.status === s).length;
     const connected = units.filter(
-      (u) => u.paired && u.connectionState === "connected",
+      (u) => resolvedTelemetryStatus(u) === "fresh",
     ).length;
     const totalEggs = units.reduce((s, u) => s + (u.totalEggsLoaded ?? 0), 0);
     const modesInUse = Array.from(
@@ -480,6 +502,15 @@ export function OverviewScreen({
 
   return (
     <div className="flex flex-col gap-2 md:gap-8">
+      {units.some(
+        (unit) =>
+          unit.telemetryStatus !== undefined && !unit.telemetryObservedAt,
+      ) && (
+        <p className="text-sm text-[var(--text-secondary)]">
+          Chambers without device telemetry show development preview sensor
+          values.
+        </p>
+      )}
       {/* Section 2: executive KPI summary — strict 1-row compact cards */}
       <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
         {/* Same chamber-device glyph as the sidebar Incubators nav item. */}

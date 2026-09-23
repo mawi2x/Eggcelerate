@@ -1,11 +1,12 @@
-"""Internal telemetry boundary; caller owns the transaction and trusted farm scope.
+"""Raw telemetry storage and the latest-device freshness projection.
 
 Identity is device + observed instant. Re-delivery preserves first receipt time;
-changing values at the same instant conflicts. No MQTT or HTTP ingestion yet.
+changing values at the same instant conflicts. MQTT validation and projection
+updates are handled by ``mqtt.telemetry``.
 """
 
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
@@ -26,8 +27,32 @@ class TelemetrySample(BaseModel):
     water_ok: bool
 
 
+TelemetryFreshness = Literal["fresh", "stale", "offline"]
+FRESH_TELEMETRY_SECONDS = 45
+STALE_TELEMETRY_SECONDS = 180
+
+
+def telemetry_freshness(
+    last_seen_at: datetime | None, now: datetime
+) -> TelemetryFreshness:
+    """Classify liveness from server receipt time, not a device clock."""
+    if last_seen_at is None:
+        return "offline"
+    age = max(0.0, (now - last_seen_at).total_seconds())
+    if age <= FRESH_TELEMETRY_SECONDS:
+        return "fresh"
+    if age <= STALE_TELEMETRY_SECONDS:
+        return "stale"
+    return "offline"
+
+
 async def ingest_sample(
-    session: AsyncSession, farm_id: UUID, device_id: UUID, sample: TelemetrySample
+    session: AsyncSession,
+    farm_id: UUID,
+    device_id: UUID,
+    sample: TelemetrySample,
+    *,
+    received_at: datetime | None = None,
 ) -> bool:
     """Return True for insertion, False for an exact retry; never overwrite."""
     values = sample.model_dump()
@@ -36,7 +61,7 @@ async def ingest_sample(
         .values(
             farm_id=farm_id,
             device_id=device_id,
-            received_at=datetime.now(UTC),
+            received_at=received_at or datetime.now(UTC),
             **values,
         )
         .on_conflict_do_nothing()

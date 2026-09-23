@@ -83,6 +83,9 @@ def test_bulk_failure_rolls_back_alerts_and_receipt(settings, action):
         if action == "clear-acknowledged":
             assert client.post(f"{PATH}/actions/acknowledge-all").status_code == 200
         before = client.get(PATH).json()
+        memory_before = [
+            a.model_dump(mode="json") for a in app.state.store.alerts.values()
+        ]
         engine = app.state.database.engine.sync_engine
         event.listen(engine, "before_cursor_execute", fail_receipt)
         try:
@@ -96,7 +99,7 @@ def test_bulk_failure_rolls_back_alerts_and_receipt(settings, action):
             event.remove(engine, "before_cursor_execute", fail_receipt)
         assert [
             a.model_dump(mode="json") for a in app.state.store.alerts.values()
-        ] == before["data"]
+        ] == memory_before
         assert client.get(PATH).json() == before
         assert (
             client.post(

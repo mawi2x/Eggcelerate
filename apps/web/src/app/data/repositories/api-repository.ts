@@ -99,7 +99,7 @@ export class ApiRepository implements EggcelerateRepository {
     // the optional API prefix so none of those forms double-prefix requests.
     this.baseUrl = normalizeBaseUrl(options.baseUrl);
     this.timeoutMs = options.timeoutMs ?? REQUEST_TIMEOUT_MS;
-    this.fetchImpl = options.fetchImpl ?? fetch;
+    this.fetchImpl = options.fetchImpl ?? fetch.bind(globalThis);
     this.newIdempotencyKey = options.newIdempotencyKey ?? createIdempotencyKey;
   }
 

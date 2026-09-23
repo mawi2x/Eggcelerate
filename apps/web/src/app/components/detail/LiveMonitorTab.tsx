@@ -22,6 +22,11 @@ import type {
   Mode,
   Reading,
 } from "../../domain/types";
+import {
+  resolvedTelemetryStatus,
+  telemetryAgeLabel,
+  telemetryStatusLabel,
+} from "../../features/farm/telemetry";
 import { GaugeDial } from "../GaugeDial";
 import { useIsMobile } from "../ui/use-mobile";
 import { WaterDroplet } from "../WaterDroplet";
@@ -475,9 +480,35 @@ export function LiveMonitorTab({
   const overheating = unit.temp > mode.targetTemp.max;
   const fanOn = heaterOn || overheating;
   const mistOn = unit.humidity < mode.targetHumidity.max && unit.waterOk;
+  const telemetryStatus = resolvedTelemetryStatus(unit);
+  const telemetryTone =
+    telemetryStatus === "fresh"
+      ? {
+          fg: "var(--status-success-fg)",
+          bg: "var(--status-success-bg)",
+          ring: "var(--status-success-fg)",
+        }
+      : telemetryStatus === "stale"
+        ? {
+            fg: "var(--status-warning-fg)",
+            bg: "var(--status-warning-bg)",
+            ring: "var(--status-warning-fg)",
+          }
+        : {
+            fg: "var(--status-danger-fg)",
+            bg: "var(--status-danger-bg)",
+            ring: "var(--status-danger-fg)",
+          };
 
   return (
     <div className="space-y-3 md:space-y-5">
+      {unit.telemetryStatus !== undefined && (
+        <p className="text-sm text-[var(--text-secondary)]" role="status">
+          {unit.telemetryObservedAt
+            ? `Last observation ${telemetryAgeLabel(unit.telemetryObservedAt)}. ${telemetryStatus === "fresh" ? "" : "Showing last known readings."}`
+            : "Waiting for device telemetry. Displayed sensor values are development previews."}
+        </p>
+      )}
       <SectionCard
         title="Incubation Timeline"
         titleId="incubation-timeline-title"
@@ -603,27 +634,18 @@ export function LiveMonitorTab({
           />
           <SystemStatusTile
             icon={
-              unit.paired ? (
+              telemetryStatus === "fresh" ? (
                 <WifiHigh size={18} weight="fill" />
               ) : (
                 <WifiSlash size={18} weight="fill" />
               )
             }
-            label="Connection"
-            value={unit.paired ? "Connected" : "Offline"}
-            tone={
-              unit.paired
-                ? {
-                    fg: "var(--status-success-fg)",
-                    bg: "var(--status-success-bg)",
-                    ring: "var(--status-success-fg)",
-                  }
-                : {
-                    fg: "var(--status-danger-fg)",
-                    bg: "var(--status-danger-bg)",
-                    ring: "var(--status-danger-fg)",
-                  }
-            }
+            label="Telemetry"
+            value={telemetryStatusLabel(
+              telemetryStatus,
+              unit.telemetryLastSeenAt,
+            )}
+            tone={telemetryTone}
           />
           <SystemStatusTile
             icon={<BatteryPlus size={18} weight="fill" />}

@@ -7,6 +7,10 @@ import type { Reading } from "../../domain/types";
 import { useRepository } from "../../providers/repository-context";
 import { farmQueryKeys } from "./query-keys";
 import { requireResultData } from "./repository-query";
+import {
+  TELEMETRY_POLL_INTERVAL_MS,
+  TELEMETRY_REFRESH_ENABLED,
+} from "./telemetry";
 
 export function readingQueryOptions(
   repository: EggcelerateRepository,
@@ -17,7 +21,11 @@ export function readingQueryOptions(
     queryKey: farmQueryKeys.readingWindow(incubatorId, window),
     queryFn: async () =>
       requireResultData(await repository.listReadings({ incubatorId, window })),
-    staleTime: Infinity,
+    staleTime: TELEMETRY_POLL_INTERVAL_MS,
+    refetchInterval: TELEMETRY_REFRESH_ENABLED
+      ? TELEMETRY_POLL_INTERVAL_MS
+      : false,
+    refetchIntervalInBackground: false,
   });
 }
 

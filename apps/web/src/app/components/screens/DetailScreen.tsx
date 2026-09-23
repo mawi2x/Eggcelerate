@@ -7,7 +7,7 @@ import {
   Settings2,
   Thermometer,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CURRENT_TRAY_CAPACITY, computeCandling } from "../../domain/candling";
 import {
@@ -145,14 +145,7 @@ export function DetailScreen({
   const setupEggsCount = Number(setupEggs) || 0;
   const setupEggsValid = setupEggsCount >= 1;
 
-  const environmentalReadings = useMemo(() => {
-    if (readings.length === 0) return readings;
-    return readings.map((reading, index) =>
-      index === readings.length - 1
-        ? { ...reading, temp: unit.temp, humidity: unit.humidity }
-        : reading,
-    );
-  }, [readings, unit.temp, unit.humidity]);
+  const environmentalReadings = readings;
 
   const startCycle = async () => {
     if (!setupMode || !setupEggsValid) return;
@@ -839,7 +832,9 @@ export function DetailScreen({
               ).toISOString(),
             });
             if (!saved) return false;
-            toast.success("Egg tray turned successfully");
+            toast.success(
+              "Turn request accepted. Waiting for device confirmation.",
+            );
             return true;
           }}
         />

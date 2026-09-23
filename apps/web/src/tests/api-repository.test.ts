@@ -3,6 +3,21 @@ import { ApiRepository } from "../app/data/repositories/api-repository";
 import { wireExamples } from "../app/data/transport/examples";
 
 describe("base URL normalization", () => {
+  it("binds native fetch to the browser global receiver", async () => {
+    vi.stubGlobal("fetch", async function (this: unknown) {
+      if (this !== globalThis) throw new TypeError("Illegal invocation");
+      return { json: async () => wireResponse("/api/v1/incubators") };
+    });
+    try {
+      const result = await new ApiRepository({
+        baseUrl: "http://api",
+      }).listIncubators();
+      expect(result.ok).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("accepts origin-only and documented suffixed bases without doubling /api/v1", async () => {
     for (const baseUrl of [
       "http://api",

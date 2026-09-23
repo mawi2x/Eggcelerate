@@ -68,12 +68,22 @@ async def seed_candling(session: AsyncSession, farm: UUID, state: MemoryStore) -
                 await replace_photos(session, farm, cycle_id, entry)
 
 
-async def load_candling(session: AsyncSession, farm: UUID, state: MemoryStore) -> None:
+async def load_candling(
+    session: AsyncSession, farm: UUID, state: MemoryStore, *, current_only: bool = False
+) -> None:
     rows = (
         (
             await session.execute(
                 select(entries)
-                .where(entries.c.farm_id == farm, entries.c.deleted.is_(False))
+                .where(
+                    entries.c.farm_id == farm,
+                    entries.c.deleted.is_(False),
+                    *(
+                        [entries.c.cycle_id.in_(state.current_cycles.values())]
+                        if current_only
+                        else []
+                    ),
+                )
                 .order_by(entries.c.day, entries.c.public_id)
             )
         )
@@ -84,7 +94,14 @@ async def load_candling(session: AsyncSession, farm: UUID, state: MemoryStore) -
         (
             await session.execute(
                 select(photos)
-                .where(photos.c.farm_id == farm)
+                .where(
+                    photos.c.farm_id == farm,
+                    *(
+                        [photos.c.cycle_id.in_(state.current_cycles.values())]
+                        if current_only
+                        else []
+                    ),
+                )
                 .order_by(photos.c.position)
             )
         )

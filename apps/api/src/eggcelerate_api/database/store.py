@@ -142,7 +142,7 @@ class PostgresStore:
                 runtime_count == chamber_count
                 and alert_seed is not None
                 and preferences is not None
-                and revision == "0008"
+                and revision == "0009"
                 and extension is not None
                 and farm is not None
                 and seeded is not None

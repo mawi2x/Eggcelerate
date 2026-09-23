@@ -89,9 +89,26 @@ async def seed_cycles(session: AsyncSession, farm_id: UUID, state: MemoryStore) 
         )
 
 
-async def load_cycles(session: AsyncSession, farm_id: UUID, state: MemoryStore) -> None:
+async def load_cycles(
+    session: AsyncSession,
+    farm_id: UUID,
+    state: MemoryStore,
+    *,
+    current_only: bool = False,
+) -> None:
     cycle_rows = (
-        (await session.execute(select(cycles).where(cycles.c.farm_id == farm_id)))
+        (
+            await session.execute(
+                select(cycles).where(
+                    cycles.c.farm_id == farm_id,
+                    *(
+                        [cycles.c.incubator_id.in_(state.incubators)]
+                        if current_only
+                        else []
+                    ),
+                )
+            )
+        )
         .mappings()
         .all()
     )
@@ -106,7 +123,14 @@ async def load_cycles(session: AsyncSession, farm_id: UUID, state: MemoryStore) 
     runtime_rows = (
         (
             await session.execute(
-                select(incubator_runtime).where(incubator_runtime.c.farm_id == farm_id)
+                select(incubator_runtime).where(
+                    incubator_runtime.c.farm_id == farm_id,
+                    *(
+                        [incubator_runtime.c.incubator_id.in_(state.incubators)]
+                        if current_only
+                        else []
+                    ),
+                )
             )
         )
         .mappings()
@@ -126,6 +150,13 @@ async def load_cycles(session: AsyncSession, farm_id: UUID, state: MemoryStore) 
         state.incubators[unit_id] = domain.derive(
             unit, state.modes[unit.mode_id], datetime.now(UTC)
         )
+    if not current_only:
+        await load_history(session, farm_id, state)
+
+
+async def load_history(
+    session: AsyncSession, farm_id: UUID, state: MemoryStore
+) -> None:
     rows = (
         (
             await session.execute(

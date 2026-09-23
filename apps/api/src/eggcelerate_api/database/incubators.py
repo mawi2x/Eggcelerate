@@ -11,7 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .. import domain, services
 from ..models import CreateIncubatorRequest, IncubatorDTO, ModeDTO
 from ..store import MemoryStore
-from .schema import devices, incubators, modes
+from .readings import telemetry_freshness
+from .schema import device_telemetry_state, devices, incubators, modes
 
 
 def device_values(farm_id: UUID, unit: IncubatorDTO) -> dict[str, Any]:
@@ -60,6 +61,7 @@ async def load_incubators(
     farm_id: UUID,
     state: MemoryStore,
     previous_modes: dict[str, ModeDTO],
+    incubator_id: str | None = None,
 ) -> list[dict[str, Any]]:
     query = (
         select(
@@ -71,10 +73,22 @@ async def load_incubators(
             devices.c.public_id.label("device_public_id"),
             devices.c.paired,
             modes.c.public_id.label("mode_public_id"),
+            device_telemetry_state.c.temperature_c.label("telemetry_temperature_c"),
+            device_telemetry_state.c.humidity_pct.label("telemetry_humidity_pct"),
+            device_telemetry_state.c.water_ok.label("telemetry_water_ok"),
+            device_telemetry_state.c.battery_pct.label("telemetry_battery_pct"),
+            device_telemetry_state.c.power_source.label("telemetry_power_source"),
+            device_telemetry_state.c.observed_at.label("telemetry_observed_at"),
+            device_telemetry_state.c.received_at.label("telemetry_received_at"),
+            device_telemetry_state.c.last_seen_at.label("telemetry_last_seen_at"),
         )
         .select_from(
-            incubators.join(devices, incubators.c.device_id == devices.c.id).join(
-                modes, incubators.c.mode_id == modes.c.id
+            incubators.join(devices, incubators.c.device_id == devices.c.id)
+            .join(modes, incubators.c.mode_id == modes.c.id)
+            .outerjoin(
+                device_telemetry_state,
+                (device_telemetry_state.c.farm_id == incubators.c.farm_id)
+                & (device_telemetry_state.c.device_id == devices.c.id),
             )
         )
         .where(
@@ -84,8 +98,11 @@ async def load_incubators(
         )
         .order_by(incubators.c.position, incubators.c.public_id)
     )
+    if incubator_id is not None:
+        query = query.where(incubators.c.public_id == incubator_id)
     rows = [dict(row) for row in (await session.execute(query)).mappings()]
     hydrated = {}
+    now = datetime.now(UTC)
     for row in rows:
         public_id = row["public_id"]
         mode = state.modes[row["mode_public_id"]]
@@ -108,10 +125,31 @@ async def load_incubators(
                 "turn_interval_min": row["turn_interval_min"],
                 "auto_turn": row["auto_turn"],
                 "paired": row["paired"],
+                "temperature_c": row["telemetry_temperature_c"]
+                if row["telemetry_temperature_c"] is not None
+                else base.temperature_c,
+                "humidity_pct": row["telemetry_humidity_pct"]
+                if row["telemetry_humidity_pct"] is not None
+                else base.humidity_pct,
+                "water_ok": row["telemetry_water_ok"]
+                if row["telemetry_water_ok"] is not None
+                else base.water_ok,
+                "battery_pct": row["telemetry_battery_pct"]
+                if row["telemetry_battery_pct"] is not None
+                else base.battery_pct,
+                "power_source": row["telemetry_power_source"]
+                if row["telemetry_power_source"] is not None
+                else base.power_source,
+                "telemetry_status": telemetry_freshness(
+                    row["telemetry_last_seen_at"], now
+                ),
+                "telemetry_observed_at": row["telemetry_observed_at"],
+                "telemetry_received_at": row["telemetry_received_at"],
+                "telemetry_last_seen_at": row["telemetry_last_seen_at"],
             }
         )
         if unit != base or previous_modes.get(mode.id) != mode:
-            unit = domain.derive(unit, mode, datetime.now(UTC))
+            unit = domain.derive(unit, mode, now)
         hydrated[public_id] = unit
     state.incubators = hydrated
     return rows

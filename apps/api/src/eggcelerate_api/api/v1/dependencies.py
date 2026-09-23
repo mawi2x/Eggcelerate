@@ -8,8 +8,11 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 from fastapi.concurrency import contextmanager_in_threadpool
+from sqlalchemy.exc import SQLAlchemyError
 
+from ...database.queries import read_state
 from ...database.store import PostgresStore
+from ...errors import AppError
 from ...storage import StoreState
 
 
@@ -19,6 +22,17 @@ async def get_store(request: Request) -> AsyncIterator[StoreState]:
     if database is None:
         async with contextmanager_in_threadpool(memory.transaction()) as state:
             yield state
+        return
+    if request.method == "GET":
+        resource = request.url.path.removeprefix("/api/v1/").split("/")[0]
+        public_id = request.path_params.get("incubator_id") or request.path_params.get(
+            "mode_id"
+        )
+        try:
+            state = await read_state(database, resource, public_id)
+        except (SQLAlchemyError, OSError, TimeoutError) as exc:
+            raise AppError("offline", "Database is unavailable.") from exc
+        yield state
         return
     replay = None
     kind: str

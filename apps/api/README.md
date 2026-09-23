@@ -1,8 +1,9 @@
 # EGGCELERATE API
 
-> **Current status:** B3 configuration, alerts, cycles/history, and candling journals are persistent.
-> Next: persistent readings and Timescale aggregation, then remaining B3 replay gates.
-> See the guide’s current handoff for verification scope and retry limitations.
+> **Current status:** B3 persistence plus B4 durable simulator command dispatch/ACK
+> handling and Phase 5 telemetry projection/freshness are implemented through migration
+> 0009. B6 authentication remains gated work. See the [Phase 5 handoff](../../docs/refine/system-refinement-handoff-2026-09-23-phase5.md)
+> for verification scope and the next authentication boundary.
 > See `docs/guide/backend-dashboard-first-guide.md`.
 
 Accepted technology decisions (local-only ADRs under `docs/archive/adr/`):

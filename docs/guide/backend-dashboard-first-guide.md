@@ -1,11 +1,27 @@
 # EGGCELERATE Dashboard-First Backend Guide
 
-> **Status:** B3 exit passed; B4 telemetry boundary implemented, command reconciliation next
+> **Status:** B4 command closure and Phase 5 telemetry projection/freshness passed through migration 0009; B6 app-managed email/password auth remains gated.
 > **Prepared:** 2026-09-04
 > **Scope:** Local FastAPI backend for the existing dashboard, followed by persistence and device simulation
 > **Deferred:** Real authentication, user administration, production deployment, and physical actuator control
 
 ## 0. Current handoff (2026-09-15)
+
+### Current handoff — 2026-09-23
+
+Phase 5 is complete. Validated MQTT telemetry now hydrates a durable
+`device_telemetry_state` projection with boot-aware ordering, battery/power, raw
+observation time, accepted receipt time, and server `last_seen_at`. Freshness is
+fresh through 45 seconds, stale through 180 seconds, then offline. The worker
+continues to reject malformed or foreign messages independently and rate-limits
+rejection diagnostics. The dashboard polls incubator summaries and reading
+windows every 15 seconds while visible and labels receipt age in monitoring views.
+
+The exact implementation and evidence are in the [Phase 5 handoff](../refine/system-refinement-handoff-2026-09-23-phase5.md)
+when working locally; that refinement directory is intentionally outside the
+tracked guide tree. Next eligible phase is B6 authentication using app-managed
+email/password sessions. Physical actuation and shared/public broker deployment
+remain disabled.
 
 B0–B2 are recorded complete. B3 now persists farms, modes, chamber/device configuration, farm preferences, alerts, cycle runtime, terminal history, candling journals/photo references, and their replay records. Migration 0007 adds internal telemetry ingestion and raw/five-minute research queries; PostgreSQL dashboard readings now use stored samples. The local dashboard B3 exit passed; see [the final review](b3-exit-review.md) for evidence and recorded scope limits.
 The dated checkpoints below are historical evidence, not current resume instructions.
@@ -449,26 +465,13 @@ git diff --check
 
 Database checkpoints additionally run migrations against a disposable empty database and adapter integration tests. MQTT checkpoints additionally run simulator integration tests. Browser automation is not part of these gates.
 
-## 10. Next implementation batch: B4 MQTT simulator integration
+## 10. Current implementation batch: Phase 5 telemetry; next B6 authentication
 
-The simulator at `258f0e9` has now been inspected and its 22 tests pass. The API
-telemetry validation/persistence boundary is implemented. See [B4 reconciliation](b4-mqtt-contract.md) for verified payloads and command-handler gaps; duplicate
-execution, missing target/expiry validation and restart replay must be addressed
-before command publishing is enabled. No broker worker is running yet.
-
-B3 passed the [2026-09-15 exit review](b3-exit-review.md): 78 API tests,
-288 frontend tests, 28 live contract cases, fresh/populated migrations, seed,
-restart/replay and real outage recovery. Implementation remains uncommitted on
-base `035f555`; use the review's source manifest to identify the tested checkout.
-
-1. Inspect the separate simulator and reconcile command/ACK/telemetry wire contracts.
-2. Add durable dispatch/ACK state (`device_commands`, migration 0008), including
-   retries, deadlines, correlation and duplicate handling. Acceptance receipts
-   already persist; they are not a dispatch queue or proof of execution.
-3. Integrate a local MQTT broker and worker with the simulator; test delayed,
-   duplicate, rejected, out-of-order and missing acknowledgements.
-4. Connect validated telemetry and REST hydration before live cache updates.
-   Keep physical actuation disabled. Authentication/public deployment remain B6.
+Migration 0009 adds durable device telemetry to the 0008 command path. The
+15-second dashboard polling and receipt-based freshness are described in the
+[B4 contract](b4-mqtt-contract.md) and [Phase 5 handoff](../refine/system-refinement-handoff-2026-09-23-phase5.md).
+The refinement Phase 5 is part of B4 simulator integration; the separate B5 LED
+harness has not been qualified. B6 will use app-managed email/password sessions.
 
 ### B3 verification matrix
 

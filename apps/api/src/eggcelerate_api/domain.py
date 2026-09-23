@@ -47,13 +47,16 @@ def condition_severity(
     power_source: str,
     next_turn: datetime,
     now: datetime,
+    telemetry_status: str = "fresh",
 ) -> str:
     temp_critical = temp < temp_min - 0.5 or temp > temp_max + 0.5
     humidity_critical = humidity < humidity_min - 5 or humidity > humidity_max + 5
     battery_critical = power_source == "battery" and battery_pct <= 15
+    telemetry_critical = telemetry_status == "offline"
     turning_overdue = next_turn < now
     if (
         not paired
+        or telemetry_critical
         or not water_ok
         or temp_critical
         or humidity_critical
@@ -63,7 +66,14 @@ def condition_severity(
     temp_warning = temp < temp_min or temp > temp_max
     humidity_warning = humidity < humidity_min or humidity > humidity_max
     battery_warning = power_source == "battery" and battery_pct <= 25
-    if temp_warning or humidity_warning or battery_warning or turning_overdue:
+    telemetry_warning = telemetry_status == "stale"
+    if (
+        telemetry_warning
+        or temp_warning
+        or humidity_warning
+        or battery_warning
+        or turning_overdue
+    ):
         return "warning"
     return "info"
 
@@ -85,6 +95,7 @@ def derive(unit: IncubatorDTO, mode: ModeDTO, now: datetime) -> IncubatorDTO:
         water_ok=unit.water_ok,
         battery_pct=unit.battery_pct,
         power_source=unit.power_source,
+        telemetry_status=unit.telemetry_status,
         next_turn=unit.next_turn_at,
         now=now,
     )
@@ -96,7 +107,9 @@ def derive(unit: IncubatorDTO, mode: ModeDTO, now: datetime) -> IncubatorDTO:
                 if unit.cycle_phase == "stopped_early" and unit.day_of_incubation > 0
                 else severity_to_status(severity)
             ),
-            "connection_state": connection_state(unit.paired),
+            "connection_state": connection_state(
+                unit.paired and unit.telemetry_status == "fresh"
+            ),
             "cycle_phase": (
                 "stopped_early"
                 if unit.cycle_phase == "stopped_early" and unit.day_of_incubation > 0

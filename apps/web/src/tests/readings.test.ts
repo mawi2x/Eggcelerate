@@ -60,3 +60,42 @@ describe("repository readings", () => {
     expect(listReadings).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("live polling", () => {
+  it("refreshes an existing observer, pauses when hidden and resumes", async () => {
+    const { QueryObserver, focusManager } = await import(
+      "@tanstack/react-query"
+    );
+    vi.useFakeTimers();
+    const repository = new InMemoryEggcelerateRepository({ now: fixedNow });
+    const fetch = vi.spyOn(repository, "listReadings");
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    client.mount();
+    focusManager.setFocused(true);
+    const observer = new QueryObserver(
+      client,
+      readingQueryOptions(repository, "chamber-1", "24h"),
+    );
+    const unsubscribe = observer.subscribe(() => {});
+    try {
+      await vi.advanceTimersByTimeAsync(1);
+      expect(fetch).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(15_000);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      focusManager.setFocused(false);
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      focusManager.setFocused(true);
+      await vi.advanceTimersByTimeAsync(15_000);
+      expect(fetch.mock.calls.length).toBeGreaterThan(2);
+    } finally {
+      unsubscribe();
+      client.unmount();
+      client.clear();
+      focusManager.setFocused(undefined);
+      vi.useRealTimers();
+    }
+  });
+});

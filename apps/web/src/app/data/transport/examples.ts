@@ -104,6 +104,10 @@ const chamberOne = {
   cycle_phase: "incubating",
   condition_severity: "info",
   connection_state: "connected",
+  telemetry_status: "fresh",
+  telemetry_observed_at: "2026-09-03T10:00:00.000Z",
+  telemetry_received_at: "2026-09-03T10:00:01.000Z",
+  telemetry_last_seen_at: "2026-09-03T10:00:01.000Z",
   candled_days: [6],
   candling_entries: [candlingEntry],
 };
