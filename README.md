@@ -8,8 +8,9 @@ EGGCELERATE is organized as a pnpm monorepo for independently deployable applica
 - `apps/api` — FastAPI dashboard API with memory and opt-in PostgreSQL/TimescaleDB storage.
 - `apps/mobile` — reserved for a future Android/iOS application; no framework has been selected.
 - `packages` — reserved for code that is genuinely shared between applications.
-- `infrastructure` — reserved for future service and infrastructure configuration.
-- `compose.yaml` — builds the web and API services; the database profile is opt-in.
+- `infrastructure` — includes the local Mosquitto configuration used by the opt-in simulator overlay.
+- `compose.yaml` — builds the web and API services; database services use opt-in profiles.
+- `compose.simulator.yaml` — adds the isolated Mosquitto broker and MQTT worker; dispatch stays disabled by default.
 
 ## Workspace commands
 

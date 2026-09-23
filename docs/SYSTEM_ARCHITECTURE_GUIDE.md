@@ -1,11 +1,11 @@
 # EGGCELERATE — System Architecture Guide
 
 > **Status:** Working implementation guide
-> **Last reviewed:** 2026-09-04
-> **Scope:** Frontend-first delivery, the current repository, and the planned API/device system.
+> **Last reviewed:** 2026-09-23
+> **Scope:** Current frontend and local backend implementation, plus the remaining authentication, production, and hardware boundary.
 > **Validation note:** This guide was cross-referenced against source and local documentation. Browser automation is not a current validation gate.
 
-This guide describes what EGGCELERATE has today, what the implementation plan proposes, and the boundary that lets frontend work finish before backend work begins. Current source code is the authority for implemented behavior. The implementation plan is the authority for the proposed delivery sequence, not proof that a component exists.
+This guide separates implemented behavior from the remaining product and deployment work. Current source code is the authority for implemented behavior. The current phase-by-phase review plan records the next implementation sequence; older frontend and database plans are historical context.
 
 ## 1. Reading rules and source precedence
 
@@ -21,35 +21,35 @@ Use these labels:
 For this checkout, use the following precedence:
 
 1. Current source under apps/, packages/, infrastructure/, and the root configuration files.
-2. The consolidated plan: [docs/plan/2026-08-25-eggcelerate-consolidated-plan.md](plan/2026-08-25-eggcelerate-consolidated-plan.md).
-3. Focused plans and guides that are present in this checkout:
-   - [docs/plan/chunk-fix-plan.md](plan/chunk-fix-plan.md)
-   - [docs/guide/auth-onboarding-guide.md](guide/auth-onboarding-guide.md)
-   - [docs/screens/auth-and-onboarding-plan.md](screens/auth-and-onboarding-plan.md)
-   - [docs/refine/mobile-web-refinement-plan.md](refine/mobile-web-refinement-plan.md)
-   - the reports in [docs/audit/](audit/README.md)
-   - the design and accessibility guides in [docs/guide/](guide/README.md)
-4. Historical reviews are context only and must be checked against the current source.
+2. The current system review and execution record: [phase-by-phase plan](refine/project-review-execution-plan-2026-09-23.md).
+3. Current subsystem references: [backend guide](guide/backend-dashboard-first-guide.md), [database guide](guide/database-setup-guide.md), [auth and onboarding guide](guide/auth-onboarding-guide.md), [firmware safety contract](guide/firmware-safety-contract.md), and [frontend restructuring guide](guide/frontend-restructuring-guide.md).
+4. Historical plans and audits are context only; verify every claim against the current source.
 
-The local workspace contains the ADR set under `docs/archive/adr/`, but those local-only files are outside this frontend closure commit. Accepted stack decisions are summarized in `apps/api/README.md`; backend work must make the authoritative decision records available to every contributor before implementation begins.
+The accepted local stack decisions are summarized in `apps/api/README.md`. The ADR
+set is still local-only; it is not required to interpret the implemented service
+boundaries in this guide.
 
 ## 2. Delivery strategy
 
-The agreed delivery shape is:
+The current delivery shape is:
 
-    Finish frontend with realistic mock behavior
+Finish frontend with realistic mock behavior
               ↓
-    Stabilize domain contracts and repository boundary
+Keep stable domain contracts and repository boundary
               ↓
-    Connect the same UI to FastAPI and persistence
+Use the same UI with FastAPI and optional persistence
               ↓
-    Connect backend to simulator, MQTT, and hardware
+Exercise MQTT commands and telemetry through a separate simulator
               ↓
-    Harden realtime, safety, permissions, and operations
+Add authentication, production broker security, and hardware qualification
 
-Backend implementation is intentionally deferred while the frontend is completed. The frontend must still establish the data contracts and service boundary now. That prevents the future API from becoming a rewrite of the screens.
+The frontend contract is implemented and connects to both memory and HTTP
+repositories. The local backend includes an opt-in PostgreSQL/TimescaleDB store
+and simulator-focused MQTT command/telemetry paths. WebSockets, real
+authentication, production broker security, and physical firmware remain outside
+the verified system boundary.
 
-The frontend phase is successful when the user can complete the dashboard flows against a deterministic mock repository, with realistic loading/error/empty states and API-shaped data. It does not require a live database, broker, or ESP32.
+The memory adapter remains a deterministic option for demos and tests, while API mode exercises the same dashboard contract against the local service. Neither mode establishes behavior on a physical ESP32.
 
 ## 3. Current system snapshot
 
@@ -57,17 +57,18 @@ The frontend phase is successful when the user can complete the dashboard flows 
 |---|---|---|
 | Web dashboard | **Implemented** | Vite + React application in apps/web. |
 | Shared UI primitives | **Implemented** | Tailwind 4, Radix-based primitives, project tokens, responsive shell, charts, dialogs, tables, and form controls. |
-| Incubator, cycle, candling, alert, trend, and settings flows | **Simulated** | Farm data hydrates from an asynchronous in-memory repository into the TanStack Query cache; reload resets repository-owned changes. |
+| Incubator, cycle, candling, alert, trend, and settings flows | **Implemented with memory/API adapters** | The checked-in web default uses fixture-backed memory; API mode reads and writes through the FastAPI repository. |
 | Domain helpers | **Implemented / expanding** | Entity types, candling, fertility, incubator calculations, dates, cycle helpers, and condition derivation now live under apps/web/src/app/domain. |
 | Mock repository boundary | **Implemented** | `EggcelerateRepository` and `InMemoryEggcelerateRepository` own fixture copies, mutable farm records, and deterministic reading queries. Screens do not import fixtures. |
 | Navigation | **Implemented** | Wouter 3.10 owns canonical paths, Back/Forward updates, legacy-query migration, and safe parameter redirects through the routing module. |
-| Server-state layer | **Implemented for mocks** | TanStack Query 5 and farm feature query/mutation hooks wrap the injected repository. |
+| Server-state layer | **Implemented** | TanStack Query 5 and farm feature query/mutation hooks wrap the injected memory or API repository. |
 | Auth and onboarding | **Simulated with boundary** | `/login` and `/onboarding/:step` are public mock routes. `MockAuthProvider` and `RequireAuth` guard dashboard navigation; there is no server session or real authorization. |
-| API contract | **B0A implemented; runtime paused** | Strict frontend transport schemas and the result/error envelope are tested. FastAPI and `ApiRepository` are not present; resume at B0B in the dashboard-first backend guide. |
-| API runtime, database, and broker | **Planned** | apps/api, infrastructure, and Compose contain placeholders or web-only configuration. |
-| Device firmware and simulator | **Planned** | No ESP32 firmware or MQTT simulator exists in the repository. |
-| Web deployment | **Implemented/configured** | Docker multi-stage build and Nginx SPA serving; Compose currently runs only web. |
-| Automated checks | **Implemented for the frontend boundary** | Typecheck, 159 Vitest tests, scoped coverage, production build, clean Biome lint, diff validation, and web CI are present. API tests, rendered component/accessibility coverage, and a reliable browser E2E workflow remain future work. |
+| API contract and runtime | **Implemented** | FastAPI/Pydantic, strict DTOs, error envelopes, health/readiness, and `ApiRepository` are present; see `apps/api/README.md`. |
+| Database | **Implemented, opt-in** | PostgreSQL/TimescaleDB persistence and Alembic revisions `0001`–`0011`; raw telemetry and latest device state are durable. |
+| MQTT | **Implemented for local simulation** | Mosquitto config and a worker exist in the simulator overlay; command dispatch defaults off and physical hardware is excluded. |
+| Authentication | **Selected, not implemented** | Sign-in will use app-managed email/password. Local `AUTH_MODE=disabled` is not a production authorization boundary. |
+| Web deployment | **Implemented/configured** | Docker multi-stage build and Nginx SPA/API proxy; Compose includes API and opt-in database profiles. |
+| Automated checks | **Implemented** | Web and API checks run in CI; see `.github/workflows/web.yml`, `.github/workflows/api.yml`, and `docs/guide/verification-gates.md` for current gates rather than a stale test count. Rendered accessibility and browser E2E remain open. |
 
 The current web checks are:
 
@@ -78,7 +79,9 @@ The current web checks are:
     pnpm lint
     git diff --check
 
-The current repository has 22 test files and the B0A contract checkpoint passes 159 tests. Passing tests establish a healthy frontend baseline; they do not prove API, device, persistence, or realtime behavior.
+The web suite and live HTTP contract verify frontend/API behavior. The database
+suite exercises persistence and migrations. These checks do not qualify physical
+device safety, production broker security, or public authentication.
 
 ### 3.1 Current repository topology
 
@@ -95,38 +98,36 @@ The current repository has 22 test files and the B0A contract checkpoint passes 
       │     ├── components/screens, detail, settings, alerts, auth, ui
       │     └── Docker build → Nginx static SPA
       ├── apps/api
-      │     └── placeholder README
+      │     └── FastAPI, memory/PostgreSQL stores, Alembic, MQTT telemetry and command worker
       ├── apps/mobile
       │     └── placeholder README
       ├── packages
       │     └── reserved until a real second consumer exists
       └── compose.yaml
-            └── web only, host port 80, /healthz
+            └── web/API plus opt-in database profiles; compose.simulator.yaml adds broker/worker
 
 Current implementation measurements:
 
 - App.tsx is 547 lines and combines account/onboarding UI state with screen composition. Farm-data ownership, repository mutations, path parsing, history listeners, and auth state have moved out.
 - mockData.ts has been removed; application imports from the old compatibility barrel are zero, down from 24 before F1.
 - CandlingJournalTab.tsx is 2,475 formatted lines, TrendsScreen.tsx is 1,178 lines, and IncubatorsScreen.tsx is 953 lines. Pure incubator filter/natural-order sort, trends filtering/KPIs, candling timing/feed merge, and tally validation have moved to focused selectors under `features/` with regression tests.
-- there is no runtime frontend environment contract or .env.example;
-- there is no API client or real auth adapter; the in-memory repository, TanStack Query integration, Wouter routing, Biome lint config with root scripts, and web CI (`.github/workflows/web.yml`) are implemented.
+- `.env.example` defines local API, database, MQTT worker and web repository settings;
+- `ApiRepository`, TanStack Query integration, Wouter routing, Biome lint config, and web CI (`.github/workflows/web.yml`) are implemented. Real server authentication is not.
 
 Large file size is an indicator, not the acceptance criterion. Refactoring is complete when ownership and dependencies are clear, not when a file reaches an arbitrary line count.
 
 ### 3.2 Current data and control flow
 
-1. `main.tsx` selects the singleton `InMemoryEggcelerateRepository` and injects it through `AppProviders`; the adapter creates private mutable copies of fixture data.
-2. Farm feature hooks execute repository queries and commands. TanStack Query owns modes, incubators, alerts, and hatch-record cache state and synchronizes successful mutations.
-3. Incubator and mode writes recalculate affected chamber condition and status through the shared domain helper.
-4. The repository validates mode references, preserves entity IDs during updates, normalizes connection state, and returns structured validation, conflict, missing-ID, simulated-failure, and unexpected-failure results.
-5. Hatch and aborted-cycle histories are private repository state. Screen-level cycle-history hooks update or invalidate the relevant query keys after commands; write-then-read behavior and copy isolation are covered by adapter tests.
-6. `listReadings({ incubatorId, window })` deterministically synthesizes aligned telemetry behind the repository boundary. TanStack Query caches `24h`, `7d`, and `full` windows by incubator; relevant incubator and mode writes invalidate those keys.
-7. Wouter owns location observation and browser history. The routing module parses canonical paths, validates tabs/steps/incubator IDs, migrates old query links, and exposes intent-level navigation functions. Dashboard output is wrapped by the mock auth guard.
-8. Repository mutations return confirmation to screen workflows. The in-memory adapter can apply bounded latency or return offline, rejected, and timeout results without screen-specific timers. Incubator updates are optimistic in the TanStack Query cache and roll back to the captured unit snapshot when confirmation fails; other writes remain pessimistic.
-9. Pending controls prevent duplicate submissions and announce busy state. Failed writes retain form input and expose a retry action. Cached background failures remain rendered with a stale-data warning, while browser disconnection exposes an offline warning over the last loaded data.
-10. Completing or stopping a cycle updates the chamber and its corresponding history as one in-memory repository operation. A rejected or timed-out command changes neither collection, avoiding partial writes and duplicate history on retry.
+1. `VITE_DATA_SOURCE` selects the memory or HTTP repository. `ApiRepository` validates result envelopes and talks to the versioned FastAPI routes; the memory adapter remains the deterministic demo/test option.
+2. Farm hooks use TanStack Query for cache, mutation state, invalidation and visible retry/error handling. Wouter owns canonical routes and browser history.
+3. FastAPI delegates to services and persistence boundaries. The default API store is memory; `postgres_incubators` opts into farm-scoped PostgreSQL transactions and explicit Alembic migrations/seeding.
+4. PostgreSQL persists dashboard configuration and journals, raw telemetry, a boot-aware latest-device projection, and durable turn-command outcomes. Timescale samples retain observation and server receipt times.
+5. The MQTT worker validates telemetry and acknowledgements and claims commands from the outbox. Its dedicated simulator overlay provides a private Mosquitto network; dispatch defaults off. A separate simulator repository exercises the wire contract.
+6. Readiness reports database/migration/seed state in PostgreSQL mode. `AUTH_MODE=disabled` is limited to local development and is not farm authorization for a public service.
 
-The static SPA is deployable and well packaged for demonstration. That does not make the overall system production-ready because persistence, authentication, API behavior, device transport, and safety execution are not present.
+This is a working local integration path, not a production or physical-electronics
+qualification. Authentication, secure remote broker access, restore drills and
+ESP32 firmware/hardware verification remain before public or actuator deployment.
 
 ## 4. Stack alignment
 
@@ -140,28 +141,28 @@ The static SPA is deployable and well packaged for demonstration. That does not 
 | Styling | Tailwind 4.1.12, CSS variables, Radix/shadcn-style primitives | Keep the existing token and primitive system. |
 | Charts | Recharts 2.15.2 | Keep charts behind feature-level loading boundaries. |
 | Validation | Zod, currently in apps/web/src/app/data/dto.ts and data/onboarding.ts | Make schemas the input/output boundary for mock and API data. |
-| Client data | TanStack Query feature hooks over the injected in-memory repository | Preserve the hooks and swap in an API adapter after endpoint contracts exist. |
+| Client data | TanStack Query feature hooks over memory or `ApiRepository` | Keep the shared result/error contract and exercise both adapters. |
 | Routing | Wouter 3.10 with focused path/parser hooks | Keep stable canonical routes; add future role-aware routes without duplicating URL state in components. |
 | Server state | TanStack Query 5.102.8 | Keep it for REST hydration, cache, mutations, and future realtime patches. |
-| Tests | Vitest + jsdom with domain, repository, and provider coverage | Add broader rendered component and shared adapter contract tests. |
+| Tests | Vitest + jsdom, including shared memory/HTTP contract coverage | Keep the shared contract; broader rendered accessibility checks remain open. |
 | Lint | Biome 2.x recommended preset; `pnpm lint` is clean | Keep lint in the local and CI gates; add focused rules only when they preserve the established frontend behavior. |
 | Browser E2E | Not configured | The plan names Playwright, but it is not required for the current frontend phase. Keep the E2E tool decision open until a reliable workflow is agreed. |
 
-### 4.2 Planned backend and device stack
+### 4.2 Backend and device status
 
-The consolidated plan proposes this target stack:
-
-| Component | Planned responsibility | Status |
+| Component | Current responsibility | Status and limit |
 |---|---|---|
-| FastAPI + Pydantic | Auth, REST validation, WebSocket bridge, command queueing, acknowledgements | **Accepted direction; not implemented**. Endpoint and auth contracts remain B1 prerequisites. |
-| PostgreSQL + TimescaleDB | Users, devices, modes, cycles, alerts, telemetry, candling, and hatch history | **Planned; not configured**. |
-| Mosquitto MQTT | Device transport; QoS 1 commands and QoS 0 telemetry | **Planned; not configured**. |
-| ESP32 firmware | Local sensing, actuation, watchdog, NVS setpoints, and fail-safe control | **Planned; not present**. |
-| Python simulator | Replace ESP32 during backend development | **Planned; not present**. |
-| Docker Compose | Run web, API, database, and broker in development/deployment | **Partial**; only web is currently defined. |
-| Nginx | Serve the built SPA and provide health checking | **Implemented for web**. |
+| FastAPI + Pydantic | REST validation, result envelopes, services and readiness | Implemented; no real user authentication or WebSocket bridge. |
+| PostgreSQL + TimescaleDB | Farm configuration, histories, telemetry, and command audit | Implemented as an opt-in local store through Alembic revision `0011`. |
+| Mosquitto MQTT | Device telemetry and command/ACK transport | Local anonymous broker config and worker overlay exist; dispatch is opt-in and not production secured. |
+| Python simulator | Exercise firmware-facing telemetry and command contracts | Implemented in a separate repository; it does not establish physical hardware behavior. |
+| ESP32 firmware | Local sensing, actuation and safety control | Not present in this repository and not hardware-verified. |
+| Docker Compose | Run web/API, optional database, and simulator worker/broker overlay | Implemented for local work; public deployment still requires security and recovery gates. |
+| Nginx | Serve the SPA and proxy same-origin API calls | Implemented. |
 
-These are accepted local architecture directions, not installed production infrastructure. The ADR files are local-only in this checkout; make them available to the team, and review endpoint, auth, persistence, realtime, and device contracts before infrastructure work is treated as final.
+The ADR files remain local-only. Current implementation details and the ordered
+remaining work are recorded in the [API README](../apps/api/README.md), [backend
+guide](guide/backend-dashboard-first-guide.md), and [project review plan](refine/project-review-execution-plan-2026-09-23.md).
 
 ## 5. Target system architecture
 
@@ -230,7 +231,7 @@ The target frontend flow is:
 
 Presentational and leaf components should continue receiving typed props. They should not each call global data hooks. Repository hooks belong at screen or feature-container boundaries.
 
-The plan currently calls the abstraction IncubatorRepository. If the interface also owns account, modes, alerts, candling, and hatch history, use a broader name such as FarmRepository or split it into domain-focused interfaces. Do not hide an application-wide service behind a misleading incubator-only name.
+The current boundary is named `EggcelerateRepository` because it covers the farm dashboard, not only incubators. Keep broad operations behind that contract or split them into domain-focused interfaces when a real second consumer needs them.
 
 The first refactor should separate the existing module into conceptual layers:
 
@@ -243,7 +244,7 @@ The first refactor should separate the existing module into conceptual layers:
       fixtures/
       repository.ts
       inMemoryRepository.ts
-      apiRepository.ts only when API work begins
+      apiRepository.ts for the validated HTTP adapter
     hooks/
       feature query and mutation hooks
     providers/
@@ -255,7 +256,7 @@ State ownership must remain explicit:
 
 | State type | Owner |
 |---|---|
-| URL/navigation state | The selected router. The consolidated plan currently selects wouter. |
+| URL/navigation state | Wouter owns canonical paths and browser history. |
 | Server-like farm data | TanStack Query backed by the injected repository. |
 | Repository implementation | A small provider created at application startup. |
 | Authentication/session view | Auth provider; server cookies remain the future security authority. |
@@ -272,9 +273,9 @@ The exact folders may evolve, but the rules do not:
 - parsing and normalization happen at the boundary, not inside individual screens;
 - data mutations expose pending, success, error, and rejected states;
 - derived status is calculated through one shared path from readings and the active mode;
-- the future API adapter replaces the in-memory adapter without creating a second set of screens.
+- `ApiRepository` and the in-memory adapter expose the same screen-facing contract.
 
-Do not create an empty ApiRepository merely to satisfy the folder diagram. Add it when endpoint and authentication contracts are ready.
+Keep the existing `ApiRepository` aligned with the HTTP schemas. Authentication is a separate server boundary and remains unimplemented.
 
 ### 6.3 Current structural risks
 
@@ -357,7 +358,7 @@ Candling uses:
 - cumulative snapshots;
 - no unresolved uncertainty at lockdown.
 
-The current implementation has these concepts in mock data and UI validation, but persistence and server enforcement are not implemented.
+The current implementation models these concepts in the web domain and persists cycle and candling records through the opt-in API store. Physical egg counts and other sensor-derived facts still depend on real device integration.
 
 ## 8. Device safety and realtime behavior
 
@@ -407,30 +408,28 @@ The ESP32 remains the local safety authority during Wi-Fi, MQTT, API, database, 
 - QoS 0 telemetry lost during an outage stays lost; gaps are expected unless a device-side store-and-forward buffer is specified later.
 
 
-## 9. Cross-reference with the implementation plan
+## 9. Current implementation and remaining work
 
-The consolidated plan contains twelve tasks. Frontend restructuring is now active through the focused guide; the status below is based on the current repository rather than old unchecked plan boxes.
+The older twelve-task delivery plan is historical. The current order and phase
+evidence live in the [project review plan](refine/project-review-execution-plan-2026-09-23.md).
 
-| Plan phase | Plan tasks | Current status | Next frontend-relevant exit |
-|---|---:|---|---|
-| Stabilize contracts and prototype | 1–5 | **Frontend complete** | F0–F6 established domain contracts, repository ownership, Query integration, routing/auth seams, realistic mock states, focused selectors, and quality gates. |
-| Establish app shell | 6–7 | **Partial** | Wouter, TanStack Query, canonical routes, mock auth provider/guard, and demo onboarding exist. Real server auth, RBAC, and admin screens do not. |
-| Backend without electronics | 8 | **Not started** | Add FastAPI in-memory endpoints, API contract tests, broker configuration, and simulator only after the frontend repository contract is stable. |
-| Realtime read path | 9 | **Not started** | Add REST history, WebSocket patches, query-cache updates, reconnect, and offline status. |
-| Commands and persistence | 10 | **Not started** | Add command ACK/timeout/rollback, candling persistence, harvest persistence, and aborted-cycle persistence. |
-| Hardening | 11 | **Frontend source checks complete / integration pending** | Keyboard and responsive source contracts are tested. Manual browser/200% zoom review, rendered accessibility coverage, server permission checks, and integration failure paths remain. Browser E2E tooling is not a current gate. |
-| Infrastructure and documentation | 12 | **Partial** | Web Docker/Nginx health behavior exists. API, database, broker, simulator, production secrets, and tracked architecture decisions remain. |
+| Area | Status |
+|---|---|
+| Frontend contracts and responsive dashboard | Implemented; mock and HTTP repositories use the same DTO/result boundary. |
+| API and local persistence | Implemented for the current dashboard slices; PostgreSQL/TimescaleDB is opt-in and migrations are at `0011`. |
+| Telemetry and commands | Validated telemetry, durable projection, command outbox, worker and simulator contract are implemented; worker dispatch remains off by default. |
+| Sign-in | The selected approach is app-managed email/password; server sessions and farm authorization remain to be implemented. |
+| Production and electronics | Secure broker/deployment settings, backup restore proof, ESP32 firmware and physical actuator tests remain open. |
 
-The focused documentation aligns with the frontend-first sequence:
+The [backend guide](guide/backend-dashboard-first-guide.md) describes the current
+API boundaries. The [database guide](guide/database-setup-guide.md) lists the
+actual migration history. The [auth guide](guide/auth-onboarding-guide.md)
+documents the current mock-only sign-in UI and future server boundary.
 
-- the [frontend restructuring guide](guide/frontend-restructuring-guide.md) is the active execution checklist for phases S0 through F6;
-- a local database setup guide is active WIP outside this frontend closure commit; review it with the API contract before provisioning;
-- the auth guide explicitly describes mock-only onboarding and the future auth guard;
-- the mobile refinement plan keeps mobile web as one responsive React app and records source implementation as complete with manual review pending;
-- the chunk plan calls for lazy heavy screens and a repository boundary;
-- the audit reports record UI consistency work separately from backend architecture.
+## 10. Historical frontend-first execution plan
 
-## 10. Refined frontend-first execution plan
+This section records the original frontend delivery sequence. Current status and
+remaining backend work are summarized in §9 and the linked project review plan.
 
 Each phase must preserve behavior and keep the current checks green. Avoid combining the repository, router, token cleanup, large-screen decomposition, and UI redesign in one change.
 
@@ -514,36 +513,37 @@ Each phase must preserve behavior and keep the current checks green. Avoid combi
 
 **Exit gate:** frontend behavior is stable, repository-driven, and ready for API integration.
 
-**Status:** complete. Biome lint, typecheck, 155 tests, scoped coverage, production build, and diff checks form the frontend handoff gate. This does not authorize or implement backend services.
+**Status:** complete. Current web and API validation runs in CI; use the CI workflows and `docs/guide/verification-gates.md` instead of the original test counts from this historical handoff.
 
-### Phase B1 — Backend handoff
+### Phase B1 — Backend handoff (completed)
 
-1. Confirm FastAPI/Pydantic, PostgreSQL/TimescaleDB, Mosquitto, and simulator decisions in architecture records.
-2. Follow the dashboard-first backend guide: refine broad mock-era writes into explicit service commands before exposing HTTP.
-3. Add the runtime environment contract and `.env.example` when the API URL and deployment shape are known.
-4. Implement FastAPI read and dashboard mutation endpoints with in-memory data first.
-5. Add `ApiRepository` and run the same observable-behavior tests against the API.
-6. Add PostgreSQL/TimescaleDB persistence, then REST hydration before WebSocket patches.
-7. Add MQTT simulation plus command acknowledgement, timeout, rollback, and audit persistence before real actuator writes.
-8. Defer authentication and user administration: keep a local-only disabled-auth request context, preserve `farm_id` ownership, and refuse production startup until real authorization is implemented.
-
-Do not add an empty API service, change the web host port, or extract shared packages during the frontend seam work unless a concrete deployment or second-consumer requirement appears. The device and hardware work follows the API contract and should not require rewriting React screens.
+FastAPI, the memory and PostgreSQL adapters, `ApiRepository`, Alembic migrations,
+validated telemetry, durable command/ACK handling, and a simulator-facing MQTT
+worker are implemented. Authentication was kept behind the production guard;
+the selected account model is app-managed email/password. See the linked current
+phase plan for the remaining sequence and gates.
 
 ## 11. Verification gates
 
-### Current frontend gate
+### Current frontend and API gates
 
     pnpm lint
     pnpm --filter eggcelerate-ui typecheck
     pnpm --filter eggcelerate-ui test
     pnpm --filter eggcelerate-ui coverage
     pnpm --filter eggcelerate-ui build
+    apps/api/.venv/bin/ruff check apps/api
+    apps/api/.venv/bin/ruff format --check apps/api
+    (cd apps/api && .venv/bin/mypy)
+    apps/api/.venv/bin/python apps/api/scripts/verify_migrations.py
+    apps/api/.venv/bin/python -m pytest -q apps/api/tests --require-database
+    apps/api/.venv/bin/python apps/api/scripts/verify_live_contract.py
 
 Also run:
 
     git diff --check
 
-### Future integration gate
+### Remaining release and hardware gates
 
     API health check succeeds
     database migrations succeed
@@ -559,27 +559,24 @@ Also run:
 Resolve these before the corresponding implementation phase:
 
 - publish or commit the accepted ADRs so backend decisions are available beyond this local checkout;
-- define endpoint DTOs, pagination, structured error codes, command idempotency, and transaction boundaries;
-- use the documented local-only disabled-auth request context for the dashboard milestone; choose server-session authentication, authorization, and CSRF behavior before any public deployment;
-- define telemetry retention/downsampling, REST/WebSocket envelopes, reconnect/resume behavior, and cache invalidation;
-- define command IDs and the MQTT acknowledgement/rejection/timeout/audit lifecycle before actuator writes;
-- retain the implemented Wouter router unless a separate decision explicitly selects another router;
-- use TanStack Query for server-like data before considering a second global state library;
-- keep browser automation outside the current validation workflow; select an E2E tool only when a reliable workflow is agreed;
-- verify the provisional firmware safety values on the selected hardware;
-- keep the architecture guide, restructuring guide, and firmware safety contract versioned; other local documentation remains outside this closure commit.
+- implement app-managed email/password sessions, revocation, and farm authorization before a public service;
+- choose secure broker authentication/TLS and deployment secrets before connecting remote hardware;
+- define telemetry retention/downsampling and WebSocket reconnect behavior before enabling those features;
+- record a successful backup restore and restart/outage drills;
+- verify firmware safety values and actuator behavior on the selected hardware;
+- select browser E2E coverage when a reliable workflow is agreed;
+- publish the local ADR set if the wider team needs decision records.
 
 When a new architectural decision is made, update the decision record, this guide, and the relevant implementation plan together. Keep current, simulated, planned, and unresolved items visibly separate.
 
-## 13. Primary present references
+## 13. Current references
 
-- [Consolidated implementation plan](plan/2026-08-25-eggcelerate-consolidated-plan.md)
-- [Plan index](plan/README.md)
-- [Chunk and bundle plan](plan/chunk-fix-plan.md)
+- [Project review and execution plan](refine/project-review-execution-plan-2026-09-23.md)
+- [Backend guide](guide/backend-dashboard-first-guide.md)
+- [Database setup guide](guide/database-setup-guide.md)
 - [Auth and onboarding guide](guide/auth-onboarding-guide.md)
-- [Auth and onboarding screen plan](screens/auth-and-onboarding-plan.md)
-- [Mobile web refinement plan](refine/mobile-web-refinement-plan.md)
-- [Audit index](audit/README.md)
+- [Mobile web refinement plan](refine/archive/mobile-web-refinement-plan.md)
+- [B3 persistence exit review](guide/b3-exit-review.md)
 - [Typography guidelines](guide/typography-guidelines.md)
 - [Color guidelines](guide/color-guidelines.md)
 - [UI control-size guidelines](guide/ui-control-size-guidelines.md)
@@ -587,4 +584,6 @@ When a new architectural decision is made, update the decision record, this guid
 - [Firmware safety contract](guide/firmware-safety-contract.md)
 - [Dashboard-first backend guide](guide/backend-dashboard-first-guide.md)
 
-The local ADR and product documentation outside the versioned architecture guides is not included in the frontend closure commit. Backend work should first publish or replace the authoritative records it depends on.
+The review plans and phase handoffs in `docs/refine` are versioned. The local ADR
+archive remains separate and is not a substitute for source-backed implementation
+status.

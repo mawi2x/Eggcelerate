@@ -71,7 +71,7 @@ Fallback stack `ui-rounded, system-ui, sans-serif` after Baloo 2 / Nunito ensure
 | `--font-display` | `Baloo 2` | Page titles, panel titles, KPI/metric values, section titles, 800-weight numbers |
 | `--font-body` | `Nunito` | Body copy, controls, tables, supporting text, captions, labels |
 
-Do not replace families — the Baloo 2 / Nunito pairing is brand-locked (`docs/refine/typography-refinement-plan.md:41`). Headings `h1–h6` default to `var(--font-display)` via `theme.css`, body/inputs default to `var(--font-body)`.
+Do not replace families — the Baloo 2 / Nunito pairing is brand-locked ([historical typography plan](../refine/archive/typography-refinement-plan.md)). Headings `h1–h6` default to `var(--font-display)` via `theme.css`, body/inputs default to `var(--font-body)`.
 
 ### Type scale (rem, user-scalable)
 
@@ -215,7 +215,10 @@ Before `bca3846` this was hardcoded `'"Nunito", sans-serif' 13/600`; now tokeniz
 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em" }}>...</span>
 ```
 
-Unless the value is a documented chart/illustration constraint or a deliberate density exception listed in `docs/audit/typography-baseline-2026-08-26.md` (e.g., `12`/`13` body/caption remaining in `CandlingJournalTab.tsx` — preserved for compact table density per `typography-refinement-plan.md:211`).
+Unless the value is a documented chart/illustration constraint or a deliberate
+density exception (for example, compact 12px/13px table copy). The original
+typography audit was local-only; the [archived refinement plan](../refine/archive/typography-refinement-plan.md)
+records its assumptions, and source code remains authoritative.
 
 ## Intentional exceptions (px kept)
 
@@ -300,7 +303,7 @@ Standardized via 2 SDD runs (`fff9c75..cb67abe` Phase 1-2 + `0caa6fa..bca3846` P
 
 - `grep -R "fontSize" apps/web/src` → `359` total (`197 numeric px` + `151 var(--type-)` + `11 Tailwind/other`); `var(--type-)` `167` (>50) — was `323` all `px` audit baseline, `0 var`
 - `8px/9px` `0` (was 2), `17/19/22` `0` (was 8), `Baloo 2, sans-serif` hardcoded `0` (was 9), `fontWeight 800` without `var(--font-display)` `0` (was 21)
-- Remaining `197 px` is mostly `12/13` body/caption in `CandlingJournalTab.tsx` (`71` of 197) — intentional dense-table preservation, not a bug. Next audit baseline `docs/audit/typography-baseline-2026-08-26.md` carries forward counts.
+- In the recorded inventory, the remaining `197 px` was mostly `12/13` body/caption in `CandlingJournalTab.tsx` (`71` of 197), retained for dense tables. These counts are historical and should be regenerated before another typography pass.
 - `pnpm test` `11/11` (`typography-tokens` `batch-a/b/c`) `typecheck` PASS `build` `index 298.76kB + vendor 183.88kB + Trends 409.58kB` <500kB `bca3846`
 
 Light-theme token system is the supported implementation. Dark-mode `oklch()` values in `theme.css` remain generic, not brand-approved — do not expand without a separate dark-mode review (`color-guidelines.md` current scope).

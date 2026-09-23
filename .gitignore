@@ -38,7 +38,7 @@ yarn-debug.log*
 # vite cache
 .vite/
 
-# documentation folders (markdown) — local only, except the guides committed as project record
+# documentation folders (markdown) — retain selected guides and the refinement review record
 review/
 plans/
 guidelines/
@@ -47,3 +47,4 @@ flow/
 docs/*
 !docs/guide
 !docs/SYSTEM_ARCHITECTURE_GUIDE.md
+!docs/refine

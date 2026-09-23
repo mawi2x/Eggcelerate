@@ -1,6 +1,6 @@
 # Auth & Onboarding Guide (Routed Mock Boundary)
 
-> Mock-only prep per `docs/screens/auth-and-onboarding-plan.md:1` — sign-in and onboarding use public Wouter routes at `/login` and `/onboarding/:step`. No JWT or server session exists yet.
+> Mock-only sign-in and onboarding use public Wouter routes at `/login` and `/onboarding/:step`. No JWT or server session exists yet. The selected future approach is app-managed email/password; see the [backend guide](backend-dashboard-first-guide.md).
 
 **Folder map:**
 

@@ -1,7 +1,8 @@
 # EGGCELERATE Dashboard-First Backend Guide
 
-> **Status:** B4 command closure and Phase 5 telemetry projection/freshness passed through migration 0009; B6 app-managed email/password auth remains gated.
+> **Status:** B4 command dispatch and telemetry are implemented through migration `0011`; app-managed email/password authentication is selected but not implemented.
 > **Prepared:** 2026-09-04
+> **Current status updated:** 2026-09-23
 > **Scope:** Local FastAPI backend for the existing dashboard, followed by persistence and device simulation
 > **Deferred:** Real authentication, user administration, production deployment, and physical actuator control
 
@@ -9,24 +10,29 @@
 
 ### Current handoff — 2026-09-23
 
-Phase 5 is complete. Validated MQTT telemetry now hydrates a durable
-`device_telemetry_state` projection with boot-aware ordering, battery/power, raw
-observation time, accepted receipt time, and server `last_seen_at`. Freshness is
-fresh through 45 seconds, stale through 180 seconds, then offline. The worker
-continues to reject malformed or foreign messages independently and rate-limits
-rejection diagnostics. The dashboard polls incubator summaries and reading
-windows every 15 seconds while visible and labels receipt age in monitoring views.
+The API now stores validated MQTT telemetry in raw history and a durable
+`device_telemetry_state` projection with boot identity, battery/power, device
+observation time, accepted server receipt time, and `last_seen_at`. A later boot
+can replace the projection despite an older observation clock; within one boot,
+sequence and observation time must both advance. Boot and observation times more
+than 60 seconds ahead of receipt are rejected. Freshness is fresh through 45
+seconds, stale through 180 seconds, then offline. The worker gives QoS 1 ACKs
+priority over queued QoS 0 telemetry and rate-limits rejection diagnostics. The
+dashboard polls summaries and reading windows every 15 seconds while visible.
 
-The exact implementation and evidence are in the [Phase 5 handoff](../refine/system-refinement-handoff-2026-09-23-phase5.md)
-when working locally; that refinement directory is intentionally outside the
-tracked guide tree. Next eligible phase is B6 authentication using app-managed
-email/password sessions. Physical actuation and shared/public broker deployment
-remain disabled.
+The latest implementation details and test evidence are in the [Phase 3
+handoff](../refine/project-review-handoff-2026-09-23-phase3.md). The repository's
+current sequence schedules authentication after the reliability and UI phases;
+the selected account approach is application-managed email/password. Physical
+actuation and shared/public broker deployment remain disabled.
 
 B0–B2 are recorded complete. B3 now persists farms, modes, chamber/device configuration, farm preferences, alerts, cycle runtime, terminal history, candling journals/photo references, and their replay records. Migration 0007 adds internal telemetry ingestion and raw/five-minute research queries; PostgreSQL dashboard readings now use stored samples. The local dashboard B3 exit passed; see [the final review](b3-exit-review.md) for evidence and recorded scope limits.
 The dated checkpoints below are historical evidence, not current resume instructions.
 
 ### Evidence and limitations
+
+The dated bullets below preserve earlier B3 checkpoints. Their counts and limits
+are historical; use the current handoff above for present status.
 
 - The latest candling gate passed 283 frontend tests (34 files), coverage, lint/typecheck/build, 69 API tests including PostgreSQL integration, Ruff/mypy (28 source files), and 28/28 live repository cases on an isolated farm. Packaged API migration 0006 and schema drift are verified.
 - Simulator S0/S1/GUI and 22 unittest results are user-reported for the separate `eggcelerate-simulate` repository; its source and revision were not verified here. Simulator completion does not establish API/MQTT integration.
@@ -36,9 +42,9 @@ The dated checkpoints below are historical evidence, not current resume instruct
 
 ### Implemented versus planned
 
-The main repository has in-memory FastAPI, API Docker/Compose configuration, `ApiRepository`, the mock/API switch, and an opt-in `postgres_incubators` backend (`postgres_modes` remains a configuration alias). PostgreSQL currently persists farms/modes, chamber/device configuration, preferences, alerts, cycle runtime, terminal history, candling journals/photo references, and their replay records. Other persistence slices, API MQTT integration, WebSockets, real authentication, and hardware integration remain future work.
+The main repository has FastAPI, API Docker/Compose configuration, `ApiRepository`, the mock/API switch, and an opt-in `postgres_incubators` backend (`postgres_modes` remains a configuration alias). PostgreSQL persists farm/chamber configuration, preferences, alerts, cycle runtime and history, candling journals/photo references, telemetry samples and latest state, and device-command/ACK state. MQTT ingestion and a simulator worker are implemented; WebSockets, real authentication, production broker security, and physical hardware integration remain future work.
 
-MQTT QoS/retention, 15-second live cadence, and five-minute research avg/min/max/count are requirements to reconcile and verify during B3/B4, not integration results from this review. Authentication remains deferred to B6; no VPS/public deployment before that gate.
+The simulator contract uses QoS 0 non-retained telemetry and QoS 1 non-retained commands/ACKs; the worker is opt-in and simulator dispatch defaults off. Dashboard refresh is 15 seconds and database reading queries support five-minute research aggregates. No retention policy, authenticated production broker, or physical device deployment is claimed. Authentication remains a deployment gate.
 
 Error mapping: `validation_error` → 422; `not_found` → 404; `conflict` and `rejected` → 409; `offline` → 503; `timeout` → 504; `unknown_error` → 500.
 
@@ -99,7 +105,7 @@ Error mapping: `validation_error` → 422; `not_found` → 404; `conflict` and `
 - **Completed scope:** pinned TimescaleDB/PostgreSQL development and tmpfs test services; SQLAlchemy 2.0.52 async sessions with asyncpg 0.31.0; Alembic 1.20.0 migrations; repeatable seed; durable mode CRUD and same-key POST/PATCH replay. Internal UUIDs preserve public string IDs. SQL mode changes and replay receipts commit together; a farm row lock coordinates separate API instances. Existing service logic remains authoritative.
 - **Files added/changed:** `apps/api/src/eggcelerate_api/database/`; `alembic.ini`, `migrations/`, `tests/test_postgres_modes.py`, API configuration/dependency/lifespan wiring, dependency pins/Dockerfile, Compose, `.env.example`, API README, this guide. No frontend feature edits in this slice.
 - **Migrations:** `0001` installs/verifies the Timescale extension and creates only the currently used `farms`, `modes`, and `mode_idempotency` tables. Later slices add the remaining B3 tables. No auth tables or unused telemetry hypertable were scaffolded.
-- **Environment:** `STORAGE_BACKEND=memory|postgres_modes` (memory default); `DATABASE_URL` requires `postgresql+asyncpg://` for postgres_modes; `POSTGRES_PASSWORD` configures the new development database; `TEST_DATABASE_URL` opts into disposable-database tests. Runtime does not migrate, seed, or silently fall back.
+- **Environment:** `STORAGE_BACKEND=memory|postgres_incubators` (memory default; `postgres_modes` remains an alias); `DATABASE_URL` requires `postgresql+asyncpg://`; `POSTGRES_PASSWORD` configures the local development database; `TEST_DATABASE_URL` opts into disposable-database tests. Runtime does not migrate, seed, or silently fall back.
 - **Contracts:** dashboard paths and component schemas unchanged (22 paths). `/readyz` now supports adapter-dependent output and 503 when PostgreSQL is unavailable, unmigrated, or unseeded. It explicitly reports that remaining state is memory. Mode POST/PATCH same-key/different-payload requests return 409 in postgres_modes.
 - **Verification:** 38 API tests with the disposable DB; frontend 259 tests with coverage thresholds green; frontend lint/typecheck/build; Ruff including migrations; mypy on 22 source files; API Docker build; schema drift check reports no upgrade operations; live shared repository suite 22/22 with postgres_modes. Empty database migrated to 0001, repeated seed preserves edits, and mode CRUD/replay/farm isolation/rollback/concurrency/outage/restart-projection tests pass.
 - **Restart proof:** actual API and development DB containers restarted with their named volume preserved. An isolated mode edit and its original create replay survived; changed payload returned 409; proof mode cleaned up. This establishes mode durability only.
@@ -434,13 +440,24 @@ AUTH_MODE=disabled
 DEFAULT_FARM_ID=00000000-0000-0000-0000-000000000001
 API_HOST=0.0.0.0                # inside the container
 API_PORT=8000
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost,http://127.0.0.1
 STORAGE_BACKEND=memory          # postgres_incubators opts into durable configuration
 DATABASE_URL=                   # asyncpg URL required for postgres_incubators
-MQTT_URL=                       # added in B4
+POSTGRES_PASSWORD=              # local Compose development database
+TEST_DATABASE_URL=              # optional disposable eggcelerate_test database
+MQTT_HOST=127.0.0.1              # simulator overlay uses its private broker hostname
+MQTT_PORT=1883
+MQTT_USERNAME=                  # optional; the bundled local broker is anonymous
+MQTT_PASSWORD=                  # optional; the bundled local broker is anonymous
+SIMULATOR_DISPATCH_ENABLED=false
 VITE_DATA_SOURCE=mock
 VITE_API_URL=/api                  # same-origin production proxy; API mode only
 ```
+
+These names are read by the API, MQTT worker, Compose stack, or test runner as
+appropriate. `POSTGRES_DB` and `POSTGRES_USER` are fixed by the Compose file rather
+than environment overrides. The simulator overlay sets `MQTT_HOST=broker` inside
+its private network; do not expose its anonymous listener outside that network.
 
 Compose publishes API port 8000 to host `127.0.0.1` only. `AUTH_MODE=disabled` is a local-development capability, not a deployment shortcut.
 The web Nginx container forwards `/api/*` to the internal `api:8000` service. A VPS
@@ -465,13 +482,14 @@ git diff --check
 
 Database checkpoints additionally run migrations against a disposable empty database and adapter integration tests. MQTT checkpoints additionally run simulator integration tests. Browser automation is not part of these gates.
 
-## 10. Current implementation batch: Phase 5 telemetry; next B6 authentication
+## 10. Current implementation batch: telemetry through migration 0011
 
-Migration 0009 adds durable device telemetry to the 0008 command path. The
+Migrations `0007`–`0011` add raw telemetry, the latest projection, durable
+commands, dispatch identity, and the command-claim integrity/index changes. The
 15-second dashboard polling and receipt-based freshness are described in the
-[B4 contract](b4-mqtt-contract.md) and [Phase 5 handoff](../refine/system-refinement-handoff-2026-09-23-phase5.md).
-The refinement Phase 5 is part of B4 simulator integration; the separate B5 LED
-harness has not been qualified. B6 will use app-managed email/password sessions.
+[B4 contract](b4-mqtt-contract.md) and [Phase 3 handoff](../refine/project-review-handoff-2026-09-23-phase3.md).
+The separate B5 LED harness has not been qualified. The selected sign-in approach
+is app-managed email/password; authentication remains a later gated phase.
 
 ### B3 verification matrix
 
@@ -488,11 +506,11 @@ harness has not been qualified. B6 will use app-managed email/password sessions.
 
 ## 11. Resume procedure
 
-1. Read the current handoff above, API README, architecture and firmware safety contracts, and database setup WIP.
+1. Read the current phase handoff above, the API README, the architecture and firmware safety contracts, and the database setup guide.
 2. Inspect source and working-tree changes; current source wins over historical examples. Preserve unrelated changes.
-3. Execute B3 steps in section 10 in order, starting with simulator contract reconciliation.
+3. Follow the next eligible phase in `docs/refine/project-review-execution-plan-2026-09-23.md`; do not resume completed B3/B4 work from the dated checkpoints below.
 4. Keep the API contract and screen behavior stable; document any necessary contract change before implementing it.
-5. Record the section 13 checkpoint and actual repository revisions before switching phases.
+5. Write a phase handoff with revision, evidence, limitations, and the next eligible phase.
 
 ## 12. Decisions that must survive each phase
 

@@ -2,8 +2,8 @@
 
 **Status:** Implemented  
 **Last reviewed:** 2026-09-01  
-**Source plan:** `docs/refine/control-size-standardization-plan.md`  
-**Source audit:** `docs/audit/control-size-standardization-audit.md`
+**Source plan:** [`control-size-standardization-plan.md`](../refine/archive/control-size-standardization-plan.md)
+**Source audit:** The original audit was local-only; the archived plan and current implementation are the versioned references.
 
 ## Purpose
 

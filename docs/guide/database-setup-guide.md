@@ -1,9 +1,15 @@
 # EGGCELERATE Database Setup Guide
 
-> **Status:** Planned — implementation must wait for the frontend F5/F6 exit gate
+> **Status:** Current implementation reference; the original pre-database checklist below has been superseded
 > **Prepared:** 2026-09-04
+> **Updated:** 2026-09-23
 > **Scope:** Local backend and database preparation for PostgreSQL + TimescaleDB
-> **Out of scope:** MQTT provisioning, ESP32 firmware, production deployment, and frontend redesign
+> **Current limits:** Authentication and production deployment remain gated; physical actuator control is excluded.
+
+This guide began as a proposal before the API and database existed. The current API,
+Compose profiles, environment names and migration history are documented here for
+reference; use the [backend guide](backend-dashboard-first-guide.md) and
+[API README](../../apps/api/README.md) for the current implementation and commands.
 
 ## 1. Outcome
 
@@ -24,20 +30,19 @@ React screens
 
 The in-memory repository remains the reference implementation and local mock option. The API and database implementations must satisfy the same behavior and structured result contract.
 
-## 2. Start conditions
+## 2. Local database use
 
-Do not provision the database until all of these are true:
+The initial frontend gate is complete. The current Compose setup keeps the
+development database behind the `database` profile, binds its host port to
+`127.0.0.1`, and stores data in a named volume. The separate `database-test`
+profile uses a disposable database on port 55432. Run migrations and seeding
+explicitly; API startup never creates schema or overwrites existing rows.
 
-- [ ] Frontend F5 selector/hook and keyboard/responsive checks are closed.
-- [ ] Frontend typecheck, tests, coverage policy, lint, build, Docker build, and `git diff --check` pass.
-- [ ] The current uncommitted F5/F6 checkpoint is committed.
-- [ ] ADR-005 and ADR-006 are superseded so local ESP32 safety control is authoritative; FastAPI may coordinate and audit but must not be the only thermal control loop.
-- [ ] ADR-002 (FastAPI), ADR-003 (PostgreSQL + TimescaleDB), and ADR-004 (authentication) are reconciled with `apps/api/README.md` and the System Architecture Guide.
-- [ ] The canonical ADR location is agreed, even if documentation remains local during the current solo-development phase.
+See the current start, migration, seed, and test commands in the
+[API README](../../apps/api/README.md). Do not use `docker compose down -v` for
+routine testing because that removes the development database volume.
 
-Schema design may continue before these checks pass. Running database services, creating migrations, and adding `ApiRepository` begin only after the checks pass.
-
-## 3. Decisions to freeze before migration 0001
+## 3. Original schema decisions (historical proposal)
 
 ### 3.1 Identity and tenancy
 
@@ -66,7 +71,7 @@ Schema design may continue before these checks pass. Running database services, 
 
 Cycle phase, condition severity, percentages, and display status remain derived domain values unless a historical snapshot or query-performance requirement proves otherwise. Database constraints protect raw facts; shared domain/application services calculate presentation state.
 
-## 4. Initial logical schema
+## 4. Initial logical schema proposal
 
 | Table | Purpose | Important relationships and constraints |
 |---|---|---|
@@ -99,7 +104,7 @@ Completed hatch history and aborted-cycle history should initially be API projec
 - every tenant-owned lookup includes an authorized `farm_id`
 - telemetry uniqueness includes `observed_at`, because Timescale hypertable unique indexes must contain partition columns
 
-## 5. Contract normalization before persistence
+## 5. Original contract normalization proposal
 
 The current frontend repository contract is the behavioral baseline, but several mock-era fields must not become database keys:
 
@@ -115,111 +120,46 @@ The current frontend repository contract is the behavioral baseline, but several
 
 Create versioned Zod and Pydantic transport schemas for these shapes. Keep compatibility mapping inside `ApiRepository`; do not make screens understand migration fields.
 
-## 6. Execution phases
+## 6. Current implementation status
 
-### DB0 — Close architecture and API contracts
+### Migration history
 
-- [ ] Complete the frontend F5/F6 exit gate.
-- [ ] Supersede the server-only automation statements in ADR-005/006.
-- [ ] Confirm FastAPI and PostgreSQL/TimescaleDB as accepted choices in all local guides and READMEs.
-- [ ] Write `/api/v1` request/response schemas and stable error codes.
-- [ ] Map every `EggcelerateRepository` method to an endpoint or explicitly defer it.
-- [ ] Freeze ID ownership, units, timestamps, pagination, and idempotency behavior.
+| Revision | Schema change |
+|---|---|
+| `0001` | Farms, modes and atomic mode replay records |
+| `0002` | Incubators, devices and device assignments |
+| `0003` | Farm preferences and save replay |
+| `0004` | Alerts, dismissal tombstones and action replay |
+| `0005` | Cycles, runtime, terminal history and action replay |
+| `0006` | Candling journals, photo references and replay |
+| `0007` | Timescale telemetry hypertable and raw samples |
+| `0008` | Durable device commands and acknowledgements |
+| `0009` | Latest device telemetry projection |
+| `0010` | Boot identity snapshot for each command dispatch |
+| `0011` | Command claim index and restrictive incubator foreign key |
 
-**Exit:** no unresolved contract changes would force migration 0001 to be rewritten.
+Migrations and development seed data run explicitly. Fresh and populated upgrade
+proofs are in `apps/api/scripts/verify_migrations.py`; Alembic's schema drift
+check is part of the API verification gate.
 
-### DB1 — Build the API against memory first
+| Area | Current state |
+|---|---|
+| API contract and memory adapter | FastAPI/Pydantic endpoints and the in-memory repository are implemented; the web `ApiRepository` shares a tested HTTP contract with it. |
+| Local database services | TimescaleDB/PostgreSQL 17 is opt-in through Compose profiles, with loopback-only development access and a separate disposable test database. |
+| Schema and migrations | SQLAlchemy async sessions and Alembic migrations are implemented through revision `0011`; see the migration table above. |
+| Persistent adapter | Farm configuration, alerts, cycles/history, candling, raw telemetry, latest telemetry state, and durable turn commands are persisted in the opt-in PostgreSQL backend. User accounts and authentication sessions are not implemented. |
+| MQTT and device boundary | Validated telemetry, command outbox, and opt-in worker are implemented. The anonymous Mosquitto broker is limited to the local simulator network; physical hardware and production broker security are not included. |
+| Authentication and public deployment | App-managed email/password is the selected sign-in approach, but implementation remains gated. Do not treat the local preview as a public service. |
+| Operations | Readiness, fresh/populated migration verification, and schema drift checks exist. A verified production backup/restore drill has not been recorded. |
 
-- [ ] Scaffold `apps/api` with FastAPI, Pydantic, a health endpoint, and dependency-injected application services.
-- [ ] Implement read endpoints using an in-memory adapter.
-- [ ] Add mutation endpoints with structured errors and transaction-shaped service boundaries.
-- [ ] Generate and review OpenAPI output.
-- [ ] Add API contract tests for success, validation, missing resources, authorization, conflict, timeout, and idempotent retry.
-- [ ] Keep MQTT and device commands simulated.
+For implementation detail and runnable commands, use the [API README](../../apps/api/README.md)
+and [backend guide](backend-dashboard-first-guide.md). The live frontend/API contract
+and database gates are listed in [verification gates](verification-gates.md).
 
-**Exit:** the API contract is testable without PostgreSQL, and no route handler contains SQL.
+## 7. Original API proposal
 
-### DB2 — Add local PostgreSQL + TimescaleDB infrastructure
-
-- [ ] Add a version-pinned TimescaleDB image to Compose; never use `latest`.
-- [ ] Add a named development volume and `pg_isready` healthcheck.
-- [ ] Keep the database off public interfaces; expose it only to the Compose network or bind a development port to `127.0.0.1` when a local client is required.
-- [ ] Add `.env.example` with non-secret names such as `DATABASE_URL`, `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
-- [ ] Keep real credentials and volume data ignored.
-- [ ] Create a separate disposable test database configuration.
-- [ ] Document start, stop, logs, reset, and backup commands; database reset must require an explicit confirmation because it destroys local data.
-
-**Exit:** the database becomes healthy from a clean clone without manually executing schema SQL.
-
-### DB3 — Add SQLAlchemy models and Alembic migrations
-
-- [ ] Use SQLAlchemy 2.x and one `AsyncSession` per request/transaction.
-- [ ] Use Alembic as the only schema-change path.
-- [ ] Migration 0001 enables TimescaleDB and creates identity/tenant tables.
-- [ ] Migration 0002 creates devices, incubators, modes, cycles, candling, alerts, and preferences.
-- [ ] Migration 0003 creates command audit storage.
-- [ ] Migration 0004 creates the empty telemetry hypertable and indexes.
-- [ ] Review generated migrations manually for constraints, indexes, server defaults, extension operations, and downgrade safety.
-- [ ] Add deterministic development seed data separately from migrations.
-
-**Exit:** migrations upgrade an empty database and API startup never creates or mutates schema implicitly.
-
-### DB4 — Implement the persistent adapter
-
-- [ ] Implement persistence behind application-service interfaces rather than inside route handlers.
-- [ ] Port repository operations in vertical slices: modes, incubators, settings, alerts, cycles/candling, then history/readings.
-- [ ] Make complete-cycle and stop-cycle writes atomic.
-- [ ] Use optimistic version checks for user-edited resources.
-- [ ] Translate database/HTTP failures into stable `ResultError` codes.
-- [ ] Run the shared repository behavior suite against both in-memory and database-backed implementations.
-
-**Exit:** restarting the API preserves data and both adapters expose equivalent observable behavior.
-
-### DB5 — Add telemetry persistence deliberately
-
-- [ ] Validate telemetry at ingestion and retain both device observation time and server receipt time.
-- [ ] Reject or quarantine impossible values without marking the device healthy.
-- [ ] Persist at the agreed five-minute research interval; do not accidentally store every UI refresh as a new observation.
-- [ ] Create indexes for `(device_id, observed_at DESC)` and cycle/time queries.
-- [ ] Decide retention and aggregate policies from measured volume before enabling automatic deletion.
-- [ ] Test out-of-order, duplicate, delayed, and clock-skewed samples.
-
-**Exit:** 24-hour, 7-day, and full-cycle reading queries return deterministic ordered data within an agreed latency budget.
-
-### DB6 — Add authentication and tenant enforcement
-
-- [ ] Store password hashes only.
-- [ ] Store hashed, rotated, revocable refresh tokens.
-- [ ] Use secure HTTP-only cookies in the deployed environment.
-- [ ] Authorize every farm-owned query and mutation in the application layer.
-- [ ] Add cross-farm denial tests and WebSocket authentication tests before realtime work.
-- [ ] Consider PostgreSQL row-level security only as defense in depth; it does not replace application authorization.
-
-**Exit:** one farm cannot read or mutate another farm's data through any tested endpoint.
-
-### DB7 — Connect the frontend through `ApiRepository`
-
-- [ ] Add a validated `VITE_API_URL` environment contract and `.env.example` entry.
-- [ ] Implement `ApiRepository` without changing screen APIs.
-- [ ] Keep the in-memory adapter selectable for deterministic local demos/tests.
-- [ ] Run shared contract tests against the live API adapter.
-- [ ] Hydrate through REST first; add WebSocket cache patches only afterward.
-- [ ] Preserve pending, rejected, timeout, stale, offline, retry, and rollback UI states.
-
-**Exit:** changing repository selection switches between mock and persisted data without feature-component changes.
-
-### DB8 — Operational readiness
-
-- [ ] Test migration upgrade from a clean database and from the previous released revision.
-- [ ] Test backup and restore, not just backup creation.
-- [ ] Document rollback/roll-forward policy; never run destructive downgrades automatically in production.
-- [ ] Add API and database health/readiness checks.
-- [ ] Add pool, slow-query, storage-growth, migration, and failed-command observability.
-- [ ] Pin service versions and document the update process.
-
-**Exit:** persistence can be deployed, upgraded, backed up, and restored predictably.
-
-## 7. Initial API map
+This table records the initial design. The current HTTP contract is the FastAPI
+OpenAPI document and the API README; do not treat this proposal as a route inventory.
 
 | Repository behavior | Proposed API |
 |---|---|
@@ -247,7 +187,7 @@ Docker/Compose configuration validation
 git diff --check
 ```
 
-Before frontend cutover, additionally prove:
+Before a new production cutover, additionally prove:
 
 - process restart persistence;
 - transaction rollback on the second half of complete/stop-cycle operations;
@@ -280,4 +220,8 @@ Browser automation is not part of this gate. Use Vitest/jsdom, API tests, databa
 
 ## 11. Definition of database-ready
 
-Database setup is ready to start when DB0 is complete. Database setup is finished only when DB1 through DB8 meet their exit criteria. Merely running a TimescaleDB container is not completion.
+The API, local database, migrations, frontend HTTP adapter and simulator-facing
+MQTT path are implemented through migration `0011`. Public release remains gated
+on app-managed sign-in and tenant authorization, broker security, backup restore
+proof, and physical-device qualification; merely running the Compose stack does
+not complete those gates.

@@ -1,9 +1,10 @@
 # EGGCELERATE API
 
-> **Current status:** B3 persistence plus B4 durable simulator command dispatch/ACK
-> handling and Phase 5 telemetry projection/freshness are implemented through migration
-> 0009. B6 authentication remains gated work. See the [Phase 5 handoff](../../docs/refine/system-refinement-handoff-2026-09-23-phase5.md)
-> for verification scope and the next authentication boundary.
+> **Current status:** The opt-in PostgreSQL backend, validated telemetry projection,
+> and simulator command dispatch/ACK path are implemented through migration `0011`.
+> Physical hardware is excluded. App-managed email/password authentication remains a
+> later gated phase. See the [Phase 3 handoff](../../docs/refine/project-review-handoff-2026-09-23-phase3.md)
+> for the latest API verification record.
 > See `docs/guide/backend-dashboard-first-guide.md`.
 
 Accepted technology decisions (local-only ADRs under `docs/archive/adr/`):
@@ -33,8 +34,8 @@ src/eggcelerate_api/
   api/v1/               routers (incubators, modes, alerts, history, preferences)
   database/             async store + chamber/device persistence, metadata, explicit seed
 alembic.ini
-migrations/             Alembic-only DDL; 0001 farms/modes; 0002 chamber/device configuration/replay; 0003 preferences/replay; 0004 alerts/replay; 0005 cycles/runtime/history/replay; 0006 candling/photo metadata/replay
-tests/                  69 tests with TEST_DATABASE_URL, including persistence/rollback/replay
+migrations/             Alembic-only DDL, revisions 0001–0011; see the database setup guide for the mapping
+tests/                  unit and PostgreSQL integration tests; CI is the source for current totals
 ```
 
 ## Local commands
@@ -48,12 +49,13 @@ python3 -m venv .venv && ./.venv/bin/pip install -e ".[test]"
 docker compose up -d api  # from the repo root
 ```
 
-The dashboard-first backend keeps authentication disabled and local-only
-initially, with a dormant request-context boundary and a production startup
-guard. Do not add fake auth endpoints or JWT storage during that milestone.
-The opt-in database slice persists farms, modes, chamber/device configuration,
-preferences, alerts, cycle runtime, terminal history and corresponding replay records. MQTT
-and hardware integration remain deferred.
+The dashboard-first backend keeps authentication disabled for local development,
+with a production startup guard. Do not treat that setting as suitable for a
+public deployment. The opt-in database slice persists farm configuration,
+preferences, alerts, cycles/history, candling, raw telemetry, the latest telemetry
+projection, and durable device-command state. The MQTT worker is available for
+local simulator dispatch; physical hardware and production broker security are
+not implemented.
 
 Memory request transactions roll back all state and idempotency results on failure.
 The lock protects one process only; this is not persistence or distributed command
@@ -62,18 +64,19 @@ reconnect, preferences PUT and alert action requests additionally use farm-scope
 SQL transactions and durable same-key replay with payload-conflict detection.
 Candling create/update/delete, cycle start/reset/complete/stop, alert actions, settings save and chamber create/profile/configuration/reconnect Retry actions preserve their
 logical key through the frontend and HTTP adapter. New user actions get new keys.
-Mode and manual-turn hooks still need retry propagation. Manual-turn acceptance
-and replay remain volatile even though turn timestamps persist.
+Manual turns are stored as durable device commands and the confirmed turn cursor
+advances only after a matching successful acknowledgement. Keep the original
+idempotency key across a retry; a new key denotes a separate user action.
 
 
 ## PostgreSQL persistence slice
 
-`STORAGE_BACKEND=memory` remains the default. `postgres_incubators` is deliberately
-partial: sensor readings remain in memory. Chamber names, modes,
-auto-turn/interval settings, device assignments, pairing state, farm preferences, alerts, cycle state, terminal history, candling journals/photo references and turn timestamps persist.
-Pairing here is the existing simulator-facing flag, not proof of hardware
-connectivity. Use one API worker while the remaining
-collections remain volatile. Do not treat this checkpoint as the full B3 exit.
+`STORAGE_BACKEND=memory` remains the default. `postgres_incubators` persists
+chamber configuration, device assignments and pairing state, farm preferences,
+alerts, cycle state and history, candling journals/photo references, raw telemetry,
+the latest device projection, and command state.
+Pairing here is a configuration flag, not proof of physical hardware
+connectivity. Account identities and authentication sessions are not implemented.
 
 The database image is TimescaleDB 2.30.0 / PostgreSQL 17, pinned by digest in
 Compose. Development port 5432 and disposable test port 55432 bind to loopback.
@@ -101,10 +104,11 @@ preserves existing edits. Deleted default modes can return when explicitly seede
 deletion markers prevent those entries from reappearing.
 
 The previous `postgres_modes` configuration is accepted as an alias for
-`postgres_incubators`; migration 0006 and chamber/preferences/alert/runtime seeding are required.
+`postgres_incubators`; readiness requires migration `0011` and farm, chamber,
+preferences, alert, and runtime seed data.
 
 `GET /readyz` reports `store: postgres_incubators`, database availability, and
-`remaining_state: readings_memory`. It returns 503 for a missing migration, missing farm/chamber/preferences/alert/runtime seed,
+`remaining_state: auth_and_deployment`. It returns 503 for a missing migration, missing farm/chamber/preferences/alert/runtime seed,
 or unavailable database. `GET /healthz` remains a database-independent liveness
 check. Dashboard DTOs and all 22 paths are preserved; OpenAPI is unchanged from the
 previous modes checkpoint. Device assignment conflicts return 409 in both the
