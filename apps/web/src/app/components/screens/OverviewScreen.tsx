@@ -1,3 +1,4 @@
+import { WifiSlash } from "@phosphor-icons/react";
 import { Check, ChevronRight, Clock, Egg } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Incubator, Mode, UnitStatus } from "../../domain/types";
@@ -210,9 +211,9 @@ function OffTargetRow({
 }
 
 /**
- * Minimal progress card: chamber name over its day count, then a single 120px
- * progress ring holding only the completion percentage. Status is carried by
- * the ring stroke alone — no pills, no sensor readings.
+ * Operational progress card: chamber name and species with a top-right status pill,
+ * an unobstructed progress ring holding cycle percentage, and live temperature and
+ * humidity readings at the bottom. The entire card is an accessible clickable surface.
  */
 function MiniCard({
   unit,
@@ -230,131 +231,154 @@ function MiniCard({
   );
   const stroke = PROGRESS_STROKE;
   const size = 70;
-  const width = 8;
+  const width = 7;
   const r = (size - width) / 2;
   const circumference = 2 * Math.PI * r;
 
   return (
-    <article
-      aria-labelledby={`mini-card-${unit.id}`}
-      className="group flex h-full w-full flex-col justify-between rounded-[8px] border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] md:rounded-[var(--radius-dialog)] md:p-4"
-    >
-      {/* Top-left header stack — name over mode over progress. */}
-      <div className="relative w-full min-w-0 text-left">
-        <div className="flex min-w-0 items-start pr-10">
-          <h3
-            id={`mini-card-${unit.id}`}
-            className="block min-w-0 flex-1 break-words text-(length:--type-body) lg:text-(length:--type-heading-sm)"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: "var(--weight-semibold)",
-              lineHeight: "var(--leading-snug)",
-              color: "var(--text-primary)",
-            }}
-            title={unit.name}
-          >
-            {unit.name}
-          </h3>
-        </div>
-        <button
-          type="button"
-          onClick={() => onOpen(unit.id)}
-          aria-label={`Open details for ${unit.name}`}
-          className="absolute right-0 top-0 inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
-        >
-          <ChevronRight size={16} aria-hidden="true" />
-        </button>
-        <span
-          className="block min-w-0 break-words text-(length:--type-caption) lg:text-(length:--type-body-sm)"
-          style={{
-            fontFamily: "var(--font-body)",
-            fontWeight: "var(--weight-semibold)",
-            lineHeight: "var(--leading-normal)",
-            color: "var(--text-primary)",
-            marginTop: 2,
-          }}
-        >
-          {mode.name}
-        </span>
-        <span
-          className="block min-w-0 break-words"
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "var(--type-caption)",
-            fontWeight: "var(--weight-regular)",
-            lineHeight: "var(--leading-normal)",
-            color: "var(--text-farm)",
-            marginTop: 2,
-          }}
-          title={`Progress: Day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
-        >
-          Progress: Day {unit.dayOfIncubation} of {mode.incubationDays}
-        </span>
-        <span
-          className="mt-1 block min-w-0 break-words text-[var(--type-label)]"
-          style={{
-            color:
-              telemetryStatus === "fresh"
-                ? "var(--status-success-fg)"
-                : telemetryStatus === "stale"
-                  ? "var(--status-warning-fg)"
-                  : "var(--status-danger-fg)",
-            fontFamily: "var(--font-body)",
-            fontWeight: "var(--weight-semibold)",
-            lineHeight: "var(--leading-normal)",
-          }}
-          title="Server-received telemetry freshness"
-        >
-          {telemetryStatusLabel(
-            telemetryStatus,
-            telemetryReceiptTimestamp(unit),
-          )}
-        </span>
-      </div>
-
-      {/* Center body — the ring */}
-      <div className="relative mt-2.5 flex min-h-0 items-center justify-center md:mt-3">
-        <svg
-          width={size}
-          height={size}
-          role="img"
-          aria-label={`Cycle progress ${pct}%, day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
-          style={{ transform: "rotate(-90deg)" }}
-        >
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke={BORDER}
-            strokeWidth={width}
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke={stroke}
-            strokeWidth={width}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference * (1 - pct / 100)}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
+    <div className="relative h-full w-full">
+      <button
+        type="button"
+        aria-labelledby={`mini-card-${unit.id}`}
+        onClick={() => onOpen(unit.id)}
+        className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-[8px] border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] md:rounded-[var(--radius-dialog)] md:p-4"
+      >
+        {/* Top-left header stack — name over mode over progress. */}
+        <div className="relative w-full min-w-0 text-left">
+          <div className="flex min-w-0 items-start justify-between gap-1">
+            <span
+              id={`mini-card-${unit.id}`}
+              className="block min-w-0 flex-1 truncate text-(length:--type-body) lg:text-(length:--type-heading-sm)"
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: "var(--weight-semibold)",
+                lineHeight: "var(--leading-snug)",
+                color: "var(--text-primary)",
+              }}
+              title={unit.name}
+            >
+              {unit.name}
+            </span>
+            <div
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--text-faint)] transition-colors group-hover:text-[var(--brand-primary)]"
+              aria-hidden="true"
+            >
+              <ChevronRight size={16} />
+            </div>
+          </div>
+          <div className="mt-0.5 flex items-center justify-between gap-1">
+            <span
+              className="block min-w-0 truncate text-(length:--type-caption) lg:text-(length:--type-body-sm)"
+              style={{
+                fontFamily: "var(--font-body)",
+                fontWeight: "var(--weight-semibold)",
+                lineHeight: "var(--leading-normal)",
+                color: "var(--text-farm)",
+              }}
+            >
+              {mode.name}
+            </span>
+            {telemetryStatus === "offline" ? (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                style={{
+                  backgroundColor: "var(--status-offline-bg)",
+                  color: "var(--status-offline-fg)",
+                }}
+                title={telemetryStatusLabel(
+                  telemetryStatus,
+                  telemetryReceiptTimestamp(unit),
+                )}
+              >
+                <WifiSlash size={10} weight="bold" aria-hidden="true" />
+                Offline
+              </span>
+            ) : (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium"
+                style={{
+                  color:
+                    telemetryStatus === "fresh"
+                      ? "var(--status-success-fg)"
+                      : "var(--status-warning-fg)",
+                }}
+                title={telemetryStatusLabel(
+                  telemetryStatus,
+                  telemetryReceiptTimestamp(unit),
+                )}
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{
+                    backgroundColor:
+                      telemetryStatus === "fresh"
+                        ? "var(--status-success-fg)"
+                        : "var(--status-warning-fg)",
+                  }}
+                />
+                {telemetryStatus === "fresh" ? "Live" : "Stale"}
+              </span>
+            )}
+          </div>
           <span
-            className="tracking-tight font-bold text-sm md:text-base"
+            className="mt-1 block min-w-0 truncate"
             style={{
-              fontFamily: "var(--font-display)",
-              color: stroke,
-              lineHeight: "var(--leading-tight)",
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-caption)",
+              fontWeight: "var(--weight-regular)",
+              lineHeight: "var(--leading-normal)",
+              color: "var(--text-farm)",
             }}
+            title={`Progress: Day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
           >
-            {pct}%
+            Day {unit.dayOfIncubation} of {mode.incubationDays}
           </span>
         </div>
-      </div>
-    </article>
+
+        {/* Center body — the ring */}
+        <div className="relative my-2.5 flex min-h-0 items-center justify-center">
+          <svg
+            width={size}
+            height={size}
+            role="img"
+            aria-label={`Cycle progress ${pct}%, day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
+            style={{ transform: "rotate(-90deg)" }}
+          >
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              fill="none"
+              stroke={BORDER}
+              strokeWidth={width}
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              fill="none"
+              stroke={stroke}
+              strokeWidth={width}
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - pct / 100)}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span
+              className="tracking-tight font-bold text-sm md:text-base"
+              style={{
+                fontFamily: "var(--font-display)",
+                color: stroke,
+                lineHeight: "var(--leading-tight)",
+              }}
+            >
+              {pct}%
+            </span>
+          </div>
+        </div>
+      </button>
+    </div>
   );
 }
 
@@ -424,14 +448,30 @@ export function OverviewScreen({
     };
   }, [units, modeOf]);
 
-  // Priority action items, drawn from real chamber issues (alerts first).
-  // Overview shows only the 4 highest-priority incubators (Alert → Attention → Optimal).
-  const priorityUnits = useMemo(() => {
+  // Action items for Needs Attention KPI (alerts and warnings first)
+  const attentionUnits = useMemo(() => {
     const rank = { alert: 0, warning: 1, optimal: 2 } as const;
-    return [...units]
-      .sort((a, b) => rank[a.status] - rank[b.status])
-      .slice(0, 4);
+    return [...units].sort((a, b) => rank[a.status] - rank[b.status]);
   }, [units]);
+
+  // Active chambers nearest to completing their incubation cycle (highest progress percentage first)
+  const priorityUnits = useMemo(() => {
+    const running = units.filter((u) => u.cyclePhase !== "ready" && u.paired);
+    const candidateUnits = running.length > 0 ? running : units;
+    return candidateUnits
+      .map((u) => {
+        const m = modeOf(u.modeId);
+        const pct =
+          m.incubationDays > 0
+            ? (u.dayOfIncubation / m.incubationDays) * 100
+            : 0;
+        const daysRemaining = Math.max(0, m.incubationDays - u.dayOfIncubation);
+        return { unit: u, pct, daysRemaining };
+      })
+      .sort((a, b) => b.pct - a.pct || a.daysRemaining - b.daysRemaining)
+      .map((item) => item.unit)
+      .slice(0, 4);
+  }, [units, modeOf]);
 
   // Most off-target by deviation from mode target (not absolute value) — only off-target shown
   const offTarget = useMemo(() => {
@@ -497,7 +537,7 @@ export function OverviewScreen({
   const needsAttentionFooter: KpiFooter | undefined = (() => {
     if (stats.needsAttention === 0)
       return { primary: "No issues", secondary: "All optimal" };
-    const top = priorityUnits[0];
+    const top = attentionUnits[0];
     return {
       primary: top ? top.name : `${stats.needsAttention} chambers`,
       secondary: "Need a look",
@@ -506,15 +546,6 @@ export function OverviewScreen({
 
   return (
     <div className="flex flex-col gap-2 md:gap-8">
-      {units.some(
-        (unit) =>
-          unit.telemetryStatus !== undefined && !unit.telemetryObservedAt,
-      ) && (
-        <p className="text-sm text-[var(--text-secondary)]">
-          Chambers without device telemetry show development preview sensor
-          values.
-        </p>
-      )}
       {/* Section 2: executive KPI summary — strict 1-row compact cards */}
       <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
         {/* Same chamber-device glyph as the sidebar Incubators nav item. */}
@@ -587,7 +618,7 @@ export function OverviewScreen({
           <button
             type="button"
             onClick={onManageAll}
-            className="inline-flex min-h-[var(--overview-action-height-mobile)] shrink-0 cursor-pointer items-center gap-0.5 rounded-xl border bg-[var(--surface-card)] px-1.5 py-0.5 text-(length:--type-body-sm) font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:min-h-11 md:px-4 md:py-2 md:text-sm"
+            className="inline-flex min-h-[var(--overview-action-height-mobile)] shrink-0 cursor-pointer items-center gap-0.5 rounded-xl border bg-[var(--surface-card)] px-2.5 py-1 text-xs font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:min-h-11 md:px-4 md:py-2 md:text-sm"
             style={{ borderColor: RUST, color: RUST }}
             aria-label="View all incubators"
           >

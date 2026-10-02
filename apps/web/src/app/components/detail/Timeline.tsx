@@ -94,9 +94,9 @@ export function Timeline({
   // the pill NEVER clips past container bounds on either side.
   const badgeLeft = `clamp(38px, ${fillPct}%, calc(100% - 38px))`;
 
-  // Bending leader line geometry:
+  // Elbowed leader line geometry:
   // The line ALWAYS starts at the exact bottom center (x = 0) of the badge pill.
-  // When near edges, the line curves gracefully to anchor at 0% or 100% on the track.
+  // When near edges, the line steps with orthogonal elbow bends to anchor at 0% or 100% on the track.
   // In the middle, the line drops vertically down (x = 0) to the active milestone node.
   const isStartZone = fillPct <= 12;
   const isEndZone = fillPct >= 88;
@@ -204,17 +204,18 @@ export function Timeline({
                     className="absolute top-0 left-1/2 -translate-x-1/2 overflow-visible"
                     aria-hidden
                   >
-                    {/* Bending path originating strictly from bottom center (0, 0) */}
+                    {/* Elbowed path originating strictly from bottom center (0, 0) */}
                     <path
                       d={
                         Math.abs(targetX) < 1
                           ? `M 0 0 V ${stemHeight}`
-                          : `M 0 0 C 0 ${stemHeight * 0.45}, ${targetX} ${stemHeight * 0.55}, ${targetX} ${stemHeight}`
+                          : `M 0 0 V ${stemHeight * 0.5} H ${targetX} V ${stemHeight}`
                       }
                       fill="none"
                       stroke={arrowColor}
                       strokeWidth={2}
                       strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
                     {/* Target terminal dot */}
                     <circle

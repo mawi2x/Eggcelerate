@@ -65,7 +65,6 @@ export default function App() {
     hatchRecords,
     settings,
     isLoading: farmDataLoading,
-    isRefreshing: farmDataRefreshing,
     staleError: farmDataStaleError,
     error: farmDataError,
     retry: retryFarmData,
@@ -592,7 +591,6 @@ export default function App() {
             )}
 
             <FarmDataStatus
-              isRefreshing={farmDataRefreshing}
               staleError={farmDataStaleError}
               onRetry={() => void retryFarmData()}
             />

@@ -7,7 +7,7 @@ import {
   Settings2,
   Thermometer,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CURRENT_TRAY_CAPACITY, computeCandling } from "../../domain/candling";
 import {
@@ -56,6 +56,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+
+const DETAIL_BANNER_TITLE_STYLE: CSSProperties = {
+  fontFamily: "var(--font-display)",
+  fontSize: "var(--type-body-sm)",
+  fontWeight: "var(--weight-extrabold)",
+  lineHeight: "var(--leading-snug)",
+};
+
+const DETAIL_BANNER_DESCRIPTION_STYLE: CSSProperties = {
+  fontFamily: "var(--font-body)",
+  fontSize: "var(--type-filter-label)",
+  lineHeight: 1.45,
+  marginTop: 2,
+};
 
 function SubTabNav({
   active,
@@ -262,21 +276,16 @@ export function DetailScreen({
           <div className="min-w-0 flex-1">
             <p
               style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--type-body-sm)",
-                fontWeight: "var(--weight-extrabold)",
-                lineHeight: "var(--leading-snug)",
+                ...DETAIL_BANNER_TITLE_STYLE,
                 color: "var(--brand-primary-hover)",
               }}
             >
               Ready for New Cycle
             </p>
             <p
-              className="mt-0.5"
               style={{
-                fontSize: "var(--type-filter-label)",
+                ...DETAIL_BANNER_DESCRIPTION_STYLE,
                 color: "var(--text-secondary)",
-                lineHeight: 1.45,
               }}
             >
               Load the tray, choose an incubation mode, and begin Day 1.
@@ -701,23 +710,19 @@ export function DetailScreen({
           <div className="flex min-w-0 flex-1 items-start gap-3">
             <div className="min-w-0 flex-1">
               <p
+                className="break-words"
                 style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "calc(var(--type-heading-sm) - 1px)",
-                  fontWeight: "var(--weight-extrabold)",
-                  lineHeight: "var(--leading-snug)",
+                  ...DETAIL_BANNER_TITLE_STYLE,
                   color: "var(--status-warning-fg)",
-                  whiteSpace: "normal",
-                  overflowWrap: "anywhere",
                 }}
               >
                 Lockdown Active, Do Not Open
               </p>
               <p
+                className="break-words"
                 style={{
-                  fontSize: "calc(var(--type-body-sm) - 1px)",
+                  ...DETAIL_BANNER_DESCRIPTION_STYLE,
                   color: "var(--status-warning-fg)",
-                  marginTop: 2,
                 }}
               >
                 Turning Stopped. Keep the incubator closed while hatching
@@ -744,23 +749,18 @@ export function DetailScreen({
           />
           <div className="min-w-0 flex-1">
             <p
+              className="break-words"
               style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--type-body-sm)",
-                fontWeight: "var(--weight-extrabold)",
-                lineHeight: "var(--leading-snug)",
+                ...DETAIL_BANNER_TITLE_STYLE,
                 color: "var(--status-warning-fg)",
-                whiteSpace: "normal",
-                overflowWrap: "anywhere",
               }}
             >
               Past Hatch Day
             </p>
             <p
               style={{
-                fontSize: "var(--type-filter-label)",
+                ...DETAIL_BANNER_DESCRIPTION_STYLE,
                 color: "var(--status-warning-fg)",
-                marginTop: 2,
               }}
             >
               Some eggs may still be hatching. Finish the cycle when ready.

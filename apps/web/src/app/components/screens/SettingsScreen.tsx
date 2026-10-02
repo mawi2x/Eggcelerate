@@ -111,11 +111,10 @@ export function SettingsScreen({
     <div className="flex flex-col">
       <nav
         aria-label="Settings categories"
-        className="sticky top-0 z-30"
+        className="sticky top-0 z-30 pb-2 md:pb-6"
         style={{
           backgroundColor: "var(--surface-app)",
           paddingTop: 8,
-          paddingBottom: 8,
         }}
       >
         <div className="mb-3">{header}</div>

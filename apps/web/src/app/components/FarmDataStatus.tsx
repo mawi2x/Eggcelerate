@@ -1,5 +1,4 @@
 import { Warning, WifiSlash } from "@phosphor-icons/react";
-import { RefreshCw } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { repositoryErrorMessage } from "../features/farm/repository-query";
 import { Button } from "./ui/button";
@@ -22,11 +21,9 @@ function useBrowserOnline() {
 }
 
 export function FarmDataStatus({
-  isRefreshing,
   staleError,
   onRetry,
 }: {
-  isRefreshing: boolean;
   staleError: unknown;
   onRetry: () => void;
 }) {
@@ -88,19 +85,5 @@ export function FarmDataStatus({
     );
   }
 
-  if (!isRefreshing) return null;
-
-  return (
-    <div
-      className="mb-3 flex items-center gap-2 text-sm text-[var(--text-secondary)]"
-      role="status"
-    >
-      <RefreshCw
-        size={14}
-        className="animate-spin motion-reduce:animate-none"
-        aria-hidden="true"
-      />
-      Refreshing farm data…
-    </div>
-  );
+  return null;
 }

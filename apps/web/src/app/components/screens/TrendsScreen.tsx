@@ -640,6 +640,55 @@ export function TrendsScreen({
         }}
       >
         {header}
+        {trendView === "environmental" && staleTelemetryUnits.length > 0 && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex min-h-20 items-center gap-4 rounded-2xl border p-4 shadow-sm"
+            style={{
+              backgroundColor: WARN_BG,
+              borderColor: BORDER,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              className="w-1.5 shrink-0 self-stretch rounded-full"
+              style={{ backgroundColor: WARN }}
+            />
+            <div className="min-w-0 flex-1">
+              <p
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-extrabold)",
+                  lineHeight: "var(--leading-snug)",
+                  color: WARN,
+                }}
+              >
+                Telemetry is not current
+              </p>
+              <p
+                style={{
+                  fontSize: "var(--type-filter-label)",
+                  lineHeight: "var(--leading-normal)",
+                  color: WARN,
+                  marginTop: 2,
+                }}
+              >
+                {staleTelemetryUnits
+                  .map((activeUnit) => {
+                    const status = resolvedTelemetryStatus(activeUnit);
+                    return `${activeUnit.name} (${telemetryStatusLabel(
+                      status,
+                      telemetryReceiptTimestamp(activeUnit),
+                    )})`;
+                  })
+                  .join(", ")}
+                . The chart shows historical readings.
+              </p>
+            </div>
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-start gap-4">
           <SegmentedControl
             flush
@@ -842,25 +891,6 @@ export function TrendsScreen({
           </div>
 
           <div className="space-y-2">
-            {staleTelemetryUnits.length > 0 && (
-              <p
-                role="status"
-                className="rounded-xl border px-3 py-2 text-sm text-[var(--text-secondary)]"
-                style={{ borderColor: BORDER }}
-              >
-                Telemetry is not current for{" "}
-                {staleTelemetryUnits
-                  .map((activeUnit) => {
-                    const status = resolvedTelemetryStatus(activeUnit);
-                    return `${activeUnit.name} (${telemetryStatusLabel(
-                      status,
-                      telemetryReceiptTimestamp(activeUnit),
-                    )})`;
-                  })
-                  .join(", ")}
-                . The chart shows historical readings.
-              </p>
-            )}
             {readingsLoading && (
               <p role="status" className="text-sm text-[var(--text-secondary)]">
                 Loading environmental readings…

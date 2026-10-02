@@ -2387,7 +2387,7 @@ export function CandlingJournalTab({
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
         {/* LEFT — inspection history feed */}
-        <div className="space-y-4 lg:col-span-3">
+        <div className="space-y-2 lg:col-span-3">
           <div className="flex items-center justify-between gap-3">
             <p
               style={{
@@ -2403,40 +2403,38 @@ export function CandlingJournalTab({
               onClick={() => setCalOpen(true)}
               aria-label="Open calendar"
               title="Open calendar"
-              className="inline-flex h-[58px] w-[58px] shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-sm transition-colors hover:bg-[var(--surface-action-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 lg:hidden"
+              className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-sm transition-colors hover:bg-[var(--surface-action-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 lg:hidden"
             >
               <CalendarDays size={18} aria-hidden="true" />
             </button>
           </div>
 
-          <div className="relative pt-[24px]">
+          <div className="relative">
+            <div className="relative h-6">
+              <span
+                className="absolute left-0 top-0 flex w-10 justify-center font-bold"
+                style={{
+                  fontSize: "var(--type-label)",
+                  fontWeight: "var(--weight-bold)",
+                  textTransform: "uppercase",
+                  letterSpacing: "var(--tracking-label)",
+                  color: "var(--text-muted)",
+                  lineHeight: "1",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                DAY
+              </span>
+            </div>
             <div className="relative">
               <div
                 className="absolute top-0 bottom-0 left-0 flex flex-col items-center"
                 style={{ width: 40 }}
               >
-                <span
-                  className="absolute font-bold"
-                  style={{
-                    top: 0,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-bold)",
-                    textTransform: "uppercase",
-                    letterSpacing: "var(--tracking-label)",
-                    color: "var(--text-muted)",
-                    lineHeight: "1",
-                    zIndex: "var(--z-overlay)",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  DAY
-                </span>
                 <div
                   className="w-0.5 flex-1"
                   style={{
-                    marginTop: 24,
+                    marginTop: 16,
                     backgroundColor: "var(--border-subtle)",
                   }}
                 />

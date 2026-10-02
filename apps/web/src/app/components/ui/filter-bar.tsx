@@ -246,7 +246,7 @@ export function FilterBar({
             flush
             className={cn(
               "w-max shrink-0",
-              fitToScreenOnMobile && "w-full min-w-0",
+              fitToScreenOnMobile && "w-full min-w-0 md:w-max md:min-w-max",
             )}
           >
             {optionButtons}
