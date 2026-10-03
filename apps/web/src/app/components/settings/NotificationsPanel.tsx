@@ -44,19 +44,19 @@ const triggerGroups: TriggerGroup[] = [
       {
         id: "temp",
         label: "Temperature out of range",
-        hint: "Fires the moment a chamber drifts past its Mode's target band.",
+        hint: "Opens after 60 seconds outside the mode target during an active cycle.",
         toastLabel: "Temperature alerts",
       },
       {
         id: "humidity",
         label: "Humidity out of range",
-        hint: "Fires on sustained deviation from the target humidity band.",
+        hint: "Opens after 60 seconds outside the mode humidity target during an active cycle.",
         toastLabel: "Humidity alerts",
       },
       {
         id: "water",
         label: "Water reservoir critical low",
-        hint: "Warns before the humidifier runs dry.",
+        hint: "Opens after 30 seconds reporting low water during an active cycle.",
         toastLabel: "Water reservoir alerts",
       },
     ],
@@ -68,7 +68,7 @@ const triggerGroups: TriggerGroup[] = [
       {
         id: "offline",
         label: "Device connection lost",
-        hint: "No telemetry received for more than 2 minutes.",
+        hint: "No advancing telemetry received for more than 3 minutes.",
         toastLabel: "Offline device alerts",
       },
       {
@@ -370,6 +370,11 @@ export function NotificationsPanel({
           aria-labelledby="notification-rules-tab"
           className="pt-5"
         >
+          <p className="mb-4 text-sm text-[var(--text-muted)]">
+            Disabling a rule prevents new alerts. Existing conditions remain
+            active until they recover or monitoring ends. Reading or dismissing
+            a notification does not resolve the condition.
+          </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {triggerGroups.map((group) => (
               <section

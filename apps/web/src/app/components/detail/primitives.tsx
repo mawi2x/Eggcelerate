@@ -72,8 +72,8 @@ export function SectionCard({
       style={{
         backgroundColor: bare ? "transparent" : "var(--surface-card)",
         border: bare
-          ? "1px solid transparent"
-          : "1px solid var(--border-subtle)",
+          ? "var(--border-width-hairline) solid transparent"
+          : "var(--border-width-hairline) solid var(--border-subtle)",
         borderRadius: "var(--radius-card)",
         boxShadow: bare ? "none" : "var(--shadow-subtle)",
       }}
@@ -131,7 +131,7 @@ export function InnerTile({
       className="rounded-2xl p-4"
       style={{
         backgroundColor: tone ? `${tone}0D` : "var(--surface-card)",
-        border: `1px solid ${tone ? `${tone}40` : "var(--border-default)"}`,
+        border: `var(--border-width-hairline) solid ${tone ? `${tone}40` : "var(--border-default)"}`,
       }}
     >
       {children}
@@ -153,7 +153,7 @@ export function KeyValue({
       className="rounded-xl p-3.5"
       style={{
         backgroundColor: "var(--surface-card)",
-        border: `1px solid var(--border-default)`,
+        border: `var(--border-width-hairline) solid var(--border-default)`,
       }}
     >
       <p
@@ -252,7 +252,7 @@ export function StatusCallout({
       } ${className}`}
       style={{
         backgroundColor: toneMap.bg,
-        border: `1px solid ${toneMap.border}`,
+        border: `var(--border-width-hairline) solid ${toneMap.border}`,
       }}
     >
       {!hideIcon && (

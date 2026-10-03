@@ -1,0 +1,20 @@
+{
+  "entryGzipBytes": 145000,
+  "initialJsGzipBytes": 195000,
+  "initialCssGzipBytes": 22000,
+  "initialTransferBytes": 620000,
+  "chunkBytes": 500000,
+  "routes": {
+    "src/app/components/screens/AlertsScreen.tsx": 30000,
+    "src/app/components/auth/SignInScreen.tsx": 10000,
+    "src/app/components/auth/CreateAccountScreen.tsx": 10000,
+    "src/app/components/auth/OnboardingStep1.tsx": 10000,
+    "src/app/components/screens/SettingsScreen.tsx": 30000,
+    "src/app/components/screens/IncubatorsScreen.tsx": 35000,
+    "src/app/components/screens/TrendsScreen.tsx": 160000,
+    "src/app/components/screens/DetailScreen.tsx": 65000,
+    "src/app/components/screens/CandlingLogsScreen.tsx": 25000,
+    "src/app/components/auth/OnboardingStep2.tsx": 10000,
+    "src/app/components/auth/OnboardingStep3.tsx": 10000
+  }
+}

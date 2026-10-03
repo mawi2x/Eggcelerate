@@ -3,8 +3,10 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
-  resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  resolve: { alias: { "@": path.resolve(import.meta.dirname, "./src") } },
   test: {
+    include: ["src/tests/**/*.test.{ts,tsx}"],
+    maxWorkers: 2,
     environment: "jsdom",
     globals: true,
     coverage: {
@@ -15,13 +17,13 @@ export default defineConfig({
       // component groups have separate floors, and the coverage script verifies
       // that every screen module is present in the JSON report.
       include: [
-        "src/app/domain/**",
-        "src/app/data/**",
-        "src/app/features/**",
-        "src/app/providers/**",
-        "src/app/routing/**",
-        "src/app/components/screens/**",
-        "src/app/components/auth/**",
+        "src/app/domain/**/*.{ts,tsx}",
+        "src/app/data/**/*.{ts,tsx}",
+        "src/app/features/**/*.{ts,tsx}",
+        "src/app/providers/**/*.{ts,tsx}",
+        "src/app/routing/**/*.{ts,tsx}",
+        "src/app/components/screens/**/*.{ts,tsx}",
+        "src/app/components/auth/**/*.{ts,tsx}",
         "src/app/components/AppSidebar.tsx",
         "src/app/components/PageHeader.tsx",
         "src/app/components/IncubatorCard.tsx",

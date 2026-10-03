@@ -115,16 +115,18 @@ def test_farm_isolation_and_concurrent_dismiss_replay(settings):
     with TestClient(create_app(settings)) as client:
         alert_id = client.get(PATH).json()["data"][0]["id"]
     barrier = Barrier(2)
+    # Race requests across initialized apps, not shared router construction.
+    clients = [TestClient(create_app(settings)) for _ in range(2)]
 
-    def dismiss():
-        with TestClient(create_app(settings)) as client:
+    def dismiss(client):
+        with client:
             barrier.wait(timeout=5)
             return client.delete(
                 f"{PATH}/{alert_id}", headers={"Idempotency-Key": "same"}
             )
 
     with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(lambda _: dismiss(), range(2)))
+        results = list(pool.map(dismiss, clients))
     assert [r.status_code for r in results] == [200, 200]
     assert results[0].json() == results[1].json()
     with TestClient(create_app(other)) as client:

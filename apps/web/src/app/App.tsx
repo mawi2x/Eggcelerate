@@ -1,79 +1,76 @@
-import { lazy, Suspense, useState } from "react";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { AppSidebar } from "./components/AppSidebar";
-import { CreateAccountScreen } from "./components/auth/CreateAccountScreen";
-import { OnboardingStep1 } from "./components/auth/OnboardingStep1";
-import { SignInScreen } from "./components/auth/SignInScreen";
 import { FarmDataStatus } from "./components/FarmDataStatus";
+import { FeatureDataStatus } from "./components/FeatureDataStatus";
 import { HelpWidget } from "./components/HelpWidget";
 import { PageHeader } from "./components/PageHeader";
+import { RecoveryBoundary } from "./components/RecoveryBoundary";
 import { SuspenseFallback } from "./components/SuspenseFallback";
-import { AlertsScreen } from "./components/screens/AlertsScreen";
-import { IncubatorsScreen } from "./components/screens/IncubatorsScreen";
 import { OverviewScreen } from "./components/screens/OverviewScreen";
-import { SettingsScreen } from "./components/screens/SettingsScreen";
 import { Button } from "./components/ui/button";
 import { Toaster } from "./components/ui/sonner";
-import { defaultOnboarding, type OnboardingState } from "./data/onboarding";
-
-const DetailScreen = lazy(() =>
-  import("./components/screens/DetailScreen").then((m) => ({
-    default: m.DetailScreen,
-  })),
-);
-const TrendsScreen = lazy(() =>
-  import("./components/screens/TrendsScreen").then((m) => ({
-    default: m.TrendsScreen,
-  })),
-);
-const CandlingLogsScreen = lazy(() =>
-  import("./components/screens/CandlingLogsScreen").then((m) => ({
-    default: m.CandlingLogsScreen,
-  })),
-);
-const OnboardingStep2 = lazy(() =>
-  import("./components/auth/OnboardingStep2").then((m) => ({
-    default: m.OnboardingStep2,
-  })),
-);
-const OnboardingStep3 = lazy(() =>
-  import("./components/auth/OnboardingStep3").then((m) => ({
-    default: m.OnboardingStep3,
-  })),
-);
-
 import { initialAccount, resolveDisplayName } from "./data/account";
+import { defaultOnboarding, type OnboardingState } from "./data/onboarding";
 import { CURRENT_TRAY_CAPACITY } from "./domain/candling";
 import type { Incubator } from "./domain/types";
 import { repositoryErrorMessage } from "./features/farm/repository-query";
 import { useFarmActions, useFarmData } from "./features/farm/use-farm-data";
+import { useFetchNotifications } from "./features/farm/use-fetch-notifications";
 import { RequireAuth, useAuth } from "./providers/auth-context";
-import type { ScreenId } from "./routing/routes";
+import {
+  AlertsScreen,
+  CandlingLogsScreen,
+  CreateAccountScreen,
+  DetailScreen,
+  IncubatorsScreen,
+  OnboardingStep1,
+  OnboardingStep2,
+  OnboardingStep3,
+  retryLazyScreens,
+  SettingsScreen,
+  SignInScreen,
+  TrendsScreen,
+} from "./routing/lazy-screens";
+import { parseAppPath, type ScreenId } from "./routing/routes";
 import { useAppRouter } from "./routing/use-app-router";
 
 export default function App() {
+  return (
+    <RecoveryBoundary scope="app" onRetry={retryLazyScreens}>
+      <Suspense fallback={<SuspenseFallback label="Loading screen..." />}>
+        <AppContent />
+      </Suspense>
+    </RecoveryBoundary>
+  );
+}
+
+function AppContent() {
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [onboardingState, setOnboardingState] =
     useState<OnboardingState>(defaultOnboarding);
   const auth = useAuth();
+  const [pathname] = useLocation();
 
   const {
     modes,
     incubators,
-    alerts,
+    alerts: farmAlerts,
     hatchRecords,
     settings,
+    features,
     isLoading: farmDataLoading,
     staleError: farmDataStaleError,
     error: farmDataError,
     retry: retryFarmData,
-  } = useFarmData();
+  } = useFarmData(parseAppPath(pathname).screen === "trends");
   const {
-    acknowledgeAlert,
-    dismissAlert,
-    markAllAlertsRead,
-    clearReadAlerts,
+    acknowledgeAlert: acknowledgeFarmAlert,
+    dismissAlert: dismissFarmAlert,
+    markAllAlertsRead: markAllFarmAlertsRead,
+    clearReadAlerts: clearReadFarmAlerts,
     updateIncubator,
     requestTurn,
     addIncubator,
@@ -83,7 +80,38 @@ export default function App() {
     saveSettings,
     actionState,
   } = useFarmActions();
-  const account = settings.account;
+  const fetchNotifications = useFetchNotifications();
+  const alerts = [...fetchNotifications.notifications, ...farmAlerts].sort(
+    (a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp),
+  );
+  const acknowledgeAlert = async (id: string) => {
+    if (!fetchNotifications.isLocal(id)) return acknowledgeFarmAlert(id);
+    fetchNotifications.acknowledge(id);
+    return true;
+  };
+  const dismissAlert = async (id: string) => {
+    if (!fetchNotifications.isLocal(id)) return dismissFarmAlert(id);
+    fetchNotifications.dismiss(id);
+    return true;
+  };
+  const markAllAlertsRead = async () => {
+    fetchNotifications.markAllRead();
+    return farmAlerts.some((entry) => !entry.acknowledged)
+      ? markAllFarmAlertsRead()
+      : true;
+  };
+  const clearReadAlerts = async () => {
+    fetchNotifications.clearRead();
+    return farmAlerts.some((entry) => entry.acknowledged)
+      ? clearReadFarmAlerts()
+      : true;
+  };
+  const account = features.settings.hasData
+    ? settings.account
+    : {
+        ...initialAccount,
+        displayName: auth.user?.displayName ?? initialAccount.displayName,
+      };
   const { signIn, register, completeOnboarding, isAuthenticated } = auth;
   const {
     screen,
@@ -91,6 +119,7 @@ export default function App() {
     detailTab,
     onboardingStep,
     navigateToScreen: navigate,
+    returnToIncubators,
     openIncubator,
     openTrends,
     openOnboarding,
@@ -194,29 +223,59 @@ export default function App() {
   }
 
   if (farmDataError) {
+    const errorHeader = (
+      <PageHeader
+        title={
+          screen === "alerts" ? "Notifications" : "Unable to load farm data"
+        }
+        subtitle="Check your connection and try again."
+        alertCount={unreadAlerts}
+        alerts={alerts}
+        alertsStatus={features.alerts}
+        onViewAlerts={() => navigate("alerts")}
+        onMarkAllRead={markAllAlertsRead}
+        onDismissAlert={dismissAlert}
+        pendingAlertId={actionState.pendingAlertId}
+        markingAllRead={actionState.markingAllAlertsRead}
+        onBack={screen === "alerts" ? () => navigate("overview") : undefined}
+        backLabel="Back to dashboard"
+      />
+    );
     return (
-      <div
-        className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center gap-4 px-6 text-center"
-        role="alert"
+      <main
+        tabIndex={-1}
+        className="mx-auto min-h-dvh max-w-3xl space-y-5 px-4 py-6"
       >
-        <div>
-          <h1
-            className="text-(length:--type-heading-lg) font-bold"
-            style={{ color: "var(--text-primary)" }}
+        {screen === "alerts" ? (
+          <Suspense
+            fallback={<SuspenseFallback label="Loading notifications..." />}
           >
-            Unable to load farm data
-          </h1>
-          <p
-            className="mt-2 text-(length:--type-body)"
-            style={{ color: "var(--text-secondary)" }}
-          >
+            <AlertsScreen
+              alerts={alerts}
+              dataStatus={features.alerts}
+              onAcknowledge={acknowledgeAlert}
+              onDismiss={dismissAlert}
+              onMarkAllRead={markAllAlertsRead}
+              onClearRead={clearReadAlerts}
+              pendingAlertId={actionState.pendingAlertId}
+              markingAllRead={actionState.markingAllAlertsRead}
+              clearingRead={actionState.clearingReadAlerts}
+              header={errorHeader}
+            />
+          </Suspense>
+        ) : (
+          errorHeader
+        )}
+        <div role="alert" className="space-y-3">
+          <p style={{ color: "var(--text-secondary)" }}>
             {repositoryErrorMessage(farmDataError)}
           </p>
+          <Button type="button" onClick={() => void retryFarmData()}>
+            Try again
+          </Button>
         </div>
-        <Button type="button" onClick={() => void retryFarmData()}>
-          Try again
-        </Button>
-      </div>
+        <Toaster position="top-right" richColors />
+      </main>
     );
   }
   if (farmDataLoading) {
@@ -291,6 +350,12 @@ export default function App() {
         className="min-h-dvh w-full overflow-x-clip"
         style={{ backgroundColor: "var(--surface-app)" }}
       >
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-[var(--surface-card)] focus:px-4 focus:py-3 focus:text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--ring)]"
+        >
+          Skip to content
+        </a>
         <AppSidebar
           active={screen}
           onNavigate={navigate}
@@ -299,8 +364,11 @@ export default function App() {
           collapsed={navCollapsed}
           onToggleCollapsed={() => setNavCollapsed((value) => !value)}
           onSignOut={() => void signOutAndReturn()}
+          onHelp={() => setHelpOpen(true)}
         />
         <main
+          id="main-content"
+          tabIndex={-1}
           className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
         >
           <div className="mx-auto max-w-6xl px-3 pb-44 sm:px-4 sm:pb-28 md:px-6 md:pb-20 lg:px-8">
@@ -317,6 +385,7 @@ export default function App() {
                   alertCount={unreadAlerts}
                   onViewAlerts={() => navigate("alerts")}
                   alerts={alerts}
+                  alertsStatus={features.alerts}
                   onMarkAllRead={markAllAlertsRead}
                   onDismissAlert={dismissAlert}
                   pendingAlertId={actionState.pendingAlertId}
@@ -327,7 +396,7 @@ export default function App() {
           </div>
         </main>
         <Toaster position="top-right" richColors />
-        <HelpWidget />
+        <HelpWidget open={helpOpen} onOpenChange={setHelpOpen} />
       </div>
     );
   }
@@ -546,12 +615,13 @@ export default function App() {
       titleHighlight={screen === "overview" ? `${overviewName}!` : undefined}
       alertCount={unreadAlerts}
       onViewAlerts={() => navigate("alerts")}
+      alertsStatus={features.alerts}
       alerts={alerts}
       onMarkAllRead={markAllAlertsRead}
       onDismissAlert={dismissAlert}
       pendingAlertId={actionState.pendingAlertId}
       markingAllRead={actionState.markingAllAlertsRead}
-      onBack={screen === "detail" ? () => navigate("incubators") : undefined}
+      onBack={screen === "detail" ? returnToIncubators : undefined}
       backLabel="Back to Incubators"
       titleNode={screen === "detail" ? detailHeader : undefined}
       showDateTime={screen === "overview"}
@@ -564,6 +634,12 @@ export default function App() {
         className="min-h-dvh w-full overflow-x-clip"
         style={{ backgroundColor: "var(--surface-app)" }}
       >
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-[var(--surface-card)] focus:px-4 focus:py-3 focus:text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--ring)]"
+        >
+          Skip to content
+        </a>
         <AppSidebar
           active={screen}
           onNavigate={navigate}
@@ -572,9 +648,12 @@ export default function App() {
           collapsed={navCollapsed}
           onToggleCollapsed={() => setNavCollapsed((v) => !v)}
           onSignOut={() => void signOutAndReturn()}
+          onHelp={() => setHelpOpen(true)}
         />
 
         <main
+          id="main-content"
+          tabIndex={-1}
           className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
         >
           <div
@@ -595,103 +674,146 @@ export default function App() {
               onRetry={() => void retryFarmData()}
             />
 
-            {screen === "overview" && (
-              <OverviewScreen
-                units={incubators}
-                modes={modes}
-                onOpenUnit={openUnit}
-                onManageAll={() => navigate("incubators")}
-              />
-            )}
-            {screen === "incubators" && (
-              <IncubatorsScreen
-                units={incubators}
-                modes={modes}
-                onOpenUnit={openUnit}
-                onAddIncubator={addIncubator}
-                isAddingIncubator={actionState.addingIncubator}
-                header={pageHeader}
-              />
-            )}
-            {screen === "candling" && (
-              <Suspense
-                fallback={<SuspenseFallback label="Loading candling logs..." />}
-              >
-                <CandlingLogsScreen
+            <RecoveryBoundary
+              key={`${screen}:${selectedUnit ?? ""}`}
+              scope="screen"
+              onRetry={retryLazyScreens}
+            >
+              {screen === "overview" && (
+                <OverviewScreen
                   units={incubators}
                   modes={modes}
-                  onOpenCandling={openCandling}
-                  header={pageHeader}
+                  onOpenUnit={openUnit}
+                  onManageAll={() => navigate("incubators")}
                 />
-              </Suspense>
-            )}
-            {screen === "detail" && (
-              <Suspense
-                fallback={<SuspenseFallback label="Loading incubator..." />}
-              >
-                <DetailScreen
-                  unit={activeUnit}
-                  modes={modes}
-                  initialTab={detailTab}
-                  onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
-                  onTabChange={(tab) => openIncubator(activeUnit.id, tab)}
-                  onUpdate={(intent) => updateIncubator(activeUnit.id, intent)}
-                  onRequestTurn={() => requestTurn(activeUnit.id)}
-                  isUpdating={actionState.updatingIncubatorId === activeUnit.id}
-                  isRequestingTurn={
-                    actionState.requestingTurnIncubatorId === activeUnit.id
+              )}
+              {screen === "incubators" && (
+                <Suspense
+                  fallback={<SuspenseFallback label="Loading incubators..." />}
+                >
+                  <IncubatorsScreen
+                    units={incubators}
+                    modes={modes}
+                    onOpenUnit={openUnit}
+                    onAddIncubator={addIncubator}
+                    isAddingIncubator={actionState.addingIncubator}
+                    header={pageHeader}
+                  />
+                </Suspense>
+              )}
+              {screen === "candling" && (
+                <Suspense
+                  fallback={
+                    <SuspenseFallback label="Loading candling logs..." />
                   }
-                />
-              </Suspense>
-            )}
-            {screen === "trends" && (
-              <Suspense
-                fallback={<SuspenseFallback label="Loading trends..." />}
-              >
-                <TrendsScreen
-                  units={incubators}
-                  modes={modes}
-                  history={hatchRecords}
-                  initialUnitId={selectedUnit ?? undefined}
-                  header={pageHeader}
-                />
-              </Suspense>
-            )}
-            {screen === "alerts" && (
-              <AlertsScreen
-                alerts={alerts}
-                onAcknowledge={acknowledgeAlert}
-                onDismiss={dismissAlert}
-                onMarkAllRead={markAllAlertsRead}
-                onClearRead={clearReadAlerts}
-                pendingAlertId={actionState.pendingAlertId}
-                markingAllRead={actionState.markingAllAlertsRead}
-                clearingRead={actionState.clearingReadAlerts}
-                onOpenUnit={(unitName) => {
-                  const target = incubators.find((u) => u.name === unitName);
-                  if (target) openUnit(target.id);
-                }}
-                header={pageHeader}
-              />
-            )}
-            {screen === "settings" && (
-              <SettingsScreen
-                modes={modes}
-                onUpdateMode={updateMode}
-                onAddMode={addMode}
-                onDeleteMode={deleteMode}
-                settings={settings}
-                onSaveSettings={saveSettings}
-                isSaving={actionState.savingSettings}
-                units={incubators}
-                header={pageHeader}
-              />
-            )}
+                >
+                  <CandlingLogsScreen
+                    units={incubators}
+                    modes={modes}
+                    onOpenCandling={openCandling}
+                    header={pageHeader}
+                  />
+                </Suspense>
+              )}
+              {screen === "detail" && (
+                <Suspense
+                  fallback={<SuspenseFallback label="Loading incubator..." />}
+                >
+                  <DetailScreen
+                    unit={activeUnit}
+                    modes={modes}
+                    initialTab={detailTab}
+                    onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
+                    onTabChange={(tab) =>
+                      openIncubator(activeUnit.id, tab, true)
+                    }
+                    onUpdate={(intent) =>
+                      updateIncubator(activeUnit.id, intent)
+                    }
+                    onRequestTurn={() => requestTurn(activeUnit.id)}
+                    isUpdating={
+                      actionState.updatingIncubatorId === activeUnit.id
+                    }
+                    isRequestingTurn={
+                      actionState.requestingTurnIncubatorId === activeUnit.id
+                    }
+                  />
+                </Suspense>
+              )}
+              {screen === "trends" && (
+                <Suspense
+                  fallback={<SuspenseFallback label="Loading trends..." />}
+                >
+                  <TrendsScreen
+                    units={incubators}
+                    modes={modes}
+                    history={hatchRecords}
+                    historyStatus={features.history}
+                    initialUnitId={selectedUnit ?? undefined}
+                    header={pageHeader}
+                  />
+                </Suspense>
+              )}
+              {screen === "alerts" && (
+                <Suspense
+                  fallback={
+                    <SuspenseFallback label="Loading notifications..." />
+                  }
+                >
+                  <AlertsScreen
+                    alerts={alerts}
+                    dataStatus={features.alerts}
+                    onAcknowledge={acknowledgeAlert}
+                    onDismiss={dismissAlert}
+                    onMarkAllRead={markAllAlertsRead}
+                    onClearRead={clearReadAlerts}
+                    pendingAlertId={actionState.pendingAlertId}
+                    markingAllRead={actionState.markingAllAlertsRead}
+                    clearingRead={actionState.clearingReadAlerts}
+                    onOpenUnit={(unitName) => {
+                      const target = incubators.find(
+                        (u) => u.name === unitName,
+                      );
+                      if (target) openUnit(target.id);
+                    }}
+                    header={pageHeader}
+                  />
+                </Suspense>
+              )}
+              {screen === "settings" && (
+                <>
+                  {!features.settings.hasData && pageHeader}
+                  <FeatureDataStatus
+                    label="Settings"
+                    state={features.settings}
+                  />
+                  {features.settings.hasData && (
+                    <Suspense
+                      fallback={
+                        <SuspenseFallback label="Loading settings..." />
+                      }
+                    >
+                      <SettingsScreen
+                        modes={modes}
+                        onUpdateMode={updateMode}
+                        onAddMode={addMode}
+                        onDeleteMode={deleteMode}
+                        settings={settings}
+                        onSaveSettings={saveSettings}
+                        isSaving={actionState.savingSettings}
+                        units={incubators}
+                        header={pageHeader}
+                      />
+                    </Suspense>
+                  )}
+                </>
+              )}
+            </RecoveryBoundary>
           </div>
         </main>
 
         <Toaster position="top-right" richColors />
-        <HelpWidget />
+        <HelpWidget open={helpOpen} onOpenChange={setHelpOpen} />
       </div>
     </RequireAuth>
   );

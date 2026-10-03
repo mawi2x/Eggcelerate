@@ -1,6 +1,15 @@
-import { ChevronRight, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronRight } from "lucide-react";
+import { useState } from "react";
 import logoApp from "../../imports/logo-app.webp";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { useIsMobile } from "./ui/use-mobile";
 
 const FAQS = [
   {
@@ -25,317 +34,113 @@ const FAQS = [
   },
 ] as const;
 
-export function HelpWidget() {
-  const [open, setOpen] = useState(false);
+export function HelpWidget({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-
-  // Dragging state
-  const [position, setPosition] = useState<{ x: number; y: number }>({
-    x: 0,
-    y: 0,
-  });
-  const dragRef = useRef<{
-    isDragging: boolean;
-    startX: number;
-    startY: number;
-    initialPosX: number;
-    initialPosY: number;
-    hasMoved: boolean;
-  }>({
-    isDragging: false,
-    startX: 0,
-    startY: 0,
-    initialPosX: 0,
-    initialPosY: 0,
-    hasMoved: false,
-  });
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    // Only drag on primary click / touch
-    if (e.button !== 0) return;
-    dragRef.current = {
-      isDragging: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      initialPosX: position.x,
-      initialPosY: position.y,
-      hasMoved: false,
-    };
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!dragRef.current.isDragging) return;
-    const dx = e.clientX - dragRef.current.startX;
-    const dy = e.clientY - dragRef.current.startY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-      dragRef.current.hasMoved = true;
-    }
-    if (dragRef.current.hasMoved) {
-      setPosition({
-        x: dragRef.current.initialPosX + dx,
-        y: dragRef.current.initialPosY + dy,
-      });
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!dragRef.current.isDragging) return;
-    try {
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-    } catch {
-      // ignore
-    }
-    const moved = dragRef.current.hasMoved;
-    dragRef.current.isDragging = false;
-    if (!moved) {
-      setOpen((v) => !v);
-    }
-  };
-
-  const closePanel = useCallback(() => {
-    setOpen(false);
-    triggerRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closePanel();
-      }
-    };
-
-    const handleOutsidePointer = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (
-        panelRef.current?.contains(target) ||
-        triggerRef.current?.contains(target)
-      ) {
-        return;
-      }
-      closePanel();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("pointerdown", handleOutsidePointer);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("pointerdown", handleOutsidePointer);
-    };
-  }, [open, closePanel]);
+  const isMobile = useIsMobile();
 
   return (
-    <div
-      className="fixed bottom-[var(--mobile-bottom-nav-clearance)] right-4 z-[70] touch-none select-none md:bottom-6 md:right-6"
-      style={{
-        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-      }}
-    >
-      {open && (
-        <div
-          ref={panelRef}
-          role="dialog"
-          aria-label="Eggcelerate help"
-          className="touch-auto select-auto absolute bottom-[68px] right-0 flex max-h-[min(520px,70vh)] w-[min(360px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl"
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="fixed bottom-6 right-6 z-40 hidden h-14 w-14 cursor-pointer items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 md:flex"
           style={{
             backgroundColor: "var(--surface-card)",
             border: "var(--border-width-hairline) solid var(--border-help)",
-            boxShadow: "var(--shadow-float)",
+            boxShadow: "var(--shadow-bubble)",
           }}
+          aria-label="Open Eggcelerate help"
         >
-          <div
-            className="flex items-center justify-between gap-3 px-4 py-3.5"
-            style={{
-              backgroundColor: "var(--surface-help)",
-              borderBottom:
-                "var(--border-width-hairline) solid var(--border-help-soft)",
-            }}
+          <img
+            src={logoApp}
+            alt=""
+            aria-hidden="true"
+            className="h-11 w-11 rounded-xl object-cover"
+          />
+          <span
+            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand-primary)] text-[var(--on-brand)]"
+            aria-hidden="true"
           >
-            <div className="flex min-w-0 items-center gap-2.5">
-              <img
-                src={logoApp}
-                alt=""
-                aria-hidden="true"
-                className="h-9 w-9 rounded-xl object-cover"
-              />
-              <div className="min-w-0">
-                <p
-                  style={{
-                    color: "var(--text-primary)",
-                    fontFamily: "var(--font-display)",
-                    fontSize: "var(--type-body)",
-                    fontWeight: "var(--weight-extrabold)",
-                    lineHeight: "var(--leading-snug)",
-                  }}
-                >
-                  Eggcelerate Help
-                </p>
-                <p
-                  style={{
-                    color: "var(--text-muted)",
-                    fontSize: "var(--type-label)",
-                  }}
-                >
-                  Quick answers for your incubator
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={closePanel}
-              className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--surface-help-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
-              style={{ color: "var(--text-secondary)" }}
-              aria-label="Close help"
-            >
-              <X size={17} />
-            </button>
-          </div>
-
-          <div className="overflow-y-auto p-4">
-            <div
-              className="rounded-[var(--radius-dialog)] rounded-tl-[var(--radius-mini)] px-3.5 py-3"
-              style={{
-                backgroundColor: "var(--surface-track)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <p style={{ fontSize: "var(--type-body-sm)", lineHeight: 1.45 }}>
-                Hi, Farmer! Choose a question below and I’ll help you find the
-                answer.
-              </p>
-            </div>
-
-            {selectedIndex !== null && (
-              <div className="mt-3 space-y-2.5" aria-live="polite">
-                <div
-                  className="ml-8 rounded-[var(--radius-dialog)] rounded-tr-[var(--radius-mini)] px-3.5 py-3"
-                  style={{
-                    backgroundColor: "var(--brand-primary)",
-                    color: "var(--on-brand)",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: "var(--type-body-sm)",
-                      fontWeight: "var(--weight-bold)",
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {FAQS[selectedIndex].question}
-                  </p>
-                </div>
-                <div
-                  className="mr-5 rounded-[var(--radius-dialog)] rounded-tl-[var(--radius-mini)] px-3.5 py-3"
-                  style={{
-                    backgroundColor: "var(--surface-track)",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  <p
-                    style={{ fontSize: "var(--type-body-sm)", lineHeight: 1.5 }}
-                  >
-                    {FAQS[selectedIndex].answer}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-4">
-              <p
-                style={{
-                  color: "var(--text-taupe)",
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-label)",
-                  fontWeight: "var(--weight-bold)",
-                  letterSpacing: "var(--tracking-label)",
-                  lineHeight: "var(--leading-snug)",
-                  textTransform: "uppercase",
-                }}
-              >
-                Frequently asked
-              </p>
-              <div className="mt-2 space-y-2">
-                {FAQS.map((faq, index) => (
-                  <button
-                    key={faq.question}
-                    type="button"
-                    onClick={() => setSelectedIndex(index)}
-                    className="flex min-h-[var(--control-height-default)] w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-help)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-[var(--control-height-compact)]"
-                    style={{
-                      border:
-                        "var(--border-width-hairline) solid var(--border-help-row)",
-                      color: "var(--text-help)",
-                    }}
-                    aria-pressed={selectedIndex === index}
-                  >
-                    <span
-                      style={{
-                        fontSize: "var(--type-body-sm)",
-                        fontWeight: "var(--weight-bold)",
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {faq.question}
-                    </span>
-                    <ChevronRight
-                      size={15}
-                      className="shrink-0"
-                      style={{ color: "var(--brand-primary)" }}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <button
-        ref={triggerRef}
-        type="button"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={() => {
-          dragRef.current.isDragging = false;
-        }}
-        className="relative flex h-14 w-14 cursor-grab items-center justify-center rounded-2xl transition-transform hover:-translate-y-0.5 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            ?
+          </span>
+        </button>
+      </DialogTrigger>
+      <DialogContent
+        hideClose
+        className="gap-0 rounded-2xl p-0 md:max-w-sm md:p-0"
         style={{
           backgroundColor: "var(--surface-card)",
-          border: "var(--border-width-hairline) solid var(--border-help)",
-          boxShadow: "var(--shadow-bubble)",
+          borderColor: "var(--border-help)",
         }}
-        aria-label={open ? "Close Eggcelerate help" : "Open Eggcelerate help"}
-        aria-expanded={open}
+        onCloseAutoFocus={(event) => {
+          if (isMobile) {
+            event.preventDefault();
+            document.getElementById("mobile-more-trigger")?.focus();
+          }
+        }}
       >
-        <img
-          src={logoApp}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none h-11 w-11 rounded-xl object-cover"
-        />
-        <span
-          className="pointer-events-none absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1"
+        <div
+          className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b px-4 py-3"
           style={{
-            backgroundColor: "var(--brand-primary)",
-            color: "var(--on-brand)",
-            border: "2px solid var(--surface-card)",
-            fontFamily: "var(--font-body)",
-            fontSize: "var(--type-label)",
-            fontWeight: "var(--weight-bold)",
-            lineHeight: "var(--leading-snug)",
-            letterSpacing: "var(--tracking-label)",
+            backgroundColor: "var(--surface-help)",
+            borderColor: "var(--border-help-soft)",
           }}
-          aria-hidden="true"
         >
-          ?
-        </span>
-      </button>
-    </div>
+          <div className="min-w-0">
+            <DialogTitle className="font-[var(--font-display)] text-[var(--text-primary)]">
+              Eggcelerate Help
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-(length:--type-body-sm)">
+              Quick answers for your incubator
+            </DialogDescription>
+          </div>
+          <DialogClose className="flex min-h-11 shrink-0 cursor-pointer items-center justify-center rounded-lg px-3 text-(length:--type-body) font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-help-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+            Close
+          </DialogClose>
+        </div>
+        <div className="space-y-4 p-4 text-(length:--type-body) text-[var(--text-secondary)]">
+          <p>Choose a question below to find the answer.</p>
+          <div className="space-y-2">
+            {FAQS.map((faq, index) => (
+              <div key={faq.question}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedIndex(selectedIndex === index ? null : index)
+                  }
+                  className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left font-bold hover:bg-[var(--surface-help)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
+                  style={{
+                    borderColor: "var(--border-help-row)",
+                    color: "var(--text-help)",
+                  }}
+                  aria-expanded={selectedIndex === index}
+                  aria-controls={`help-answer-${index}`}
+                >
+                  <span>{faq.question}</span>
+                  <ChevronRight
+                    size={18}
+                    aria-hidden="true"
+                    className={`shrink-0 text-[var(--brand-primary)] ${selectedIndex === index ? "rotate-90" : ""}`}
+                  />
+                </button>
+                <div
+                  id={`help-answer-${index}`}
+                  hidden={selectedIndex !== index}
+                  className="px-3 py-3 leading-relaxed"
+                >
+                  {faq.answer}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -123,7 +123,7 @@ export function ChamberCardFooter({
       )}
       style={{
         backgroundColor: "var(--surface-track)",
-        border: "1px solid var(--border-default)",
+        border: "var(--border-width-hairline) solid var(--border-default)",
         ...style,
       }}
     >

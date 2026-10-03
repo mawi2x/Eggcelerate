@@ -62,7 +62,7 @@ export function Timeline({
     badgeDayText = "DAY 0";
     badgeBg = "var(--surface-subtle)";
     badgeFg = "var(--text-secondary)";
-    badgeBorder = "1px solid var(--border-default)";
+    badgeBorder = "var(--border-width-hairline) solid var(--border-default)";
     badgeShadow = "var(--shadow-subtle)";
     arrowColor = "var(--text-secondary)";
   } else if (isOverdue) {
@@ -111,7 +111,7 @@ export function Timeline({
   return (
     <div className="w-full">
       <div className="max-w-full overflow-x-auto scrollbar-none">
-        <div className="min-w-[18.5rem] px-5 md:px-6">
+        <div className="min-w-[var(--timeline-min-width)] px-5 md:px-6">
           <div className="relative overflow-visible pt-16 pb-9 md:pt-18 md:pb-10">
             {/* Track frame — pinned with explicit headroom */}
             <div

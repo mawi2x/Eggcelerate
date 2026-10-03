@@ -104,12 +104,18 @@ describe("application screens render their accessible page structure", () => {
           await waitFor(
             () => document.body.querySelector('[role="dialog"]') !== null,
           );
+          await waitFor(
+            () =>
+              document.body
+                .querySelector('[role="dialog"]')
+                ?.textContent?.includes("2 chambers") === true,
+          );
           const readingsDialog =
             document.body.querySelector<HTMLElement>('[role="dialog"]');
           expect(readingsDialog?.textContent).toContain("2 chambers");
           expect(readingsDialog?.textContent).toContain("Chamber One");
           expect(readingsDialog?.textContent).toContain("Chamber Two");
-          expect(readingsDialog?.querySelectorAll("tbody tr").length).toBe(26);
+          expect(readingsDialog?.querySelectorAll("tbody tr").length).toBe(24);
           await act(async () =>
             document.dispatchEvent(
               new KeyboardEvent("keydown", {

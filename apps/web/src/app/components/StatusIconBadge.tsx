@@ -18,23 +18,23 @@ const toneBackgrounds: Record<StatusIconBadgeTone, string> = {
 
 const sizeTokens: Record<
   StatusIconBadgeSize,
-  { circle: string; glyph: number }
+  { circle: string; glyph: string }
 > = {
   sm: {
     circle: "var(--status-icon-badge-size-sm)",
-    glyph: 12,
+    glyph: "var(--status-icon-badge-glyph-sm)",
   },
   md: {
     circle: "var(--status-icon-badge-size-md)",
-    glyph: 18,
+    glyph: "var(--status-icon-badge-glyph-md)",
   },
   lg: {
     circle: "var(--status-icon-badge-size-lg)",
-    glyph: 36,
+    glyph: "var(--status-icon-badge-glyph-lg)",
   },
   banner: {
     circle: "var(--status-icon-badge-size-banner)",
-    glyph: 22,
+    glyph: "var(--status-icon-badge-glyph-banner)",
   },
 };
 
@@ -71,6 +71,6 @@ export function StatusIconBadge({
   );
 }
 
-export function statusIconBadgeGlyphSize(size: StatusIconBadgeSize): number {
+export function statusIconBadgeGlyphSize(size: StatusIconBadgeSize): string {
   return sizeTokens[size].glyph;
 }

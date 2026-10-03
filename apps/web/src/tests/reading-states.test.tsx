@@ -34,6 +34,11 @@ async function mountRoute(
   route: string,
   repository: InMemoryEggcelerateRepository,
 ) {
+  // These cases measure reading recovery. Preload the module so concurrent
+  // transforms cannot consume the short UI wait; lazy failures have separate tests.
+  if (route === "/trends")
+    await import("../app/components/screens/TrendsScreen");
+  else await import("../app/components/screens/DetailScreen");
   const location = memoryLocation({ path: route, record: true });
   const queryClient: QueryClient = createAppQueryClient();
   queryClient.setDefaultOptions({

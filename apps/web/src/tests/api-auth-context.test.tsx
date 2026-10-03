@@ -69,6 +69,45 @@ describe("API auth state", () => {
       vi.unstubAllGlobals();
     }
   });
+  it("a delayed session response cannot restore identity or CSRF after expiry", async () => {
+    let release!: (value: Response) => void;
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const client = createAppQueryClient();
+    const mounted = await render(
+      <AppProviders
+        repository={new InMemoryEggcelerateRepository()}
+        authApiBaseUrl="/api"
+        queryClient={client}
+      >
+        <AuthStatus />
+      </AppProviders>,
+    );
+    try {
+      await act(async () =>
+        window.dispatchEvent(new Event("eggcelerate:session-expired")),
+      );
+      await act(async () =>
+        release({
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true, data: identity }),
+        } as Response),
+      );
+      expect(mounted.container.textContent).toContain("unauthenticated");
+      expect(getCsrfToken()).toBeNull();
+      expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true);
+    } finally {
+      await mounted.unmount();
+      client.clear();
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 function AuthStatus() {

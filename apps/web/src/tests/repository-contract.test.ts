@@ -15,6 +15,41 @@ if (liveUrl) {
 }
 
 describe.each(targets)("repository contract (%s)", (_name, factory) => {
+  it("bounds chart data and exports every raw sample in a fixed scope", async () => {
+    const repository = factory();
+    const chart = await repository.listReadings({
+      incubatorId: "chamber-12",
+      window: "full",
+      resolution: "chart",
+    });
+    expect(chart.ok).toBe(true);
+    if (!chart.ok) return;
+    expect(chart.data.length).toBeLessThanOrEqual(600);
+    const preview = await repository.previewRawReadings({
+      incubatorIds: ["chamber-12", "chamber-1"],
+      window: "full",
+      end: new Date().toISOString(),
+    });
+    expect(preview.ok).toBe(true);
+    if (!preview.ok) return;
+    expect(preview.data.rows.length).toBeLessThanOrEqual(200);
+    const exported = await repository.exportRawReadings(
+      preview.data.scopeToken,
+    );
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    const csv =
+      "text" in exported.data
+        ? await exported.data.text()
+        : await new Promise<string>((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(String(r.result));
+            r.onerror = reject;
+            r.readAsText(exported.data);
+          });
+    expect(csv.trim().split("\n")).toHaveLength(preview.data.total + 1);
+  });
+
   it("lists the seeded farm and reads one chamber", async () => {
     const repository = factory();
     const listed = await repository.listIncubators();

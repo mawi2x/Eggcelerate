@@ -1,9 +1,12 @@
 import { Check, CheckCheck, Eraser, X } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import logoApp from "../../../imports/logo-app.webp";
 import type { AlertEntry, AlertSeverity } from "../../domain/types";
+import type { FeatureQueryState } from "../../features/farm/query-state";
+import { AlertConditionStatus } from "../alerts/AlertConditionStatus";
 import { severityStyle, timeAgo } from "../alerts/alertStyle";
+import { FeatureDataStatus } from "../FeatureDataStatus";
 import { Button } from "../ui/button";
 import { FilterBar } from "../ui/filter-bar";
 import {
@@ -47,7 +50,7 @@ const severityTint: Record<
   },
 };
 
-type Filter = "all" | "unread" | "important";
+type Filter = "all" | "unread" | "important" | "active";
 type SortKey = "recent" | "oldest" | "severity";
 
 const severityRank: Record<AlertSeverity, number> = {
@@ -58,6 +61,7 @@ const severityRank: Record<AlertSeverity, number> = {
 
 interface Props {
   alerts: AlertEntry[];
+  dataStatus?: FeatureQueryState;
   onAcknowledge: (id: string) => Promise<boolean>;
   onDismiss: (id: string) => Promise<boolean>;
   onMarkAllRead: () => Promise<boolean>;
@@ -72,6 +76,7 @@ interface Props {
 
 export function AlertsScreen({
   alerts,
+  dataStatus,
   onAcknowledge,
   onDismiss,
   onMarkAllRead,
@@ -84,6 +89,18 @@ export function AlertsScreen({
 }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<SortKey>("recent");
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [toolbarHeight, setToolbarHeight] = useState(0);
+  useLayoutEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+    const measure = () =>
+      setToolbarHeight(toolbar.getBoundingClientRect().height);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, []);
 
   const list = useMemo(() => {
     const filtered = alerts.filter((a) =>
@@ -91,8 +108,10 @@ export function AlertsScreen({
         ? true
         : filter === "unread"
           ? !a.acknowledged
-          : a.severity === "critical" ||
-            (a.severity === "warning" && !a.acknowledged),
+          : filter === "active"
+            ? a.conditionState === "active"
+            : a.severity === "critical" ||
+              (a.severity === "warning" && !a.acknowledged),
     );
     const byTime = (a: AlertEntry, b: AlertEntry) =>
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
@@ -132,14 +151,9 @@ export function AlertsScreen({
 
   return (
     <div className="space-y-0">
-      {/*
-       * Keep these heights and the day-header offsets in lockstep: each
-       * day header docks flush against the frozen toolbar (same top as the
-       * toolbar height per breakpoint). Any gap pushes the header down over
-       * the first row at rest and leaves a slit of scrolling rows when stuck.
-       */}
       <div
-        className="sticky top-0 z-30 flex h-[180px] flex-col gap-2 md:h-[199px] md:gap-3 lg:h-[151px]"
+        ref={toolbarRef}
+        className="sticky top-0 z-30 flex flex-col gap-2 md:gap-3"
         style={{
           backgroundColor: "var(--surface-app)",
           paddingBottom: 24,
@@ -152,12 +166,18 @@ export function AlertsScreen({
           <FilterBar
             ariaLabel="Alert filter"
             variant="segmented"
-            fitToScreenOnMobile
+            equalWidthOnMobile
             value={filter}
             onChange={(key) => setFilter(key as Filter)}
             options={[
               { key: "all", label: "All", count: alerts.length },
               { key: "unread", label: "Unread", count: unreadCount },
+              {
+                key: "active",
+                label: "Active",
+                count: alerts.filter((a) => a.conditionState === "active")
+                  .length,
+              },
               {
                 key: "important",
                 label: "Important",
@@ -236,12 +256,17 @@ export function AlertsScreen({
         </div>
       </div>
 
+      {dataStatus && (
+        <FeatureDataStatus label="Farm alerts" state={dataStatus} />
+      )}
       {/* ── One unified feed container ──────────────────────────────────── */}
       <section
         aria-label="Notifications"
         className="overflow-clip rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-sm"
       >
-        {list.length === 0 ? (
+        {list.length === 0 &&
+        dataStatus &&
+        !dataStatus.hasData ? null : list.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-5 py-14 text-center">
             <img
               src={logoApp}
@@ -268,8 +293,8 @@ export function AlertsScreen({
                 color: MUTED,
               }}
             >
-              No {filter === "all" ? "" : filter} notifications right now. Your
-              eggs are happy.
+              No {filter === "all" ? "" : filter} notifications to show. Check
+              Monitoring for current device readings.
             </p>
           </div>
         ) : (
@@ -277,11 +302,15 @@ export function AlertsScreen({
             {groupedAlerts.map((g, gi) => (
               <li key={g.group}>
                 <h2
-                  className="sticky top-[180px] z-10 md:top-[199px] lg:top-[151px]"
+                  className="sticky z-10"
                   style={{
+                    top: toolbarHeight,
                     padding: "10px 20px 8px",
-                    borderTop: gi === 0 ? "none" : `1px solid ${DIVIDER}`,
-                    borderBottom: `1px solid ${DIVIDER}`,
+                    borderTop:
+                      gi === 0
+                        ? "none"
+                        : `var(--border-width-hairline) solid ${DIVIDER}`,
+                    borderBottom: `var(--border-width-hairline) solid ${DIVIDER}`,
                     backgroundColor: "var(--surface-card)",
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-label)",
@@ -415,6 +444,7 @@ export function AlertsScreen({
                           >
                             {a.message}
                           </p>
+                          <AlertConditionStatus alert={a} />
                         </div>
 
                         {/* Column 3 — severity pill above timestamp + quick actions */}
@@ -427,7 +457,7 @@ export function AlertsScreen({
                             style={{
                               backgroundColor: tint.pill,
                               color: tint.pillFg,
-                              border: `1px solid ${tint.tile}`,
+                              border: `var(--border-width-hairline) solid ${tint.tile}`,
                               fontFamily: "var(--font-body)",
                               fontSize: "var(--type-label)",
                               fontWeight: "var(--weight-bold)",

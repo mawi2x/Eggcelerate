@@ -189,7 +189,7 @@ export function FilterBar({
             ? "var(--brand-primary)"
             : "var(--surface-card)",
           color: active ? "var(--on-brand)" : "var(--text-muted)",
-          border: `1px solid ${active ? "var(--brand-primary)" : "var(--border-default)"}`,
+          border: `var(--border-width-hairline) solid ${active ? "var(--brand-primary)" : "var(--border-default)"}`,
           fontFamily: "var(--font-body)",
           fontSize: "var(--type-label)",
           fontWeight: "var(--weight-bold)",
@@ -222,7 +222,7 @@ export function FilterBar({
           type="button"
           tabIndex={arrowsEnabled && canScrollLeft ? 0 : -1}
           onClick={() => scrollBy(-140)}
-          className="pointer-events-auto flex h-11 w-11 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-start text-[var(--text-secondary)] opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          className="pointer-events-auto flex h-11 w-11 min-h-[var(--control-hit-area-icon)] min-w-[var(--control-hit-area-icon)] cursor-pointer items-center justify-start text-[var(--text-secondary)] opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label="Show previous filters"
         >
           <ChevronLeft size={16} strokeWidth={2.5} aria-hidden="true" />
@@ -273,7 +273,7 @@ export function FilterBar({
           type="button"
           tabIndex={arrowsEnabled && canScrollRight ? 0 : -1}
           onClick={() => scrollBy(140)}
-          className="pointer-events-auto flex h-11 w-11 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-end text-[var(--brand-primary)] opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          className="pointer-events-auto flex h-11 w-11 min-h-[var(--control-hit-area-icon)] min-w-[var(--control-hit-area-icon)] cursor-pointer items-center justify-end text-[var(--brand-primary)] opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label="Show more filters"
         >
           <ChevronRight size={16} strokeWidth={2.5} aria-hidden="true" />

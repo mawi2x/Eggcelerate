@@ -265,7 +265,7 @@ export function DetailScreen({
           className="flex min-h-20 flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm"
           style={{
             backgroundColor: "var(--surface-subtle)",
-            border: `1px solid var(--border-default)`,
+            border: `var(--border-width-hairline) solid var(--border-default)`,
           }}
         >
           <span
@@ -298,7 +298,7 @@ export function DetailScreen({
             style={{
               backgroundColor: "var(--brand-primary-hover)",
               color: "var(--on-brand)",
-              height: 34,
+              height: "var(--control-height-mobile)",
             }}
           >
             Set Up
@@ -317,7 +317,7 @@ export function DetailScreen({
           className="max-h-[var(--dialog-height-max)] overflow-y-auto p-0 shadow-2xl md:max-w-[var(--dialog-width-wide)]"
           style={{
             backgroundColor: "var(--surface-subtle)",
-            border: `1px solid var(--border-default)`,
+            border: `var(--border-width-hairline) solid var(--border-default)`,
             borderRadius: "var(--radius-card)",
           }}
         >
@@ -458,7 +458,8 @@ export function DetailScreen({
                   className="rounded-[var(--radius-dialog)] p-4"
                   style={{
                     backgroundColor: "var(--surface-app)",
-                    border: "1px solid var(--border-preview)",
+                    border:
+                      "var(--border-width-hairline) solid var(--border-preview)",
                   }}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -518,7 +519,10 @@ export function DetailScreen({
                         <div
                           key={item.label}
                           className="min-w-0 rounded-[var(--radius-dialog)] bg-[var(--surface-card)] p-3"
-                          style={{ border: "1px solid var(--border-preview)" }}
+                          style={{
+                            border:
+                              "var(--border-width-hairline) solid var(--border-preview)",
+                          }}
                         >
                           <Icon
                             size={16}
@@ -556,7 +560,7 @@ export function DetailScreen({
               className="sticky bottom-0 px-5 py-4"
               style={{
                 backgroundColor: "var(--surface-subtle)",
-                borderTop: `1px solid var(--border-default)`,
+                borderTop: `var(--border-width-hairline) solid var(--border-default)`,
               }}
             >
               <div className="flex items-center justify-between gap-2">
@@ -638,7 +642,7 @@ export function DetailScreen({
               style={{
                 borderColor: "var(--border-default)",
                 color: "var(--text-secondary)",
-                height: 34,
+                height: "var(--control-height-mobile)",
                 fontSize: "var(--type-body)",
               }}
             >
@@ -649,7 +653,7 @@ export function DetailScreen({
               style={{
                 backgroundColor: "var(--brand-primary)",
                 color: "var(--surface-card)",
-                height: 34,
+                height: "var(--control-height-mobile)",
                 fontSize: "var(--type-body)",
               }}
               disabled={isUpdating}
@@ -699,7 +703,7 @@ export function DetailScreen({
           className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4 shadow-sm"
           style={{
             backgroundColor: "var(--status-warning-bg)",
-            border: `1px solid var(--border-default)`,
+            border: `var(--border-width-hairline) solid var(--border-default)`,
           }}
         >
           <span
@@ -739,7 +743,7 @@ export function DetailScreen({
           className="flex min-h-20 flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm"
           style={{
             backgroundColor: "var(--status-warning-bg)",
-            border: `1px solid var(--border-default)`,
+            border: `var(--border-width-hairline) solid var(--border-default)`,
           }}
         >
           <span
@@ -773,7 +777,7 @@ export function DetailScreen({
             style={{
               backgroundColor: "var(--brand-primary-hover)",
               color: "var(--on-brand)",
-              height: 34,
+              height: "var(--control-height-mobile)",
             }}
           >
             Finish Cycle

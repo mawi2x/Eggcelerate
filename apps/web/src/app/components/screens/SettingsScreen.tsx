@@ -134,7 +134,10 @@ export function SettingsScreen({
 
       <div
         className="min-w-0 flex-1 rounded-2xl"
-        style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
+        style={{
+          backgroundColor: SURFACE,
+          border: `var(--border-width-hairline) solid ${BORDER}`,
+        }}
       >
         <div className="p-4 md:p-6">
           {category === "modes" && (
@@ -203,7 +206,7 @@ export function SettingsScreen({
                 ? "var(--surface-card)"
                 : "var(--scrim-card)",
               backdropFilter: "blur(8px)",
-              borderTop: `1px solid ${isDirty ? "var(--brand-primary-soft)" : BORDER}`,
+              borderTop: `var(--border-width-hairline) solid ${isDirty ? "var(--brand-primary-soft)" : BORDER}`,
             }}
           >
             <span

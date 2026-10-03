@@ -74,7 +74,7 @@ export function HarvestModal({
         className="w-[90vw] max-w-[var(--dialog-width-narrow)] max-h-[88vh] overflow-y-auto p-0 shadow-2xl [&>[data-slot=dialog-close]]:hidden"
         style={{
           backgroundColor: "var(--surface-subtle)",
-          border: `1px solid var(--border-default)`,
+          border: `var(--border-width-hairline) solid var(--border-default)`,
           borderRadius: "var(--radius-card)",
         }}
       >
@@ -174,7 +174,7 @@ export function HarvestModal({
             className="flex items-center justify-between rounded-xl px-3.5 py-2.5"
             style={{
               backgroundColor: "var(--surface-subtle)",
-              border: `1px solid var(--border-default)`,
+              border: `var(--border-width-hairline) solid var(--border-default)`,
             }}
           >
             <div>
@@ -234,14 +234,17 @@ export function HarvestModal({
           className="sticky bottom-0 px-5 py-4"
           style={{
             backgroundColor: "var(--surface-subtle)",
-            borderTop: `1px solid var(--border-default)`,
+            borderTop: `var(--border-width-hairline) solid var(--border-default)`,
           }}
         >
           <div className="flex items-center justify-between gap-2">
             <Button
               variant="ghost"
               className="rounded-full"
-              style={{ height: 34, fontSize: "var(--type-body)" }}
+              style={{
+                height: "var(--control-height-mobile)",
+                fontSize: "var(--type-body)",
+              }}
               onClick={() => onOpenChange(false)}
               disabled={isSaving}
             >
@@ -256,7 +259,7 @@ export function HarvestModal({
                 backgroundColor: "var(--brand-primary)",
                 color: "var(--on-brand)",
                 opacity: !valid || isSaving ? 0.5 : 1,
-                height: 34,
+                height: "var(--control-height-mobile)",
                 fontSize: "var(--type-body)",
               }}
             >

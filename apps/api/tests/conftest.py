@@ -92,6 +92,7 @@ def seed(settings):
 def settings(database_url):
     settings = Settings(
         app_env="test",
+        alert_evaluation_interval=0,
         storage_backend="postgres_modes",
         database_url=database_url,
         default_farm_id=str(uuid4()),

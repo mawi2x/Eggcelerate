@@ -67,7 +67,7 @@ export function StopCycleModal({
             style={{
               borderColor: "var(--border-default)",
               color: "var(--text-secondary)",
-              height: 34,
+              height: "var(--control-height-mobile)",
               fontSize: "var(--type-body)",
             }}
             disabled={isStopping}
@@ -79,7 +79,7 @@ export function StopCycleModal({
             style={{
               backgroundColor: "var(--status-danger-fg)",
               color: "var(--surface-card)",
-              height: 34,
+              height: "var(--control-height-mobile)",
               fontSize: "var(--type-body)",
             }}
             disabled={isStopping}

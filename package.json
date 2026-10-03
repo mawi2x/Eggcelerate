@@ -2,6 +2,9 @@
   "name": "eggcelerate",
   "private": true,
   "packageManager": "pnpm@9.12.3",
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  },
   "scripts": {
     "dev:web": "pnpm --filter eggcelerate-ui dev",
     "build:web": "pnpm --filter eggcelerate-ui build",
@@ -13,7 +16,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "6.3.5"
+      "vite": "8.3.2"
     }
   },
   "devDependencies": {

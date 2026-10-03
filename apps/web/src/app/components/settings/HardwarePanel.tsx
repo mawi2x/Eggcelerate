@@ -376,7 +376,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                         color: MUTED,
                         fontSize: "var(--type-caption)",
                         fontWeight: "var(--weight-bold)",
-                        border: `1px solid ${BORDER}`,
+                        border: `var(--border-width-hairline) solid ${BORDER}`,
                       }}
                     >
                       Unavailable

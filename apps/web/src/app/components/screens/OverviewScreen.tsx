@@ -28,7 +28,7 @@ const TEXT = "var(--text-primary)";
 const HEADING = "var(--text-primary)";
 
 const conditionRowStyle = `
-.condition-row{position:relative;background:var(--surface-card);border:1px solid var(--border-default);border-radius:12px;transition:background-color 0.2s ease-in-out, border-color 0.2s ease-in-out}
+.condition-row{position:relative;background:var(--surface-card);border:var(--border-width-hairline) solid var(--border-default);border-radius:12px;transition:background-color 0.2s ease-in-out, border-color 0.2s ease-in-out}
 .condition-row:hover{background:var(--nav-hover-bg);border-color:var(--nav-hover-border)}
 `;
 
@@ -134,7 +134,7 @@ function OffTargetRow({
                   ? "var(--status-danger-fg)"
                   : "var(--text-bark)"
                 : "var(--status-success-fg)",
-              border: `1px solid ${isOff ? (isUrgent ? "var(--border-blush)" : "var(--border-peach)") : "var(--border-mint)"}`,
+              border: `var(--border-width-hairline) solid ${isOff ? (isUrgent ? "var(--border-blush)" : "var(--border-peach)") : "var(--border-mint)"}`,
             }}
           >
             {rank}
@@ -241,7 +241,7 @@ function MiniCard({
         type="button"
         aria-labelledby={`mini-card-${unit.id}`}
         onClick={() => onOpen(unit.id)}
-        className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-[8px] border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] md:rounded-[var(--radius-dialog)] md:p-4"
+        className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-[var(--radius-overview-card-mobile)] border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] md:rounded-[var(--radius-dialog)] md:p-4"
       >
         {/* Top-left header stack — name over mode over progress. */}
         <div className="relative w-full min-w-0 text-left">

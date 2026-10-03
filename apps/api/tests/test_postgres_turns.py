@@ -2,6 +2,7 @@
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 from fastapi.testclient import TestClient
 from sqlalchemy import event, select
@@ -88,15 +89,43 @@ def test_turn_receipt_failure_rolls_back_runtime(settings):
 
 
 def test_concurrent_turn_replay(settings):
-    def send():
-        with TestClient(create_app(settings)) as client:
+    barrier = Barrier(2)
+    # Initialize route graphs before racing requests, as in the mode replay test.
+    # Separate running API instances must share one durable turn receipt; creating
+    # FastAPI apps concurrently in one process is outside this storage contract.
+    clients = [TestClient(create_app(settings)) for _ in range(2)]
+
+    def send(client):
+        with client:
+            barrier.wait(timeout=10)
             response = client.post(TURN, headers={"Idempotency-Key": "same"})
             assert response.status_code == 200
             return response.json()
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        responses = list(executor.map(lambda _: send(), range(2)))
+        responses = list(executor.map(send, clients))
     assert responses[0] == responses[1]
+
+    async def verify():
+        db = PostgresStore(settings.database_url, settings.default_farm_id)
+        try:
+            async with db.sessions() as session:
+                rows = (
+                    (
+                        await session.execute(
+                            select(cycle_idempotency.c.key).where(
+                                cycle_idempotency.c.farm_id == db.farm_id
+                            )
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
+                assert rows == ["same"]
+        finally:
+            await db.close()
+
+    asyncio.run(verify())
 
 
 def test_mode_delete_replay_after_restart(settings):

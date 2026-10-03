@@ -97,6 +97,7 @@ async def query_readings(
     end: datetime,
     *,
     research: bool = False,
+    bucket_seconds: int = 300,
 ) -> list[dict[str, Any]]:
     """UTC [start, end); research aggregates only samples inside that interval.
 
@@ -112,9 +113,9 @@ async def query_readings(
             "Reading bounds must be aware timestamps with start before end.",
         )
     if research:
-        bucket = func.time_bucket(timedelta(minutes=5), samples.c.observed_at).label(
-            "bucket_start"
-        )
+        bucket = func.time_bucket(
+            timedelta(seconds=bucket_seconds), samples.c.observed_at
+        ).label("bucket_start")
         columns = [bucket, func.count().label("count")]
         for name in ("temperature_c", "humidity_pct"):
             column = samples.c[name]

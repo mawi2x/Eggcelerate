@@ -117,6 +117,51 @@ export const ReadingDTOSchema = z
   })
   .strict();
 
+export const ChartReadingDTOSchema = z
+  .object({
+    observed_at: UtcTimestampSchema,
+    temperature_c: z.number(),
+    humidity_pct: z.number().min(0).max(100),
+    temperature_min: z.number(),
+    temperature_max: z.number(),
+    humidity_min: z.number(),
+    humidity_max: z.number(),
+    sample_count: z.number().int().positive(),
+    bucket_seconds: z.number().int().positive(),
+    water_not_ok_count: z.number().int().nonnegative(),
+  })
+  .strict();
+export const RawReadingPreviewDTOSchema = z
+  .object({
+    rows: z
+      .array(
+        ReadingDTOSchema.extend({
+          incubator_id: IdentifierSchema,
+          chamber: z.string(),
+        }),
+      )
+      .max(200),
+    total: z.number().int().nonnegative(),
+    end: UtcTimestampSchema,
+    scope_token: z.string().min(1),
+  })
+  .strict();
+export function chartReadingFromDTO(input: unknown): Reading {
+  const p = ChartReadingDTOSchema.parse(input);
+  return {
+    ts: Date.parse(p.observed_at),
+    time: readingTimeLabel(p.observed_at),
+    temp: p.temperature_c,
+    humidity: p.humidity_pct,
+    tempMin: p.temperature_min,
+    tempMax: p.temperature_max,
+    humidityMin: p.humidity_min,
+    humidityMax: p.humidity_max,
+    sampleCount: p.sample_count,
+    bucketSeconds: p.bucket_seconds,
+  };
+}
+
 export const AlertDTOSchema = z
   .object({
     id: IdentifierSchema,
@@ -128,6 +173,13 @@ export const AlertDTOSchema = z
     message: z.string().min(1),
     occurred_at: UtcTimestampSchema,
     acknowledged_at: UtcTimestampSchema.nullable(),
+    device_id: z.string().uuid().nullable().optional(),
+    condition_state: z.enum(["active", "resolved"]).nullable().optional(),
+    resolved_at: UtcTimestampSchema.nullable().optional(),
+    resolution_reason: z
+      .enum(["recovered", "configuration_changed", "monitoring_ended"])
+      .nullable()
+      .optional(),
   })
   .strict();
 
@@ -357,6 +409,9 @@ export function alertFromDTO(input: unknown): AlertEntry {
     message: dto.message,
     timestamp: dto.occurred_at,
     acknowledged: dto.acknowledged_at !== null,
+    conditionState: dto.condition_state ?? undefined,
+    resolvedAt: dto.resolved_at ?? undefined,
+    resolutionReason: dto.resolution_reason ?? undefined,
   };
 }
 

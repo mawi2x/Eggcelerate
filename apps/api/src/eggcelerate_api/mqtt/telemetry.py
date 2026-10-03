@@ -8,8 +8,9 @@ from pydantic import AwareDatetime, Field, StrictBool, StrictInt, ValidationErro
 from sqlalchemy import and_, delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..database.alert_episodes import evaluate_farm
 from ..database.readings import TelemetrySample, ingest_sample
-from ..database.schema import device_telemetry_state, devices, incubators
+from ..database.schema import device_telemetry_state, devices, farms, incubators
 from ..errors import AppError
 from .clock import DEVICE_CLOCK_TOLERANCE
 
@@ -65,6 +66,10 @@ async def ingest_telemetry(
         raise AppError(
             "validation_error", "Telemetry observation is too far in the future."
         )
+    # Same lock order as API mutations and periodic evaluation.
+    await session.scalar(
+        select(farms.c.id).where(farms.c.id == farm_id).with_for_update()
+    )
     device = await session.scalar(
         select(devices.c.id)
         .join(
@@ -166,6 +171,14 @@ async def ingest_telemetry(
             and message.observed_at > current["observed_at"]
         )
     )
+    # A gap cannot count as sustained bad readings, even after a restart where
+    # the periodic evaluator was absent. Evaluate stale evidence before replacing it.
+    if (
+        newer
+        and current is not None
+        and (received_at - current["last_seen_at"]).total_seconds() > 45
+    ):
+        await evaluate_farm(session, farm_id, now=received_at, farm_locked=True)
     if current is None:
         await session.execute(
             device_telemetry_state.insert().values(
@@ -181,4 +194,6 @@ async def ingest_telemetry(
             )
             .values(**projection)
         )
+    if newer:
+        await evaluate_farm(session, farm_id, now=received_at, farm_locked=True)
     return inserted

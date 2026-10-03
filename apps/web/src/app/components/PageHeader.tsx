@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import type { AlertEntry } from "../domain/types";
+import type { FeatureQueryState } from "../features/farm/query-state";
 import { NotificationPopover } from "./alerts/NotificationPopover";
 import { LiveDateTime } from "./LiveDateTime";
 import { Typography } from "./ui/typography";
@@ -11,6 +12,7 @@ interface Props {
   alertCount: number;
   onViewAlerts: () => void;
   alerts: AlertEntry[];
+  alertsStatus?: FeatureQueryState;
   onMarkAllRead: () => Promise<boolean>;
   onDismissAlert: (id: string) => Promise<boolean>;
   pendingAlertId?: string | null;
@@ -44,6 +46,7 @@ export function PageHeader({
   alertCount,
   onViewAlerts,
   alerts,
+  alertsStatus,
   onMarkAllRead,
   onDismissAlert,
   pendingAlertId = null,
@@ -102,6 +105,7 @@ export function PageHeader({
             </button>
             <div className="shrink-0 pt-0.5">
               <NotificationPopover
+                serverStatus={alertsStatus}
                 alerts={alerts}
                 unreadCount={alertCount}
                 onViewAll={onViewAlerts}
@@ -148,6 +152,7 @@ export function PageHeader({
           {!onBack && (
             <div className="shrink-0 pt-0.5">
               <NotificationPopover
+                serverStatus={alertsStatus}
                 alerts={alerts}
                 unreadCount={alertCount}
                 onViewAll={onViewAlerts}
@@ -186,6 +191,7 @@ export function PageHeader({
           </button>
           <div className="shrink-0">
             <NotificationPopover
+              serverStatus={alertsStatus}
               alerts={alerts}
               unreadCount={alertCount}
               onViewAll={onViewAlerts}
@@ -228,6 +234,7 @@ export function PageHeader({
             {showDateTime ? <LiveDateTime /> : null}
             {!onBack && (
               <NotificationPopover
+                serverStatus={alertsStatus}
                 alerts={alerts}
                 unreadCount={alertCount}
                 onViewAll={onViewAlerts}

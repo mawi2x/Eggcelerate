@@ -49,10 +49,10 @@ function SystemStatusTile({
 }) {
   return (
     <div
-      className="flex min-h-[50px] items-center gap-2 rounded-[var(--radius-compact)] px-2.5 py-2 md:min-h-16 md:gap-3 md:px-3.5 md:py-3"
+      className="flex min-h-[var(--monitor-summary-min-height-mobile)] items-center gap-2 rounded-[var(--radius-compact)] px-2.5 py-2 md:min-h-16 md:gap-3 md:px-3.5 md:py-3"
       style={{
         backgroundColor: "var(--surface-porcelain)",
-        border: `1px solid var(--border-default)`,
+        border: `var(--border-width-hairline) solid var(--border-default)`,
       }}
     >
       <span
@@ -126,7 +126,7 @@ function ExtremumTile({
       className="rounded-[var(--radius-compact)] px-3 py-2 md:px-3.5 md:py-3"
       style={{
         backgroundColor: "var(--surface-porcelain)",
-        border: `1px solid var(--border-default)`,
+        border: `var(--border-width-hairline) solid var(--border-default)`,
       }}
     >
       <div className="flex items-center gap-1.5 md:gap-2">
@@ -184,12 +184,14 @@ function ExtremumTile({
           fontWeight: "var(--weight-regular)",
           lineHeight: "var(--leading-snug)",
         }}
-        title={`${stamp.date} at ${stamp.time}`}
+        title={`${reading.bucketSeconds ? "Bucket starting " : ""}${stamp.date} at ${stamp.time}`}
       >
         <span className="md:hidden">
+          {reading.bucketSeconds ? "Bucket: " : ""}
           {stamp.shortDate} at {stamp.time}
         </span>
         <span className="hidden md:inline">
+          {reading.bucketSeconds ? "Bucket starting " : ""}
           {stamp.date} at {stamp.time}
         </span>
       </p>
@@ -241,21 +243,37 @@ function EnvironmentalSummary({
     );
   }
 
-  const highestTemp = readings.reduce(
+  const temperatureHighs = readings.map((p) => ({
+    ...p,
+    temp: p.tempMax ?? p.temp,
+  }));
+  const temperatureLows = readings.map((p) => ({
+    ...p,
+    temp: p.tempMin ?? p.temp,
+  }));
+  const humidityHighs = readings.map((p) => ({
+    ...p,
+    humidity: p.humidityMax ?? p.humidity,
+  }));
+  const humidityLows = readings.map((p) => ({
+    ...p,
+    humidity: p.humidityMin ?? p.humidity,
+  }));
+  const highestTemp = temperatureHighs.reduce(
     (best, reading) => (reading.temp > best.temp ? reading : best),
-    readings[0],
+    temperatureHighs[0],
   );
-  const lowestTemp = readings.reduce(
+  const lowestTemp = temperatureLows.reduce(
     (best, reading) => (reading.temp < best.temp ? reading : best),
-    readings[0],
+    temperatureLows[0],
   );
-  const highestHumidity = readings.reduce(
+  const highestHumidity = humidityHighs.reduce(
     (best, reading) => (reading.humidity > best.humidity ? reading : best),
-    readings[0],
+    humidityHighs[0],
   );
-  const lowestHumidity = readings.reduce(
+  const lowestHumidity = humidityLows.reduce(
     (best, reading) => (reading.humidity < best.humidity ? reading : best),
-    readings[0],
+    humidityLows[0],
   );
   const latest = [...readings].sort((a, b) => b.ts - a.ts).slice(0, 3);
 
@@ -319,7 +337,7 @@ function EnvironmentalSummary({
       <details
         className="group scroll-mt-24 scroll-mb-[var(--mobile-bottom-nav-clearance)] rounded-[var(--radius-dialog)]"
         style={{
-          border: `1px solid var(--border-default)`,
+          border: `var(--border-width-hairline) solid var(--border-default)`,
           backgroundColor: "var(--surface-porcelain)",
         }}
         onToggle={(e) => {

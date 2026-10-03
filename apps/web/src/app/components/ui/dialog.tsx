@@ -55,7 +55,7 @@ const DIALOG_SIZE_CLASSES: Record<"default" | "large" | "fullscreen", string> =
   {
     default: "md:max-w-lg",
     large: "md:max-w-5xl",
-    fullscreen: "md:max-w-[1600px] md:w-[94vw]",
+    fullscreen: "md:max-w-[var(--dialog-width-fullscreen)] md:w-[94vw]",
   };
 
 const DialogContent = React.forwardRef<

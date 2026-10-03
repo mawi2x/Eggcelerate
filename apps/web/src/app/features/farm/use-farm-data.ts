@@ -26,6 +26,7 @@ import type {
 import { useAuth } from "../../providers/auth-context";
 import { useRepository } from "../../providers/repository-context";
 import { farmQueryKeys } from "./query-keys";
+import { featureQueryState } from "./query-state";
 import {
   mutationErrorPresentation,
   requireResultData,
@@ -69,7 +70,7 @@ async function runMutation(
   }
 }
 
-export function useFarmData() {
+export function useFarmData(historyActive = false) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -94,29 +95,38 @@ export function useFarmData() {
       ? TELEMETRY_POLL_INTERVAL_MS
       : false,
     refetchIntervalInBackground: false,
+    refetchOnWindowFocus: "always",
   });
   const alertsQuery = useQuery({
     queryKey: farmQueryKeys.alerts,
     queryFn: async () => requireResultData(await repository.listAlerts()),
     enabled,
+    staleTime: TELEMETRY_POLL_INTERVAL_MS,
+    refetchInterval: TELEMETRY_REFRESH_ENABLED
+      ? TELEMETRY_POLL_INTERVAL_MS
+      : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: "always",
   });
   const hatchRecordsQuery = useQuery({
     queryKey: farmQueryKeys.hatchRecords,
     queryFn: async () => requireResultData(await repository.listHatchRecords()),
     enabled,
+    staleTime: 60_000,
+    refetchInterval: TELEMETRY_REFRESH_ENABLED ? 60_000 : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: "always",
   });
   const settingsQuery = useQuery({
     queryKey: farmQueryKeys.settings,
     queryFn: async () => requireResultData(await repository.listSettings()),
     enabled,
   });
-  const queries = [
-    modesQuery,
-    incubatorsQuery,
-    alertsQuery,
-    hatchRecordsQuery,
-    settingsQuery,
-  ];
+  const queries = [modesQuery, incubatorsQuery];
+  useEffect(() => {
+    if (enabled && historyActive)
+      void hatchRecordsQuery.refetch({ cancelRefetch: false });
+  }, [enabled, historyActive, hatchRecordsQuery.refetch]);
   const initialError =
     queries.find((query) => query.error && query.data === undefined)?.error ??
     null;
@@ -133,14 +143,20 @@ export function useFarmData() {
     alerts: alertsQuery.data ?? [],
     hatchRecords: hatchRecordsQuery.data ?? [],
     settings: settingsQuery.data ?? initialSettings,
-    isLoading: queries.some((query) => query.isPending),
+    isLoading:
+      enabled && queries.some((query) => query.isPending && !query.error),
     isRefreshing: queries.some(
       (query) => query.isFetching && query.data !== undefined,
     ),
     staleError: backgroundError,
     error: initialError,
+    features: {
+      alerts: featureQueryState(alertsQuery, enabled),
+      history: featureQueryState(hatchRecordsQuery, enabled),
+      settings: featureQueryState(settingsQuery, enabled),
+    },
     retry: async () => {
-      await Promise.all(queries.map((query) => query.refetch()));
+      if (enabled) await Promise.all(queries.map((query) => query.refetch()));
     },
   };
 }
@@ -574,6 +590,7 @@ export function useFarmActions() {
 }
 
 export function useTurnCommandStatus(incubatorId: string): TurnCommand | null {
+  const { isAuthenticated } = useAuth();
   const repository = useRepository();
   const queryClient = useQueryClient();
   const queryKey = farmQueryKeys.turnCommand(incubatorId);
@@ -581,7 +598,7 @@ export function useTurnCommandStatus(incubatorId: string): TurnCommand | null {
   const query = useQuery({
     queryKey,
     staleTime: 0,
-    enabled: Boolean(cachedCommand?.id),
+    enabled: isAuthenticated && Boolean(cachedCommand?.id),
     queryFn: async () => {
       const command = queryClient.getQueryData<TurnCommand>(queryKey);
       if (!command) throw new Error("No manual turn command is available.");

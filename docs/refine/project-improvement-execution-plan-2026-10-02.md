@@ -1,6 +1,10 @@
 # Phase-by-phase improvement execution plan — 2026-10-02
 
-Status: prepared; implementation has not started.
+Status (2026-10-03): M0 technical baseline verified and protected dashboard pilot
+selected; capstone group ownership and Azure VPS hosting recorded; firmware/inventory provisional.
+M1–M5 complete locally; M6–M9 pending.
+Evidence: [M0 baseline](m0-baseline-2026-10-03.md), [M1 handoff](m1-handoff-2026-10-03.md),
+[M3 handoff](m3-alert-lifecycle-2026-10-03.md), [M4 handoff](m4-telemetry-scale-2026-10-03.md).
 
 Source: [project review and findings R01–R13](project-improvement-plan-2026-10-02.md).
 Baseline reviewed: `a470ab3`. This document makes the review actionable and does not
@@ -23,12 +27,12 @@ replace the historical September verification records.
 
 | Phase | Outcome | Depends on | Estimated effort | Status |
 | --- | --- | --- | --- | --- |
-| 0 | Current baseline and release scope recorded | — | 0.5–1 day | Pending |
-| 1 | Correct status and usable mobile navigation | 0 | 2–3 days | Pending |
-| 2 | Recoverable dashboard failures and fresh shared data | 1 | 2–4 days | Pending |
-| 3 | Durable alerts from actual monitoring conditions | 2 | 3–5 days | Pending |
-| 4 | Bounded chart queries and complete exports | 2 | 3–5 days | Pending |
-| 5 | Measured loading performance and efficient CI | 4 | 2–3 days | Pending |
+| 0 | Current baseline and release scope recorded | — | 0.5–1 day | In progress; group ownership and Azure VPS hosting recorded; firmware/inventory pending |
+| 1 | Correct status and usable mobile navigation | 0 | 2–3 days | Complete locally, October 3 |
+| 2 | Recoverable dashboard failures and fresh shared data | 1 | 2–4 days | Complete locally, October 3 |
+| 3 | Durable alerts from actual monitoring conditions | 2 | 3–5 days | Complete locally, October 3 |
+| 4 | Bounded chart queries and complete exports | 2 | 3–5 days | Complete locally, October 3 |
+| 5 | Measured loading performance and efficient CI | 4 | 2–3 days | Complete locally, October 3 |
 | 6 | Clear frontend ownership and smaller database transactions | 3, 4, 5 | 5–10 days | Pending |
 | 7 | Documented deployment, recovery, and operational diagnostics | 0; final drill after 3–6 | 4–7 days | Pending |
 | 8 | Commissioned authenticated physical devices | 0; operational support from 7 | Hardware dependent | Pending |
@@ -46,12 +50,12 @@ must explicitly describe its supported device behavior and disabled dispatch bou
 
 Tasks:
 
-- [ ] Record revision, working-tree state, toolchain, migration head, and configuration.
-- [ ] During implementation, run the existing web/API checks and live repository
+- [x] Record revision, working-tree state, toolchain, migration head, and configuration.
+- [x] During implementation, run the existing web/API checks and live repository
       contract against disposable services; distinguish passes, failures, and skips.
-- [ ] Recheck the reported mobile issues and record current bundle/payload sizes.
-- [ ] Choose the release scope: protected dashboard pilot or physical-device operation.
-- [ ] Assign owners for frontend, API, deployment, firmware, and release decisions.
+- [x] Recheck the reported mobile issues and record current bundle/payload sizes.
+- [x] Choose the release scope: protected dashboard pilot; physical dispatch gated by M8.
+- [x] Assign owners for frontend, API, deployment, firmware, and release decisions: capstone research group.
 - [ ] Record available firmware source, test devices, and deployment environment.
 
 Deliverable: a baseline checkpoint and scope/ownership table.
@@ -66,14 +70,14 @@ dated and tied to a revision; hardware/deployment dependencies have named owners
 
 Tasks:
 
-- [ ] Derive connection text, icon, and color from one state mapping, including paired
+- [x] Derive connection text, icon, and color from one state mapping, including paired
       offline, connecting, connected, and unpaired states.
-- [ ] Reposition mobile help into navigation or a reserved area based on the current
+- [x] Reposition mobile help into navigation or a reserved area based on the current
       overlap reproduction; keep its access predictable across screens and dialogs.
-- [ ] Define scroll reset on primary navigation, restoration on browser Back, and
+- [x] Define scroll reset on primary navigation, restoration on browser Back, and
       detail-tab behavior; implement that policy in routing.
-- [ ] Add a skip-to-content link and appropriate destination focus handling.
-- [ ] Review essential status text and form controls at narrow widths and 200% zoom.
+- [x] Add a skip-to-content link and appropriate destination focus handling.
+- [x] Review essential status text and form controls at narrow widths and 200% zoom.
 
 Deliverable: a consistent device-status presentation and usable mobile shell.
 
@@ -83,19 +87,26 @@ zoom, primary destination changes, and Back follow the documented behavior.
 
 ## Phase 2 — Make failures recoverable and shared data fresh
 
+Evidence: [M2 completed handoff](m2-handoff-2026-10-03.md).
+
 **Findings:** R05 refresh behavior, R06. **Primary files:** `use-farm-data.ts`,
 `App.tsx`, `AppProviders.tsx`, screen status components and query hooks.
 
 Tasks:
 
-- [ ] Separate critical monitoring queries from alerts, history, and settings queries.
-- [ ] Render feature-level loading/error/retry states without replacing healthy
+- [x] Add session-local fetch-failure notifications and a bounded toast policy:
+      aggregate related failures, suppress repeated polling/retry toasts, retain
+      read/dismiss behavior, record recovery, and clear on logout. Evidence:
+      [M2 fetch-notification checkpoint](m2-fetch-notifications-2026-10-03.md).
+
+- [x] Separate critical monitoring queries from alerts, history, and settings queries.
+- [x] Render feature-level loading/error/retry states without replacing healthy
       chamber monitoring when a secondary query fails.
-- [ ] Add application and route recovery boundaries for render and lazy-load errors.
-- [ ] Refresh alerts periodically while authenticated and visible; refresh on tab
+- [x] Add application and route recovery boundaries for render and lazy-load errors.
+- [x] Refresh alerts periodically while authenticated and visible; refresh on tab
       return, and define history refresh/invalidation on route activation.
-- [ ] Preserve usable stale data with an explicit freshness/error label.
-- [ ] Preserve logout/session-expiry cache clearing and prevent background refresh
+- [x] Preserve usable stale data with an explicit freshness/error label.
+- [x] Preserve logout/session-expiry cache clearing and prevent background refresh
       after authentication ends.
 
 Deliverable: recoverable feature states and a documented refresh policy.
@@ -111,20 +122,22 @@ telemetry ingestion, periodic evaluation, notification settings, Alerts screen.
 
 Tasks:
 
-- [ ] Define threshold sources, persistence duration, severity, condition identity,
+- [x] Define threshold sources, persistence duration, severity, condition identity,
       recovery, acknowledgment, dismissal, and recurrence for each alert type.
-- [ ] Start with temperature, humidity, water, and offline episodes; document how
+- [x] Start with temperature, humidity, water, and offline episodes; document how
       user preferences interact with mode settings and mandatory conditions.
-- [ ] Persist episodes with farm/device ownership and duplicate-safe identities.
-- [ ] Evaluate offline transitions periodically without requiring device telemetry.
-- [ ] Expose active/resolved/acknowledged state and consistent counts in the UI.
-- [ ] Preserve dismissed identities so retry or seed cannot revive old episodes.
+- [x] Persist episodes with farm/device ownership and duplicate-safe identities.
+- [x] Evaluate offline transitions periodically without requiring device telemetry.
+- [x] Expose active/resolved/acknowledged state and consistent counts in the UI.
+- [x] Preserve dismissed identities so retry or seed cannot revive old episodes.
 
 Deliverable: alert lifecycle contract, storage/service changes, and UI integration.
 
 Completion gate: duplicate telemetry creates one episode; recovery and recurrence
 are distinct; offline episodes appear without new device messages; acknowledgment
 and dismissal survive restarts and remain isolated by farm.
+
+Local completion evidence and lifecycle contract: [M3 handoff](m3-alert-lifecycle-2026-10-03.md).
 
 ## Phase 4 — Bound telemetry and preserve export completeness
 
@@ -133,17 +146,19 @@ transport schemas, repositories, `use-incubator-readings.ts`, `TrendsScreen.tsx`
 
 Tasks:
 
-- [ ] Measure query latency, sample counts, payloads, and browser work for realistic
+- [x] Measure query latency, sample counts, payloads, and browser work for realistic
       24-hour, 7-day, and full-cycle windows at 1/12/100 chambers.
-- [ ] Define an explicit chart resolution/point bound and additive API contract.
-- [ ] Reuse sparse aggregation while exposing extrema so averages do not hide
+- [x] Define an explicit chart resolution/point bound and additive API contract.
+- [x] Reuse sparse aggregation while exposing extrema so averages do not hide
       short temperature or humidity excursions.
-- [ ] Preserve UTC range semantics, sparse gaps, late arrivals, and compare-mode scope.
-- [ ] Provide complete raw exports using pagination or streaming with stable ordering.
-- [ ] Reduce repeated full-window transfers with measured incremental/conditional
+- [x] Preserve UTC range semantics, sparse gaps, late arrivals, and compare-mode scope.
+- [x] Provide complete raw exports using pagination or streaming with stable ordering.
+- [x] Reduce repeated full-window transfers with measured incremental/conditional
       retrieval or slower refresh for historical portions.
 
 Deliverable: bounded chart API and separate complete raw export behavior.
+
+Local completion evidence: [M4 telemetry scale handoff](m4-telemetry-scale-2026-10-03.md).
 
 Completion gate: response size remains within the chosen bound as sample frequency
 increases; raw exports cover the requested scope exactly; charts preserve gaps and
@@ -155,13 +170,13 @@ extremes; memory/API contracts reflect the new semantics.
 
 Tasks:
 
-- [ ] Record current initial and lazy-route bundles, total transferred assets, and
+- [x] Record current initial and lazy-route bundles, total transferred assets, and
       loading behavior under a representative mobile network profile.
-- [ ] Identify heavy eager dependencies; split Settings/other routes where this
+- [x] Identify heavy eager dependencies; split Settings/other routes where this
       reduces initial loading without creating excessive request chains.
-- [ ] Review image/font/icon imports and remove measured unnecessary initial cost.
-- [ ] Add CI budget checks for initial assets and important lazy routes.
-- [ ] Execute Vitest once with coverage when it supplies the same behavior gate;
+- [x] Review image/font/icon imports and remove measured unnecessary initial cost.
+- [x] Add CI budget checks for initial assets and important lazy routes.
+- [x] Execute Vitest once with coverage when it supplies the same behavior gate;
       retain coverage-scope checks and publish useful CI artifacts.
 
 Deliverable: measured loading improvements and enforced regression budgets.
@@ -170,6 +185,8 @@ Completion gate: agreed budgets pass; direct route navigation and failed-chunk
 recovery work; CI retains required checks without duplicate suite execution.
 
 ## Phase 6 — Improve maintainability and mutation scale
+
+Phase 5 completion evidence: [M5 loading and CI handoff](m5-loading-ci-2026-10-03.md).
 
 **Findings:** R08, R12. **Primary areas:** large screens, farm hooks,
 `api/v1/dependencies.py`, database store and resource modules.
@@ -223,12 +240,24 @@ cleanup preserves replay and dismissal behavior; account recovery is executable.
 
 ## Phase 8 — Commission authenticated physical devices
 
+Approved scope: [ESP32 connection, pairing, and offline recovery plan](../../apps/firmware/provisioning-plan.md)
+(October 3). Implementation and hardware verification remain pending.
+
 **Finding:** R01. **Primary areas:** actual firmware repository, broker identities,
 ACLs/TLS, device registry, MQTT worker, firmware safety contract.
 
 Tasks:
 
 - [ ] Confirm firmware ownership/source and map actual payloads to checked-in contracts.
+- [ ] Implement protected AP/portal recovery (30-second Wi-Fi-loss and 15-minute
+      unconfirmed-upload thresholds), physical setup fallback, and AP closure
+      while preserving local control and ownership.
+- [ ] Implement permanent identity plus changeable pairing code, dashboard entry/
+      change/pending confirmation, claim protection, and authorized transfer.
+- [ ] Implement OLED conditions/setup and LCD temperature/humidity/error display.
+- [ ] Implement persistent bounded timestamped offline queue, clock validation,
+      overflow handling, confirmed batch uploads, and end-to-end deduplication;
+      verify power loss, restart, and backend chart/export integration.
 - [ ] Implement unique broker credentials, verified TLS, and per-device publish/
       subscribe ACLs, including rotation, revocation, and reassignment procedures.
 - [ ] Establish the production device-authentication protocol and commissioned worker

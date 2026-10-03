@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -230,6 +231,12 @@ class AlertDTO(BaseModel):
     message: str
     occurred_at: datetime
     acknowledged_at: datetime | None = None
+    device_id: UUID | None = None
+    condition_state: Literal["active", "resolved"] | None = None
+    resolved_at: datetime | None = None
+    resolution_reason: (
+        Literal["recovered", "configuration_changed", "monitoring_ended"] | None
+    ) = None
 
 
 class HatchHistoryDTO(BaseModel):

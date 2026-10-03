@@ -7,6 +7,10 @@ run in production. These steps do not qualify a physical board or actuator.
 
 ## Provision the farm owner
 
+Approved future physical-device scope: [ESP32 connection, pairing, and offline recovery](../../apps/firmware/provisioning-plan.md).
+This plan is not implemented; the operator provisioning steps below remain
+the current supported path.
+
 Production self-registration is disabled until email verification is available. An
 operator creates an owner account from the running API container:
 

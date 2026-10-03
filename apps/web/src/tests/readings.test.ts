@@ -82,13 +82,13 @@ describe("live polling", () => {
     try {
       await vi.advanceTimersByTimeAsync(1);
       expect(fetch).toHaveBeenCalledTimes(1);
-      await vi.advanceTimersByTimeAsync(15_000);
+      await vi.advanceTimersByTimeAsync(30_000);
       expect(fetch).toHaveBeenCalledTimes(2);
       focusManager.setFocused(false);
       await vi.advanceTimersByTimeAsync(30_000);
       expect(fetch).toHaveBeenCalledTimes(2);
       focusManager.setFocused(true);
-      await vi.advanceTimersByTimeAsync(15_000);
+      await vi.advanceTimersByTimeAsync(30_000);
       expect(fetch.mock.calls.length).toBeGreaterThan(2);
     } finally {
       unsubscribe();

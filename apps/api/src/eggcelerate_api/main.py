@@ -3,8 +3,9 @@ services own use cases; B3 persists configuration while other state is staged.""
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +15,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .api.v1 import router as v1_router
 from .config import Settings, load_settings
 from .context import disabled_context
+from .database.alert_episodes import run_evaluator
 from .database.store import PostgresStore
 from .errors import register_error_handlers
 from .store import MemoryStore
@@ -29,9 +31,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        evaluator = (
+            asyncio.create_task(
+                run_evaluator(database, settings.alert_evaluation_interval)
+            )
+            if database is not None and settings.alert_evaluation_interval > 0
+            else None
+        )
         try:
             yield
         finally:
+            if evaluator is not None:
+                evaluator.cancel()
+                with suppress(asyncio.CancelledError):
+                    await evaluator
             if database is not None:
                 await database.close()
 

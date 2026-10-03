@@ -11,9 +11,16 @@ import {
   trendsPath,
   validateRouteIncubator,
 } from "./routes";
+import { useRoutePresentation } from "./use-route-presentation";
 
 export function useAppRouter(validIncubatorIds?: readonly string[]) {
   const [pathname, navigate] = useLocation();
+  const { prepareNavigation } = useRoutePresentation(pathname);
+  const go = (target: string, replace = false, restoreList = false) =>
+    navigate(target, {
+      replace: replace || target === pathname,
+      state: prepareNavigation(target, restoreList),
+    });
   const search = useSearch();
   const legacyTarget = pathname === "/" ? legacyPathFromSearch(search) : null;
   const parsedRoute = useMemo(
@@ -41,14 +48,15 @@ export function useAppRouter(validIncubatorIds?: readonly string[]) {
   return {
     ...route,
     navigateToScreen: (screen: ScreenId, replace = false) =>
-      navigate(screenPath(screen), { replace }),
+      go(screenPath(screen), replace),
+    returnToIncubators: () => go("/incubators", false, true),
     openIncubator: (id: string, tab: DetailTab = "monitor", replace = false) =>
-      navigate(incubatorPath(id, tab), { replace }),
+      go(incubatorPath(id, tab), replace),
     openTrends: (id?: string | null, replace = false) =>
-      navigate(trendsPath(id), { replace }),
+      go(trendsPath(id), replace),
     openOnboarding: (step: number, replace = false) =>
-      navigate(onboardingPath(step), { replace }),
-    openLogin: (replace = false) => navigate("/login", { replace }),
-    openRegister: (replace = false) => navigate("/register", { replace }),
+      go(onboardingPath(step), replace),
+    openLogin: (replace = false) => go("/login", replace),
+    openRegister: (replace = false) => go("/register", replace),
   };
 }

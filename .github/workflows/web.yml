@@ -24,7 +24,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm --filter eggcelerate-ui typecheck
-      - run: pnpm --filter eggcelerate-ui test
       - run: pnpm --filter eggcelerate-ui coverage
+      - run: pnpm --filter eggcelerate-ui test:assets
       - run: pnpm --filter eggcelerate-ui build
+      - run: pnpm --filter eggcelerate-ui check:assets
       - run: git diff --check
+      - name: Publish coverage and loading reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-verification
+          path: |
+            apps/web/coverage/
+            apps/web/dist/.vite/
+          include-hidden-files: true
+          retention-days: 14

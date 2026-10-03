@@ -1,0 +1,92 @@
+# Sizing by component/file
+
+Rare means one authoring occurrence of a pixel value in this file, even when that value is common globally. Tailwind scale utilities and CSS token references are reported separately.
+
+| Component/file | Raw px count | Other direct sizing | Token refs | Framework utility refs | Most common raw px | Locally rare raw px |
+| --- | --- | --- | --- | --- | --- | --- |
+| App | 1 | 3 | 33 | 63 | 24px × 1 | 24px |
+| components/AlertBanner | 1 | 0 | 13 | 6 | 22px × 1 | 22px |
+| components/AppSidebar | 24 | 21 | 165 | 100 | 20px × 7; 18px × 5; 16px × 4; 7px × 2 | -14px, 1.5px, 64px, 256px |
+| components/ChamberCardShell | 0 | 0 | 22 | 22 |  |  |
+| components/FarmDataStatus | 2 | 0 | 6 | 17 | 16px × 2 |  |
+| components/FeatureDataStatus | 0 | 0 | 4 | 8 |  |  |
+| components/FieldCounterLabel | 0 | 0 | 4 | 1 |  |  |
+| components/GaugeDial | 1 | 0 | 16 | 1 | 176px × 1 | 176px |
+| components/HarvestModal | 1 | 3 | 49 | 20 | 2px × 1 | 2px |
+| components/HelpWidget | 1 | 0 | 25 | 38 | 18px × 1 | 18px |
+| components/IncubatorCard | 27 | 3 | 118 | 25 | 15px × 11; 12px × 5; 2px × 2; 16px × 2 | 4px, 6px, 10px, 11px, 14px, 18px, 22px |
+| components/KpiCard | 1 | 5 | 39 | 30 | 26px × 1 | 26px |
+| components/LiveDateTime | 1 | 3 | 10 | 3 | 2px × 1 | 2px |
+| components/Mascot | 1 | 0 | 0 | 0 | 120px × 1 | 120px |
+| components/PageHeader | 4 | 0 | 17 | 37 | 16px × 2; 2px × 1; 4px × 1 | 2px, 4px |
+| components/PowerIndicator | 1 | 0 | 9 | 4 | 14px × 1 | 14px |
+| components/RawReadingsDialog | 1 | 2 | 1 | 6 | 16px × 1 | 16px |
+| components/RecoveryBoundary | 0 | 0 | 4 | 9 |  |  |
+| components/SegmentedBattery | 5 | 0 | 8 | 0 | 6px × 2; 2px × 1; 3px × 1; 12px × 1 | 2px, 3px, 12px |
+| components/StatusBadge | 1 | 0 | 10 | 2 | 14px × 1 | 14px |
+| components/StatusIconBadge | 0 | 0 | 14 | 1 |  |  |
+| components/SuspenseFallback | 0 | 0 | 3 | 11 |  |  |
+| components/ToastStack | 4 | 3 | 8 | 8 | 17px × 2; 8px × 1; 320px × 1 | 8px, 320px |
+| components/UtilityHeader | 7 | 1 | 12 | 2 | -6px × 2; 22px × 2; 2px × 1; 5px × 1 | 2px, 5px, 30px |
+| components/ViewToggle | 1 | 2 | 7 | 6 | 18px × 1 | 18px |
+| components/WaterDroplet | 5 | 2 | 13 | 2 | 1px × 2; 11px × 1; 18px × 1; 120px × 1 | 11px, 18px, 120px |
+| components/alerts/AlertConditionStatus | 0 | 0 | 2 | 2 |  |  |
+| components/alerts/NotificationPopover | 20 | 5 | 52 | 36 | -4px × 2; -6px × 2; 18px × 2; 22px × 2 | 2px, 4px, 10px, 14px, 15px, 17px, 20px, 26px, 340px, 380px |
+| components/alerts/alertStyle | 0 | 0 | 6 | 0 |  |  |
+| components/auth/AuthCard | 0 | 0 | 8 | 10 |  |  |
+| components/auth/CreateAccountScreen | 2 | 0 | 35 | 28 | 16px × 2 |  |
+| components/auth/FormInput | 1 | 0 | 17 | 13 | 16px × 1 | 16px |
+| components/auth/OnboardingStep1 | 0 | 0 | 12 | 7 |  |  |
+| components/auth/OnboardingStep2 | 1 | 0 | 47 | 24 | 18px × 1 | 18px |
+| components/auth/OnboardingStep3 | 3 | 0 | 57 | 25 | 14px × 2; 18px × 1 | 18px |
+| components/auth/SignInScreen | 2 | 0 | 37 | 33 | 16px × 2 |  |
+| components/auth/StepperBar | 0 | 0 | 9 | 9 |  |  |
+| components/candling/EggIcons | 2 | 4 | 12 | 4 | 14px × 1; 15px × 1 | 14px, 15px |
+| components/detail/CandlingJournalTab | 46 | 12 | 454 | 253 | 2px × 6; 15px × 5; 1px × 4; 13px × 4 | 8px, 9px, 11px, 12px, 20px |
+| components/detail/DeviceSettingsTab | 14 | 2 | 135 | 68 | 14px × 5; 10px × 3; 13px × 1; 15px × 1 | 13px, 15px, 16px, 20px, 110px, 180px |
+| components/detail/IncubationCalendar | 23 | 4 | 238 | 60 | 11px × 8; 1px × 4; 15px × 2; 28px × 2 | 7px, 9px, 44px, 118px, 999px |
+| components/detail/LiveMonitorTab | 19 | 0 | 123 | 67 | 18px × 7; 13px × 4; 15px × 4; 1px × 1 | 1px, 9px, 14px, 16px |
+| components/detail/PhotoLightbox | 13 | 8 | 20 | 100 | 14px × 4; 16px × 2; 24px × 2; 15px × 1 | 15px, 18px, 48px, 54px, 400px |
+| components/detail/StopCycleModal | 0 | 0 | 14 | 4 |  |  |
+| components/detail/Timeline | 33 | 26 | 108 | 34 | 2px × 7; 10px × 5; 58px × 4; 8px × 3 | 1.5px, 12px, 13px, 34px, 72px, 76px, 80px, 88px |
+| components/detail/primitives | 1 | 3 | 56 | 37 | 4px × 1 | 4px |
+| components/icons/CheckIcon | 0 | 0 | 1 | 0 |  |  |
+| components/icons/CircleInfoIcon | 0 | 0 | 1 | 0 |  |  |
+| components/icons/FilledExclamationIcon | 0 | 0 | 1 | 0 |  |  |
+| components/icons/IconBase | 1 | 0 | 0 | 0 | 24px × 1 | 24px |
+| components/icons/IncubatingIcon | 0 | 0 | 1 | 0 |  |  |
+| components/icons/IncubatorDeviceIcon | 0 | 0 | 1 | 0 |  |  |
+| components/icons/OfflineIcon | 0 | 0 | 1 | 0 |  |  |
+| components/icons/ReminderIcon | 0 | 0 | 1 | 0 |  |  |
+| components/screens/AlertsScreen | 17 | 0 | 89 | 69 | 24px × 3; 14px × 2; 16px × 2; 36px × 2 | 2px, 4px, 8px, 10px, 20px, 44px, 150px, 165px |
+| components/screens/CandlingLogsScreen | 23 | 2 | 100 | 77 | 16px × 3; 2.5px × 2; 4px × 2; 12px × 2 | 10px, 14px, 24px, 27px, 28px, 40px, 116px, 190px |
+| components/screens/DetailScreen | 5 | 2 | 102 | 72 | 15px × 3; 2px × 1; 16px × 1 | 2px, 16px |
+| components/screens/IncubatorsScreen | 18 | 3 | 97 | 88 | 16px × 6; 4px × 3; 18px × 3; 2.5px × 2 | 2px, 12px, 13px, 24px |
+| components/screens/OverviewScreen | 12 | 2 | 152 | 119 | 16px × 5; 10px × 3; -10px × 1; 7px × 1 | -10px, 7px, 12px, 70px |
+| components/screens/SettingsScreen | 2 | 0 | 14 | 27 | 8px × 2 |  |
+| components/screens/TrendsScreen | 21 | 11 | 201 | 160 | 4px × 3; 16px × 3; 8px × 2; 2px × 1 | 2px, 10px, 12px, 18px, 22px, 24px, 40px, 72px, 150px, 196px, 200px, 220px, 280px |
+| components/settings/FarmAccountPanel | 2 | 0 | 8 | 13 | 56px × 2 |  |
+| components/settings/HardwarePanel | 10 | 0 | 44 | 55 | 15px × 4; 14px × 2; 32px × 2; 16px × 1 | 16px, 180px |
+| components/settings/ModeLibraryPanel | 17 | 0 | 117 | 66 | 14px × 8; 10px × 3; 15px × 3; 16px × 2 | 200px |
+| components/settings/NotificationsPanel | 0 | 0 | 19 | 24 |  |  |
+| components/settings/tokens | 0 | 0 | 21 | 11 |  |  |
+| components/statusPresentation | 0 | 0 | 9 | 0 |  |  |
+| components/ui/alert-dialog | 0 | 8 | 1 | 11 |  |  |
+| components/ui/button | 0 | 0 | 9 | 21 |  |  |
+| components/ui/checkbox | 0 | 0 | 3 | 6 |  |  |
+| components/ui/dialog | 0 | 9 | 2 | 22 |  |  |
+| components/ui/filter-bar | 2 | 2 | 41 | 35 | 16px × 2 |  |
+| components/ui/input | 0 | 0 | 8 | 7 |  |  |
+| components/ui/label | 0 | 0 | 4 | 3 |  |  |
+| components/ui/pagination-bar | 5 | 0 | 14 | 23 | 16px × 2; 4px × 1; 12px × 1; 72px × 1 | 4px, 12px, 72px |
+| components/ui/popover | 1 | 4 | 1 | 2 | 4px × 1 | 4px |
+| components/ui/radio-group | 0 | 0 | 1 | 8 |  |  |
+| components/ui/segmented-control | 0 | 0 | 19 | 14 |  |  |
+| components/ui/select | 0 | 2 | 26 | 49 |  |  |
+| components/ui/sonner | 0 | 0 | 6 | 0 |  |  |
+| components/ui/switch | 1 | 2 | 3 | 5 | -2px × 1 | -2px |
+| components/ui/table | 2 | 0 | 4 | 11 | 2px × 2 |  |
+| components/ui/typography | 0 | 0 | 41 | 0 |  |  |
+| index.html | 0 | 2 | 0 | 0 |  |  |
+| src/styles/index.css | 0 | 2 | 1 | 0 |  |  |
+| src/styles/theme.css | 0 | 8 | 16 | 0 |  |  |

@@ -19,6 +19,8 @@ import {
   abortedCycleFromDTO,
   alertFromDTO,
   CandlingEntryDTOSchema,
+  ChartReadingDTOSchema,
+  chartReadingFromDTO,
   ErrorEnvelopeSchema,
   HatchHistoryDTOSchema,
   hatchHistoryFromDTO,
@@ -29,6 +31,7 @@ import {
   PreferencesDTOSchema,
   preferencesFromDTO,
   preferencesToDTO,
+  RawReadingPreviewDTOSchema,
   ReadingDTOSchema,
   readingFromDTO,
   resultEnvelopeSchema,
@@ -39,6 +42,8 @@ import type {
   CompleteCycleInput,
   EggcelerateRepository,
   MutationOptions,
+  RawReadingPreview,
+  RawReadingScope,
   ReadingQuery,
   StopCycleInput,
 } from "./repository";
@@ -582,11 +587,106 @@ export class ApiRepository implements EggcelerateRepository {
 
   async listReadings(query: ReadingQuery): Promise<Result<Reading[]>> {
     const result = await this.request<unknown[]>(
-      `/api/v1/incubators/${encodeURIComponent(query.incubatorId)}/readings?window=${query.window}`,
-      z.array(ReadingDTOSchema),
+      `/api/v1/incubators/${encodeURIComponent(query.incubatorId)}/readings${query.resolution === "chart" ? "/chart" : ""}?window=${query.window}`,
+      query.resolution === "chart"
+        ? z.array(ChartReadingDTOSchema).max(600)
+        : z.array(ReadingDTOSchema),
     );
     if (!result.ok) return result;
-    return { ok: true, data: result.data.map((item) => readingFromDTO(item)) };
+    return {
+      ok: true,
+      data: result.data.map((item) =>
+        query.resolution === "chart"
+          ? chartReadingFromDTO(item)
+          : readingFromDTO(item),
+      ),
+    };
+  }
+
+  async previewRawReadings(
+    query: RawReadingScope,
+  ): Promise<Result<RawReadingPreview>> {
+    const params = new URLSearchParams({
+      window: query.window,
+      end: query.end,
+    });
+    for (const id of query.incubatorIds) params.append("ids", id);
+    const result = await this.request<
+      z.infer<typeof RawReadingPreviewDTOSchema>
+    >(
+      `/api/v1/incubators/readings/raw-preview?${params}`,
+      RawReadingPreviewDTOSchema,
+    );
+    if (!result.ok) return result;
+    return {
+      ok: true,
+      data: {
+        rows: result.data.rows.map((p) => ({
+          incubatorId: p.incubator_id,
+          chamber: p.chamber,
+          reading: readingFromDTO({
+            observed_at: p.observed_at,
+            received_at: p.received_at,
+            temperature_c: p.temperature_c,
+            humidity_pct: p.humidity_pct,
+            water_ok: p.water_ok,
+          }),
+          receivedAt: p.received_at,
+          waterOk: p.water_ok,
+        })),
+        total: result.data.total,
+        end: result.data.end,
+        scopeToken: result.data.scope_token,
+      },
+    };
+  }
+
+  async exportRawReadings(scopeToken: string): Promise<Result<Blob>> {
+    // Match the JSON adapter's cross-runtime timeout strategy; Node fetch rejects
+    // jsdom AbortSignals. Bound the complete transfer, not just response headers.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        timedOut = true;
+        reject(new Error("Export timeout"));
+      }, 120_000);
+    });
+    const download = async (): Promise<Result<Blob>> => {
+      const csrf = getCsrfToken();
+      const response = await this.fetchImpl(
+        `${this.baseUrl}/api/v1/incubators/readings/export`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...(csrf ? { "X-CSRF-Token": csrf } : {}),
+          },
+          body: JSON.stringify({ scope_token: scopeToken }),
+        },
+      );
+      if (response.status === 401) notifySessionExpired();
+      if (!response.ok) {
+        const error = ErrorEnvelopeSchema.safeParse(await response.json());
+        return error.success
+          ? { ok: false, error: error.data.error }
+          : failure("unknown_error", "Raw export failed.");
+      }
+      if (!response.headers.get("Content-Type")?.startsWith("text/csv"))
+        return failure("unknown_error", "The API returned an invalid export.");
+      return { ok: true, data: await response.blob() };
+    };
+    try {
+      return await Promise.race([download(), timeout]);
+    } catch {
+      return failure(
+        timedOut ? "timeout" : "offline",
+        "Could not complete the raw export. Try again.",
+      );
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async listModes(): Promise<Result<Mode[]>> {

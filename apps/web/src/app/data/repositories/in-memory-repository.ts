@@ -15,6 +15,8 @@ import type {
   Mode,
   TurnCommand,
 } from "../../domain/types";
+import { aggregateReadings } from "../../features/trends/chart-data";
+import { rawReadingsCsv } from "../../features/trends/raw-export";
 import { createAlertFixtures } from "../fixtures/alerts";
 import { createHatchRecordFixtures } from "../fixtures/hatch-records";
 import { createIncubatorFixtures } from "../fixtures/incubators";
@@ -27,9 +29,12 @@ import type {
   CompleteCycleInput,
   EggcelerateRepository,
   HarvestInput,
+  RawReadingPreview,
+  RawReadingScope,
   ReadingQuery,
   RepositoryFailureMode,
   RepositoryOperation,
+  ScopedRawReading,
   StartCycleInput,
   StopCycleInput,
   UpdateCandlingEntryInput,
@@ -64,6 +69,8 @@ const unreachableDeviceIds = new Set([
 export class InMemoryEggcelerateRepository implements EggcelerateRepository {
   private incubators: Incubator[];
   private modes: Mode[];
+  private rawExports = new Map<string, string>();
+  private exportSequence = 0;
   private alerts: AlertEntry[];
   private hatchRecords: HatchRecord[];
   private abortedCycles: AbortedCycleRecord[] = [];
@@ -650,12 +657,91 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         query.window === "24h" ? 24 : query.window === "7d" ? 24 * 7 : null;
       const cutoff =
         hours === null ? 0 : this.historyAnchorMs - hours * 3_600_000;
-      return ok(
-        createReadingFixtures(unit, mode, this.historyAnchorMs).filter(
-          (reading) => reading.ts >= cutoff,
-        ),
-      );
+      const raw = createReadingFixtures(
+        unit,
+        mode,
+        this.historyAnchorMs,
+      ).filter((reading) => reading.ts >= cutoff);
+      if (query.resolution !== "chart") return ok(raw);
+      if (query.window === "full" && unit.dayOfIncubation < 1) return ok([]);
+      const start =
+        query.window === "full"
+          ? new Date(
+              this.historyAnchorMs - unit.dayOfIncubation * 86400000,
+            ).setUTCHours(0, 0, 0, 0)
+          : cutoff;
+      return ok(aggregateReadings(raw, start, this.historyAnchorMs));
     });
+  }
+
+  async previewRawReadings(
+    query: RawReadingScope,
+  ): Promise<Result<RawReadingPreview>> {
+    if (
+      !query.incubatorIds.length ||
+      query.incubatorIds.length > 100 ||
+      new Set(query.incubatorIds).size !== query.incubatorIds.length ||
+      !Number.isFinite(Date.parse(query.end))
+    )
+      return error(
+        "validation_error",
+        "Select valid chambers and an end timestamp.",
+      );
+    const rows: ScopedRawReading[] = [];
+    const end = Date.parse(query.end);
+    for (const id of query.incubatorIds) {
+      const result = await this.listReadings({
+        incubatorId: id,
+        window: query.window,
+      });
+      if (!result.ok) return result;
+      const unit = this.incubators.find((p) => p.id === id);
+      if (!unit || (query.window === "full" && unit.dayOfIncubation < 1))
+        continue;
+      const start =
+        query.window === "24h"
+          ? end - 86400000
+          : query.window === "7d"
+            ? end - 7 * 86400000
+            : new Date(
+                this.historyAnchorMs - unit.dayOfIncubation * 86400000,
+              ).setUTCHours(0, 0, 0, 0);
+      for (const reading of result.data)
+        if (
+          reading.ts >= start &&
+          reading.ts < end &&
+          this.historyAnchorMs <= end
+        )
+          rows.push({
+            incubatorId: id,
+            chamber: unit.name,
+            reading,
+            receivedAt: new Date(this.historyAnchorMs).toISOString(),
+            waterOk: unit.waterOk,
+          });
+    }
+    rows.sort(
+      (a, b) =>
+        a.reading.ts - b.reading.ts ||
+        a.incubatorId.localeCompare(b.incubatorId),
+    );
+    const scopeToken = `memory-export-${++this.exportSequence}`;
+    this.rawExports.set(scopeToken, rawReadingsCsv(rows));
+    if (this.rawExports.size > 5)
+      this.rawExports.delete(this.rawExports.keys().next().value ?? "");
+    return ok({
+      rows: rows.slice(0, 200),
+      total: rows.length,
+      end: query.end,
+      scopeToken,
+    });
+  }
+
+  async exportRawReadings(scopeToken: string): Promise<Result<Blob>> {
+    const csv = this.rawExports.get(scopeToken);
+    return csv === undefined
+      ? error("validation_error", "Export scope expired; reopen the preview.")
+      : { ok: true, data: new Blob([csv], { type: "text/csv" }) };
   }
 
   listModes() {

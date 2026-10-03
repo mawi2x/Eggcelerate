@@ -10,12 +10,17 @@ verification results, remaining milestones, and the next implementation batch.
 - `apps/web` — current Vite + React web dashboard.
 - `apps/api` — FastAPI dashboard API with memory and opt-in PostgreSQL/TimescaleDB storage.
 - `apps/mobile` — reserved for a future Android/iOS application; no framework has been selected.
+- `apps/firmware` — reserved for ESP32 controller firmware; hardware planning and integration contracts are recorded in its README.
 - `packages` — reserved for code that is genuinely shared between applications.
 - `infrastructure` — includes the local Mosquitto configuration used by the opt-in simulator overlay.
 - `compose.yaml` — builds the web and API services; database services use opt-in profiles.
 - `compose.simulator.yaml` — adds the isolated Mosquitto broker and MQTT worker; dispatch stays disabled by default.
 
 ## Workspace commands
+
+The dashboard uses React 19.3, Vite 8.3, TypeScript, and Tailwind CSS 4.3.
+Use Node.js 22.12 or later within the supported Node 22, 24, or 26+ lines,
+and pnpm 9.12.3. CI and the web container use Node 22.
 
 Install the workspace dependencies from the repository root:
 

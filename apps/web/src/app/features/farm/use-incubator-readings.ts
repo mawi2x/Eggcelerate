@@ -4,28 +4,32 @@ import type {
   ReadingWindow,
 } from "../../data/repositories/repository";
 import type { Reading } from "../../domain/types";
+import { useAuth } from "../../providers/auth-context";
 import { useRepository } from "../../providers/repository-context";
 import { farmQueryKeys } from "./query-keys";
 import { requireResultData } from "./repository-query";
-import {
-  TELEMETRY_POLL_INTERVAL_MS,
-  TELEMETRY_REFRESH_ENABLED,
-} from "./telemetry";
+import { TELEMETRY_REFRESH_ENABLED } from "./telemetry";
 
 export function readingQueryOptions(
   repository: EggcelerateRepository,
   incubatorId: string,
   window: ReadingWindow,
 ) {
+  const interval = window === "24h" ? 30_000 : 300_000;
   return queryOptions({
     queryKey: farmQueryKeys.readingWindow(incubatorId, window),
     queryFn: async () =>
-      requireResultData(await repository.listReadings({ incubatorId, window })),
-    staleTime: TELEMETRY_POLL_INTERVAL_MS,
-    refetchInterval: TELEMETRY_REFRESH_ENABLED
-      ? TELEMETRY_POLL_INTERVAL_MS
-      : false,
+      requireResultData(
+        await repository.listReadings({
+          incubatorId,
+          window,
+          resolution: "chart",
+        }),
+      ),
+    staleTime: interval,
+    refetchInterval: TELEMETRY_REFRESH_ENABLED ? interval : false,
     refetchIntervalInBackground: false,
+    refetchOnWindowFocus: "always",
   });
 }
 
@@ -34,7 +38,11 @@ export function useIncubatorReadings(
   window: ReadingWindow,
 ) {
   const repository = useRepository();
-  const query = useQuery(readingQueryOptions(repository, incubatorId, window));
+  const { isAuthenticated } = useAuth();
+  const query = useQuery({
+    ...readingQueryOptions(repository, incubatorId, window),
+    enabled: isAuthenticated,
+  });
   return { ...query, readings: query.data ?? [] };
 }
 
@@ -43,15 +51,17 @@ export function useIncubatorReadingMap(
   window: ReadingWindow,
 ) {
   const repository = useRepository();
+  const { isAuthenticated } = useAuth();
   const identity = incubatorIds.join("\u0000");
   const uniqueIds = Array.from(
     new Set(identity ? identity.split("\u0000") : []),
   );
 
   return useQueries({
-    queries: uniqueIds.map((incubatorId) =>
-      readingQueryOptions(repository, incubatorId, window),
-    ),
+    queries: uniqueIds.map((incubatorId) => ({
+      ...readingQueryOptions(repository, incubatorId, window),
+      enabled: isAuthenticated,
+    })),
     combine: (results) => ({
       readingsByIncubator: Object.fromEntries(
         uniqueIds.map((incubatorId, index) => [
@@ -62,7 +72,8 @@ export function useIncubatorReadingMap(
       isLoading: results.some((result) => result.isPending),
       error: results.find((result) => result.error)?.error ?? null,
       retry: async () => {
-        await Promise.all(results.map((result) => result.refetch()));
+        if (isAuthenticated)
+          await Promise.all(results.map((result) => result.refetch()));
       },
     }),
   });

@@ -377,16 +377,16 @@ function MonthView({ currentDay, totalDays, model }: CalendarViewProps) {
                     : "var(--surface-amber-wash)"
                   : "transparent",
                 borderTop: inCycle
-                  ? `1px solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
+                  ? `var(--border-width-hairline) solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
                   : undefined,
                 borderBottom: inCycle
-                  ? `1px solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
+                  ? `var(--border-width-hairline) solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
                   : undefined,
                 borderLeft: startsPhaseBand
-                  ? `1px solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
+                  ? `var(--border-width-hairline) solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
                   : undefined,
                 borderRight: endsPhaseBand
-                  ? `1px solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
+                  ? `var(--border-width-hairline) solid ${inLockdownPhase ? "var(--swatch-clay)" : "var(--swatch-sand)"}`
                   : undefined,
                 borderRadius: `${startsPhaseBand ? "var(--radius-compact)" : 0} ${endsPhaseBand ? "var(--radius-compact)" : 0} ${endsPhaseBand ? "var(--radius-compact)" : 0} ${startsPhaseBand ? "var(--radius-compact)" : 0}`,
                 zIndex: m?.kind === "today" ? "var(--z-sunken)" : undefined,
@@ -743,7 +743,7 @@ export function IncubationCalendar({
             className="rounded-xl p-2"
             style={{
               backgroundColor: "var(--surface-porcelain)",
-              border: "1px solid var(--border-subtle)",
+              border: "var(--border-width-hairline) solid var(--border-subtle)",
             }}
           >
             <span
@@ -793,7 +793,7 @@ export function IncubationCalendar({
                 currentDay >= lockdownDay
                   ? "var(--surface-pending)"
                   : "var(--surface-porcelain)",
-              border: `1px solid ${currentDay >= lockdownDay ? "var(--accent-gold)" : "var(--border-subtle)"}`,
+              border: `var(--border-width-hairline) solid ${currentDay >= lockdownDay ? "var(--accent-gold)" : "var(--border-subtle)"}`,
             }}
           >
             <span
@@ -849,7 +849,7 @@ export function IncubationCalendar({
             className="rounded-xl p-2"
             style={{
               backgroundColor: "var(--surface-porcelain)",
-              border: "1px solid var(--border-subtle)",
+              border: "var(--border-width-hairline) solid var(--border-subtle)",
             }}
           >
             <span
@@ -899,7 +899,7 @@ export function IncubationCalendar({
                 currentDay >= totalDays
                   ? "var(--status-success-bg)"
                   : "var(--surface-porcelain)",
-              border: `1px solid ${currentDay >= totalDays ? "var(--status-success-fg)" : "var(--border-subtle)"}`,
+              border: `var(--border-width-hairline) solid ${currentDay >= totalDays ? "var(--status-success-fg)" : "var(--border-subtle)"}`,
             }}
           >
             <span

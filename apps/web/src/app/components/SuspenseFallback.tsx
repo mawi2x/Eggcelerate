@@ -6,6 +6,7 @@ export function SuspenseFallback({ label = "Loading..." }: { label?: string }) {
       role="status"
       aria-live="polite"
       aria-busy="true"
+      data-route-loading
     >
       <div className="mb-4 h-6 w-full max-w-48 rounded bg-[var(--surface-muted)]" />
       <div className="h-40 rounded-2xl bg-[var(--surface-muted)]" />

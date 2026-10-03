@@ -1,7 +1,33 @@
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+
+function moduleSizes(): Plugin {
+  return {
+    name: "module-sizes",
+    apply: "build",
+    generateBundle(_options, bundle) {
+      const chunks = Object.values(bundle)
+        .filter((item) => item.type === "chunk")
+        .map((chunk) => ({
+          file: chunk.fileName,
+          modules: Object.entries(chunk.modules)
+            .map(([id, module]) => ({
+              id: path.relative(import.meta.dirname, id),
+              bytes: module.renderedLength,
+            }))
+            .filter((module) => module.bytes > 0)
+            .sort((a, b) => b.bytes - a.bytes),
+        }));
+      this.emitFile({
+        type: "asset",
+        fileName: ".vite/module-sizes.json",
+        source: JSON.stringify(chunks, null, 2),
+      });
+    },
+  };
+}
 
 function figmaAssetResolver() {
   return {
@@ -9,7 +35,7 @@ function figmaAssetResolver() {
     resolveId(id) {
       if (id.startsWith("figma:asset/")) {
         const filename = id.replace("figma:asset/", "");
-        return path.resolve(__dirname, "src/assets", filename);
+        return path.resolve(import.meta.dirname, "src/assets", filename);
       }
     },
   };
@@ -22,11 +48,12 @@ export default defineConfig({
     // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
+    moduleSizes(),
   ],
   resolve: {
     alias: {
       // Alias @ to the src directory
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
 
@@ -36,25 +63,20 @@ export default defineConfig({
     allowedHosts: [".trycloudflare.com"],
   },
   build: {
+    // Preserve Vite 6's JavaScript target during the bundler migration.
+    target: ["es2020", "edge88", "firefox78", "chrome87", "safari14"],
+    manifest: true,
     chunkSizeWarningLimit: 500,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (
-            id.includes("node_modules/react") ||
-            id.includes("node_modules/react-dom") ||
-            id.includes("node_modules/scheduler")
-          ) {
-            return "vendor";
-          }
-          // Keep recharts inside TrendsScreen lazy chunk to avoid oversized 559k vendor chunk
-          // motion is unused currently - keep for future but don't force empty chunk
-          if (
-            id.includes("node_modules/motion") ||
-            id.includes("node_modules/framer-motion")
-          ) {
-            return "motion";
-          }
+        codeSplitting: {
+          groups: [
+            {
+              name: "vendor",
+              test: /\/node_modules\/(react|react-dom|scheduler)\//,
+              includeDependenciesRecursively: false,
+            },
+          ],
         },
       },
     },

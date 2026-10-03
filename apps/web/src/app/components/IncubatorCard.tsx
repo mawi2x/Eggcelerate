@@ -272,7 +272,7 @@ function Reading({
       className="min-w-0 overflow-hidden rounded-[var(--radius-dialog)]"
       style={{
         backgroundColor: tileBg[state],
-        border: `1px solid ${tileBorder[state]}`,
+        border: `var(--border-width-hairline) solid ${tileBorder[state]}`,
         padding: "0.75rem",
         overflow: "hidden",
       }}
@@ -659,7 +659,7 @@ export function IncubatorCard({
             style={{
               backgroundColor: "var(--surface-card)",
               color: CTA,
-              border: "1px solid var(--border-ink)",
+              border: "var(--border-width-hairline) solid var(--border-ink)",
               fontFamily: "var(--font-body)",
               fontSize: "var(--type-body-sm)",
               fontWeight: "var(--weight-bold)",

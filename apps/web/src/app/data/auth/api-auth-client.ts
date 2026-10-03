@@ -58,8 +58,10 @@ export class ApiAuthClient {
     this.fetchImpl = fetchImpl;
   }
 
-  async session(): Promise<ApiAuthSession> {
-    const data = await this.request("/session");
+  async session(signal?: AbortSignal): Promise<ApiAuthSession> {
+    const data = await this.request("/session", undefined, undefined, signal);
+    if (signal?.aborted)
+      throw new DOMException("Session check cancelled", "AbortError");
     const parsed = SessionSchema.parse(data);
     if (!parsed.authenticated) {
       setCsrfToken(null);
@@ -112,10 +114,12 @@ export class ApiAuthClient {
     path: string,
     body?: Record<string, unknown>,
     csrfToken?: string | null,
+    signal?: AbortSignal,
   ): Promise<unknown> {
     let response: Response;
     try {
       response = await this.fetchImpl(`${this.baseUrl}/api/v1/auth${path}`, {
+        ...(signal ? { signal } : {}),
         method: body === undefined ? "GET" : "POST",
         credentials: "include",
         headers: {

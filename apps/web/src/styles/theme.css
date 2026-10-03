@@ -100,6 +100,22 @@
   --control-height-filter-row: 2.75rem; /* 44px — outer filter/toolbar row */
   --mobile-chamber-card-min-height: 18.015625rem; /* 288.25px — shared mobile chamber-card baseline */
 
+  /* Shared sizing roles: preserve the existing viewport-specific geometry. */
+  --focus-ring-width: 3px;
+  --control-min-width-list-filter: 130px;
+  --trends-selector-width: 240px;
+  --trends-chart-height-mobile: 260px;
+  --trends-chart-height-tablet: 420px;
+  --trends-chart-height-desktop: 440px;
+  --chamber-list-height: 560px;
+  --readings-list-height: 520px;
+  --readings-table-min-width: 640px;
+  --candling-compact-card-height: 58px;
+  --monitor-summary-min-height-mobile: 50px;
+  --timeline-min-width: 18.5rem;
+  --radius-overview-card-mobile: 8px;
+  --dialog-width-fullscreen: 1600px;
+
   /* Component semantics preserve navigation hierarchy. */
   --global-nav-selected-bg: var(--brand-primary);
   --global-nav-selected-fg: var(--on-brand);

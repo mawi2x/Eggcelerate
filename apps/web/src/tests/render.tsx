@@ -6,6 +6,12 @@ const actEnvironment = globalThis as typeof globalThis & {
 };
 actEnvironment.IS_REACT_ACT_ENVIRONMENT = true;
 
+// jsdom has no scroll layout; navigation tests supply a position-aware mock.
+window.scrollTo = () => {};
+if (typeof HTMLElement.prototype.scrollTo !== "function") {
+  HTMLElement.prototype.scrollTo = () => {};
+}
+
 if (typeof window.matchMedia !== "function") {
   window.matchMedia = (media) => ({
     media,

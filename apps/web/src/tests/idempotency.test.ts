@@ -11,6 +11,14 @@ describe("idempotency key generation", () => {
     expect(createIdempotencyKey()).toBe("uuid-from-browser");
   });
 
+  it("keeps mutation keys distinct when crypto is absent", () => {
+    vi.stubGlobal("crypto", undefined);
+    const first = createIdempotencyKey();
+    const second = createIdempotencyKey();
+    expect(first).toMatch(/^idempotency-[a-z0-9-]+$/);
+    expect(second).not.toBe(first);
+  });
+
   it("still creates a UUID-shaped key when randomUUID is unavailable", () => {
     vi.stubGlobal("crypto", {
       getRandomValues: (bytes: Uint8Array) => bytes.fill(7),

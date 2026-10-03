@@ -269,6 +269,19 @@ alerts = Table(
     Column("occurred_at", DateTime(timezone=True), nullable=False),
     Column("acknowledged_at", DateTime(timezone=True)),
     Column("dismissed", Boolean, nullable=False, server_default="false"),
+    Column("device_id", Uuid),
+    Column("condition_state", Text),
+    Column("resolved_at", DateTime(timezone=True)),
+    Column("resolution_reason", Text),
+    CheckConstraint(
+        "condition_state IS NULL OR condition_state IN ('active', 'resolved')",
+        name="ck_alerts_condition_state",
+    ),
+    ForeignKeyConstraint(
+        ["farm_id", "device_id"],
+        ["devices.farm_id", "devices.id"],
+        name="fk_alerts_farm_device",
+    ),
     ForeignKeyConstraint(
         ["farm_id", "incubator_id"],
         ["incubators.farm_id", "incubators.public_id"],
@@ -574,5 +587,33 @@ device_commands = Table(
         "OR (dispatch_boot_id IS NOT NULL AND dispatch_booted_at IS NOT NULL "
         "AND dispatch_seq IS NOT NULL AND dispatch_seq >= 0)",
         name="ck_device_command_dispatch_identity",
+    ),
+)
+
+
+alert_monitors = Table(
+    "alert_monitors",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("device_id", Uuid, primary_key=True),
+    Column("condition", Text, primary_key=True),
+    Column("incubator_id", Text, nullable=False),
+    Column("candidate_since", DateTime(timezone=True)),
+    Column("active_alert_id", Text),
+    Column("generation", Integer, nullable=False),
+    Column("source_signature", Text, nullable=False),
+    ForeignKeyConstraint(
+        ["farm_id", "device_id"],
+        ["devices.farm_id", "devices.id"],
+        name="fk_monitors_farm_device",
+    ),
+    ForeignKeyConstraint(
+        ["farm_id", "active_alert_id"],
+        ["alerts.farm_id", "alerts.public_id"],
+        name="fk_monitors_farm_alert",
+    ),
+    CheckConstraint(
+        "condition IN ('temp', 'humidity', 'water', 'offline') AND generation >= 0",
+        name="ck_monitors_condition_generation",
     ),
 )

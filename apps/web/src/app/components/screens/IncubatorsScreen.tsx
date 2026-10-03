@@ -443,7 +443,7 @@ export function IncubatorsScreen({
             >
               <SelectTrigger
                 size="filter"
-                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[var(--control-min-width-list-filter)] md:flex-initial md:rounded-xl md:px-3.5"
                 style={{
                   ...sortTriggerStyle,
                 }}
@@ -472,7 +472,7 @@ export function IncubatorsScreen({
             >
               <SelectTrigger
                 size="filter"
-                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[var(--control-min-width-list-filter)] md:flex-initial md:rounded-xl md:px-3.5"
                 style={{
                   ...sortTriggerStyle,
                 }}
@@ -519,7 +519,10 @@ export function IncubatorsScreen({
         {sorted.length === 0 ? (
           <div
             className="rounded-2xl px-5 py-12 text-center"
-            style={{ backgroundColor: CARD, border: `1px dashed ${BORDER}` }}
+            style={{
+              backgroundColor: CARD,
+              border: `var(--border-width-hairline) dashed ${BORDER}`,
+            }}
           >
             <p
               style={{
@@ -628,7 +631,10 @@ export function IncubatorsScreen({
         ) : (
           <div
             className="overflow-hidden rounded-2xl"
-            style={{ border: `1px solid ${BORDER}`, backgroundColor: CARD }}
+            style={{
+              border: `var(--border-width-hairline) solid ${BORDER}`,
+              backgroundColor: CARD,
+            }}
           >
             <PaginationBar
               className="border-b border-t-0"
@@ -643,7 +649,7 @@ export function IncubatorsScreen({
               }}
               onPageChange={setPage}
             />
-            <div className="h-[560px] overflow-auto">
+            <div className="h-[var(--chamber-list-height)] overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
@@ -653,7 +659,7 @@ export function IncubatorsScreen({
                         className="sticky top-0 z-10"
                         style={{
                           backgroundColor: CARD,
-                          borderBottom: `1px solid ${BORDER}`,
+                          borderBottom: `var(--border-width-hairline) solid ${BORDER}`,
                           color: "var(--text-muted)",
                           fontSize: "var(--type-label)",
                           fontWeight: "var(--weight-bold)",
@@ -670,7 +676,7 @@ export function IncubatorsScreen({
                         className="sticky top-0 z-10 text-right"
                         style={{
                           backgroundColor: CARD,
-                          borderBottom: `1px solid ${BORDER}`,
+                          borderBottom: `var(--border-width-hairline) solid ${BORDER}`,
                           color: "var(--text-muted)",
                           fontSize: "var(--type-label)",
                           fontWeight: "var(--weight-bold)",
@@ -687,7 +693,7 @@ export function IncubatorsScreen({
                         className="sticky top-0 z-10"
                         style={{
                           backgroundColor: CARD,
-                          borderBottom: `1px solid ${BORDER}`,
+                          borderBottom: `var(--border-width-hairline) solid ${BORDER}`,
                           color: "var(--text-muted)",
                           fontSize: "var(--type-label)",
                           fontWeight: "var(--weight-bold)",
@@ -824,7 +830,8 @@ export function IncubatorsScreen({
                 className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
                 style={{
                   backgroundColor: "var(--status-danger-bg)",
-                  border: "1px solid var(--border-blush)",
+                  border:
+                    "var(--border-width-hairline) solid var(--border-blush)",
                 }}
                 role="alert"
               >
@@ -926,7 +933,10 @@ export function IncubatorsScreen({
             <Button
               variant="outline"
               className="rounded-full"
-              style={{ height: 34, fontSize: "var(--type-body)" }}
+              style={{
+                height: "var(--control-height-mobile)",
+                fontSize: "var(--type-body)",
+              }}
               disabled={connecting || isAddingIncubator}
               onClick={() => setOpen(false)}
             >
@@ -940,7 +950,7 @@ export function IncubatorsScreen({
               style={{
                 backgroundColor: RUST,
                 color: "var(--on-brand)",
-                height: 34,
+                height: "var(--control-height-mobile)",
                 fontSize: "var(--type-body)",
               }}
             >

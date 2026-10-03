@@ -129,9 +129,11 @@ def test_assignment_can_change_then_old_mode_can_be_deleted_after_restart(settin
 @pytest.mark.parametrize("same_key", [False, True])
 def test_separate_instances_cannot_double_assign_device(settings, same_key):
     barrier = Barrier(2)
+    # Construct the route graphs serially; race writes across running instances.
+    clients = [TestClient(create_app(settings)) for _ in range(2)]
 
     def create(index):
-        with TestClient(create_app(settings)) as client:
+        with clients[index] as client:
             barrier.wait(timeout=10)
             return client.post(
                 "/api/v1/incubators",

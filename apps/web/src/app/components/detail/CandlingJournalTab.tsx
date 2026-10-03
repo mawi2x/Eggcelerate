@@ -141,7 +141,7 @@ export function JournalEntryCard({
       <Card
         style={{
           backgroundColor: "var(--surface-subtle)",
-          border: `1px solid var(--border-default)`,
+          border: `var(--border-width-hairline) solid var(--border-default)`,
           borderRadius: "var(--radius-card)",
           boxShadow: "var(--shadow-card)",
         }}
@@ -227,7 +227,7 @@ export function JournalEntryCard({
                   className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1"
                   style={{
                     backgroundColor: "var(--surface-card)",
-                    border: `1px solid var(--border-default)`,
+                    border: `var(--border-width-hairline) solid var(--border-default)`,
                     color: "var(--text-strong)",
                     fontSize: "var(--type-label)",
                     fontWeight: "var(--weight-semibold)",
@@ -272,7 +272,7 @@ export function JournalEntryCard({
                     rows={3}
                     className="w-full resize-none rounded-xl px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                     style={{
-                      border: `1px solid var(--input-border)`,
+                      border: `var(--border-width-hairline) solid var(--input-border)`,
                       backgroundColor: "var(--surface-tile)",
                       fontSize: "var(--type-control-value)",
                       color: "var(--text-primary)",
@@ -323,7 +323,7 @@ export function JournalEntryCard({
                   className="w-full rounded-xl px-3.5 py-3 text-left transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                   style={{
                     backgroundColor: "var(--surface-note)",
-                    border: `1px solid var(--border-default)`,
+                    border: `var(--border-width-hairline) solid var(--border-default)`,
                     borderLeft: `3px solid var(--brand-primary)`,
                     borderRadius: "var(--radius-dialog)",
                     cursor: "pointer",
@@ -371,7 +371,7 @@ export function JournalEntryCard({
                   style={{
                     width: "var(--control-size-photo)",
                     height: "var(--control-size-photo)",
-                    border: `1px solid var(--border-default)`,
+                    border: `var(--border-width-hairline) solid var(--border-default)`,
                     cursor: "pointer",
                   }}
                   aria-label={`View photo ${i + 1}`}
@@ -399,7 +399,7 @@ export function JournalEntryCard({
                   style={{
                     width: "var(--control-size-photo)",
                     height: "var(--control-size-photo)",
-                    border: `1px solid var(--border-default)`,
+                    border: `var(--border-width-hairline) solid var(--border-default)`,
                     cursor: "pointer",
                   }}
                   aria-label={`View all ${photos.length} photos`}
@@ -527,7 +527,7 @@ export function LogModal({
         className="grid max-h-[75dvh] min-h-[75dvh] grid-rows-[0.7fr_2fr_0.3fr] gap-2 overflow-y-auto p-0 shadow-2xl md:min-w-[var(--dialog-width-narrow)] md:max-w-[var(--dialog-width-wide)]"
         style={{
           backgroundColor: "var(--surface-subtle)",
-          border: `1px solid var(--border-default)`,
+          border: `var(--border-width-hairline) solid var(--border-default)`,
           borderRadius: "var(--radius-card)",
         }}
       >
@@ -876,7 +876,7 @@ function LogModalBody({
                         border:
                           active || completed
                             ? "none"
-                            : `1px solid var(--border-default)`,
+                            : `var(--border-width-hairline) solid var(--border-default)`,
                         color:
                           active || completed
                             ? "var(--surface-card)"
@@ -944,7 +944,7 @@ function LogModalBody({
                 <div
                   className="mt-1.5 flex items-center justify-between rounded-xl px-3 py-2.5"
                   style={{
-                    border: `1px solid var(--border-default)`,
+                    border: `var(--border-width-hairline) solid var(--border-default)`,
                     backgroundColor: "var(--surface-card)",
                   }}
                 >
@@ -1292,7 +1292,7 @@ function LogModalBody({
                           backgroundColor: on
                             ? "var(--status-success-bg)"
                             : "var(--surface-card)",
-                          border: `1px solid ${on ? "var(--status-success-fg)" : "var(--border-default)"}`,
+                          border: `var(--border-width-hairline) solid ${on ? "var(--status-success-fg)" : "var(--border-default)"}`,
                           color: on
                             ? "var(--status-success-deep)"
                             : "var(--text-secondary)",
@@ -1333,7 +1333,7 @@ function LogModalBody({
                   rows={3}
                   className="mt-1.5 w-full resize-none rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                   style={{
-                    border: `1px solid var(--input-border)`,
+                    border: `var(--border-width-hairline) solid var(--input-border)`,
                     backgroundColor: "var(--surface-card)",
                     fontSize: "var(--type-control-value)",
                     color: "var(--text-primary)",
@@ -1413,7 +1413,7 @@ function LogModalBody({
                           style={{
                             width: 60,
                             height: 60,
-                            border: `1px solid var(--border-default)`,
+                            border: `var(--border-width-hairline) solid var(--border-default)`,
                           }}
                         />
                         <button
@@ -1471,7 +1471,7 @@ function LogModalBody({
         className="relative sticky bottom-0 mt-auto px-5 py-4"
         style={{
           backgroundColor: "var(--surface-subtle)",
-          borderTop: `1px solid var(--border-default)`,
+          borderTop: `var(--border-width-hairline) solid var(--border-default)`,
         }}
       >
         <div
@@ -1570,7 +1570,7 @@ function LogModalBody({
               style={{
                 borderColor: "var(--border-default)",
                 color: "var(--text-secondary)",
-                height: 34,
+                height: "var(--control-height-mobile)",
                 fontSize: "var(--type-body)",
               }}
             >
@@ -1581,7 +1581,7 @@ function LogModalBody({
               style={{
                 backgroundColor: "var(--brand-primary)",
                 color: "var(--surface-card)",
-                height: 34,
+                height: "var(--control-height-mobile)",
                 fontSize: "var(--type-body)",
               }}
               disabled={isSaving}
@@ -1624,10 +1624,10 @@ function SummaryTiles({
       {tiles.map((tile) => (
         <div
           key={tile.label}
-          className="flex h-[58px] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
+          className="flex h-[var(--candling-compact-card-height)] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
           style={{
             backgroundColor: tile.surface,
-            border: `1px solid ${tile.border}`,
+            border: `var(--border-width-hairline) solid ${tile.border}`,
           }}
         >
           <span
@@ -2116,10 +2116,10 @@ export function CandlingJournalTab({
                   </p>
                 </div>
                 <div
-                  className="flex h-[58px] flex-col justify-center rounded-lg px-3.5 py-3 text-left md:block md:h-auto md:min-w-0 md:p-3.5"
+                  className="flex h-[var(--candling-compact-card-height)] flex-col justify-center rounded-lg px-3.5 py-3 text-left md:block md:h-auto md:min-w-0 md:p-3.5"
                   style={{
                     backgroundColor: "var(--surface-track)",
-                    border: `1px solid var(--border-default)`,
+                    border: `var(--border-width-hairline) solid var(--border-default)`,
                   }}
                 >
                   <p
@@ -2702,7 +2702,7 @@ export function CandlingJournalTab({
                     style={{
                       borderColor: "var(--border-default)",
                       color: "var(--text-secondary)",
-                      height: 34,
+                      height: "var(--control-height-mobile)",
                       fontSize: "var(--type-body)",
                     }}
                   >
@@ -2713,7 +2713,7 @@ export function CandlingJournalTab({
                     style={{
                       backgroundColor: "var(--status-danger-fg)",
                       color: "var(--surface-card)",
-                      height: 34,
+                      height: "var(--control-height-mobile)",
                       fontSize: "var(--type-body)",
                     }}
                     disabled={isUpdating}

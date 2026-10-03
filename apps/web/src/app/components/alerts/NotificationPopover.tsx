@@ -1,8 +1,11 @@
 import { ArrowRight, Bell, X } from "lucide-react";
 import { useState } from "react";
 import type { AlertEntry } from "../../domain/types";
+import type { FeatureQueryState } from "../../features/farm/query-state";
+import { FeatureDataStatus } from "../FeatureDataStatus";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { useIsMobile } from "../ui/use-mobile";
+import { AlertConditionStatus } from "./AlertConditionStatus";
 import { severityStyle, timeAgo } from "./alertStyle";
 
 const RUST = "var(--brand-primary)";
@@ -13,6 +16,7 @@ const DIVIDER = "var(--border-divider)";
 
 interface Props {
   alerts: AlertEntry[];
+  serverStatus?: FeatureQueryState;
   unreadCount: number;
   onViewAll: () => void;
   onMarkAllRead: () => Promise<boolean>;
@@ -24,6 +28,7 @@ interface Props {
 /** Bell button in the utility bar plus its 340px quick-notification dropdown. */
 export function NotificationPopover({
   alerts,
+  serverStatus,
   unreadCount,
   onViewAll,
   onMarkAllRead,
@@ -92,7 +97,9 @@ export function NotificationPopover({
         {/* Header */}
         <div
           className="flex items-center justify-between gap-3 px-4 py-3"
-          style={{ borderBottom: `1px solid ${DIVIDER}` }}
+          style={{
+            borderBottom: `var(--border-width-hairline) solid ${DIVIDER}`,
+          }}
         >
           <span
             className="min-w-0 break-words"
@@ -122,8 +129,15 @@ export function NotificationPopover({
           </button>
         </div>
 
+        {serverStatus && (
+          <div className="px-4">
+            <FeatureDataStatus label="Farm alerts" state={serverStatus} />
+          </div>
+        )}
         {/* Body — five most recent */}
-        {recent.length === 0 ? (
+        {recent.length === 0 &&
+        serverStatus &&
+        !serverStatus.hasData ? null : recent.length === 0 ? (
           <div className="px-4 py-10 text-center">
             <p
               style={{
@@ -154,7 +168,9 @@ export function NotificationPopover({
                 <li
                   key={a.id}
                   className="group relative flex items-start gap-3 px-4 py-3 pr-14 transition-colors hover:bg-[var(--surface-app)] md:pr-4"
-                  style={{ borderBottom: `1px solid ${DIVIDER}` }}
+                  style={{
+                    borderBottom: `var(--border-width-hairline) solid ${DIVIDER}`,
+                  }}
                 >
                   <span
                     className="flex shrink-0 items-center justify-center rounded-lg"
@@ -214,6 +230,7 @@ export function NotificationPopover({
                     >
                       {a.message}
                     </p>
+                    <AlertConditionStatus alert={a} />
                   </div>
 
                   {/* Hover-revealed dismiss */}

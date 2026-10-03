@@ -5,12 +5,16 @@ import {
   appRepository,
 } from "./app/data/repositories/app-repository";
 import { AppProviders } from "./app/providers/AppProviders";
+import { retryLazyScreens } from "./app/routing/lazy-screens";
 import "./styles/index.css";
+import { RecoveryBoundary } from "./app/components/RecoveryBoundary";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Missing #root element");
 createRoot(rootElement).render(
-  <AppProviders repository={appRepository} authApiBaseUrl={appAuthApiBaseUrl}>
-    <App />
-  </AppProviders>,
+  <RecoveryBoundary scope="app" onRetry={retryLazyScreens}>
+    <AppProviders repository={appRepository} authApiBaseUrl={appAuthApiBaseUrl}>
+      <App />
+    </AppProviders>
+  </RecoveryBoundary>,
 );

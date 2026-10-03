@@ -3,6 +3,7 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
   LayoutGrid,
   LineChart,
   LogOut,
@@ -58,6 +59,7 @@ interface Props {
   collapsed: boolean;
   onToggleCollapsed: () => void;
   onSignOut: () => void;
+  onHelp: () => void;
 }
 
 export function AppSidebar({
@@ -68,6 +70,7 @@ export function AppSidebar({
   collapsed,
   onToggleCollapsed,
   onSignOut,
+  onHelp,
 }: Props) {
   const isMobile = useIsMobile();
   const [hoverToggle, setHoverToggle] = useState(false);
@@ -86,6 +89,9 @@ export function AppSidebar({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeMenu();
     };
+    mobileMoreMenuRef.current
+      ?.querySelector<HTMLElement>('[role="menuitem"]')
+      ?.focus();
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (
@@ -140,12 +146,12 @@ export function AppSidebar({
                   setMobileMoreOpen(false);
                   onNavigate(id);
                 }}
-                className="relative flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                className="relative flex min-w-0 flex-1 basis-0 cursor-pointer flex-col items-center justify-center gap-1 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                 aria-label={label}
                 aria-current={isActive ? "page" : undefined}
               >
                 <div
-                  className="flex h-8 w-11 max-[19rem]:w-8 items-center justify-center rounded-2xl transition-all duration-200"
+                  className="flex h-8 w-11 max-w-full max-[19rem]:w-8 items-center justify-center rounded-2xl transition-all duration-200"
                   style={{
                     backgroundColor: isActive
                       ? "var(--global-nav-selected-bg)"
@@ -159,7 +165,7 @@ export function AppSidebar({
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 </div>
                 <span
-                  className="max-[19rem]:hidden"
+                  className="max-w-full break-words text-center max-[19rem]:hidden"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "var(--type-label)",
@@ -196,16 +202,17 @@ export function AppSidebar({
 
           <button
             type="button"
+            id="mobile-more-trigger"
             ref={mobileMoreTriggerRef}
             onClick={() => setMobileMoreOpen((open) => !open)}
-            className="relative flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            className="relative flex min-w-0 flex-1 basis-0 cursor-pointer flex-col items-center justify-center gap-1 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             aria-label="More navigation options"
             aria-haspopup="menu"
             aria-expanded={mobileMoreOpen}
             aria-controls="mobile-more-menu"
           >
             <div
-              className="flex h-8 w-11 max-[19rem]:w-8 items-center justify-center rounded-2xl transition-all duration-200"
+              className="flex h-8 w-11 max-w-full max-[19rem]:w-8 items-center justify-center rounded-2xl transition-all duration-200"
               style={{
                 backgroundColor:
                   moreActive || mobileMoreOpen
@@ -225,7 +232,7 @@ export function AppSidebar({
               />
             </div>
             <span
-              className="max-[19rem]:hidden"
+              className="max-w-full break-words text-center max-[19rem]:hidden"
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-label)",
@@ -267,9 +274,34 @@ export function AppSidebar({
             id="mobile-more-menu"
             role="menu"
             aria-label="More navigation options"
-            className="fixed right-2 z-50 w-52 rounded-2xl border p-2 shadow-lg"
+            onKeyDown={(event) => {
+              const keys = ["ArrowDown", "ArrowUp", "Home", "End"];
+              if (!keys.includes(event.key)) return;
+              event.preventDefault();
+              const buttons = Array.from(
+                event.currentTarget.querySelectorAll<HTMLElement>(
+                  '[role="menuitem"]',
+                ),
+              );
+              const index = buttons.indexOf(
+                document.activeElement as HTMLElement,
+              );
+              const next =
+                event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? buttons.length - 1
+                    : (index +
+                        (event.key === "ArrowDown" ? 1 : -1) +
+                        buttons.length) %
+                      buttons.length;
+              buttons[next]?.focus();
+            }}
+            className="fixed right-2 z-50 w-52 overflow-y-auto overscroll-contain rounded-2xl border p-2 shadow-lg"
             style={{
               bottom: "var(--mobile-bottom-nav-clearance)",
+              maxHeight:
+                "calc(100dvh - var(--mobile-bottom-nav-clearance) - 1rem)",
               backgroundColor: "var(--surface-card)",
               borderColor: "var(--border-subtle)",
             }}
@@ -319,6 +351,18 @@ export function AppSidebar({
                 </button>
               );
             })}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMobileMoreOpen(false);
+                onHelp();
+              }}
+              className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-(length:--type-body) font-semibold text-[var(--text-primary)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <CircleHelp size={18} aria-hidden="true" />
+              <span>Help</span>
+            </button>
             <button
               type="button"
               role="menuitem"

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Settings:
+    alert_evaluation_interval: float = 15
     app_env: str = "development"
     auth_mode: str = "disabled"
     default_farm_id: str = "00000000-0000-0000-0000-000000000001"

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends
 
-from . import alerts, auth, history, incubators, modes, preferences
+from . import alerts, auth, history, incubators, modes, preferences, readings_scale
 from .dependencies import require_api_csrf, require_api_session
 
 router = APIRouter()
@@ -15,6 +15,7 @@ farm_routes = APIRouter(
     dependencies=[Depends(require_api_session), Depends(require_api_csrf)],
 )
 farm_routes.include_router(incubators.router)
+farm_routes.include_router(readings_scale.router)
 farm_routes.include_router(modes.router)
 farm_routes.include_router(alerts.router)
 farm_routes.include_router(history.router)

@@ -257,16 +257,15 @@ def test_populated_0004_upgrade_and_downgrade_preserve_prior_slices(database_url
 
     from alembic import command
     from alembic.config import Config
-    from sqlalchemy import text
+    from sqlalchemy import MetaData, Table, text
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from eggcelerate_api.database.alerts import seed_alerts
+    from eggcelerate_api.database.alerts import alert_values
     from eggcelerate_api.database.cycles import seed_cycles
     from eggcelerate_api.database.incubators import seed_incubators
     from eggcelerate_api.database.preferences import preference_values
     from eggcelerate_api.database.schema import (
         alert_idempotency,
-        alerts,
         devices,
         farm_preferences,
         farms,
@@ -295,6 +294,11 @@ def test_populated_0004_upgrade_and_downgrade_preserve_prior_slices(database_url
                     )
 
                 await conn.run_sync(migrate, "0004")
+                # Historical migration fixtures use their historical columns;
+                # current alert metadata includes fields introduced in 0015.
+                alerts = await conn.run_sync(
+                    lambda sync: Table("alerts", MetaData(), autoload_with=sync)
+                )
                 state = MemoryStore()
                 await conn.execute(
                     insert(farms).values(id=db.farm_id, name="Preserved farm")
@@ -305,7 +309,13 @@ def test_populated_0004_upgrade_and_downgrade_preserve_prior_slices(database_url
                     )
                 async with AsyncSession(bind=conn) as session:
                     await seed_incubators(session, db.farm_id, state)
-                    await seed_alerts(session, db.farm_id, state)
+                    for position, alert in enumerate(state.alerts.values()):
+                        values = alert_values(db.farm_id, alert, position)
+                        await session.execute(
+                            insert(alerts).values(
+                                **{k: v for k, v in values.items() if k in alerts.c}
+                            )
+                        )
                     await session.commit()
                 await conn.execute(
                     insert(farm_preferences).values(

@@ -345,7 +345,7 @@ function JournalCard({
           style={{
             backgroundColor: "var(--surface-card)",
             color: RUST,
-            border: "1px solid var(--border-ink-soft)",
+            border: "var(--border-width-hairline) solid var(--border-ink-soft)",
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-body-sm)",
             fontWeight: "var(--weight-bold)",
@@ -570,7 +570,7 @@ export function CandlingLogsScreen({
             >
               <SelectTrigger
                 size="filter"
-                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[var(--control-min-width-list-filter)] md:flex-initial md:rounded-xl md:px-3.5"
                 style={{
                   backgroundColor: SURFACE,
                   borderColor: CARD_BORDER,
@@ -598,7 +598,7 @@ export function CandlingLogsScreen({
             >
               <SelectTrigger
                 size="filter"
-                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[130px] md:flex-initial md:rounded-xl md:px-3.5"
+                className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-full px-3.5 md:h-[var(--control-height-default)] md:w-auto md:min-w-[var(--control-min-width-list-filter)] md:flex-initial md:rounded-xl md:px-3.5"
                 style={{
                   backgroundColor: SURFACE,
                   borderColor: CARD_BORDER,
@@ -748,7 +748,7 @@ export function CandlingLogsScreen({
             style={{
               backgroundColor: SUBTLE,
               borderColor: BORDER,
-              border: `1px solid ${BORDER}`,
+              border: `var(--border-width-hairline) solid ${BORDER}`,
             }}
           >
             <PaginationBar
@@ -765,7 +765,7 @@ export function CandlingLogsScreen({
               onPageChange={setPage}
             />
 
-            <div className="h-[560px] overflow-auto">
+            <div className="h-[var(--chamber-list-height)] overflow-auto">
               <Table>
                 <TableCaption className="sr-only">
                   Candling inspection status by incubator chamber
@@ -776,7 +776,7 @@ export function CandlingLogsScreen({
                       className="sticky top-0 z-10"
                       style={{
                         backgroundColor: SUBTLE,
-                        borderBottom: `1px solid ${BORDER}`,
+                        borderBottom: `var(--border-width-hairline) solid ${BORDER}`,
                         color: "var(--text-muted)",
                       }}
                     >
@@ -786,7 +786,7 @@ export function CandlingLogsScreen({
                       className="sticky top-0 z-10"
                       style={{
                         backgroundColor: SUBTLE,
-                        borderBottom: `1px solid ${BORDER}`,
+                        borderBottom: `var(--border-width-hairline) solid ${BORDER}`,
                         color: "var(--text-muted)",
                       }}
                     >
@@ -796,7 +796,7 @@ export function CandlingLogsScreen({
                       className="sticky top-0 z-10"
                       style={{
                         backgroundColor: SUBTLE,
-                        borderBottom: `1px solid ${BORDER}`,
+                        borderBottom: `var(--border-width-hairline) solid ${BORDER}`,
                         color: "var(--text-muted)",
                       }}
                     >
@@ -806,7 +806,7 @@ export function CandlingLogsScreen({
                       className="sticky top-0 z-10"
                       style={{
                         backgroundColor: SUBTLE,
-                        borderBottom: `1px solid ${BORDER}`,
+                        borderBottom: `var(--border-width-hairline) solid ${BORDER}`,
                         color: "var(--text-muted)",
                       }}
                     >
@@ -816,7 +816,7 @@ export function CandlingLogsScreen({
                       className="sticky top-0 z-10 text-right"
                       style={{
                         backgroundColor: SUBTLE,
-                        borderBottom: `1px solid ${BORDER}`,
+                        borderBottom: `var(--border-width-hairline) solid ${BORDER}`,
                         color: "var(--text-muted)",
                       }}
                     >

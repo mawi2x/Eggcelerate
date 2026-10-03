@@ -111,6 +111,12 @@ export interface Reading {
   time: string;
   temp: number;
   humidity: number;
+  tempMin?: number;
+  tempMax?: number;
+  humidityMin?: number;
+  humidityMax?: number;
+  sampleCount?: number;
+  bucketSeconds?: number;
 }
 
 export interface AlertEntry {
@@ -122,6 +128,9 @@ export interface AlertEntry {
   message: string;
   timestamp: string;
   acknowledged: boolean;
+  conditionState?: "active" | "resolved";
+  resolvedAt?: string;
+  resolutionReason?: "recovered" | "configuration_changed" | "monitoring_ended";
 }
 
 export interface HatchRecord {

@@ -40,7 +40,10 @@ export function AppProviders({
         {authApiBaseUrl ? (
           <ApiAuthProvider baseUrl={authApiBaseUrl}>{children}</ApiAuthProvider>
         ) : (
-          <MockAuthProvider initiallyAuthenticated={initiallyAuthenticated}>
+          <MockAuthProvider
+            initiallyAuthenticated={initiallyAuthenticated}
+            queryClient={queryClient}
+          >
             {children}
           </MockAuthProvider>
         )}

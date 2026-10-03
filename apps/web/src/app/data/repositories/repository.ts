@@ -100,6 +100,26 @@ export type ReadingWindow = "24h" | "7d" | "full";
 export type ReadingQuery = {
   incubatorId: string;
   window: ReadingWindow;
+  resolution?: "chart";
+};
+
+export type RawReadingScope = {
+  incubatorIds: string[];
+  window: ReadingWindow;
+  end: string;
+};
+export type ScopedRawReading = {
+  incubatorId: string;
+  chamber: string;
+  reading: Reading;
+  receivedAt: string;
+  waterOk: boolean;
+};
+export type RawReadingPreview = {
+  rows: ScopedRawReading[];
+  total: number;
+  end: string;
+  scopeToken: string;
 };
 
 export interface MutationOptions {
@@ -161,6 +181,10 @@ export interface EggcelerateRepository {
     options?: MutationOptions,
   ): Promise<Result<Incubator>>;
   listReadings(query: ReadingQuery): Promise<Result<Reading[]>>;
+  previewRawReadings(
+    query: RawReadingScope,
+  ): Promise<Result<RawReadingPreview>>;
+  exportRawReadings(scopeToken: string): Promise<Result<Blob>>;
   listModes(): Promise<Result<Mode[]>>;
   addMode(mode: Mode, options?: MutationOptions): Promise<Result<Mode>>;
   updateMode(

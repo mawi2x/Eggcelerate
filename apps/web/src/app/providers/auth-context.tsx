@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   type ReactNode,
@@ -66,9 +66,11 @@ function userFromApi(identity: ApiAuthIdentity): AuthUser {
 export function MockAuthProvider({
   children,
   initiallyAuthenticated = true,
+  queryClient,
 }: {
   children: ReactNode;
   initiallyAuthenticated?: boolean;
+  queryClient?: QueryClient;
 }) {
   const [user, setUser] = useState<AuthUser | null>(
     initiallyAuthenticated ? mockUser : null,
@@ -82,19 +84,27 @@ export function MockAuthProvider({
       isLoading: false,
       isAuthenticated: user !== null,
       error: null,
-      signIn: async (email) => setUser({ ...mockUser, email, role: "farmer" }),
-      register: async (input) =>
+      signIn: async (email) => {
+        queryClient?.clear();
+        setUser({ ...mockUser, email, role: "farmer" });
+      },
+      register: async (input) => {
+        queryClient?.clear();
         setUser({
           id: "mock-farmer",
           email: input.email,
           displayName: input.displayName,
           farmName: input.farmName,
           role: "farmer",
-        }),
+        });
+      },
       completeOnboarding: () => setUser(mockUser),
-      signOut: async () => setUser(null),
+      signOut: async () => {
+        queryClient?.clear();
+        setUser(null);
+      },
     }),
-    [user],
+    [queryClient, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -115,8 +125,12 @@ export function ApiAuthProvider({
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
 
   useEffect(() => {
+    const sessionCheck = new AbortController();
     let active = true;
+    let expired = false;
     const expireSession = () => {
+      expired = true;
+      sessionCheck.abort();
       setCsrfToken(null);
       queryClient.clear();
       setUser(null);
@@ -125,16 +139,16 @@ export function ApiAuthProvider({
     };
     window.addEventListener("eggcelerate:session-expired", expireSession);
     void client
-      .session()
+      .session(sessionCheck.signal)
       .then(({ identity, registrationEnabled: canRegister }) => {
-        if (!active) return;
+        if (!active || expired) return;
         setUser(identity ? userFromApi(identity) : null);
         setRegistrationEnabled(canRegister);
         setStatus(identity ? "authenticated" : "unauthenticated");
         setError(null);
       })
       .catch((cause: unknown) => {
-        if (!active) return;
+        if (!active || expired) return;
         setCsrfToken(null);
         setUser(null);
         setStatus("unauthenticated");
@@ -146,6 +160,7 @@ export function ApiAuthProvider({
       });
     return () => {
       active = false;
+      sessionCheck.abort();
       window.removeEventListener("eggcelerate:session-expired", expireSession);
     };
   }, [client, queryClient]);

@@ -1,5 +1,5 @@
 import { Egg, WifiSlash } from "@phosphor-icons/react";
-import { ChevronRight, RotateCw, Wifi, Zap } from "lucide-react";
+import { ChevronRight, RotateCw, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type {
@@ -10,6 +10,7 @@ import type {
 } from "../../domain/types";
 import type { IncubatorUpdateIntent } from "../../features/farm/use-farm-data";
 import { IncubatingIcon } from "../icons";
+import { getConnectionPresentation } from "../statusPresentation";
 import { Button } from "../ui/button";
 import { Progress } from "../ui/progress";
 import {
@@ -63,6 +64,7 @@ export function DeviceSettingsTab({
   const [stopCycleOpen, setStopCycleOpen] = useState(false);
 
   const mode = modes.find((m) => m.id === unit.modeId) ?? modes[0];
+  const connection = getConnectionPresentation(unit);
 
   const changeMode = async (modeId: string) => {
     const m = modes.find((x) => x.id === modeId);
@@ -127,7 +129,7 @@ export function DeviceSettingsTab({
         style={{
           backgroundColor: "var(--surface-card)",
           borderRadius: "var(--radius-card)",
-          border: "1px solid var(--border-default)",
+          border: "var(--border-width-hairline) solid var(--border-default)",
         }}
       >
         <fieldset
@@ -186,7 +188,10 @@ export function DeviceSettingsTab({
           <div id="device-settings-mode-panel">
             <div
               className="pb-5"
-              style={{ borderBottom: "1px solid var(--border-default)" }}
+              style={{
+                borderBottom:
+                  "var(--border-width-hairline) solid var(--border-default)",
+              }}
             >
               <h2
                 id="device-settings-mode-title"
@@ -217,7 +222,7 @@ export function DeviceSettingsTab({
                 className="flex flex-col gap-4 rounded-[var(--radius-dialog)] p-4"
                 style={{
                   backgroundColor: "var(--surface-porcelain)",
-                  border: `1px solid var(--border-default)`,
+                  border: `var(--border-width-hairline) solid var(--border-default)`,
                 }}
               >
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -324,7 +329,7 @@ export function DeviceSettingsTab({
               <dl
                 className="grid grid-cols-2 overflow-hidden rounded-[var(--radius-dialog)]"
                 style={{
-                  border: `1px solid var(--border-default)`,
+                  border: `var(--border-width-hairline) solid var(--border-default)`,
                   backgroundColor: "var(--surface-card)",
                 }}
               >
@@ -405,7 +410,10 @@ export function DeviceSettingsTab({
           <div id="device-settings-turning-panel">
             <div
               className="pb-5"
-              style={{ borderBottom: "1px solid var(--border-oat)" }}
+              style={{
+                borderBottom:
+                  "var(--border-width-hairline) solid var(--border-oat)",
+              }}
             >
               <h2
                 id="device-settings-turning-title"
@@ -573,7 +581,10 @@ export function DeviceSettingsTab({
           <div id="device-settings-device-panel">
             <div
               className="pb-5"
-              style={{ borderBottom: "1px solid var(--border-oat)" }}
+              style={{
+                borderBottom:
+                  "var(--border-width-hairline) solid var(--border-oat)",
+              }}
             >
               <h2
                 id="device-settings-device-title"
@@ -603,23 +614,15 @@ export function DeviceSettingsTab({
               <KeyValue label="Device ID" value={unit.deviceId} />
               <KeyValue
                 label="Connection Status"
-                accent={
-                  unit.paired
-                    ? "var(--status-success-fg)"
-                    : "var(--status-danger-fg)"
-                }
+                accent={connection.color}
                 value={
-                  <span className="flex items-center gap-1.5">
-                    {unit.paired ? (
-                      <Wifi size={15} />
-                    ) : (
-                      <WifiSlash size={15} weight="fill" />
-                    )}
-                    {unit.connectionState === "connecting"
-                      ? "Connecting"
-                      : unit.paired && unit.connectionState === "connected"
-                        ? "Connected and Paired"
-                        : "Connection Lost"}
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <connection.Icon
+                      size={15}
+                      aria-hidden="true"
+                      className="shrink-0"
+                    />
+                    <span>{connection.label}</span>
                     {(!unit.paired || unit.connectionState !== "connected") && (
                       <Button
                         onClick={() => void reconnectDevice()}
@@ -627,11 +630,17 @@ export function DeviceSettingsTab({
                         aria-busy={isUpdating}
                         variant="outline"
                         size="sm"
-                        className="ml-1 rounded-full"
+                        className="h-auto min-h-9 max-w-full whitespace-normal rounded-full py-2"
                         style={outlineBtn}
                       >
-                        <WifiSlash size={13} weight="fill" />{" "}
-                        {isUpdating ? "Connecting…" : "Reconnect"}
+                        <WifiSlash
+                          size={13}
+                          weight="fill"
+                          className="shrink-0"
+                        />
+                        <span className="min-w-0 break-words">
+                          {isUpdating ? "Connecting…" : "Reconnect"}
+                        </span>
                       </Button>
                     )}
                   </span>
@@ -641,7 +650,7 @@ export function DeviceSettingsTab({
                 className="rounded-xl p-3.5"
                 style={{
                   backgroundColor: "var(--surface-card)",
-                  border: `1px solid var(--border-default)`,
+                  border: `var(--border-width-hairline) solid var(--border-default)`,
                 }}
               >
                 <div className="flex items-center justify-between">
@@ -674,7 +683,8 @@ export function DeviceSettingsTab({
                 className="rounded-xl px-4 py-3"
                 style={{
                   backgroundColor: "var(--surface-amber-pale)",
-                  border: "1px solid var(--accent-gold)",
+                  border:
+                    "var(--border-width-hairline) solid var(--accent-gold)",
                 }}
               >
                 <p
@@ -710,7 +720,7 @@ export function DeviceSettingsTab({
                   onClick={() => setStopCycleOpen(true)}
                   style={{
                     borderColor: "var(--button-danger-border)",
-                    height: 34,
+                    height: "var(--control-height-mobile)",
                     color: "var(--button-danger-fg)",
                     backgroundColor: "var(--surface-card)",
                   }}
