@@ -2,6 +2,9 @@
 
 EGGCELERATE is organized as a pnpm monorepo for independently deployable applications, future shared packages, and infrastructure configuration.
 
+See the [project roadmap and timeline](ROADMAP.md) for completed work, current
+verification results, remaining milestones, and the next implementation batch.
+
 ## Repository structure
 
 - `apps/web` — current Vite + React web dashboard.
