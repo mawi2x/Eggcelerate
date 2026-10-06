@@ -1,5 +1,6 @@
-import { CheckCircle, Warning, WarningOctagon } from "@phosphor-icons/react";
+import { Warning, WarningOctagon } from "@phosphor-icons/react";
 import type { UnitStatus } from "../domain/types";
+import { FilledCheckIcon as CheckCircle } from "./icons/CheckIcon";
 import { statusLabels } from "./statusPresentation";
 
 // Semantic status palette — WCAG AA contrast on each tinted background.
@@ -15,12 +16,12 @@ const styles: Record<
   warning: {
     bg: "var(--status-warning-bg)",
     fg: "var(--status-warning-fg)",
-    Icon: Warning,
+    Icon: ({ size }) => <Warning size={size} weight="fill" />,
   },
   alert: {
     bg: "var(--status-danger-bg)",
     fg: "var(--status-danger-fg)",
-    Icon: WarningOctagon,
+    Icon: ({ size }) => <WarningOctagon size={size} weight="fill" />,
   },
 };
 
@@ -36,7 +37,7 @@ export function StatusBadge({ status }: { status: UnitStatus }) {
         padding: "var(--pill-padding)",
       }}
     >
-      <Icon size={14} weight="fill" />
+      <Icon size={14} />
       <span
         className="whitespace-nowrap"
         style={{

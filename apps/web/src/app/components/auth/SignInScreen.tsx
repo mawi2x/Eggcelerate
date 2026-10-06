@@ -148,7 +148,7 @@ export function SignInScreen({
           aria-disabled="true"
           className="flex min-h-11 items-center justify-center rounded px-1 text-sm font-semibold text-[var(--brand-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-8"
         >
-          Password recovery coming soon
+          <span>Password recovery coming soon</span>
         </button>
       </div>
       {(submitError ?? authError) && (
@@ -162,7 +162,7 @@ export function SignInScreen({
         onClick={() => void submit()}
         className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
-        {busy ? "Signing in…" : "Sign in →"}
+        <span>{busy ? "Signing in…" : "Sign in →"}</span>
       </button>
       {canRegister ? (
         <>
@@ -184,7 +184,7 @@ export function SignInScreen({
             onClick={onSetup}
             className="w-full cursor-pointer rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           >
-            {onSetupLabel}
+            <span>{onSetupLabel}</span>
           </button>
         </>
       ) : (

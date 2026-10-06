@@ -3,6 +3,7 @@ import { createHatchRecordFixtures } from "../app/data/fixtures/hatch-records";
 import {
   selectFilteredHatch,
   selectHatchWithPct,
+  selectSortedHatch,
 } from "../app/features/trends/selectors";
 
 const history = createHatchRecordFixtures();
@@ -18,6 +19,68 @@ describe("selectHatchWithPct", () => {
     const before = history.map((h) => ({ ...h }));
     selectHatchWithPct(history);
     expect(history).toEqual(before);
+  });
+});
+
+describe("selectSortedHatch", () => {
+  const records = selectHatchWithPct([
+    {
+      ...history[0],
+      id: "older",
+      endDate: "2026-05-01",
+      fertileEggs: 10,
+      hatchedEggs: 9,
+    },
+    {
+      ...history[0],
+      id: "newer",
+      endDate: "2026-06-01",
+      fertileEggs: 10,
+      hatchedEggs: 5,
+    },
+    { ...history[0], id: "unknown", endDate: "2026-07-01", fertileEggs: null },
+  ]);
+  it("orders by cycle completion date without mutating the input", () => {
+    expect(selectSortedHatch(records, "newest").map((r) => r.id)).toEqual([
+      "unknown",
+      "newer",
+      "older",
+    ]);
+    expect(selectSortedHatch(records, "oldest").map((r) => r.id)).toEqual([
+      "older",
+      "newer",
+      "unknown",
+    ]);
+    expect(records.map((r) => r.id)).toEqual(["older", "newer", "unknown"]);
+  });
+  it("keeps unavailable hatchability last in either percentage direction", () => {
+    expect(selectSortedHatch(records, "highest").map((r) => r.id)).toEqual([
+      "older",
+      "newer",
+      "unknown",
+    ]);
+    expect(selectSortedHatch(records, "lowest").map((r) => r.id)).toEqual([
+      "newer",
+      "older",
+      "unknown",
+    ]);
+  });
+  it("breaks ties deterministically and keeps invalid dates last", () => {
+    const tied = [
+      { ...records[0], id: "b" },
+      { ...records[0], id: "a" },
+      { ...records[0], id: "invalid", endDate: "invalid" },
+    ];
+    expect(selectSortedHatch(tied, "newest").map((r) => r.id)).toEqual([
+      "a",
+      "b",
+      "invalid",
+    ]);
+    expect(selectSortedHatch(tied, "oldest").map((r) => r.id)).toEqual([
+      "a",
+      "b",
+      "invalid",
+    ]);
   });
 });
 

@@ -1,6 +1,5 @@
 import {
   Bird,
-  CheckCircle,
   CheckFatIcon,
   Egg,
   EggCrack,
@@ -16,7 +15,8 @@ import {
   ChamberCardHeader,
   ChamberCardShell,
 } from "./ChamberCardShell";
-import { ExclamationIcon } from "./icons";
+import { FilledCheckIcon as CheckCircle } from "./icons/CheckIcon";
+import { ExclamationIcon } from "./icons/ExclamationIcon";
 import { SegmentedBattery } from "./SegmentedBattery";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
 import { getWaterStatusInfo, readingStateColors } from "./statusPresentation";
@@ -101,7 +101,7 @@ function CheckFillIcon({
   size?: number | string;
   color?: string;
 }) {
-  return <CheckCircle size={size} color={color} weight="fill" />;
+  return <CheckCircle size={size} color={color} />;
 }
 
 function ReadyCheckIcon({
@@ -131,7 +131,7 @@ function ExclamationFillIcon({
   size?: number | string;
   color?: string;
 }) {
-  return <ExclamationIcon size={size} color={color} />;
+  return <ExclamationIcon size={size} color={color} aria-hidden="true" />;
 }
 
 function operationalStatus(unit: Incubator): {
@@ -335,7 +335,13 @@ function Reading({
           </span>
         )}
       </div>
-      <div className="flex items-center" style={{ height: 16, marginTop: 2 }}>
+      <div
+        className="flex items-center"
+        style={{
+          minHeight: "max(16px, calc(var(--type-caption) * 1.5))",
+          marginTop: 2,
+        }}
+      >
         {delta !== undefined ? (
           <Trend delta={delta} />
         ) : subtext ? (
@@ -523,7 +529,6 @@ export function IncubatorCard({
               state={waterSt}
               valueColor={waterInfo.color}
               valueSize={16}
-              subtextSize={11}
               subtext={
                 <span style={{ color: waterInfo.color }}>
                   {unit.waterOk ? "Sufficient" : "Refill"}
@@ -633,19 +638,19 @@ export function IncubatorCard({
             size="sm"
             onClick={() => onHarvest?.(unit)}
             aria-label={`Finish cycle for ${unit.name}`}
-            className="relative z-10 cursor-pointer rounded-full shadow-sm transition-colors hover:brightness-110"
+            className="relative z-10 h-[var(--control-height-mobile)] max-h-[var(--control-height-mobile)] py-0 md:h-[var(--control-height-default)] md:max-h-[var(--control-height-default)] cursor-pointer rounded-full shadow-sm transition-colors hover:brightness-110"
             style={{
               backgroundColor: RUST,
               color: "var(--on-brand)",
               fontFamily: "var(--font-body)",
-              fontSize: "var(--type-caption)",
+              fontSize: "var(--type-button-label)",
               fontWeight: "var(--weight-bold)",
-              lineHeight: "var(--leading-normal)",
+              lineHeight: "var(--leading-button)",
               paddingLeft: 12,
               paddingRight: 12,
             }}
           >
-            Finish Cycle
+            <span>Finish Cycle</span>
           </Button>
         ) : (
           <Button
@@ -655,20 +660,21 @@ export function IncubatorCard({
             aria-label={
               ready ? `Start setup for ${unit.name}` : `${cta} ${unit.name}`
             }
-            className="relative z-10 cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
+            className="relative z-10 h-[var(--control-height-mobile)] max-h-[var(--control-height-mobile)] py-0 md:h-[var(--control-height-default)] md:max-h-[var(--control-height-default)] cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
             style={{
               backgroundColor: "var(--surface-card)",
               color: CTA,
               border: "var(--border-width-hairline) solid var(--border-ink)",
               fontFamily: "var(--font-body)",
-              fontSize: "var(--type-body-sm)",
+              fontSize: "var(--type-button-label)",
               fontWeight: "var(--weight-bold)",
-              lineHeight: "var(--leading-normal)",
+              lineHeight: "var(--leading-button)",
               paddingLeft: 12,
               paddingRight: 10,
             }}
           >
-            {ready ? "Start Setup" : cta} <ChevronRight size={15} />
+            <span>{ready ? "Start Setup" : cta}</span>{" "}
+            <ChevronRight size={15} />
           </Button>
         )}
       </ChamberCardFooter>

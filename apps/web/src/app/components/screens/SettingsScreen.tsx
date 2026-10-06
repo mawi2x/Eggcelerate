@@ -27,6 +27,7 @@ interface Props {
   onSaveSettings: (settings: SettingsPreferences) => Promise<boolean>;
   isSaving: boolean;
   units: Incubator[];
+  onOpenUnit: (id: string) => void;
   /** Shell page header rendered inside the sticky toolbar (settings route). */
   header?: ReactNode;
 }
@@ -69,6 +70,7 @@ export function SettingsScreen({
   onSaveSettings,
   isSaving,
   units,
+  onOpenUnit,
   header,
 }: Props) {
   const [category, setCategory] = useState<CategoryId>("modes");
@@ -77,6 +79,7 @@ export function SettingsScreen({
   const [hardwareView, setHardwareView] =
     useState<HardwarePanelView>("devices");
   const [draft, setDraft] = useState(settings);
+  const [preparingPhoto, setPreparingPhoto] = useState(false);
   useEffect(() => setDraft(settings), [settings]);
   const isDirty = useMemo(
     () => JSON.stringify(draft) !== JSON.stringify(settings),
@@ -165,6 +168,7 @@ export function SettingsScreen({
           {category === "account" && (
             <section aria-labelledby="settings-panel-account">
               <FarmAccountPanel
+                onPhotoPreparingChange={setPreparingPhoto}
                 account={draft.account}
                 onUpdateAccount={(patch) =>
                   setDraft((current) => ({
@@ -189,6 +193,7 @@ export function SettingsScreen({
                 units={units}
                 view={hardwareView}
                 onViewChange={setHardwareView}
+                onOpenUnit={onOpenUnit}
               />
             </section>
           )}
@@ -227,10 +232,10 @@ export function SettingsScreen({
               <Button
                 variant="outline"
                 className="h-[var(--control-height-mobile)] md:h-[var(--control-height-toolbar)] rounded-xl max-[19rem]:w-full max-[19rem]:whitespace-normal"
-                disabled={!isDirty || isSaving}
+                disabled={!isDirty || isSaving || preparingPhoto}
                 onClick={discard}
               >
-                Discard
+                <span>Discard</span>
               </Button>
               <Button
                 className="h-[var(--control-height-mobile)] md:h-[var(--control-height-toolbar)] rounded-xl px-4 md:px-6 max-[19rem]:w-full max-[19rem]:whitespace-normal"
@@ -238,11 +243,11 @@ export function SettingsScreen({
                   backgroundColor: RUST,
                   color: "var(--on-brand)",
                 }}
-                disabled={!isDirty || isSaving}
+                disabled={!isDirty || isSaving || preparingPhoto}
                 aria-busy={isSaving}
                 onClick={() => void save()}
               >
-                {isSaving ? "Saving…" : "Save Changes"}
+                <span>{isSaving ? "Saving…" : "Save Changes"}</span>
               </Button>
             </div>
           </div>

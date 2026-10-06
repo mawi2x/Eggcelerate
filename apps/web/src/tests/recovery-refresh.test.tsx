@@ -139,15 +139,18 @@ describe("feature recovery", () => {
       expect(mounted.container.textContent).toContain(
         "Hatch history could not be loaded.",
       );
-      expect(mounted.container.textContent).not.toContain("Completed Cycles");
+      expect(
+        mounted.container.querySelector("#hatch-summary-title"),
+      ).toBeNull();
       history.mockRestore();
       await act(async () =>
         retryButton(mounted.container, "Retry hatch history")?.click(),
       );
       await waitFor(
-        () =>
-          mounted.container.textContent?.includes("Completed Cycles") ?? false,
+        () => mounted.container.querySelector("#hatch-summary-title") !== null,
       );
+      expect(retryButton(mounted.container, "Retry hatch history")).toBeNull();
+      expect(mounted.container.textContent).toContain("Chamber Twelve");
     } finally {
       await mounted.unmount();
       mounted.client.clear();

@@ -1,5 +1,7 @@
 export interface Account {
   farmName: string;
+  /** Resized JPEG profile photo, saved with farm preferences. */
+  profilePhoto?: string | null;
   /** Full legal name, e.g. "Farmer Juan Dela Cruz". */
   accountHolder: string;
   /** Optional short name for the sidebar profile card, e.g. "Farmer Juan". */

@@ -144,11 +144,10 @@ def test_populated_0003_upgrade_downgrade_preserves_preferences(database_url):
 
     from alembic import command
     from alembic.config import Config
-    from sqlalchemy import insert, select, text
+    from sqlalchemy import MetaData, Table, insert, select, text
 
     from eggcelerate_api.database.preferences import preference_values
     from eggcelerate_api.database.schema import (
-        farm_preferences,
         farms,
         preferences_idempotency,
     )
@@ -174,6 +173,11 @@ def test_populated_0003_upgrade_downgrade_preserves_preferences(database_url):
                     )
 
                 await conn.run_sync(migrate, "0003")
+                farm_preferences = await conn.run_sync(
+                    lambda sync: Table(
+                        "farm_preferences", MetaData(), autoload_with=sync
+                    )
+                )
                 await conn.execute(
                     insert(farms).values(id=db.farm_id, name="Preserved farm")
                 )
@@ -182,7 +186,13 @@ def test_populated_0003_upgrade_downgrade_preserves_preferences(database_url):
                 )
                 await conn.execute(
                     insert(farm_preferences).values(
-                        **preference_values(db.farm_id, prefs)
+                        **{
+                            key: value
+                            for key, value in preference_values(
+                                db.farm_id, prefs
+                            ).items()
+                            if key in farm_preferences.c
+                        }
                     )
                 )
                 await conn.execute(

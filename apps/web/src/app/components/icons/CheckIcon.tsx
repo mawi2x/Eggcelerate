@@ -1,9 +1,9 @@
+import { CheckFat } from "@phosphor-icons/react";
 import { type CustomIconProps, IconSvg } from "./IconBase";
-import { CHECK_GLYPH_PATH } from "./iconPaths";
 
 type MonochromeIconProps = Omit<CustomIconProps, "foregroundColor">;
 
-/** Chunky checkmark icon matching the Canva asset. */
+/** Shared Phosphor CheckFat glyph. */
 export function CheckIcon({
   size,
   color,
@@ -14,9 +14,7 @@ export function CheckIcon({
 
   return (
     <IconSvg {...props} size={size} title={title}>
-      <g transform="translate(3, 3) scale(0.048)" fill={fill}>
-        <path d={CHECK_GLYPH_PATH} />
-      </g>
+      <CheckFat size={24} color={fill} weight="fill" aria-hidden="true" />
     </IconSvg>
   );
 }
@@ -35,9 +33,14 @@ export function FilledCheckIcon({
   return (
     <IconSvg {...props} size={size} title={title}>
       <circle cx="12" cy="12" r="12" fill={backgroundColor} />
-      <g transform="translate(3, 3) scale(0.048)" fill={glyphColor}>
-        <path d={CHECK_GLYPH_PATH} />
-      </g>
+      <CheckFat
+        x={3}
+        y={3}
+        size={18}
+        color={glyphColor}
+        weight="fill"
+        aria-hidden="true"
+      />
     </IconSvg>
   );
 }

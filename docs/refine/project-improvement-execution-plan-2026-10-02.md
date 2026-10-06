@@ -1,8 +1,8 @@
 # Phase-by-phase improvement execution plan — 2026-10-02
 
-Status (2026-10-03): M0 technical baseline verified and protected dashboard pilot
+Status (2026-10-04): M0 technical baseline verified and protected dashboard pilot
 selected; capstone group ownership and Azure VPS hosting recorded; firmware/inventory provisional.
-M1–M5 complete locally; M6–M9 pending.
+M1–M5 complete locally; M6 in progress (Trends and Incubators frontend extractions complete); M7–M9 pending.
 Evidence: [M0 baseline](m0-baseline-2026-10-03.md), [M1 handoff](m1-handoff-2026-10-03.md),
 [M3 handoff](m3-alert-lifecycle-2026-10-03.md), [M4 handoff](m4-telemetry-scale-2026-10-03.md).
 
@@ -193,8 +193,13 @@ Phase 5 completion evidence: [M5 loading and CI handoff](m5-loading-ci-2026-10-0
 
 Tasks:
 
-- [ ] Extract Trends charts/history/export orchestration, Incubators list/create
-      flow, and other large components along clear responsibility boundaries.
+- [x] Extract Trends panels, state models, tooltip and CSV helper; preserve
+      screen-owned tab state and raw-export orchestration.
+      Evidence: [M6 Trends handoff](m6-trends-extraction-2026-10-04.md).
+- [x] Extract Incubators toolbar/list/create flow and harvest state along clear
+      responsibility boundaries; preserve list selections and confirmed writes.
+      Evidence: [M6 Incubators handoff](m6-incubators-extraction-2026-10-04.md).
+- [ ] Review other large components for focused responsibility boundaries.
 - [ ] Split farm query coordination from alert, mode, cycle, and command mutations.
 - [ ] Replace repeated route-string replay branching with explicit operation policy.
 - [ ] Measure concurrent mutations across chambers/farms and archived-data growth.

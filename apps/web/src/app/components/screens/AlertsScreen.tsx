@@ -1,11 +1,12 @@
-import { Check, CheckCheck, Eraser, X } from "lucide-react";
+import { CheckFat as Check } from "@phosphor-icons/react";
+import { CheckCheck, Eraser, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import logoApp from "../../../imports/logo-app.webp";
 import type { AlertEntry, AlertSeverity } from "../../domain/types";
 import type { FeatureQueryState } from "../../features/farm/query-state";
 import { AlertConditionStatus } from "../alerts/AlertConditionStatus";
 import { severityStyle, timeAgo } from "../alerts/alertStyle";
+import { EmptyState } from "../EmptyState";
 import { FeatureDataStatus } from "../FeatureDataStatus";
 import { Button } from "../ui/button";
 import { FilterBar } from "../ui/filter-bar";
@@ -50,7 +51,7 @@ const severityTint: Record<
   },
 };
 
-type Filter = "all" | "unread" | "important" | "active";
+type Filter = "all" | "unread" | "important";
 type SortKey = "recent" | "oldest" | "severity";
 
 const severityRank: Record<AlertSeverity, number> = {
@@ -108,10 +109,8 @@ export function AlertsScreen({
         ? true
         : filter === "unread"
           ? !a.acknowledged
-          : filter === "active"
-            ? a.conditionState === "active"
-            : a.severity === "critical" ||
-              (a.severity === "warning" && !a.acknowledged),
+          : a.severity === "critical" ||
+            (a.severity === "warning" && !a.acknowledged),
     );
     const byTime = (a: AlertEntry, b: AlertEntry) =>
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
@@ -153,11 +152,9 @@ export function AlertsScreen({
     <div className="space-y-0">
       <div
         ref={toolbarRef}
-        className="sticky top-0 z-30 flex flex-col gap-2 md:gap-3"
+        className="sticky top-0 z-30 flex flex-col gap-2 pb-2 pt-6 md:gap-3 md:pb-6"
         style={{
           backgroundColor: "var(--surface-app)",
-          paddingBottom: 24,
-          paddingTop: 24,
         }}
       >
         {header}
@@ -166,18 +163,12 @@ export function AlertsScreen({
           <FilterBar
             ariaLabel="Alert filter"
             variant="segmented"
-            equalWidthOnMobile
+            fitToScreenOnMobile
             value={filter}
             onChange={(key) => setFilter(key as Filter)}
             options={[
               { key: "all", label: "All", count: alerts.length },
               { key: "unread", label: "Unread", count: unreadCount },
-              {
-                key: "active",
-                label: "Active",
-                count: alerts.filter((a) => a.conditionState === "active")
-                  .length,
-              },
               {
                 key: "important",
                 label: "Important",
@@ -227,7 +218,7 @@ export function AlertsScreen({
             >
               <CheckCheck size={16} />{" "}
               {markingAllRead ? (
-                "Marking…"
+                <span>{"Marking…"}</span>
               ) : (
                 <>
                   <span className="hidden md:inline">Mark All as Read</span>
@@ -250,7 +241,8 @@ export function AlertsScreen({
               aria-label="Clear all read notifications"
               title="Removes every notification you've already read; unread notifications remain"
             >
-              <Eraser size={16} /> {clearingRead ? "Clearing…" : "Clear All"}
+              <Eraser size={16} />{" "}
+              <span>{clearingRead ? "Clearing…" : "Clear All"}</span>
             </Button>
           </div>
         </div>
@@ -262,41 +254,32 @@ export function AlertsScreen({
       {/* ── One unified feed container ──────────────────────────────────── */}
       <section
         aria-label="Notifications"
-        className="overflow-clip rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-sm"
+        className={
+          list.length > 0
+            ? "overflow-clip rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-sm"
+            : ""
+        }
       >
         {list.length === 0 &&
         dataStatus &&
         !dataStatus.hasData ? null : list.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 px-5 py-14 text-center">
-            <img
-              src={logoApp}
-              alt="Eggcelerate logo"
-              className="h-24 w-24 rounded-3xl object-cover"
-            />
-            <h2
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--type-page-title)",
-                fontWeight: "var(--weight-bold)",
-                lineHeight: "var(--leading-snug)",
-                color: TEXT,
-              }}
-            >
-              All clear here!
-            </h2>
-            <p
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--type-body)",
-                fontWeight: "var(--weight-regular)",
-                lineHeight: "var(--leading-normal)",
-                color: MUTED,
-              }}
-            >
-              No {filter === "all" ? "" : filter} notifications to show. Check
-              Monitoring for current device readings.
-            </p>
-          </div>
+          <EmptyState
+            size="regular"
+            title={
+              filter === "all"
+                ? "All clear here!"
+                : filter === "unread"
+                  ? "You're all caught up!"
+                  : "No important notifications"
+            }
+            description={
+              filter === "all"
+                ? "There are no notifications to show right now."
+                : filter === "unread"
+                  ? "There are no unread notifications. Choose All to review your notification history."
+                  : "There are no important notifications to show right now."
+            }
+          />
         ) : (
           <ul>
             {groupedAlerts.map((g, gi) => (
@@ -413,7 +396,7 @@ export function AlertsScreen({
                                 }}
                                 title={`Go to ${a.unit}`}
                               >
-                                {a.unit}
+                                <span>{a.unit}</span>
                               </button>
                             ) : (
                               <span
@@ -488,7 +471,7 @@ export function AlertsScreen({
                                   onClick={() => void onAcknowledge(a.id)}
                                   disabled={pendingAlertId === a.id}
                                   aria-busy={pendingAlertId === a.id}
-                                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
+                                  className="flex h-[var(--control-height-mobile)] w-[var(--control-height-mobile)] cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
                                   style={{
                                     borderColor: CARD_BORDER,
                                     color: TEXT,
@@ -496,7 +479,7 @@ export function AlertsScreen({
                                   title="Mark as read"
                                   aria-label={`Mark ${a.title} as read`}
                                 >
-                                  <Check size={14} />
+                                  <Check weight="fill" size={14} />
                                 </button>
                               )}
                               <button
@@ -504,7 +487,7 @@ export function AlertsScreen({
                                 onClick={() => void onDismiss(a.id)}
                                 disabled={pendingAlertId === a.id}
                                 aria-busy={pendingAlertId === a.id}
-                                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--status-danger-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
+                                className="flex h-[var(--control-height-mobile)] w-[var(--control-height-mobile)] cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--status-danger-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:h-8 md:w-8"
                                 style={{
                                   borderColor: CARD_BORDER,
                                   color: "var(--status-danger-fg)",

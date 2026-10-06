@@ -1,14 +1,10 @@
-import { WifiSlash } from "@phosphor-icons/react";
-import { Check, ChevronRight, Clock, Egg } from "lucide-react";
+import { CheckFat as Check } from "@phosphor-icons/react";
+import { ChevronRight } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { Incubator, Mode, UnitStatus } from "../../domain/types";
-import {
-  resolvedTelemetryStatus,
-  telemetryReceiptTimestamp,
-  telemetryStatusLabel,
-} from "../../features/farm/telemetry";
-import { ExclamationIcon, IncubatorDeviceIcon } from "../icons";
-import { KpiCard, type KpiFooter } from "../KpiCard";
+import type { AlertEntry, Incubator, Mode } from "../../domain/types";
+import { resolvedTelemetryStatus } from "../../features/farm/telemetry";
+import { ActiveIncubatorCard } from "../ActiveIncubatorCard";
+import { OverviewSummary } from "../OverviewSummary";
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -17,6 +13,7 @@ import {
 interface Props {
   units: Incubator[];
   modes: Mode[];
+  alerts?: AlertEntry[];
   onOpenUnit: (id: string) => void;
   onManageAll: () => void;
 }
@@ -31,9 +28,6 @@ const conditionRowStyle = `
 .condition-row{position:relative;background:var(--surface-card);border:var(--border-width-hairline) solid var(--border-default);border-radius:12px;transition:background-color 0.2s ease-in-out, border-color 0.2s ease-in-out}
 .condition-row:hover{background:var(--nav-hover-bg);border-color:var(--nav-hover-border)}
 `;
-
-// Ring stroke — progress-only (not health). Single soft clay derived from primary.
-const PROGRESS_STROKE = "var(--progress-stroke)";
 
 type OffTargetDir = "high" | "low" | "ok";
 
@@ -210,181 +204,10 @@ function OffTargetRow({
   );
 }
 
-/**
- * Operational progress card: chamber name and species with a top-right status pill,
- * an unobstructed progress ring holding cycle percentage, and live temperature and
- * humidity readings at the bottom. The entire card is an accessible clickable surface.
- */
-function MiniCard({
-  unit,
-  mode,
-  onOpen,
-}: {
-  unit: Incubator;
-  mode: Mode;
-  onOpen: (id: string) => void;
-}) {
-  const telemetryStatus = resolvedTelemetryStatus(unit);
-  const pct = Math.min(
-    100,
-    Math.round((unit.dayOfIncubation / mode.incubationDays) * 100),
-  );
-  const stroke = PROGRESS_STROKE;
-  const size = 70;
-  const width = 7;
-  const r = (size - width) / 2;
-  const circumference = 2 * Math.PI * r;
-
-  return (
-    <div className="relative h-full w-full">
-      <button
-        type="button"
-        aria-labelledby={`mini-card-${unit.id}`}
-        onClick={() => onOpen(unit.id)}
-        className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-[var(--radius-overview-card-mobile)] border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] md:rounded-[var(--radius-dialog)] md:p-4"
-      >
-        {/* Top-left header stack — name over mode over progress. */}
-        <div className="relative w-full min-w-0 text-left">
-          <div className="flex min-w-0 items-start justify-between gap-1">
-            <span
-              id={`mini-card-${unit.id}`}
-              className="block min-w-0 flex-1 truncate text-(length:--type-body) lg:text-(length:--type-heading-sm)"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: "var(--weight-semibold)",
-                lineHeight: "var(--leading-snug)",
-                color: "var(--text-primary)",
-              }}
-              title={unit.name}
-            >
-              {unit.name}
-            </span>
-            <div
-              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--text-faint)] transition-colors group-hover:text-[var(--brand-primary)]"
-              aria-hidden="true"
-            >
-              <ChevronRight size={16} />
-            </div>
-          </div>
-          <div className="mt-0.5 flex items-center justify-between gap-1">
-            <span
-              className="block min-w-0 truncate text-(length:--type-caption) lg:text-(length:--type-body-sm)"
-              style={{
-                fontFamily: "var(--font-body)",
-                fontWeight: "var(--weight-semibold)",
-                lineHeight: "var(--leading-normal)",
-                color: "var(--text-farm)",
-              }}
-            >
-              {mode.name}
-            </span>
-            {telemetryStatus === "offline" ? (
-              <span
-                className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-                style={{
-                  backgroundColor: "var(--status-offline-bg)",
-                  color: "var(--status-offline-fg)",
-                }}
-                title={telemetryStatusLabel(
-                  telemetryStatus,
-                  telemetryReceiptTimestamp(unit),
-                )}
-              >
-                <WifiSlash size={10} weight="bold" aria-hidden="true" />
-                Offline
-              </span>
-            ) : (
-              <span
-                className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium"
-                style={{
-                  color:
-                    telemetryStatus === "fresh"
-                      ? "var(--status-success-fg)"
-                      : "var(--status-warning-fg)",
-                }}
-                title={telemetryStatusLabel(
-                  telemetryStatus,
-                  telemetryReceiptTimestamp(unit),
-                )}
-              >
-                <span
-                  className="h-1.5 w-1.5 rounded-full"
-                  style={{
-                    backgroundColor:
-                      telemetryStatus === "fresh"
-                        ? "var(--status-success-fg)"
-                        : "var(--status-warning-fg)",
-                  }}
-                />
-                {telemetryStatus === "fresh" ? "Live" : "Stale"}
-              </span>
-            )}
-          </div>
-          <span
-            className="mt-1 block min-w-0 truncate"
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "var(--type-caption)",
-              fontWeight: "var(--weight-regular)",
-              lineHeight: "var(--leading-normal)",
-              color: "var(--text-farm)",
-            }}
-            title={`Progress: Day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
-          >
-            Day {unit.dayOfIncubation} of {mode.incubationDays}
-          </span>
-        </div>
-
-        {/* Center body — the ring */}
-        <div className="relative my-2.5 flex min-h-0 items-center justify-center">
-          <svg
-            width={size}
-            height={size}
-            role="img"
-            aria-label={`Cycle progress ${pct}%, day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
-            style={{ transform: "rotate(-90deg)" }}
-          >
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              fill="none"
-              stroke={BORDER}
-              strokeWidth={width}
-            />
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              fill="none"
-              stroke={stroke}
-              strokeWidth={width}
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - pct / 100)}
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span
-              className="tracking-tight font-bold text-sm md:text-base"
-              style={{
-                fontFamily: "var(--font-display)",
-                color: stroke,
-                lineHeight: "var(--leading-tight)",
-              }}
-            >
-              {pct}%
-            </span>
-          </div>
-        </div>
-      </button>
-    </div>
-  );
-}
-
 export function OverviewScreen({
   units,
   modes,
+  alerts = [],
   onOpenUnit,
   onManageAll,
 }: Props) {
@@ -406,7 +229,7 @@ export function OverviewScreen({
     setConditionTab(tab);
     const el = conditionCarouselRef.current;
     if (!el) return;
-    el.scrollTo({
+    el.scrollTo?.({
       left: (tab === "humidity" ? 1 : 0) * el.clientWidth,
       behavior: "smooth",
     });
@@ -418,7 +241,6 @@ export function OverviewScreen({
     setConditionTab(page > 0 ? "humidity" : "temp");
   };
   const stats = useMemo(() => {
-    const count = (s: UnitStatus) => units.filter((u) => u.status === s).length;
     const connected = units.filter(
       (u) => resolvedTelemetryStatus(u) === "fresh",
     ).length;
@@ -429,6 +251,7 @@ export function OverviewScreen({
 
     // Chamber closest to hatching (fewest days remaining).
     const withRemaining = units
+      .filter((unit) => unit.paired && unit.cyclePhase !== "ready")
       .map((u) => {
         const m = modeOf(u.modeId);
         return { u, m, remaining: m.incubationDays - u.dayOfIncubation };
@@ -437,9 +260,6 @@ export function OverviewScreen({
     const nextHatch = withRemaining[0];
 
     return {
-      optimal: count("optimal"),
-      warning: count("warning"),
-      alert: count("alert"),
       needsAttention: units.filter((u) => u.status !== "optimal").length,
       connected,
       totalEggs,
@@ -510,74 +330,47 @@ export function OverviewScreen({
     (u) => u.cyclePhase === "ready" || !u.paired,
   ).length;
   const activeCount = units.length - idleCount;
-  const incubatorsFooter: KpiFooter =
-    idleCount === 0
-      ? {
-          primary: "All incubators are running",
-          secondary: "Efficiency to the max!",
-        }
-      : idleCount === 1
-        ? { primary: "1 idle", secondary: `${activeCount} running` }
-        : { primary: `${idleCount} idle`, secondary: `${activeCount} running` };
-  const eggsFooter: KpiFooter = { primary: `Across ${units.length} chambers` };
-  const upcomingFooter: KpiFooter | undefined = (() => {
-    if (!stats.nextHatch) return undefined;
-    const chamberName = stats.nextHatch.u.name;
-    const modeName = stats.nextHatch.m.name;
-    if (nextRemaining <= 0)
-      return {
-        primary: chamberName,
-        secondary: modeName,
-        tertiary: "check chamber",
-      };
-    if (nextRemaining === 1)
-      return { primary: "Due tomorrow", secondary: `${modeName}` };
-    return { primary: `In ${nextRemaining} days`, secondary: `${modeName}` };
-  })();
-  const needsAttentionFooter: KpiFooter | undefined = (() => {
-    if (stats.needsAttention === 0)
-      return { primary: "No issues", secondary: "All optimal" };
-    const top = attentionUnits[0];
-    return {
-      primary: top ? top.name : `${stats.needsAttention} chambers`,
-      secondary: "Need a look",
-    };
-  })();
+  const offlineCount = units.filter(
+    (unit) => resolvedTelemetryStatus(unit) === "offline",
+  ).length;
+  const hatchesDue = units.filter(
+    (unit) =>
+      unit.paired &&
+      unit.cyclePhase !== "ready" &&
+      unit.dayOfIncubation >= modeOf(unit.modeId).incubationDays,
+  ).length;
+  const unreadAlerts = alerts.filter((alert) => !alert.acknowledged);
+  const startChecks = () => {
+    const due = units.find(
+      (unit) =>
+        unit.paired &&
+        unit.cyclePhase !== "ready" &&
+        unit.dayOfIncubation >= modeOf(unit.modeId).incubationDays,
+    );
+    const first =
+      due ?? attentionUnits.find((unit) => unit.status !== "optimal");
+    if (first) onOpenUnit(first.id);
+    else onManageAll();
+  };
 
   return (
     <div className="flex flex-col gap-2 md:gap-8">
-      {/* Section 2: executive KPI summary — strict 1-row compact cards */}
-      <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
-        {/* Same chamber-device glyph as the sidebar Incubators nav item. */}
-        <KpiCard
-          iconRight
-          Icon={IncubatorDeviceIcon}
-          label="INCUBATORS"
-          value={`${units.length} Active`}
-          footer={incubatorsFooter}
-        />
-        <KpiCard
-          iconRight
-          Icon={Egg}
-          label="EGGS INCUBATING"
-          value={`${stats.totalEggs} Eggs`}
-          footer={eggsFooter}
-        />
-        <KpiCard
-          Icon={Clock}
-          iconRight
-          label="UPCOMING HATCH"
-          value={hatchValue}
-          footer={upcomingFooter}
-        />
-        <KpiCard
-          iconRight
-          Icon={ExclamationIcon}
-          label="NEEDS ATTENTION"
-          value={`${stats.needsAttention}`}
-          footer={needsAttentionFooter}
-        />
-      </div>
+      <OverviewSummary
+        incubators={units.length}
+        running={activeCount}
+        idle={idleCount}
+        eggs={stats.totalEggs}
+        needsAttention={stats.needsAttention}
+        hatchesDue={hatchesDue}
+        offline={offlineCount}
+        nextHatch={stats.nextHatch ? hatchValue : "—"}
+        nextChamber={stats.nextHatch?.u.name}
+        alerts={unreadAlerts.length}
+        criticalAlerts={
+          unreadAlerts.filter((alert) => alert.severity === "critical").length
+        }
+        onStartChecks={startChecks}
+      />
 
       {/* Section 3: chamber status grid, wrapped in one white container */}
       <section
@@ -588,27 +381,25 @@ export function OverviewScreen({
           borderColor: "var(--border-subtle)",
         }}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex h-[var(--control-height-mobile)] min-w-0 flex-col justify-center md:block md:h-auto">
+        <div className="flex h-[var(--control-height-mobile)] items-center justify-between gap-3 md:h-[var(--control-height-default)]">
+          <div className="flex h-full min-w-0 flex-col justify-center">
             <h2
               id="active-incubators-title"
-              className="text-(length:--type-heading-sm) lg:text-(length:--type-heading-md)"
+              className="text-(length:--type-heading-sm) leading-snug md:leading-5 lg:text-(length:--type-heading-md)"
               style={{
                 fontFamily: "var(--font-display)",
                 fontWeight: "var(--weight-semibold)",
-                lineHeight: "var(--leading-snug)",
                 color: HEADING,
               }}
             >
               Active Incubators
             </h2>
             <p
-              className="mt-0 md:mt-0.5"
+              className="mt-0 leading-normal md:leading-4"
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-regular)",
-                lineHeight: "var(--leading-normal)",
                 color: "var(--text-farm)",
               }}
             >
@@ -618,12 +409,17 @@ export function OverviewScreen({
           <button
             type="button"
             onClick={onManageAll}
-            className="inline-flex min-h-[var(--overview-action-height-mobile)] shrink-0 cursor-pointer items-center gap-0.5 rounded-xl border bg-[var(--surface-card)] px-2.5 py-1 text-xs font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:min-h-11 md:px-4 md:py-2 md:text-sm"
-            style={{ borderColor: RUST, color: RUST }}
+            className="inline-flex h-[var(--control-height-mobile)] max-h-[var(--control-height-mobile)] shrink-0 cursor-pointer items-center gap-2 rounded-xl border bg-[var(--surface-card)] px-2.5 py-0 text-(length:--type-button-label) font-semibold transition-colors duration-200 hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:h-[var(--control-height-default)] md:max-h-[var(--control-height-default)] md:px-4"
+            style={{
+              borderColor: RUST,
+              color: RUST,
+              lineHeight: "var(--leading-button)",
+            }}
             aria-label="View all incubators"
           >
-            <span className="md:hidden">View all →</span>
+            <span className="md:hidden">View all</span>
             <span className="hidden md:inline">View All Incubators</span>
+            <ChevronRight size={16} aria-hidden="true" />
           </button>
         </div>
         <div
@@ -640,7 +436,11 @@ export function OverviewScreen({
               key={u.id}
               className="w-[calc((100%-10px)/2)] shrink-0 snap-start md:w-auto md:shrink md:snap-none"
             >
-              <MiniCard unit={u} mode={modeOf(u.modeId)} onOpen={onOpenUnit} />
+              <ActiveIncubatorCard
+                unit={u}
+                mode={modeOf(u.modeId)}
+                onOpen={onOpenUnit}
+              />
             </div>
           ))}
         </div>
@@ -688,26 +488,24 @@ export function OverviewScreen({
         }}
       >
         <div style={{ marginBottom: 16 }}>
-          <div className="flex h-[var(--control-height-mobile)] flex-col justify-center md:block md:h-auto">
+          <div className="flex h-[var(--control-height-mobile)] flex-col justify-center md:h-[var(--control-height-default)]">
             <h2
               id="conditions-to-check-title"
-              className="text-(length:--type-heading-sm) lg:text-(length:--type-heading-md)"
+              className="text-(length:--type-heading-sm) leading-snug md:leading-5 lg:text-(length:--type-heading-md)"
               style={{
                 fontFamily: "var(--font-display)",
                 fontWeight: "var(--weight-semibold)",
-                lineHeight: "var(--leading-snug)",
                 color: HEADING,
               }}
             >
               Conditions to Check
             </h2>
             <p
-              className="mt-0 md:mt-0.5"
+              className="mt-0 leading-normal md:leading-4"
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-caption)",
                 fontWeight: "var(--weight-regular)",
-                lineHeight: "var(--leading-normal)",
                 color: "var(--text-farm)",
               }}
             >
@@ -800,6 +598,7 @@ export function OverviewScreen({
                   }}
                 >
                   <Check
+                    weight="fill"
                     size={16}
                     style={{ color: "var(--status-success-fg)" }}
                   />
@@ -857,6 +656,7 @@ export function OverviewScreen({
                   }}
                 >
                   <Check
+                    weight="fill"
                     size={16}
                     style={{ color: "var(--status-success-fg)" }}
                   />
@@ -885,6 +685,37 @@ export function OverviewScreen({
               )}
             </div>
           </div>
+        </div>
+        <div className="mt-3 flex justify-center gap-1.5 lg:hidden">
+          {[
+            {
+              key: "temp",
+              label: "Show temperature conditions",
+              tab: "temp" as const,
+            },
+            {
+              key: "humidity",
+              label: "Show humidity conditions",
+              tab: "humidity" as const,
+            },
+          ].map(({ key, label, tab }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => selectConditionTab(tab)}
+              className="h-1.5 cursor-pointer rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 motion-reduce:transition-none"
+              aria-current={conditionTab === tab ? "true" : undefined}
+              aria-label={label}
+              style={{
+                width:
+                  conditionTab === tab
+                    ? "var(--dot-width-current)"
+                    : "var(--dot-size)",
+                backgroundColor:
+                  conditionTab === tab ? RUST : "var(--dot-idle)",
+              }}
+            />
+          ))}
         </div>
       </section>
     </div>

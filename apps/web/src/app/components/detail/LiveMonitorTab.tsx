@@ -34,18 +34,14 @@ import { WaterDroplet } from "../WaterDroplet";
 import { SectionCard } from "./primitives";
 import { Timeline } from "./Timeline";
 
-type StatusTone = { fg: string; bg: string; ring: string };
-
 function SystemStatusTile({
   icon,
   label,
   value,
-  tone,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
-  tone: StatusTone;
 }) {
   return (
     <div
@@ -57,8 +53,8 @@ function SystemStatusTile({
     >
       <span
         aria-hidden="true"
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-lg text-sm [&>svg]:size-3.5"
-        style={{ backgroundColor: tone.bg, color: tone.fg }}
+        className="flex h-5 w-5 shrink-0 items-center justify-center [&>svg]:size-5"
+        style={{ color: "var(--text-secondary)" }}
       >
         {icon}
       </span>
@@ -231,7 +227,7 @@ function EnvironmentalSummary({
               Sensor history could not be loaded.
             </p>
             <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-              Retry
+              <span>Retry</span>
             </Button>
           </div>
         ) : (
@@ -315,7 +311,7 @@ function EnvironmentalSummary({
             fontWeight: "var(--weight-bold)",
           }}
         >
-          Full trends <ArrowUpRight size={14} aria-hidden="true" />
+          <span>Full trends</span> <ArrowUpRight size={14} aria-hidden="true" />
         </button>
       }
     >
@@ -330,7 +326,7 @@ function EnvironmentalSummary({
             loaded.
           </p>
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-            Retry
+            <span>Retry</span>
           </Button>
         </div>
       )}
@@ -558,45 +554,14 @@ export function LiveMonitorTab({
   const telemetryStatus = resolvedTelemetryStatus(unit);
   const telemetryVerified = telemetryStatus === "fresh";
   const receiptTimestamp = telemetryReceiptTimestamp(unit);
-  const unverifiedTone: StatusTone = {
-    fg: "var(--text-secondary)",
-    bg: "var(--surface-subtle)",
-    ring: "var(--border-default)",
-  };
-  const actuatorTone = (active: boolean, activeTone: StatusTone) =>
-    telemetryVerified && active ? activeTone : unverifiedTone;
   const actuatorValue = (active: boolean, on: string, off: string) =>
     telemetryVerified ? (active ? on : off) : "Unavailable";
-  const telemetryTone =
-    telemetryStatus === "fresh"
-      ? {
-          fg: "var(--status-success-fg)",
-          bg: "var(--status-success-bg)",
-          ring: "var(--status-success-fg)",
-        }
-      : telemetryStatus === "stale"
-        ? {
-            fg: "var(--status-warning-fg)",
-            bg: "var(--status-warning-bg)",
-            ring: "var(--status-warning-fg)",
-          }
-        : {
-            fg: "var(--status-danger-fg)",
-            bg: "var(--status-danger-bg)",
-            ring: "var(--status-danger-fg)",
-          };
 
   return (
     <div className="space-y-3 md:space-y-5">
-      {!telemetryVerified && (
-        <p className="text-sm text-[var(--text-secondary)]" role="status">
-          {receiptTimestamp
-            ? "Showing last-received sensor readings; actuator states are unavailable."
-            : "Waiting for device telemetry. Sensor values are development previews and actuator states are unavailable."}
-        </p>
-      )}
       <SectionCard
         title="Incubation Timeline"
+        titleVariant="headingSmall"
         titleId="incubation-timeline-title"
         section
         divider
@@ -610,10 +575,15 @@ export function LiveMonitorTab({
           labelSize={9}
           onSelectMilestone={onSelectCandlingDay}
         />
-        <div
-          className="my-2.5 md:my-4"
-          style={{ height: 1, backgroundColor: "var(--border-default)" }}
-        />
+      </SectionCard>
+
+      <SectionCard
+        title="Sensor readings"
+        titleId="sensor-readings-title"
+        section
+        divider
+        density="compact"
+      >
         <div className="grid grid-cols-3 items-start gap-2 md:gap-6">
           <GaugeDial
             value={unit.temp}
@@ -649,50 +619,22 @@ export function LiveMonitorTab({
             icon={<Flame size={18} weight="fill" />}
             label="Heating element"
             value={actuatorValue(heaterOn, "Heating", "Standby")}
-            tone={actuatorTone(heaterOn, {
-              fg: "var(--status-warning-fg)",
-              bg: "var(--status-warning-bg)",
-              ring: "var(--status-warning-fg)",
-            })}
           />
           <SystemStatusTile
-            icon={<Waves size={18} weight="fill" />}
+            icon={<Waves size={20} weight="bold" />}
             label="Mist maker"
             value={actuatorValue(mistOn, "Misting", "Off")}
-            tone={actuatorTone(mistOn, {
-              fg: "var(--status-success-fg)",
-              bg: "var(--status-success-bg)",
-              ring: "var(--status-success-fg)",
-            })}
           />
           <SystemStatusTile
             icon={<Fan size={18} weight="fill" />}
             label="Circulation fan"
             value={actuatorValue(fanOn, "Active", "Off")}
-            tone={actuatorTone(fanOn, {
-              fg: "var(--status-success-fg)",
-              bg: "var(--status-success-bg)",
-              ring: "var(--status-success-fg)",
-            })}
           />
           <SystemStatusTile
             icon={<Lightning size={18} weight="fill" />}
             label="Power"
             value={
               unit.powerSource === "battery" ? "Battery power" : "Grid power"
-            }
-            tone={
-              unit.powerSource === "battery"
-                ? {
-                    fg: "var(--status-warning-fg)",
-                    bg: "var(--status-warning-bg)",
-                    ring: "var(--status-warning-fg)",
-                  }
-                : {
-                    fg: "var(--status-success-fg)",
-                    bg: "var(--status-success-bg)",
-                    ring: "var(--status-success-fg)",
-                  }
             }
           />
           <SystemStatusTile
@@ -705,7 +647,6 @@ export function LiveMonitorTab({
             }
             label="Telemetry"
             value={telemetryStatusLabel(telemetryStatus, receiptTimestamp)}
-            tone={telemetryTone}
           />
           <SystemStatusTile
             icon={<BatteryPlus size={18} weight="fill" />}
@@ -714,19 +655,6 @@ export function LiveMonitorTab({
               unit.batteryPct <= 25
                 ? `${unit.batteryPct}% (Low)`
                 : `${unit.batteryPct}%`
-            }
-            tone={
-              unit.batteryPct <= 25
-                ? {
-                    fg: "var(--status-danger-fg)",
-                    bg: "var(--status-danger-bg)",
-                    ring: "var(--status-danger-fg)",
-                  }
-                : {
-                    fg: "var(--status-success-fg)",
-                    bg: "var(--status-success-bg)",
-                    ring: "var(--status-success-fg)",
-                  }
             }
           />
         </div>
@@ -740,6 +668,17 @@ export function LiveMonitorTab({
         error={readingsError}
         onRetry={onRetryReadings}
       />
+      {!telemetryVerified && (
+        <p
+          className="text-(length:--type-caption) text-[var(--text-muted)]"
+          role="status"
+          data-screen-note="telemetry-preview"
+        >
+          {receiptTimestamp
+            ? "Showing last-received sensor readings; actuator states are unavailable."
+            : "Waiting for device telemetry. Sensor values are development previews and actuator states are unavailable."}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,14 +1,9 @@
-import {
-  Bell,
-  CalendarDots,
-  CheckCircle,
-  Clock,
-  Notepad,
-} from "@phosphor-icons/react";
+import { Bell, CalendarDots, Clock } from "@phosphor-icons/react";
+import { IconClipboardTextFilled } from "@tabler/icons-react";
 import {
   ArrowDownWideNarrow,
-  ArrowRight,
   ArrowUpNarrowWide,
+  ChevronRight,
   Search,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -31,7 +26,9 @@ import {
   ChamberCardHeader,
   ChamberCardShell,
 } from "../ChamberCardShell";
-import { ExclamationIcon } from "../icons";
+import { EmptyState } from "../EmptyState";
+import { FilledCheckIcon as CheckCircle } from "../icons/CheckIcon";
+import { ExclamationIcon } from "../icons/ExclamationIcon";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { Button } from "../ui/button";
 import { FilterBar } from "../ui/filter-bar";
@@ -98,11 +95,13 @@ const statusMeta: Record<
   }
 > = {
   overdue: {
-    label: "Overdue",
+    label: "To Log",
     description: "Needs an inspection",
     fg: "var(--status-warning-fg)",
     bg: "var(--status-warning-bg)",
-    Icon: (props) => <ExclamationIcon {...props} />,
+    Icon: ({ size = 14, color, className }) => (
+      <ExclamationIcon size={size} className={className} color={color} />
+    ),
   },
   due: {
     label: "Due today",
@@ -123,7 +122,7 @@ const statusMeta: Record<
     description: "All checkpoints logged",
     fg: "var(--status-success-fg)",
     bg: "var(--status-success-bg)",
-    Icon: (props) => <CheckCircle {...props} weight="fill" />,
+    Icon: (props) => <CheckCircle {...props} />,
   },
   "not-started": {
     label: "Not started",
@@ -137,7 +136,7 @@ const statusMeta: Record<
     description: "No further checks scheduled",
     fg: "var(--status-info-fg)",
     bg: "var(--status-info-bg)",
-    Icon: (props) => <CheckCircle {...props} weight="fill" />,
+    Icon: (props) => <CheckCircle {...props} />,
   },
 };
 
@@ -312,13 +311,11 @@ function JournalCard({
                 <CheckCircle
                   size={statusIconBadgeGlyphSize("sm")}
                   color="var(--status-icon-badge-fg)"
-                  weight="fill"
                 />
               ) : (
-                <Notepad
+                <IconClipboardTextFilled
                   size={statusIconBadgeGlyphSize("sm")}
                   color="var(--status-icon-badge-fg)"
-                  weight="fill"
                 />
               )
             }
@@ -340,21 +337,21 @@ function JournalCard({
           type="button"
           onClick={() => onOpen(row.unit.id)}
           size="sm"
-          className="cursor-pointer rounded-full shadow-sm transition-colors hover:bg-[var(--surface-action-hover)]"
+          className="h-[var(--control-height-mobile)] max-h-[var(--control-height-mobile)] cursor-pointer rounded-full py-0 shadow-sm transition-colors hover:bg-[var(--surface-action-hover)] md:h-[var(--control-height-default)] md:max-h-[var(--control-height-default)]"
           aria-label={`Open candling log for ${row.unit.name}`}
           style={{
             backgroundColor: "var(--surface-card)",
             color: RUST,
             border: "var(--border-width-hairline) solid var(--border-ink-soft)",
             fontFamily: "var(--font-body)",
-            fontSize: "var(--type-body-sm)",
+            fontSize: "var(--type-button-label)",
             fontWeight: "var(--weight-bold)",
-            lineHeight: "var(--leading-normal)",
+            lineHeight: "var(--leading-button)",
             paddingLeft: 12,
             paddingRight: 10,
           }}
         >
-          Open log <ArrowRight size={15} aria-hidden="true" />
+          <span>Open log</span> <ChevronRight size={16} aria-hidden="true" />
         </Button>
       </ChamberCardFooter>
     </ChamberCardShell>
@@ -639,47 +636,39 @@ export function CandlingLogsScreen({
       </div>
       <section aria-label="Candling journal list">
         {rows.length === 0 ? (
-          <div
-            className="rounded-2xl border border-dashed px-5 py-12 text-center"
-            style={{ backgroundColor: SUBTLE, borderColor: BORDER }}
-          >
-            <p
-              style={{
-                color: TEXT,
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--type-page-title)",
-                fontWeight: "var(--weight-bold)",
-                lineHeight: "var(--leading-snug)",
-              }}
-            >
-              No candling logs match these filters
-            </p>
-            <p
-              className="mt-1"
-              style={{ color: MUTED, fontSize: "var(--type-body-sm)" }}
-            >
-              Try a different chamber, mode, or status.
-            </p>
-            {(search || filter !== "all" || modeFilter !== "all") && (
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-4 rounded-xl"
-                onClick={() => {
-                  setSearch("");
-                  setFilter("all");
-                  setModeFilter("all");
-                }}
-                style={{
-                  borderColor: BORDER,
-                  color: RUST,
-                  backgroundColor: SURFACE,
-                }}
-              >
-                Clear filters
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            title={
+              search || filter !== "all" || modeFilter !== "all"
+                ? "No candling logs match these filters"
+                : "No candling logs yet"
+            }
+            description={
+              search || filter !== "all" || modeFilter !== "all"
+                ? "Try a different chamber or mode, or clear the selected filters."
+                : "Inspection notes and egg checks will appear here as they are recorded."
+            }
+            action={
+              search || filter !== "all" || modeFilter !== "all" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setSearch("");
+                    setFilter("all");
+                    setModeFilter("all");
+                  }}
+                  style={{
+                    borderColor: BORDER,
+                    color: RUST,
+                    backgroundColor: SURFACE,
+                  }}
+                >
+                  <span>Clear filters</span>
+                </Button>
+              ) : undefined
+            }
+          />
         ) : view === "grid" ? (
           <>
             {/* Reserve a small mobile gutter so the fixed chamber index never
@@ -938,16 +927,20 @@ export function CandlingLogsScreen({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="rounded-xl"
+                            className="h-[var(--control-height-mobile)] max-h-[var(--control-height-mobile)] rounded-xl py-0 md:h-[var(--control-height-default)] md:max-h-[var(--control-height-default)]"
                             onClick={() => onOpenCandling(row.unit.id)}
                             aria-label={`Open candling log for ${row.unit.name}`}
                             style={{
                               borderColor: BORDER,
                               color: RUST,
                               backgroundColor: SURFACE,
+                              fontSize: "var(--type-button-label)",
+                              lineHeight: "var(--leading-button)",
+                              fontWeight: "var(--weight-bold)",
                             }}
                           >
-                            Open log <ArrowRight size={15} aria-hidden="true" />
+                            <span>Open log</span>{" "}
+                            <ChevronRight size={16} aria-hidden="true" />
                           </Button>
                         </TableCell>
                       </TableRow>

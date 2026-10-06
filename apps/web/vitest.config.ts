@@ -23,10 +23,13 @@ export default defineConfig({
         "src/app/providers/**/*.{ts,tsx}",
         "src/app/routing/**/*.{ts,tsx}",
         "src/app/components/screens/**/*.{ts,tsx}",
+        "src/app/components/trends/**/*.{ts,tsx}",
+        "src/app/components/incubators/**/*.{ts,tsx}",
         "src/app/components/auth/**/*.{ts,tsx}",
         "src/app/components/AppSidebar.tsx",
         "src/app/components/PageHeader.tsx",
         "src/app/components/IncubatorCard.tsx",
+        "src/app/components/OverviewSummary.tsx",
         "src/app/components/settings/HardwarePanel.tsx",
         "src/app/components/ui/filter-bar.tsx",
         "src/app/components/ui/typography.tsx",
@@ -38,7 +41,7 @@ export default defineConfig({
           functions: 88,
           branches: 81,
         },
-        "src/app/components/screens/**": {
+        "src/app/components/{screens,trends,incubators}/**": {
           lines: 50,
           functions: 28,
           branches: 60,
@@ -61,6 +64,11 @@ export default defineConfig({
         "src/app/components/IncubatorCard.tsx": {
           lines: 70,
           functions: 30,
+          branches: 60,
+        },
+        "src/app/components/OverviewSummary.tsx": {
+          lines: 80,
+          functions: 80,
           branches: 60,
         },
         "src/app/components/settings/HardwarePanel.tsx": {

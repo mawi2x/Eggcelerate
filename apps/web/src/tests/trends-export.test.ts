@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildReadingsCsv } from "../app/components/screens/TrendsScreen";
+import { buildReadingsCsv } from "../app/features/trends/readings-csv";
 
 describe("trends CSV export", () => {
   it("includes chamber identity and safely quotes chamber names", () => {

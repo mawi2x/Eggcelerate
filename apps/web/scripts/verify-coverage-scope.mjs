@@ -4,7 +4,9 @@ import { fileURLToPath } from "node:url";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(scriptDirectory, "..");
-const screenDirectory = path.join(appRoot, "src/app/components/screens");
+const screenDirectories = ["screens", "trends", "incubators"].map((directory) =>
+  path.join(appRoot, "src/app/components", directory),
+);
 const coverageFile = path.join(appRoot, "coverage/coverage-final.json");
 
 function listScreens(directory) {
@@ -15,9 +17,9 @@ function listScreens(directory) {
   });
 }
 
-const expectedScreens = listScreens(screenDirectory).map((file) =>
-  path.resolve(file),
-);
+const expectedScreens = screenDirectories
+  .flatMap(listScreens)
+  .map((file) => path.resolve(file));
 const report = JSON.parse(readFileSync(coverageFile, "utf8"));
 const coveredFiles = new Set(
   Object.keys(report).map((file) => path.resolve(appRoot, file)),
@@ -34,4 +36,6 @@ if (expectedScreens.length === 0 || missingScreens.length > 0) {
   process.exit(1);
 }
 
-console.log(`Coverage includes all ${expectedScreens.length} screen modules.`);
+console.log(
+  `Coverage includes all ${expectedScreens.length} screen and extracted feature modules.`,
+);

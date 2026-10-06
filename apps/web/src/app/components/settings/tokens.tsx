@@ -12,6 +12,15 @@ export const TEXT = "var(--text-primary)";
 export const CRIT = "var(--status-danger-fg)";
 export const CRIT_BG = "var(--status-danger-bg)";
 
+export const SETTINGS_SEGMENT_LABEL_STYLE = {
+  fontFamily: "var(--font-body)",
+  fontSize: "var(--type-filter-label)",
+  fontWeight: "var(--weight-bold)",
+  lineHeight: "var(--leading-snug)",
+  letterSpacing: "var(--tracking-label)",
+  textTransform: "uppercase" as const,
+};
+
 export const inputClass =
   "h-auto w-full rounded-xl px-3.5 py-2.5 transition-colors focus-visible:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/25";
 export const inputStyle = {

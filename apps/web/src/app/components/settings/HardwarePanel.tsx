@@ -1,6 +1,7 @@
 import { WifiSlash } from "@phosphor-icons/react";
 import { BatteryMedium, Info, Minus, Plug, Plus, Wifi } from "lucide-react";
 import type { Incubator } from "../../domain/types";
+import { EmptyState } from "../EmptyState";
 import { Input } from "../ui/input";
 import {
   SegmentedControl,
@@ -22,6 +23,7 @@ import {
   MUTED,
   PanelHeader,
   RUST,
+  SETTINGS_SEGMENT_LABEL_STYLE,
   SettingRow,
   SURFACE,
   TEXT,
@@ -31,11 +33,17 @@ interface Props {
   units: Incubator[];
   view: HardwarePanelView;
   onViewChange: (view: HardwarePanelView) => void;
+  onOpenUnit: (id: string) => void;
 }
 
 export type HardwarePanelView = "devices" | "preferences";
 
-export function HardwarePanel({ units, view, onViewChange }: Props) {
+export function HardwarePanel({
+  units,
+  view,
+  onViewChange,
+  onOpenUnit,
+}: Props) {
   return (
     <div>
       <PanelHeader
@@ -58,9 +66,10 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           active={view === "devices"}
           flush
           className="flex-1 md:flex-none"
+          style={SETTINGS_SEGMENT_LABEL_STYLE}
           onClick={() => onViewChange("devices")}
         >
-          Paired devices ({units.length})
+          Paired devices
         </SegmentedControlItem>
         <SegmentedControlItem
           id="hardware-preferences-tab"
@@ -70,6 +79,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           active={view === "preferences"}
           flush
           className="flex-1 md:flex-none"
+          style={SETTINGS_SEGMENT_LABEL_STYLE}
           onClick={() => onViewChange("preferences")}
         >
           Device preferences
@@ -102,9 +112,12 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
               const online =
                 unit.paired && unit.connectionState === "connected";
               return (
-                <div
+                <button
+                  type="button"
                   key={unit.id}
-                  className="flex min-w-0 items-center gap-3 rounded-[var(--radius-compact)] p-2"
+                  aria-label={`Open ${unit.name} incubator`}
+                  onClick={() => onOpenUnit(unit.id)}
+                  className="flex min-w-0 w-full cursor-pointer items-center gap-3 rounded-[var(--radius-compact)] p-2 text-left transition-colors hover:bg-[var(--surface-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                   style={{
                     border: `var(--border-width-hairline) solid ${BORDER}`,
                   }}
@@ -174,28 +187,16 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                         ? "Online"
                         : "Offline"}
                   </span>
-                </div>
+                </button>
               );
             })}
             {units.length === 0 && (
-              <div
-                className="rounded-[var(--radius-dialog)] px-5 py-10 text-center md:col-span-2"
-                style={{
-                  backgroundColor: "var(--surface-app)",
-                  border: `var(--border-width-hairline) dashed ${BORDER}`,
-                }}
-              >
-                <p
-                  style={{
-                    fontWeight: "var(--weight-bold)",
-                    color: TEXT,
-                    fontFamily: "var(--font-display)",
-                    fontSize: "var(--type-page-title)",
-                    lineHeight: "var(--leading-snug)",
-                  }}
-                >
-                  No devices paired yet
-                </p>
+              <div className="md:col-span-2">
+                <EmptyState
+                  size="compact"
+                  title="No devices paired yet"
+                  description="Paired incubators will appear here with their connection and power status."
+                />
               </div>
             )}
           </div>
@@ -207,14 +208,6 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
           aria-labelledby="hardware-preferences-tab"
           className="grid grid-cols-1 gap-4 pt-5"
         >
-          <p
-            id="hardware-unavailable"
-            className="text-sm"
-            style={{ color: MUTED }}
-          >
-            Hardware preferences are not available yet. The values below are
-            previews, not confirmed device settings.
-          </p>
           <section
             aria-labelledby="hardware-group-sampling"
             className="rounded-[var(--radius-dialog)] p-4"
@@ -379,7 +372,7 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
                         border: `var(--border-width-hairline) solid ${BORDER}`,
                       }}
                     >
-                      Unavailable
+                      <span>Unavailable</span>
                     </button>
                   </div>
                 }
@@ -411,6 +404,14 @@ export function HardwarePanel({ units, view, onViewChange }: Props) {
               />
             </div>
           </section>
+          <p
+            id="hardware-unavailable"
+            className="text-sm"
+            style={{ color: MUTED }}
+          >
+            Hardware preferences are not available yet. The values above are
+            previews, not confirmed device settings.
+          </p>
         </div>
       )}
     </div>

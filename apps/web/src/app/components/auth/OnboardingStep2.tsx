@@ -1,3 +1,4 @@
+import { CheckFat } from "@phosphor-icons/react";
 import { Egg, Feather, FlaskConical, Sparkles } from "lucide-react";
 import { useState } from "react";
 import type { PrimaryFocus } from "../../data/onboarding";
@@ -173,7 +174,14 @@ export function OnboardingStep2({
                     : "var(--border-default)",
                 }}
               >
-                {selected ? "✓ " : ""}
+                {selected && (
+                  <CheckFat
+                    size={14}
+                    weight="fill"
+                    aria-hidden="true"
+                    className="inline-block"
+                  />
+                )}
                 {SPECIES_LABELS[s]}
               </button>
             );
@@ -203,14 +211,14 @@ export function OnboardingStep2({
             color: "var(--text-primary)",
           }}
         >
-          ← Back
+          <span>← Back</span>
         </button>
         <button
           type="button"
           onClick={submit}
           className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
-          Continue →
+          <span>Continue →</span>
         </button>
       </div>
     </AuthCard>

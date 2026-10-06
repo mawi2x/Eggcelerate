@@ -18,6 +18,9 @@
   --type-filter-label: var(
     --type-label
   ); /* [EXPERIMENTAL] 11px desktop/tablet; 10px mobile */
+  --type-button-label: 0.875rem; /* 14px desktop action labels */
+  --leading-button: var(--leading-snug);
+  --incubator-action-height: var(--control-height-default);
   --type-body-sm: 0.8125rem; /* 13px */
   --type-caption: 0.75rem; /* 12px */
   --type-label: 0.6875rem; /* 11px — system minimum, do not go below globally */
@@ -208,6 +211,35 @@
   --toast-success: #93b58c;
   --toast-neutral: var(--text-toast-dim);
 
+  /* Hatch performance overview shares the Overview summary palette. */
+  --hatch-summary-bg: var(--overview-summary-bg);
+  --hatch-summary-fg: var(--overview-summary-fg);
+  --hatch-summary-muted: var(--overview-summary-muted);
+  --hatch-summary-accent: var(--overview-summary-accent);
+  --hatch-summary-divider: var(--overview-summary-divider);
+  --hatch-summary-border: var(--overview-summary-border);
+  --hatch-summary-track: color-mix(
+    in srgb,
+    var(--hatch-summary-fg) 16%,
+    transparent
+  );
+
+  /* Overview summary — emphasize today's priorities with the brand palette. */
+  --overview-summary-bg: var(--brand-primary-soft);
+  --overview-summary-fg: var(--text-primary);
+  --overview-summary-muted: var(--text-secondary);
+  --overview-summary-accent: var(--brand-primary);
+  --overview-summary-divider: color-mix(
+    in srgb,
+    var(--brand-primary) 18%,
+    transparent
+  );
+  --overview-summary-border: color-mix(
+    in srgb,
+    var(--brand-primary) 32%,
+    transparent
+  );
+
   /* Overlay — photo viewer / dark scrim system (overlay exception zone). */
   --overlay-bg: #141210;
   --overlay-border: rgba(255, 255, 255, 0.12);
@@ -245,6 +277,10 @@
   --icon-earth: #9e8b72;
   --legend-amber: #d97706;
   --legend-green: #16a34a;
+  --egg-development-growing: #407f50;
+  --egg-development-stopped: #c92323;
+  --egg-development-uncertain: #c78348;
+  --egg-development-clear: #c6c2bf;
   --surface-peach: #fdf0e6;
   --border-peach: #e8d5c2;
   --surface-mint: #f0fdf4;
@@ -408,8 +444,59 @@
 /* [EXPERIMENTAL] Filter dropdown labels use the compact label tier on mobile. */
 @media (max-width: 47.9375rem) {
   :root {
+    --type-button-label: 0.75rem; /* 12px mobile action labels */
+    --incubator-action-height: var(--control-height-mobile);
+  }
+  :root {
     --type-filter-value: 0.625rem; /* 10px */
     --type-filter-label: 0.625rem; /* 10px */
+  }
+}
+
+/* Incubators: one phone/tablet boundary, with the same roles in portal dialogs.
+   Compact labels stay separate from readable control values and action labels. */
+.timeline-rail-labels {
+  --timeline-track-top: 12px;
+}
+
+.timeline-milestone-label {
+  top: calc(100% + 10px);
+}
+
+.timeline-milestone-label--above {
+  bottom: auto;
+}
+
+@media (max-width: 47.9375rem) {
+  .timeline-rail-labels {
+    --timeline-track-top: 32px;
+  }
+
+  .timeline-milestone-label--above {
+    top: auto;
+    bottom: calc(100% + 10px);
+  }
+}
+
+.incubators-typography {
+  --incubator-action-height: var(--control-height-default);
+}
+
+@media (max-width: 47.9375rem) {
+  .incubators-typography {
+    --type-page-title: 1.25rem;
+    --type-panel-title: 1.125rem;
+    --type-heading-lg: 1.125rem;
+    --type-heading-md: 1rem;
+    --type-heading-sm: 0.875rem;
+    --type-body-lg: 0.8125rem;
+    --type-body: 0.75rem;
+    --type-control-value: 0.75rem;
+    --type-body-sm: 0.6875rem;
+    --type-caption: 0.625rem;
+    --type-label: 0.625rem;
+    --type-filter-label: 0.625rem;
+    --incubator-action-height: var(--control-height-mobile);
   }
 }
 
@@ -463,6 +550,10 @@
 }
 
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

@@ -286,6 +286,16 @@ class PreferencesDTO(BaseModel):
     farm_name: NonEmpty
     account_holder: NonEmpty
     display_name: str = ""
+    profile_photo: (
+        Annotated[
+            str,
+            Field(
+                max_length=180_000,
+                pattern=r"^data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}$",
+            ),
+        ]
+        | None
+    ) = None
     notifications: NotificationsModel
     temperature_unit: TemperatureUnit
     time_zone: TimeZone

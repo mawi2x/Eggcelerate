@@ -53,7 +53,7 @@ export class RecoveryBoundary extends Component<
               this.setState({ failed: false, needsReload: false });
             }}
           >
-            Try again
+            <span>Try again</span>
           </Button>
           {!this.state.needsReload && (
             <Button
@@ -61,7 +61,7 @@ export class RecoveryBoundary extends Component<
               variant="outline"
               onClick={() => window.location.reload()}
             >
-              Reload page
+              <span>Reload page</span>
             </Button>
           )}
           <a

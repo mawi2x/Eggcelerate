@@ -7,6 +7,7 @@ Source of truth for behavior is code + `../SYSTEM_ARCHITECTURE_GUIDE.md`.
 - [Typography guidelines](./typography-guidelines.md) — semantic type/weight/leading/tracking tokens, hierarchy, component usage, and accessibility rules (Baloo 2 / Nunito, rem scale, 100% root).
 - [Typography — experimental](./typography-experimental.md) — EXPERIMENTAL filter-value/filter-label tablet+mobile tiers only; stable contract stays in Typography guidelines.
 - [UI control-size guidelines](./ui-control-size-guidelines.md) — search, select, button, chip, toggle, segment, and tab geometry.
+- [Screen notes](./screen-note-guidelines.md) — bottom placement for standalone explanations and informational notices.
 - [Auth & Onboarding](./auth-onboarding-guide.md) — app-managed API sessions, farm ownership, local mock flow, and remaining release gates.
 - [Device provisioning](./device-provisioning-guide.md) — operator-owned device IDs, farm routing, and the local simulator-only boundary.
 - [Frontend restructuring](./frontend-restructuring-guide.md) — active F0–F6 execution checklist (domain → repository → Query → routing/auth → states → gate).

@@ -1,4 +1,5 @@
-import { Egg as EggIcon, Notepad } from "@phosphor-icons/react";
+import { Egg as EggIcon } from "@phosphor-icons/react";
+import { IconClipboardText } from "@tabler/icons-react";
 import {
   Activity,
   CalendarDays,
@@ -97,7 +98,7 @@ function SubTabNav({
             key: "candling",
             label: "Candling & Inspection",
             mobileLabel: "Candling",
-            icon: <Notepad size={15} aria-hidden="true" />,
+            icon: <IconClipboardText size={15} aria-hidden="true" />,
           },
           {
             key: "settings",
@@ -301,7 +302,7 @@ export function DetailScreen({
               height: "var(--control-height-mobile)",
             }}
           >
-            Set Up
+            <span>Set Up</span>
           </Button>
         </div>
       )}
@@ -571,7 +572,7 @@ export function DetailScreen({
                   disabled={isUpdating}
                   onClick={() => setSetupOpen(false)}
                 >
-                  Cancel
+                  <span>Cancel</span>
                 </Button>
                 <Button
                   type="submit"
@@ -585,7 +586,9 @@ export function DetailScreen({
                       !setupMode || !setupEggsValid || isUpdating ? 0.5 : 1,
                   }}
                 >
-                  {isUpdating ? "Starting…" : "Start Incubation Cycle"}
+                  <span>
+                    {isUpdating ? "Starting…" : "Start Incubation Cycle"}
+                  </span>
                 </Button>
               </div>
             </div>
@@ -691,7 +694,7 @@ export function DetailScreen({
                 color: "var(--on-brand)",
               }}
             >
-              {isUpdating ? "Resetting…" : "Reset to Ready"}
+              <span>{isUpdating ? "Resetting…" : "Reset to Ready"}</span>
             </Button>
           </div>
         </SectionCard>
@@ -773,14 +776,15 @@ export function DetailScreen({
           <Button
             size="toolbar"
             onClick={() => setHarvestOpen(true)}
-            className="rounded-xl px-5 font-bold shadow-sm transition-all"
+            className="h-[var(--control-height-mobile)] max-h-[var(--control-height-mobile)] rounded-xl px-5 py-0 font-bold shadow-sm transition-all md:h-[var(--control-height-default)] md:max-h-[var(--control-height-default)]"
             style={{
               backgroundColor: "var(--brand-primary-hover)",
               color: "var(--on-brand)",
-              height: "var(--control-height-mobile)",
+              fontSize: "var(--type-button-label)",
+              lineHeight: "var(--leading-button)",
             }}
           >
-            Finish Cycle
+            <span>Finish Cycle</span>
           </Button>
         </div>
       )}

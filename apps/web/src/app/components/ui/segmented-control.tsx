@@ -58,7 +58,7 @@ export function SegmentedControlItem({
       type={type}
       className={cn(
         "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
-        flush ? "h-full min-h-0 py-0 gap-1.5" : itemSizeClasses[size],
+        flush ? "h-full min-h-0 gap-1.5 px-3 py-0" : itemSizeClasses[size],
         className,
       )}
       style={{

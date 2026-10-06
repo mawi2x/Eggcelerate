@@ -63,12 +63,40 @@ describe("dashboard control regression", () => {
       expect(
         button(mounted.container, "Humidity").getAttribute("aria-pressed"),
       ).toBe("true");
+      expect(
+        button(mounted.container, "Show humidity conditions").getAttribute(
+          "aria-current",
+        ),
+      ).toBe("true");
+      expect(
+        button(mounted.container, "Show temperature conditions").getAttribute(
+          "aria-current",
+        ),
+      ).toBeNull();
+
       await act(async () => {
         carousel.scrollLeft = 0;
         carousel.dispatchEvent(new Event("scroll"));
       });
       expect(
         button(mounted.container, "Temperature").getAttribute("aria-pressed"),
+      ).toBe("true");
+      expect(
+        button(mounted.container, "Show temperature conditions").getAttribute(
+          "aria-current",
+        ),
+      ).toBe("true");
+
+      await act(async () => {
+        button(mounted.container, "Show humidity conditions").click();
+      });
+      expect(
+        button(mounted.container, "Humidity").getAttribute("aria-pressed"),
+      ).toBe("true");
+      expect(
+        button(mounted.container, "Show humidity conditions").getAttribute(
+          "aria-current",
+        ),
       ).toBe("true");
     } finally {
       await mounted.unmount();
@@ -103,7 +131,9 @@ describe("dashboard control regression", () => {
       expect(mounted.container.textContent).toContain(
         "All humidity levels within target",
       );
-      expect(mounted.container.textContent).toContain("No issues");
+      expect(mounted.container.textContent).toContain(
+        "0 chambers need attention",
+      );
       await act(async () => button(mounted.container, "Ready 1").click());
       expect(open).toHaveBeenCalledWith("ready-1");
     } finally {
@@ -229,7 +259,7 @@ describe("dashboard control regression", () => {
             onManageAll={manage}
           />,
         );
-        expect(mounted.container.textContent).toContain("0 Active");
+        expect(mounted.container.textContent).toContain("0 running and 0 idle");
       } finally {
         await mounted.unmount();
       }

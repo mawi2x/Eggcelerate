@@ -22,7 +22,9 @@ export function HarvestModal({
   totalEggsLoaded,
   fertileEggs,
   onSave,
+  className,
 }: {
+  className?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   chamberName: string;
@@ -71,7 +73,7 @@ export function HarvestModal({
       }}
     >
       <DialogContent
-        className="w-[90vw] max-w-[var(--dialog-width-narrow)] max-h-[88vh] overflow-y-auto p-0 shadow-2xl [&>[data-slot=dialog-close]]:hidden"
+        className={`w-[90vw] max-w-[var(--dialog-width-narrow)] max-h-[88vh] overflow-y-auto p-0 shadow-2xl [&>[data-slot=dialog-close]]:hidden ${className ?? ""}`}
         style={{
           backgroundColor: "var(--surface-subtle)",
           border: `var(--border-width-hairline) solid var(--border-default)`,
@@ -104,7 +106,7 @@ export function HarvestModal({
           <DialogDescription
             className="mt-1.5"
             style={{
-              fontSize: "var(--type-caption)",
+              fontSize: "var(--type-body)",
               color: "var(--text-secondary)",
               lineHeight: 1.5,
             }}
@@ -242,13 +244,16 @@ export function HarvestModal({
               variant="ghost"
               className="rounded-full"
               style={{
-                height: "var(--control-height-mobile)",
-                fontSize: "var(--type-body)",
+                height:
+                  "var(--incubator-action-height, var(--control-height-default))",
+                fontSize: "var(--type-button-label)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-button)",
               }}
               onClick={() => onOpenChange(false)}
               disabled={isSaving}
             >
-              Cancel
+              <span>Cancel</span>
             </Button>
             <Button
               onClick={() => void save()}
@@ -259,11 +264,14 @@ export function HarvestModal({
                 backgroundColor: "var(--brand-primary)",
                 color: "var(--on-brand)",
                 opacity: !valid || isSaving ? 0.5 : 1,
-                height: "var(--control-height-mobile)",
-                fontSize: "var(--type-body)",
+                height:
+                  "var(--incubator-action-height, var(--control-height-default))",
+                fontSize: "var(--type-button-label)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-button)",
               }}
             >
-              {isSaving ? "Saving…" : "Save & Reset"}
+              <span>{isSaving ? "Saving…" : "Save & Reset"}</span>
             </Button>
           </div>
         </div>

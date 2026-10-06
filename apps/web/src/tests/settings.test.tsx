@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsScreen } from "../app/components/screens/SettingsScreen";
 import { HardwarePanel } from "../app/components/settings/HardwarePanel";
 import { validateNotificationPreferences } from "../app/components/settings/NotificationsPanel";
+import { createIncubatorFixtures } from "../app/data/fixtures/incubators";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
 import { initialSettings } from "../app/data/settings";
 
@@ -29,6 +30,7 @@ describe("settings contracts", () => {
               units={[]}
               view="preferences"
               onViewChange={() => {}}
+              onOpenUnit={() => {}}
             />,
           ),
         );
@@ -105,6 +107,33 @@ describe("settings contracts", () => {
     ).toBeNull();
   });
 
+  it("opens the matching incubator when a paired device row is selected", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    const unit = createIncubatorFixtures([])[0];
+    const onOpenUnit = vi.fn();
+
+    await act(async () =>
+      root.render(
+        <HardwarePanel
+          units={[unit]}
+          view="devices"
+          onViewChange={() => {}}
+          onOpenUnit={onOpenUnit}
+        />,
+      ),
+    );
+
+    const deviceButton = container.querySelector<HTMLButtonElement>(
+      `[aria-label="Open ${unit.name} incubator"]`,
+    );
+    if (!deviceButton) throw new Error("Missing paired device button");
+    await act(async () => deviceButton.click());
+    expect(onOpenUnit).toHaveBeenCalledWith(unit.id);
+
+    await act(async () => root.unmount());
+  });
+
   it("marks edited settings dirty and Discard restores the confirmed value", async () => {
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -121,6 +150,7 @@ describe("settings contracts", () => {
           onSaveSettings={saveSettings}
           isSaving={false}
           units={[]}
+          onOpenUnit={() => {}}
         />,
       ),
     );
@@ -182,6 +212,7 @@ describe("settings contracts", () => {
           onSaveSettings={async () => true}
           isSaving={false}
           units={[]}
+          onOpenUnit={() => {}}
         />,
       ),
     );

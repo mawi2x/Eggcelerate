@@ -217,6 +217,7 @@ farm_preferences = Table(
     Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
     Column("farm_name", Text, nullable=False),
     Column("account_holder", Text, nullable=False),
+    Column("profile_photo", Text),
     Column("display_name", Text, nullable=False),
     Column("temperature_unit", Text, nullable=False),
     Column("time_zone", Text, nullable=False),

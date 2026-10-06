@@ -399,7 +399,7 @@ export function DeviceSettingsTab({
                   fontWeight: "var(--weight-semibold)",
                 }}
               >
-                Edit preset for future cycles{" "}
+                <span>Edit preset for future cycles </span>
                 <ChevronRight size={14} aria-hidden="true" />
               </button>
             </div>
@@ -566,11 +566,13 @@ export function DeviceSettingsTab({
                   style={outlineBtn}
                 >
                   <RotateCw size={14} />{" "}
-                  {isRequestingTurn
-                    ? "Requesting…"
-                    : turnInProgress
-                      ? "Waiting…"
-                      : "Turn Now"}
+                  <span>
+                    {isRequestingTurn
+                      ? "Requesting…"
+                      : turnInProgress
+                        ? "Waiting…"
+                        : "Turn Now"}
+                  </span>
                 </Button>
               </div>
             </div>
@@ -725,7 +727,7 @@ export function DeviceSettingsTab({
                     backgroundColor: "var(--surface-card)",
                   }}
                 >
-                  Stop Cycle
+                  <span>Stop Cycle</span>
                 </Button>
               </div>
             </div>

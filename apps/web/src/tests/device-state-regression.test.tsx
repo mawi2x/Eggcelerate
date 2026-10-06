@@ -139,8 +139,14 @@ describe("device controls after the React upgrade", () => {
       },
     ];
     const change = vi.fn();
+    const onOpenUnit = vi.fn();
     const mounted = await render(
-      <HardwarePanel units={units} view="devices" onViewChange={change} />,
+      <HardwarePanel
+        units={units}
+        view="devices"
+        onViewChange={change}
+        onOpenUnit={onOpenUnit}
+      />,
     );
     try {
       expect(mounted.container.textContent).toContain("1 of 3 online");
@@ -159,7 +165,12 @@ describe("device controls after the React upgrade", () => {
       );
       expect(change).toHaveBeenLastCalledWith("devices");
       await mounted.rerender(
-        <HardwarePanel units={[]} view="devices" onViewChange={change} />,
+        <HardwarePanel
+          units={[]}
+          view="devices"
+          onViewChange={change}
+          onOpenUnit={onOpenUnit}
+        />,
       );
       expect(mounted.container.textContent).toContain("No devices paired yet");
       expect(mounted.container.textContent).not.toContain("1 of 3 online");
@@ -172,7 +183,7 @@ describe("device controls after the React upgrade", () => {
     [0, "Ready"],
     [18, "Lockdown"],
     [21, "Hatch Day!"],
-    [25, "Overdue"],
+    [25, "4 days past hatch"],
   ] as const)(
     "labels day %i and keeps journal checkpoints usable",
     async (currentDay, label) => {

@@ -267,7 +267,6 @@ def test_populated_0004_upgrade_and_downgrade_preserve_prior_slices(database_url
     from eggcelerate_api.database.schema import (
         alert_idempotency,
         devices,
-        farm_preferences,
         farms,
         incubators,
         modes,
@@ -294,6 +293,11 @@ def test_populated_0004_upgrade_and_downgrade_preserve_prior_slices(database_url
                     )
 
                 await conn.run_sync(migrate, "0004")
+                farm_preferences = await conn.run_sync(
+                    lambda sync: Table(
+                        "farm_preferences", MetaData(), autoload_with=sync
+                    )
+                )
                 # Historical migration fixtures use their historical columns;
                 # current alert metadata includes fields introduced in 0015.
                 alerts = await conn.run_sync(
@@ -319,12 +323,16 @@ def test_populated_0004_upgrade_and_downgrade_preserve_prior_slices(database_url
                     await session.commit()
                 await conn.execute(
                     insert(farm_preferences).values(
-                        **preference_values(
-                            db.farm_id,
-                            state.preferences.model_copy(
-                                update={"farm_name": "Preserve me"}
-                            ),
-                        )
+                        **{
+                            key: value
+                            for key, value in preference_values(
+                                db.farm_id,
+                                state.preferences.model_copy(
+                                    update={"farm_name": "Preserve me"}
+                                ),
+                            ).items()
+                            if key in farm_preferences.c
+                        }
                     )
                 )
                 await conn.execute(update(alerts).values(dismissed=True))

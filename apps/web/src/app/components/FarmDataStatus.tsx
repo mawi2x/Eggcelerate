@@ -79,7 +79,7 @@ export function FarmDataStatus({
           </p>
         </div>
         <Button type="button" size="sm" variant="outline" onClick={onRetry}>
-          Retry
+          <span>Retry</span>
         </Button>
       </div>
     );

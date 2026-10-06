@@ -42,7 +42,7 @@ export function FeatureDataStatus({
         aria-label={`Retry ${label.toLowerCase()}`}
         onClick={() => void state.retry()}
       >
-        Retry
+        <span>Retry</span>
       </Button>
     </div>
   );

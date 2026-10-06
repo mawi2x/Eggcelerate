@@ -97,7 +97,7 @@ export function SegmentedBattery({
             style={{
               width: 6,
               height: "var(--battery-bar-height)",
-              borderRadius: "var(--radius-bar)",
+              borderRadius: 2,
               backgroundColor: i < bars ? color : TRACK,
             }}
           />

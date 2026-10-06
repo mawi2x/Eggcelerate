@@ -125,7 +125,7 @@ export function NotificationPopover({
               color: RUST,
             }}
           >
-            {markingAllRead ? "Marking…" : "Mark all as read"}
+            <span>{markingAllRead ? "Marking…" : "Mark all as read"}</span>
           </button>
         </div>
 
@@ -267,7 +267,7 @@ export function NotificationPopover({
             color: RUST,
           }}
         >
-          View All Notifications <ArrowRight size={15} />
+          <span>View All Notifications</span> <ArrowRight size={15} />
         </button>
       </PopoverContent>
     </Popover>

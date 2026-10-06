@@ -79,7 +79,7 @@ export function CreateAccountScreen({
           onClick={onHaveAccount}
           className="mt-6 w-full rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
-          Return to sign in
+          <span>Return to sign in</span>
         </button>
       </AuthCard>
     );
@@ -212,14 +212,14 @@ export function CreateAccountScreen({
         onClick={() => void submit()}
         className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
-        {busy ? "Creating account…" : "Create account"}
+        <span>{busy ? "Creating account…" : "Create account"}</span>
       </button>
       <button
         type="button"
         onClick={onHaveAccount}
         className="mt-3 w-full rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
-        I already have an account
+        <span>I already have an account</span>
       </button>
     </AuthCard>
   );

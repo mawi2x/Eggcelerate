@@ -53,7 +53,9 @@ describe("route contracts", () => {
       "/incubators/chamber-1",
     );
     expect(parseAppPath("/onboarding/9").redirectTo).toBe("/onboarding/1");
-    expect(parseAppPath("/unknown").redirectTo).toBe("/");
+    expect(parseAppPath("/unknown").screen).toBe("notFound");
+    expect(parseAppPath("/unknown").redirectTo).toBeUndefined();
+    expect(parseAppPath("/404").screen).toBe("notFound");
   });
 
   it("redirects unknown incubator IDs without discarding valid trend routes", () => {

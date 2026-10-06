@@ -1,4 +1,5 @@
-import { Check, Info } from "lucide-react";
+import { CheckFat as Check } from "@phosphor-icons/react";
+import { Info } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // Dark charcoal surface from the toast spec.
@@ -86,7 +87,7 @@ export function ToastStack({
               style={{ color: accent }}
             >
               {t.kind === "enabled" ? (
-                <Check size={17} strokeWidth={3} />
+                <Check size={17} weight="fill" />
               ) : (
                 <Info size={17} />
               )}

@@ -38,7 +38,7 @@ describe("alert condition lifecycle", () => {
     expect(mapped.resolvedAt).toBe("2026-10-03T00:05:00Z");
   });
 
-  it("filters active conditions even when read, excluding resolved and local notices", async () => {
+  it("keeps three categories and filters unread independently from condition status", async () => {
     const mounted = await render(
       <AlertsScreen
         alerts={[
@@ -69,15 +69,26 @@ describe("alert condition lifecycle", () => {
     );
     try {
       expect(mounted.container.textContent).toContain("Resolved · recovered");
-      const active = Array.from(
-        mounted.container.querySelectorAll("button"),
-      ).find((button) => button.textContent?.startsWith("Active"));
-      expect(active).toBeDefined();
-      await act(async () => active?.click());
+      const categories = mounted.container.querySelector(
+        '[aria-label="Alert filter"]',
+      );
+      const filters = Array.from(categories?.querySelectorAll("button") ?? []);
+      expect(filters).toHaveLength(3);
+      expect(
+        filters.map((button) => button.textContent?.replace(/\d+/g, "").trim()),
+      ).toEqual(["All", "Unread", "Important"]);
       expect(mounted.container.textContent).toContain("Active condition");
-      expect(mounted.container.textContent).not.toContain("Past offline");
-      expect(mounted.container.textContent).not.toContain("Fetch failed");
       expect(mounted.container.textContent).toContain("Read notification");
+      const unread = Array.from(
+        mounted.container.querySelectorAll("button"),
+      ).find((button) => button.textContent?.startsWith("Unread"));
+      expect(unread).toBeDefined();
+      await act(async () => unread?.click());
+      expect(mounted.container.textContent).toContain("Past offline");
+      expect(mounted.container.textContent).not.toContain(
+        "Temperature out of range",
+      );
+      expect(mounted.container.textContent).not.toContain("Fetch failed");
     } finally {
       await mounted.unmount();
     }

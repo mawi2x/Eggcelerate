@@ -219,6 +219,12 @@ export const PreferencesDTOSchema = z
     farm_name: z.string().trim().min(1),
     account_holder: z.string().trim().min(1),
     display_name: z.string(),
+    profile_photo: z
+      .string()
+      .max(180_000)
+      .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/)
+      .nullable()
+      .optional(),
     notifications: z
       .object({
         enabled: z.record(z.boolean()),
@@ -449,6 +455,9 @@ export function preferencesFromDTO(input: unknown): SettingsPreferences {
       farmName: dto.farm_name,
       accountHolder: dto.account_holder,
       displayName: dto.display_name,
+      ...(dto.profile_photo !== undefined
+        ? { profilePhoto: dto.profile_photo }
+        : {}),
     },
     notifications: {
       enabled: { ...dto.notifications.enabled },
@@ -467,6 +476,9 @@ export function preferencesToDTO(input: SettingsPreferences): PreferencesDTO {
     farm_name: input.account.farmName,
     account_holder: input.account.accountHolder,
     display_name: input.account.displayName,
+    ...(input.account.profilePhoto !== undefined
+      ? { profile_photo: input.account.profilePhoto }
+      : {}),
     notifications: {
       enabled: { ...input.notifications.enabled },
       sms: input.notifications.sms,

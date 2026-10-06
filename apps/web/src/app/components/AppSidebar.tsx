@@ -1,4 +1,4 @@
-import { Notepad } from "@phosphor-icons/react";
+import { IconClipboardText } from "@tabler/icons-react";
 import {
   Bell,
   ChevronLeft,
@@ -44,7 +44,7 @@ const items: NavItem[] = [
     id: "candling",
     label: "Candling Logs",
     mobileLabel: "Candling",
-    Icon: Notepad,
+    Icon: IconClipboardText,
   },
   { id: "trends", label: "Trends", mobileLabel: "Analytics", Icon: LineChart },
   { id: "alerts", label: "Alerts", Icon: Bell },
@@ -358,7 +358,7 @@ export function AppSidebar({
                 setMobileMoreOpen(false);
                 onHelp();
               }}
-              className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-(length:--type-body) font-semibold text-[var(--text-primary)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-(length:--type-body) font-semibold text-[var(--text-secondary)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             >
               <CircleHelp size={18} aria-hidden="true" />
               <span>Help</span>
@@ -719,7 +719,15 @@ export function AppSidebar({
             lineHeight: "var(--leading-normal)",
           }}
         >
-          {accountInitials(account)}
+          {account.profilePhoto ? (
+            <img
+              src={account.profilePhoto}
+              alt=""
+              className="h-full w-full rounded-full object-cover"
+            />
+          ) : (
+            accountInitials(account)
+          )}
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span

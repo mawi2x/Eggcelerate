@@ -43,6 +43,18 @@ pnpm --filter eggcelerate-ui dev
 
 ## Web container
 
+Create the local Docker Compose configuration from the checked-in template:
+
+```bash
+cp .env.example .env
+```
+
+Skip the copy if `.env` already exists. The root `.env` is ignored by Git and
+starts with development/mock defaults. Configure a separate `.env` on the VPS
+for its production database, HTTPS origin and authentication settings. Root
+`.env` is read by Docker Compose; direct Vite development uses `apps/web/.env`
+or exported `VITE_*` environment variables instead.
+
 Docker Compose builds the web application with Node and pnpm, then serves the generated static files from Nginx. In API mode Nginx forwards same-origin `/api/*` requests to the internal `api` service:
 
 ```bash

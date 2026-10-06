@@ -1,3 +1,5 @@
+import { LoaderCircle, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 import {
   ACCOUNT_HOLDER_MAX,
   type Account,
@@ -6,7 +8,9 @@ import {
   FARM_NAME_MAX,
   resolveDisplayName,
 } from "../../data/account";
+import { prepareProfilePhoto } from "../../features/account/profile-photo";
 import { FieldCounterLabel } from "../FieldCounterLabel";
+import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import {
   Select,
@@ -30,6 +34,7 @@ import {
 
 interface Props {
   account: Account;
+  onPhotoPreparingChange?: (busy: boolean) => void;
   onUpdateAccount: (patch: Partial<Account>) => void;
   temperatureUnit: "c" | "f";
   timeZone: "gmt8" | "gmt0" | "est" | "pst";
@@ -39,12 +44,35 @@ interface Props {
 
 export function FarmAccountPanel({
   account,
+  onPhotoPreparingChange,
   onUpdateAccount,
   temperatureUnit,
   timeZone,
   onTemperatureUnitChange,
   onTimeZoneChange,
 }: Props) {
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [preparingPhoto, setPreparingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  const uploadPhoto = async (file: File) => {
+    setPhotoError(null);
+    setPreparingPhoto(true);
+    onPhotoPreparingChange?.(true);
+    try {
+      onUpdateAccount({ profilePhoto: await prepareProfilePhoto(file) });
+    } catch (error) {
+      setPhotoError(
+        error instanceof Error
+          ? error.message
+          : "Photo could not be added. Try another image.",
+      );
+    } finally {
+      setPreparingPhoto(false);
+      onPhotoPreparingChange?.(false);
+    }
+  };
+
   return (
     <div>
       <PanelHeader
@@ -55,7 +83,7 @@ export function FarmAccountPanel({
 
       {/* Identity strip */}
       <div
-        className="flex min-w-0 items-center gap-3.5 py-5"
+        className="flex min-w-0 flex-wrap items-center gap-3.5 py-5"
         style={{ borderBottom: `var(--border-width-hairline) solid ${BORDER}` }}
       >
         <span
@@ -69,7 +97,15 @@ export function FarmAccountPanel({
             fontWeight: "var(--weight-bold)",
           }}
         >
-          {accountInitials(account)}
+          {account.profilePhoto ? (
+            <img
+              src={account.profilePhoto}
+              alt="Your profile"
+              className="h-full w-full rounded-full object-cover"
+            />
+          ) : (
+            accountInitials(account)
+          )}
         </span>
         <div className="min-w-0 flex-1">
           <p
@@ -94,6 +130,75 @@ export function FarmAccountPanel({
           >
             {account.farmName}
           </p>
+        </div>
+        <div className="w-full space-y-2 sm:w-auto">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-[12px]"
+              disabled={preparingPhoto}
+              aria-busy={preparingPhoto}
+              onClick={() => photoInput.current?.click()}
+            >
+              {preparingPhoto ? (
+                <LoaderCircle
+                  size={16}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Upload size={16} aria-hidden="true" />
+              )}
+              <span>
+                {preparingPhoto
+                  ? "Preparing photo…"
+                  : account.profilePhoto
+                    ? "Change photo"
+                    : "Upload photo"}
+              </span>
+            </Button>
+            {account.profilePhoto && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="rounded-[12px]"
+                disabled={preparingPhoto}
+                onClick={() => {
+                  setPhotoError(null);
+                  onUpdateAccount({ profilePhoto: null });
+                }}
+              >
+                <span>Remove</span>
+              </Button>
+            )}
+          </div>
+          <input
+            ref={photoInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            aria-label="Choose profile photo"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) void uploadPhoto(file);
+            }}
+          />
+          <p style={{ fontSize: "var(--type-caption)", color: MUTED }}>
+            JPG, PNG or WebP · Max 2 MB
+          </p>
+          {photoError && (
+            <p
+              role="alert"
+              style={{
+                fontSize: "var(--type-caption)",
+                color: "var(--status-danger-fg)",
+              }}
+            >
+              {photoError}
+            </p>
+          )}
         </div>
       </div>
 

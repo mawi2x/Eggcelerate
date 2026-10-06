@@ -1,3 +1,4 @@
+import { CheckFat } from "@phosphor-icons/react";
 import { Droplets, Thermometer } from "lucide-react";
 import { useState } from "react";
 import { OnboardingStep3Schema } from "../../data/onboarding";
@@ -197,7 +198,7 @@ export function OnboardingStep3({
             color: "var(--text-primary)",
           }}
         >
-          ← Back
+          <span>← Back</span>
         </button>
         <button
           type="button"
@@ -207,11 +208,12 @@ export function OnboardingStep3({
           className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
           {isSubmitting ? (
-            "Preparing dashboard…"
+            <span>{"Preparing dashboard…"}</span>
           ) : (
             <>
-              <span className="md:hidden">Enter ✓</span>
-              <span className="hidden md:inline">Enter dashboard ✓</span>
+              <span className="md:hidden">Enter</span>
+              <span className="hidden md:inline">Enter dashboard</span>
+              <CheckFat size={16} weight="fill" aria-hidden="true" />
             </>
           )}
         </button>

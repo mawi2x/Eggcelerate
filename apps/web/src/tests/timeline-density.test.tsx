@@ -17,13 +17,14 @@ const candling = [
 async function renderTimeline(
   labelSize?: 10 | 9,
   onSelectMilestone: (day: number) => void = () => {},
+  currentDay = 9,
 ) {
   const container = document.createElement("div");
   const root = createRoot(container);
   await act(async () =>
     root.render(
       <Timeline
-        currentDay={9}
+        currentDay={currentDay}
         totalDays={28}
         candling={candling}
         candled={{}}
@@ -66,6 +67,30 @@ describe("timeline milestone density", () => {
       );
     }
     await act(async () => root.unmount());
+  });
+
+  it("announces cycle progress and caps the rail when overdue", async () => {
+    for (const [day, progress] of [
+      [0, 0],
+      [9, 30],
+      [28, 100],
+      [30, 100],
+    ]) {
+      const { container, root } = await renderTimeline(
+        undefined,
+        undefined,
+        day,
+      );
+      const rail = container.querySelector('[role="progressbar"]');
+      expect(rail?.getAttribute("aria-valuenow")).toBe(String(progress));
+      expect(rail?.getAttribute("aria-valuetext")).toContain(
+        `Day ${day} of 28`,
+      );
+      if (day === 30)
+        expect(container.textContent).toContain("2 days past hatch");
+      if (day === 28) expect(container.textContent).toContain("Hatch Day!");
+      await act(async () => root.unmount());
+    }
   });
 
   it("sends milestone selections to the journal navigator", async () => {

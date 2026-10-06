@@ -16,6 +16,7 @@ import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { computeCandling } from "../../domain/candling";
 import type { Mode } from "../../domain/types";
+import { EmptyState } from "../EmptyState";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -575,7 +576,7 @@ export function ModeLibraryPanel({
             style={{ borderColor: BORDER, fontSize: 10 }}
             onClick={() => fileRef.current?.click()}
           >
-            <Upload size={15} /> Import
+            <Upload size={15} /> <span>Import</span>
           </Button>
           <Button
             variant="outline"
@@ -583,7 +584,7 @@ export function ModeLibraryPanel({
             style={{ borderColor: BORDER, fontSize: 10 }}
             onClick={handleExport}
           >
-            <Download size={15} /> Export All
+            <Download size={15} /> <span>Export All</span>
           </Button>
           <Button
             className="h-[var(--control-height-mobile)] rounded-xl px-3.5 md:h-[var(--control-height-default)]"
@@ -594,7 +595,7 @@ export function ModeLibraryPanel({
             }}
             onClick={openAdd}
           >
-            <Plus size={16} /> Add Custom Mode
+            <Plus size={16} /> <span>Add Custom Mode</span>
           </Button>
           <div className="hidden md:block">
             <ViewToggle view={view} onChange={setView} />
@@ -603,37 +604,31 @@ export function ModeLibraryPanel({
       </div>
 
       {filteredModes.length === 0 ? (
-        <div
-          className="rounded-[var(--radius-dialog)] px-5 py-12 text-center"
-          style={{
-            backgroundColor: "var(--surface-app)",
-            border: `var(--border-width-hairline) dashed ${BORDER}`,
-          }}
-        >
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "var(--type-body)",
-              fontWeight: "var(--weight-bold)",
-              lineHeight: "var(--leading-normal)",
-              color: TEXT,
-            }}
-          >
-            No modes match "{modeSearch}"
-          </p>
-          <p
-            className="mt-1"
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "var(--type-body-sm)",
-              fontWeight: "var(--weight-regular)",
-              lineHeight: "var(--leading-normal)",
-              color: MUTED,
-            }}
-          >
-            Try a different name, or add it as a custom mode.
-          </p>
-        </div>
+        <EmptyState
+          title={`No modes match “${modeSearch}”`}
+          description="Try a different name, clear your search, or add a custom mode."
+          action={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                style={{ borderColor: BORDER, color: RUST }}
+                onClick={() => setModeSearch("")}
+              >
+                <span>Clear search</span>
+              </Button>
+              <Button
+                type="button"
+                className="rounded-xl"
+                style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
+                onClick={openAdd}
+              >
+                <Plus size={16} /> <span>Add Custom Mode</span>
+              </Button>
+            </>
+          }
+        />
       ) : isMobile || view === "grid" ? (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {filteredModes.map((m) => {
@@ -879,7 +874,7 @@ export function ModeLibraryPanel({
               disabled={isMutating}
               onClick={() => setDeleteTarget(null)}
             >
-              Cancel
+              <span>Cancel</span>
             </Button>
             <Button
               className="rounded-xl"
@@ -888,7 +883,8 @@ export function ModeLibraryPanel({
               aria-busy={isMutating}
               onClick={() => void confirmDelete()}
             >
-              <Trash2 size={15} /> {isMutating ? "Deleting…" : "Delete"}
+              <Trash2 size={15} />{" "}
+              <span>{isMutating ? "Deleting…" : "Delete"}</span>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -970,7 +966,7 @@ export function ModeLibraryPanel({
               disabled={isMutating}
               onClick={() => setModalOpen(false)}
             >
-              Cancel
+              <span>Cancel</span>
             </Button>
             <Button
               className="rounded-xl"
@@ -979,7 +975,7 @@ export function ModeLibraryPanel({
               aria-busy={isMutating}
               onClick={() => void saveModal()}
             >
-              {isMutating ? "Saving…" : "Save"}
+              <span>{isMutating ? "Saving…" : "Save"}</span>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1066,9 +1062,11 @@ export function ModeLibraryPanel({
                           lineHeight: "var(--leading-normal)",
                         }}
                       >
-                        {r === "overwrite"
-                          ? "Overwrite existing"
-                          : "Keep both (rename)"}
+                        <span>
+                          {r === "overwrite"
+                            ? "Overwrite existing"
+                            : "Keep both (rename)"}
+                        </span>
                       </button>
                     );
                   })}
@@ -1083,7 +1081,7 @@ export function ModeLibraryPanel({
               disabled={isMutating}
               onClick={() => setConflictOpen(false)}
             >
-              Cancel
+              <span>Cancel</span>
             </Button>
             <Button
               className="rounded-xl"
@@ -1092,7 +1090,7 @@ export function ModeLibraryPanel({
               aria-busy={isMutating}
               onClick={() => void applyImport()}
             >
-              {isMutating ? "Importing…" : "Import"}
+              <span>{isMutating ? "Importing…" : "Import"}</span>
             </Button>
           </DialogFooter>
         </DialogContent>

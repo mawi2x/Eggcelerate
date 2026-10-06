@@ -99,7 +99,9 @@ export function RawReadingsDialog({
             aria-busy={exporting}
           >
             <Download size={16} />
-            {exporting ? "Preparing complete CSV…" : "Export complete CSV"}
+            <span>
+              {exporting ? "Preparing complete CSV…" : "Export complete CSV"}
+            </span>
           </Button>
           {preview.isPending && <p role="status">Loading raw readings…</p>}
           {preview.error && (
@@ -110,7 +112,7 @@ export function RawReadingsDialog({
                 disabled={preview.isFetching}
                 onClick={() => void preview.refetch()}
               >
-                Retry raw readings
+                <span>Retry raw readings</span>
               </Button>
             </div>
           )}

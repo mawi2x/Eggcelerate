@@ -2,6 +2,7 @@ import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { Redirect, useLocation } from "wouter";
 import { AppSidebar } from "./components/AppSidebar";
+import { EmptyState } from "./components/EmptyState";
 import { FarmDataStatus } from "./components/FarmDataStatus";
 import { FeatureDataStatus } from "./components/FeatureDataStatus";
 import { HelpWidget } from "./components/HelpWidget";
@@ -222,6 +223,71 @@ function AppContent() {
     );
   }
 
+  if (screen === "notFound") {
+    return (
+      <RequireAuth>
+        <div
+          className="min-h-dvh w-full overflow-x-clip"
+          style={{ backgroundColor: "var(--surface-app)" }}
+        >
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-[var(--surface-card)] focus:px-4 focus:py-3 focus:text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--ring)]"
+          >
+            Skip to content
+          </a>
+          <AppSidebar
+            active={screen}
+            onNavigate={navigate}
+            alertCount={unreadAlerts}
+            account={account}
+            collapsed={navCollapsed}
+            onToggleCollapsed={() => setNavCollapsed((value) => !value)}
+            onSignOut={() => void signOutAndReturn()}
+            onHelp={() => setHelpOpen(true)}
+          />
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
+          >
+            <div className="mx-auto flex min-h-dvh w-full max-w-6xl items-center px-3 pt-6 pb-[var(--mobile-bottom-nav-clearance)] sm:px-4 md:px-6 md:py-6 lg:px-8">
+              <EmptyState
+                size="page"
+                title="Page not found"
+                description="That address doesn’t lead to an Eggcelerate page. Check the link or return to your overview."
+                illustration={
+                  <span
+                    aria-hidden="true"
+                    className="font-display text-5xl font-bold"
+                    style={{ color: "var(--brand-primary)" }}
+                  >
+                    404
+                  </span>
+                }
+                action={
+                  <Button
+                    type="button"
+                    className="rounded-xl"
+                    style={{
+                      backgroundColor: "var(--brand-primary)",
+                      color: "var(--on-brand)",
+                    }}
+                    onClick={() => navigate("overview")}
+                  >
+                    <span>Go to overview</span>
+                  </Button>
+                }
+              />
+            </div>
+          </main>
+          <Toaster position="top-right" richColors />
+          <HelpWidget open={helpOpen} onOpenChange={setHelpOpen} />
+        </div>
+      </RequireAuth>
+    );
+  }
+
   if (farmDataError) {
     const errorHeader = (
       <PageHeader
@@ -271,7 +337,7 @@ function AppContent() {
             {repositoryErrorMessage(farmDataError)}
           </p>
           <Button type="button" onClick={() => void retryFarmData()}>
-            Try again
+            <span>Try again</span>
           </Button>
         </div>
         <Toaster position="top-right" richColors />
@@ -283,63 +349,52 @@ function AppContent() {
   }
   if (modes.length === 0) {
     return (
-      <div
-        className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center gap-4 px-6 text-center"
-        role="status"
-      >
-        <div>
-          <h1
-            className="text-(length:--type-heading-lg) font-bold"
-            style={{ color: "var(--text-primary)" }}
-          >
-            No farm data available
-          </h1>
-          <p
-            className="mt-2 text-(length:--type-body)"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            The current data source did not return both incubation modes and
-            incubators.
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => void retryFarmData()}
-        >
-          Reload data
-        </Button>
+      <div className="mx-auto flex min-h-dvh max-w-3xl items-center px-4 py-8">
+        <EmptyState
+          size="page"
+          title="No farm data available"
+          description="The current data source did not return both incubation modes and incubators."
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => void retryFarmData()}
+            >
+              <span>Reload data</span>
+            </Button>
+          }
+        />
       </div>
     );
   }
   if (incubators.length === 0 && screen !== "incubators") {
     return (
-      <div className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center gap-4 px-6 text-center">
-        <div>
-          <h1
-            className="text-(length:--type-heading-lg) font-bold"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Your farm is ready
-          </h1>
-          <p
-            className="mt-2 text-(length:--type-body)"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Add a chamber with the device ID printed on your incubator to begin
-            monitoring it.
-          </p>
-        </div>
-        <Button type="button" onClick={() => navigate("incubators")}>
-          Add your first incubator
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => void signOutAndReturn()}
-        >
-          Sign out
-        </Button>
+      <div className="mx-auto flex min-h-dvh max-w-3xl items-center px-4 py-8">
+        <EmptyState
+          size="page"
+          title="Your farm is ready"
+          description="Add a chamber with the device ID printed on your incubator to begin monitoring it."
+          action={
+            <>
+              <Button
+                type="button"
+                className="rounded-xl"
+                onClick={() => navigate("incubators")}
+              >
+                <span>Add your first incubator</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => void signOutAndReturn()}
+              >
+                <span>Sign out</span>
+              </Button>
+            </>
+          }
+        />
       </div>
     );
   }
@@ -514,6 +569,10 @@ function AppContent() {
       title: "Create account",
       subtitle: "Set up your farm account",
     },
+    notFound: {
+      title: "Page not found",
+      subtitle: "The page you requested could not be found.",
+    },
   };
 
   if (screen === "onboarding") {
@@ -683,6 +742,7 @@ function AppContent() {
                 <OverviewScreen
                   units={incubators}
                   modes={modes}
+                  alerts={alerts}
                   onOpenUnit={openUnit}
                   onManageAll={() => navigate("incubators")}
                 />
@@ -802,6 +862,7 @@ function AppContent() {
                         onSaveSettings={saveSettings}
                         isSaving={actionState.savingSettings}
                         units={incubators}
+                        onOpenUnit={openUnit}
                         header={pageHeader}
                       />
                     </Suspense>

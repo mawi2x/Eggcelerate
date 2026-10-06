@@ -15,6 +15,7 @@ import {
   inputStyle,
   MUTED,
   PanelHeader,
+  SETTINGS_SEGMENT_LABEL_STYLE,
   SettingRow,
   TEXT,
 } from "./tokens";
@@ -195,6 +196,7 @@ export function NotificationsPanel({
           active={view === "delivery"}
           flush
           className="flex-1 md:flex-none"
+          style={SETTINGS_SEGMENT_LABEL_STYLE}
           onClick={() => onViewChange("delivery")}
         >
           Delivery & contacts
@@ -207,6 +209,7 @@ export function NotificationsPanel({
           active={view === "rules"}
           flush
           className="flex-1 md:flex-none"
+          style={SETTINGS_SEGMENT_LABEL_STYLE}
           onClick={() => onViewChange("rules")}
         >
           Alert rules

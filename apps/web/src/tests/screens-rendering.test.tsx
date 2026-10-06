@@ -156,6 +156,13 @@ describe("application screens render their accessible page structure", () => {
         }
 
         if (route === "/incubators/chamber-1") {
+          const telemetryNote = mounted.container.querySelector(
+            '[data-screen-note="telemetry-preview"]',
+          );
+          expect(telemetryNote).not.toBeNull();
+          expect(telemetryNote?.parentElement?.lastElementChild).toBe(
+            telemetryNote,
+          );
           const firstMilestone =
             mounted.container.querySelector<HTMLButtonElement>(
               'button[aria-label="First candling, Day 6"]',

@@ -4,7 +4,7 @@ import { InfoIcon } from "../icons/CircleInfoIcon";
 import { ExclamationIcon } from "../icons/ExclamationIcon";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import { Card, CardContent } from "../ui/card";
-import { Typography } from "../ui/typography";
+import { Typography, type TypographyVariant } from "../ui/typography";
 export function StatusPill({
   tone,
   children,
@@ -43,7 +43,8 @@ export function SectionCard({
   action,
   children,
   centered = false,
-  titleSize = 16,
+  titleSize,
+  titleVariant = "headingSmall",
   divider = false,
   titleId,
   section = false,
@@ -56,6 +57,7 @@ export function SectionCard({
   children: React.ReactNode;
   centered?: boolean;
   titleSize?: number;
+  titleVariant?: TypographyVariant;
   divider?: boolean;
   /** Heading id used as the labelled-section name when `section` is true. */
   titleId?: string;
@@ -66,7 +68,6 @@ export function SectionCard({
   /** Bare drops the card chrome (border, fill, shadow) for sheet/dialog hosts. */
   bare?: boolean;
 }) {
-  void titleSize;
   const card = (
     <Card
       style={{
@@ -91,9 +92,12 @@ export function SectionCard({
           <div className="min-w-0 flex-1">
             <Typography
               as="h3"
-              variant="headingSmall"
+              variant={titleVariant}
               id={titleId}
-              style={{ color: "var(--text-primary)" }}
+              style={{
+                color: "var(--text-primary)",
+                ...(titleSize === undefined ? {} : { fontSize: titleSize }),
+              }}
             >
               {title}
             </Typography>

@@ -27,6 +27,7 @@ def test_preferences_restart_seed_replay_and_farm_isolation(settings):
             "farm_name": "Saved farm",
             "account_holder": "Keeper",
             "display_name": "Display",
+            "profile_photo": "data:image/jpeg;base64,/9j/AA==",
             "temperature_unit": "f",
             "time_zone": "est",
             "notifications": {
@@ -118,7 +119,7 @@ def test_populated_0002_upgrade_and_downgrade_preserve_configuration(database_ur
 
     from alembic import command
     from alembic.config import Config
-    from sqlalchemy import insert, select, text
+    from sqlalchemy import MetaData, Table, insert, select, text
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from eggcelerate_api.database.incubators import seed_incubators
@@ -188,9 +189,20 @@ def test_populated_0002_upgrade_and_downgrade_preserve_configuration(database_ur
                     for table in tables
                 }
                 await conn.run_sync(migrate, "0003")
+                farm_preferences = await conn.run_sync(
+                    lambda sync: Table(
+                        "farm_preferences", MetaData(), autoload_with=sync
+                    )
+                )
                 await conn.execute(
                     insert(farm_preferences).values(
-                        **preference_values(db.farm_id, state.preferences)
+                        **{
+                            key: value
+                            for key, value in preference_values(
+                                db.farm_id, state.preferences
+                            ).items()
+                            if key in farm_preferences.c
+                        }
                     )
                 )
                 await conn.execute(

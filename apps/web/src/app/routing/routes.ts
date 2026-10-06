@@ -10,7 +10,8 @@ export type ScreenId =
   | "settings"
   | "login"
   | "register"
-  | "onboarding";
+  | "onboarding"
+  | "notFound";
 
 export interface AppRouteState {
   screen: ScreenId;
@@ -72,6 +73,8 @@ export function screenPath(screen: ScreenId): string {
       return "/register";
     case "onboarding":
       return onboardingPath(1);
+    case "notFound":
+      return "/404";
     case "detail":
       return "/incubators";
   }
@@ -140,7 +143,7 @@ export function parseAppPath(pathname: string): AppRouteState {
     };
   }
 
-  return { ...defaultRoute(), redirectTo: "/" };
+  return { ...defaultRoute(), screen: "notFound" };
 }
 
 export function legacyPathFromSearch(search: string): string | null {

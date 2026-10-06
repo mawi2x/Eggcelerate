@@ -1,20 +1,18 @@
-import { CheckCircle } from "@phosphor-icons/react";
+import { CheckFat } from "@phosphor-icons/react";
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
   CalendarDays,
   Camera,
-  CheckCircle2,
   ChevronDown,
   Circle,
-  CircleCheck,
+  LoaderCircle,
   Pencil,
   Plus,
   Trash2,
   X,
 } from "lucide-react";
-import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { developmentCheckLabels } from "../../domain/candling";
@@ -33,7 +31,13 @@ import {
   selectPendingCheckpoint,
 } from "../../features/candling/selectors";
 import type { IncubatorUpdateIntent } from "../../features/farm/use-farm-data";
-import { CheckIcon } from "../icons/CheckIcon";
+import {
+  FilledCheckIcon as CheckCircle,
+  FilledCheckIcon as CheckCircle2,
+  CheckIcon,
+} from "../icons/CheckIcon";
+import { ExclamationIcon } from "../icons/ExclamationIcon";
+import { StatusIconBadge, statusIconBadgeGlyphSize } from "../StatusIconBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,6 +67,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { CalendarSheetBody, IncubationCalendar } from "./IncubationCalendar";
+import { PhotoActionMenu } from "./PhotoActionMenu";
 import { PhotoLightboxModal } from "./PhotoLightbox";
 import { SectionCard, StatusCallout } from "./primitives";
 import { Timeline } from "./Timeline";
@@ -76,6 +81,45 @@ import {
   NOTES_MAX,
   type TallyKey,
 } from "./types";
+
+function acceptedPhotoFiles(files: FileList | null): File[] {
+  if (!files) return [];
+  const accepted: File[] = [];
+  Array.from(files).forEach((file) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error(`"${file.name}" is not an image. File skipped.`);
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      toast.error(`"${file.name}" is over 5 MB. File skipped.`);
+      return;
+    }
+    accepted.push(file);
+  });
+  return accepted;
+}
+
+function readPhotoFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      typeof reader.result === "string"
+        ? resolve(reader.result)
+        : reject(new Error(`Could not read ${file.name}`));
+    reader.onerror = () =>
+      reject(reader.error ?? new Error(`Could not read ${file.name}`));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function preparePhotoFiles(files: File[]): Promise<string[]> {
+  // Keep the preparation feedback perceptible even for small local images.
+  const [urls] = await Promise.all([
+    Promise.all(files.map(readPhotoFile)),
+    new Promise<void>((resolve) => window.setTimeout(resolve, 500)),
+  ]);
+  return urls;
+}
 
 // ─── Candling feed journal card ──────────────────────────────────────────────
 export function JournalEntryCard({
@@ -93,34 +137,23 @@ export function JournalEntryCard({
   const [noteDraft, setNoteDraft] = useState(entry.note);
   const [noteEditing, setNoteEditing] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const readFiles = (files: FileList | null) => {
-    if (!files) return;
-    const accepted: File[] = [];
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith("image/")) {
-        toast.error(`"${file.name}" is not an image. File skipped.`);
-        return;
-      }
-      if (file.size > MAX_PHOTO_BYTES) {
-        toast.error(`"${file.name}" is over 5 MB. File skipped.`);
-        return;
-      }
-      accepted.push(file);
-    });
+  const readFiles = async (files: FileList | null) => {
+    const accepted = acceptedPhotoFiles(files);
     if (accepted.length === 0) return;
-    const urls: string[] = [];
-    let loaded = 0;
-    accepted.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) urls.push(e.target.result as string);
-        loaded++;
-        if (loaded === accepted.length) void onAddPhotos(entry.day, urls);
-      };
-      reader.readAsDataURL(file);
-    });
+    setIsUploadingPhotos(true);
+    try {
+      const urls = await preparePhotoFiles(accepted);
+      if (!(await onAddPhotos(entry.day, urls))) {
+        throw new Error("Photo update failed");
+      }
+    } catch {
+      toast.error("Photos could not be added. Please try again.");
+    } finally {
+      setIsUploadingPhotos(false);
+    }
   };
 
   const photos = (entry.photos || []).filter(
@@ -233,11 +266,7 @@ export function JournalEntryCard({
                     fontWeight: "var(--weight-semibold)",
                   }}
                 >
-                  <CheckCircle
-                    size={14}
-                    color={"var(--status-success-fg)"}
-                    weight="fill"
-                  />{" "}
+                  <CheckCircle size={14} color={"var(--status-success-fg)"} />{" "}
                   {developmentCheckLabels[c]}
                 </span>
               ))}
@@ -270,7 +299,7 @@ export function JournalEntryCard({
                     maxLength={NOTES_MAX}
                     placeholder="Add observations: veining, air cell development, movement"
                     rows={3}
-                    className="w-full resize-none rounded-xl px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                    className="min-h-20 max-h-[40dvh] w-full resize-y overflow-y-auto rounded-xl px-3.5 py-3 [field-sizing:content] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                     style={{
                       border: `var(--border-width-hairline) solid var(--input-border)`,
                       backgroundColor: "var(--surface-tile)",
@@ -289,7 +318,7 @@ export function JournalEntryCard({
                         setNoteEditing(false);
                       }}
                     >
-                      Cancel
+                      <span>Cancel</span>
                     </Button>
                     <Button
                       size="sm"
@@ -312,7 +341,7 @@ export function JournalEntryCard({
                         );
                       }}
                     >
-                      {isSavingNote ? "Saving…" : "Save note"}
+                      <span>{isSavingNote ? "Saving…" : "Save note"}</span>
                     </Button>
                   </div>
                 </>
@@ -367,7 +396,7 @@ export function JournalEntryCard({
                     e.stopPropagation();
                     setLightboxIndex(i);
                   }}
-                  className="relative overflow-hidden rounded-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2"
+                  className="animate-in fade-in zoom-in-95 duration-300 relative overflow-hidden rounded-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2"
                   style={{
                     width: "var(--control-size-photo)",
                     height: "var(--control-size-photo)",
@@ -395,7 +424,7 @@ export function JournalEntryCard({
                     e.stopPropagation();
                     setLightboxIndex(3);
                   }}
-                  className="relative overflow-hidden rounded-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2"
+                  className="animate-in fade-in zoom-in-95 duration-300 relative overflow-hidden rounded-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2"
                   style={{
                     width: "var(--control-size-photo)",
                     height: "var(--control-size-photo)",
@@ -424,39 +453,59 @@ export function JournalEntryCard({
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => photoRef.current?.click()}
-                className="flex flex-col items-center justify-center gap-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors hover:bg-[var(--surface-paper)]"
-                style={{
-                  width: "var(--control-size-photo)",
-                  height: "var(--control-size-photo)",
-                  border: `1.5px dashed var(--border-accent)`,
-                  backgroundColor: "var(--surface-card)",
-                  cursor: "pointer",
-                }}
-                aria-label="Add candling photo"
-              >
-                <Plus size={15} color={"var(--text-secondary)"} />
-                <span
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-semibold)",
-                    letterSpacing: "var(--tracking-label)",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  Photo
-                </span>
-              </button>
+              <PhotoActionMenu
+                onUpload={() => photoRef.current?.click()}
+                trigger={
+                  <button
+                    type="button"
+                    disabled={isUploadingPhotos}
+                    className="flex flex-col items-center justify-center gap-0.5 rounded-lg transition-colors hover:bg-[var(--surface-paper)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:cursor-wait disabled:opacity-75"
+                    style={{
+                      width: "var(--control-size-photo)",
+                      height: "var(--control-size-photo)",
+                      border: `1.5px dashed var(--border-accent)`,
+                      backgroundColor: "var(--surface-card)",
+                      cursor: isUploadingPhotos ? "wait" : "pointer",
+                    }}
+                    aria-label={
+                      isUploadingPhotos
+                        ? "Adding candling photo"
+                        : "Add candling photo"
+                    }
+                    aria-busy={isUploadingPhotos}
+                  >
+                    {isUploadingPhotos ? (
+                      <LoaderCircle
+                        size={15}
+                        className="animate-spin text-[var(--brand-primary)]"
+                      />
+                    ) : (
+                      <Plus size={15} color="var(--text-secondary)" />
+                    )}
+                    <span
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-semibold)",
+                        letterSpacing: "var(--tracking-label)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {isUploadingPhotos ? "Adding…" : "Photo"}
+                    </span>
+                  </button>
+                }
+              />
               <input
                 ref={photoRef}
                 type="file"
                 accept="image/*"
                 multiple
                 className="hidden"
-                onChange={(e) => readFiles(e.target.files)}
+                onChange={(e) => {
+                  void readFiles(e.currentTarget.files);
+                  e.currentTarget.value = "";
+                }}
               />
             </div>
           </div>
@@ -626,6 +675,7 @@ function LogModalBody({
 
   const [form, setForm] = useState<CandleForm>(initialForm);
   const [dragging, setDragging] = useState(false);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [emptyEvidenceWarningOpen, setEmptyEvidenceWarningOpen] =
     useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -698,42 +748,30 @@ function LogModalBody({
     void submit();
   };
 
-  const readFiles = useCallback((files: FileList | null) => {
-    if (!files) return;
-    const accepted: File[] = [];
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith("image/")) {
-        toast.error(`"${file.name}" is not an image. File skipped.`);
-        return;
-      }
-      if (file.size > MAX_PHOTO_BYTES) {
-        toast.error(`"${file.name}" is over 5 MB. File skipped.`);
-        return;
-      }
-      accepted.push(file);
-    });
+  const readFiles = useCallback(async (files: FileList | null) => {
+    const accepted = acceptedPhotoFiles(files);
     if (accepted.length === 0) return;
-    const urls: string[] = [];
-    let loaded = 0;
-    accepted.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) urls.push(e.target.result as string);
-        loaded++;
-        if (loaded === accepted.length)
-          setForm((f) => ({ ...f, photos: [...f.photos, ...urls] }));
-      };
-      reader.readAsDataURL(file);
-    });
+    setIsUploadingPhotos(true);
+    try {
+      const urls = await preparePhotoFiles(accepted);
+      setForm((current) => ({
+        ...current,
+        photos: [...current.photos, ...urls],
+      }));
+    } catch {
+      toast.error("Photos could not be added. Please try again.");
+    } finally {
+      setIsUploadingPhotos(false);
+    }
   }, []);
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragging(false);
-      readFiles(e.dataTransfer.files);
+      if (!isUploadingPhotos) void readFiles(e.dataTransfer.files);
     },
-    [readFiles],
+    [isUploadingPhotos, readFiles],
   );
 
   const target = candling.find((c) => c.day === form.targetDay);
@@ -1232,7 +1270,7 @@ function LogModalBody({
                         fontSize: "var(--type-filter-label)",
                       }}
                     >
-                      Count remaining as uncertain
+                      <span>Count remaining as uncertain</span>
                     </Button>
                   }
                   className="mt-3"
@@ -1331,7 +1369,7 @@ function LogModalBody({
                   onChange={(e) => setForm({ ...form, note: e.target.value })}
                   placeholder="Observation notes…"
                   rows={3}
-                  className="mt-1.5 w-full resize-none rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                  className="mt-1.5 min-h-20 max-h-[40dvh] w-full resize-y overflow-y-auto rounded-xl px-3 py-2.5 [field-sizing:content] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                   style={{
                     border: `var(--border-width-hairline) solid var(--input-border)`,
                     backgroundColor: "var(--surface-card)",
@@ -1351,61 +1389,90 @@ function LogModalBody({
                 >
                   Photos
                 </Label>
-                <button
-                  type="button"
-                  aria-label="Add candling photos"
-                  onClick={() => photoRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragging(true);
-                  }}
-                  onDragLeave={() => setDragging(false)}
-                  onDrop={onDrop}
-                  className="mt-1.5 flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
-                  style={{
-                    border: `1.5px dashed ${dragging ? "var(--brand-primary)" : "var(--border-accent)"}`,
-                    backgroundColor: dragging
-                      ? "color-mix(in srgb, var(--brand-primary) 4%, transparent)"
-                      : "var(--surface-card)",
-                    transition: "var(--transition-interactive)",
-                  }}
-                >
-                  <Camera
-                    size={20}
-                    color={
-                      dragging ? "var(--brand-primary)" : "var(--icon-earth)"
-                    }
-                  />
-                  <span
-                    style={{
-                      color: "var(--text-primary)",
-                      fontSize: "var(--type-body-sm)",
-                      fontWeight: "var(--weight-semibold)",
-                    }}
-                  >
-                    Add photos from candling
-                  </span>
-                  <span
-                    style={{
-                      color: "var(--text-secondary)",
-                      fontSize: "var(--type-caption)",
-                    }}
-                  >
-                    Click or drag &amp; drop
-                  </span>
-                </button>
+                <PhotoActionMenu
+                  onUpload={() => photoRef.current?.click()}
+                  trigger={
+                    <button
+                      type="button"
+                      disabled={isUploadingPhotos}
+                      aria-label={
+                        isUploadingPhotos
+                          ? "Adding candling photos"
+                          : "Add candling photos"
+                      }
+                      aria-busy={isUploadingPhotos}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragging(true);
+                      }}
+                      onDragLeave={() => setDragging(false)}
+                      onDrop={onDrop}
+                      className="mt-1.5 flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 disabled:cursor-wait disabled:opacity-75"
+                      style={{
+                        border: `1.5px dashed ${dragging ? "var(--brand-primary)" : "var(--border-accent)"}`,
+                        backgroundColor: dragging
+                          ? "color-mix(in srgb, var(--brand-primary) 4%, transparent)"
+                          : "var(--surface-card)",
+                        transition: "var(--transition-interactive)",
+                      }}
+                    >
+                      {isUploadingPhotos ? (
+                        <LoaderCircle
+                          size={20}
+                          className="animate-spin text-[var(--brand-primary)]"
+                        />
+                      ) : (
+                        <Camera
+                          size={20}
+                          color={
+                            dragging
+                              ? "var(--brand-primary)"
+                              : "var(--icon-earth)"
+                          }
+                        />
+                      )}
+                      <span
+                        style={{
+                          color: "var(--text-primary)",
+                          fontSize: "var(--type-body-sm)",
+                          fontWeight: "var(--weight-semibold)",
+                        }}
+                      >
+                        {isUploadingPhotos
+                          ? "Preparing photos…"
+                          : "Add photos from candling"}
+                      </span>
+                      <span
+                        style={{
+                          color: "var(--text-secondary)",
+                          fontSize: "var(--type-caption)",
+                        }}
+                      >
+                        {isUploadingPhotos
+                          ? "Please wait while images are prepared"
+                          : "Choose Upload photo or drag & drop"}
+                      </span>
+                    </button>
+                  }
+                />
                 <input
                   ref={photoRef}
                   type="file"
                   accept="image/*"
                   multiple
                   className="hidden"
-                  onChange={(e) => readFiles(e.target.files)}
+                  onChange={(e) => {
+                    void readFiles(e.currentTarget.files);
+                    e.currentTarget.value = "";
+                  }}
                 />
                 {form.photos.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {form.photos.map((url, i) => (
-                      <div key={url} className="relative group">
+                      <div
+                        key={url}
+                        className="animate-in fade-in zoom-in-95 duration-300 relative group"
+                      >
                         <img
                           src={url}
                           alt=""
@@ -1489,10 +1556,10 @@ function LogModalBody({
             }
           >
             {stage === 1 ? (
-              "Cancel"
+              <span>{"Cancel"}</span>
             ) : (
               <>
-                <ArrowLeft size={15} /> Back
+                <ArrowLeft size={15} /> <span>Back</span>
               </>
             )}
           </Button>
@@ -1507,7 +1574,7 @@ function LogModalBody({
               disabled={!canAdvance}
               onClick={goToNextStage}
             >
-              Next <ArrowRight size={15} />
+              <span>Next</span> <ArrowRight size={15} />
             </Button>
           ) : (
             <Button
@@ -1517,16 +1584,18 @@ function LogModalBody({
                 color: "var(--on-brand)",
                 opacity: isSaveDisabled ? 0.5 : 1,
               }}
-              disabled={isSaveDisabled || isSaving}
-              aria-busy={isSaving}
+              disabled={isSaveDisabled || isSaving || isUploadingPhotos}
+              aria-busy={isSaving || isUploadingPhotos}
               onClick={handleSave}
             >
               <CheckCircle2 size={15} />{" "}
-              {isSaving
-                ? "Saving…"
-                : isEditing
-                  ? "Update Inspection"
-                  : "Save Inspection"}
+              <span>
+                {isSaving
+                  ? "Saving…"
+                  : isEditing
+                    ? "Update Inspection"
+                    : "Save Inspection"}
+              </span>
             </Button>
           )}
         </div>
@@ -1601,69 +1670,79 @@ function LogModalBody({
   );
 }
 
-interface SummaryTileDatum {
+interface DevelopmentSegment {
   label: string;
-  value: ReactNode;
-  surface: string;
-  border: string;
-  fg: string;
-  labelFg: string;
-  displayFont?: boolean;
+  count: number | null;
+  color: string;
+  barColor?: string;
 }
 
-/** Shared 4-tile summary grid; later/first/empty variants differ only in data. */
-function SummaryTiles({
-  tiles,
-  gridClassName,
+function EggDevelopmentSummary({
+  segments,
 }: {
-  tiles: SummaryTileDatum[];
-  gridClassName: string;
+  segments: DevelopmentSegment[];
 }) {
+  const total = segments.reduce(
+    (sum, segment) => sum + (segment.count ?? 0),
+    0,
+  );
+  const hasInspection = segments.some((segment) => segment.count !== null);
   return (
-    <div className={gridClassName}>
-      {tiles.map((tile) => (
-        <div
-          key={tile.label}
-          className="flex h-[var(--candling-compact-card-height)] flex-col justify-center rounded-lg p-2 md:block md:h-auto md:min-w-0 md:p-2.5"
-          style={{
-            backgroundColor: tile.surface,
-            border: `var(--border-width-hairline) solid ${tile.border}`,
-          }}
-        >
-          <span
-            style={{
-              color: tile.labelFg,
-              fontSize: "var(--type-label)",
-              fontWeight: "var(--weight-bold)",
-              textTransform: "uppercase",
-              display: "block",
-            }}
-          >
-            {tile.label}
-          </span>
-          <div className="mt-1.5 flex items-center gap-1.5 md:mt-2">
+    <div className="space-y-3">
+      <div
+        role="img"
+        aria-label={
+          hasInspection
+            ? `Egg development: ${segments.map((segment) => `${segment.count} ${segment.label.toLowerCase()}`).join(", ")}`
+            : "Egg development: no inspection recorded"
+        }
+        className="flex h-3 overflow-hidden rounded-full bg-[var(--surface-track)]"
+      >
+        {total > 0 &&
+          segments.map((segment) => (
             <span
+              key={segment.label}
               aria-hidden="true"
-              className="h-5 w-1 shrink-0 rounded-full"
-              style={{ backgroundColor: tile.fg }}
-            />
-            <p
               style={{
-                ...(tile.displayFont
-                  ? { fontFamily: "var(--font-display)" }
-                  : null),
+                width: `${((segment.count ?? 0) / total) * 100}%`,
+                backgroundColor: segment.barColor ?? segment.color,
+              }}
+            />
+          ))}
+      </div>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 min-[360px]:grid-cols-4">
+        {segments.map((segment) => (
+          <div key={segment.label} className="min-w-0">
+            <dt
+              className="flex items-center gap-1"
+              style={{
+                fontSize: "var(--type-caption)",
+                fontWeight: "var(--weight-semibold)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                className="h-2.5 w-2.5 shrink-0"
+                style={{ backgroundColor: segment.color, borderRadius: "2px" }}
+              />
+              {segment.label}
+            </dt>
+            <dd
+              className="mt-1"
+              style={{
+                fontFamily: "var(--font-display)",
                 fontSize: "var(--type-heading-md)",
                 fontWeight: "var(--weight-extrabold)",
                 lineHeight: "var(--leading-tight)",
-                color: tile.fg,
-                marginTop: 2,
+                color: segment.color,
               }}
             >
-              {tile.value}
-            </p>
+              {segment.count ?? "–"}
+            </dd>
           </div>
-        </div>
-      ))}
+        ))}
+      </dl>
     </div>
   );
 }
@@ -1737,118 +1816,27 @@ export function CandlingJournalTab({
   const summaryStopped = latestCandlingEntry?.stoppedDeveloping ?? 0;
   const summaryClear = latestCandlingEntry?.clear ?? 0;
   const summaryUncertain = latestCandlingEntry?.uncertain ?? 0;
-  const stoppedActive = summaryStopped > 0;
-  const laterTiles: SummaryTileDatum[] = [
+  const developmentSegments: DevelopmentSegment[] = [
     {
-      label: "Developing",
-      value: summaryDeveloping,
-      surface: "var(--surface-mint)",
-      border: "var(--border-mint)",
-      fg: "var(--status-success-fg)",
-      labelFg: "var(--status-success-fg)",
-      displayFont: true,
+      label: isLaterSummary || !latestCandlingEntry ? "Developing" : "Fertile",
+      count: latestCandlingEntry ? summaryDeveloping : null,
+      color: "var(--egg-development-growing)",
     },
     {
       label: "Stopped",
-      value: summaryStopped,
-      surface: stoppedActive ? "var(--surface-blush)" : "var(--surface-mist)",
-      border: stoppedActive ? "var(--border-blush)" : "var(--border-mist)",
-      fg: stoppedActive ? "var(--status-danger-fg)" : "var(--text-slate-cool)",
-      labelFg: stoppedActive
-        ? "var(--status-danger-fg)"
-        : "var(--text-slate-cool)",
-      displayFont: true,
-    },
-    {
-      label: "Clear",
-      value: summaryClear,
-      surface: "var(--surface-slate-light)",
-      border: "var(--border-slate-light)",
-      fg: "var(--text-slate)",
-      labelFg: "var(--text-slate-soft)",
-      displayFont: true,
+      count: latestCandlingEntry ? summaryStopped : null,
+      color: "var(--egg-development-stopped)",
     },
     {
       label: "Uncertain",
-      value: summaryUncertain,
-      surface: "var(--surface-warn-tile)",
-      border: "var(--border-amber-soft)",
-      fg: "var(--status-warning-fg)",
-      labelFg: "var(--status-warning-fg)",
-      displayFont: true,
-    },
-  ];
-  const firstTiles: SummaryTileDatum[] = [
-    {
-      label: "Fertile",
-      value: latestCandlingEntry?.fertile ?? "–",
-      surface: "var(--surface-mint)",
-      border: "var(--border-mint)",
-      fg: "var(--status-success-fg)",
-      labelFg: "var(--status-success-fg)",
+      count: latestCandlingEntry ? summaryUncertain : null,
+      color: "var(--egg-development-uncertain)",
     },
     {
       label: "Clear",
-      value: latestCandlingEntry?.clear ?? "–",
-      surface: "var(--surface-slate-light)",
-      border: "var(--border-slate-light)",
-      fg: "var(--text-slate)",
-      labelFg: "var(--text-slate-soft)",
-    },
-    {
-      label: "Uncertain",
-      value: latestCandlingEntry?.uncertain ?? "–",
-      surface: "var(--surface-warn-tile)",
-      border: "var(--border-amber-soft)",
-      fg: "var(--status-warning-fg)",
-      labelFg: "var(--status-warning-fg)",
-    },
-    {
-      label: "Total Loaded",
-      value: totalEggsSet,
-      surface: "var(--surface-track)",
-      border: "var(--border-subtle)",
-      fg: "var(--text-primary)",
-      labelFg: "var(--text-muted)",
-      displayFont: true,
-    },
-  ];
-  const emptyTiles: SummaryTileDatum[] = [
-    {
-      label: "Developing",
-      value: "–",
-      surface: "var(--surface-mint)",
-      border: "var(--border-mint)",
-      fg: "var(--status-success-fg)",
-      labelFg: "var(--status-success-fg)",
-      displayFont: true,
-    },
-    {
-      label: "Stopped",
-      value: "–",
-      surface: "var(--surface-mist)",
-      border: "var(--border-mist)",
-      fg: "var(--text-slate-cool)",
-      labelFg: "var(--text-slate-cool)",
-      displayFont: true,
-    },
-    {
-      label: "Clear",
-      value: "–",
-      surface: "var(--surface-slate-light)",
-      border: "var(--border-slate-light)",
-      fg: "var(--text-slate)",
-      labelFg: "var(--text-slate-soft)",
-      displayFont: true,
-    },
-    {
-      label: "Uncertain",
-      value: "–",
-      surface: "var(--surface-warn-tile)",
-      border: "var(--border-amber-soft)",
-      fg: "var(--status-warning-fg)",
-      labelFg: "var(--status-warning-fg)",
-      displayFont: true,
+      count: latestCandlingEntry ? summaryClear : null,
+      color: "var(--text-muted)",
+      barColor: "var(--egg-development-clear)",
     },
   ];
   const pendingCheckpoint = selectPendingCheckpoint(
@@ -2063,8 +2051,13 @@ export function CandlingJournalTab({
 
   return (
     <div className="space-y-3 md:space-y-5">
-      {/* Combined Hero: Incubation Timeline + Candling Progress */}
-      <SectionCard title="Incubation Timeline" density="compact" divider>
+      {/* Separate cycle progress from the latest recorded inspection. */}
+      <SectionCard
+        title="Incubation Timeline"
+        titleVariant="headingSmall"
+        density="compact"
+        divider
+      >
         <Timeline
           currentDay={currentDay}
           totalDays={totalDays}
@@ -2073,95 +2066,136 @@ export function CandlingJournalTab({
           labelSize={9}
           onSelectMilestone={onSelectDay}
         />
-        <div
-          className="my-4"
-          style={{ height: 1, backgroundColor: "var(--border-default)" }}
-        />
-        {latestCandlingEntry ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-3 md:grid md:grid-cols-2 md:content-start md:items-stretch">
-                <div className="md:col-span-2 md:min-w-0">
-                  <p
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: "var(--type-label)",
-                      fontWeight: "var(--weight-extrabold)",
-                      letterSpacing: "var(--tracking-label)",
-                      lineHeight: "var(--leading-snug)",
-                      color: "var(--brand-primary)",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Latest inspection
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "var(--type-body)",
-                      fontWeight: "var(--weight-bold)",
-                      color: "var(--text-primary)",
-                      marginTop: 2,
-                    }}
-                  >
-                    Day {latestCandlingEntry.day}, {latestCandlingEntry.label}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "var(--type-caption)",
-                      color: "var(--text-secondary)",
-                      marginTop: 1,
-                    }}
-                  >
-                    Recorded {fmtTimestamp(latestCandlingEntry.date)}
-                  </p>
-                </div>
-                <div
-                  className="flex h-[var(--candling-compact-card-height)] flex-col justify-center rounded-lg px-3.5 py-3 text-left md:block md:h-auto md:min-w-0 md:p-3.5"
-                  style={{
-                    backgroundColor: "var(--surface-track)",
-                    border: `var(--border-width-hairline) solid var(--border-default)`,
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: "var(--type-label)",
-                      fontWeight: "var(--weight-extrabold)",
-                      letterSpacing: "var(--tracking-label)",
-                      lineHeight: "var(--leading-snug)",
-                      color: "var(--text-secondary)",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Initial fertility
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "var(--type-body-sm)",
-                      fontWeight: "var(--weight-bold)",
-                      color: "var(--text-primary)",
-                      marginTop: 2,
-                    }}
-                  >
-                    {latestCandlingEntry.fertile} of {totalEggsSet} eggs
-                    <span
+      </SectionCard>
+
+      <Card
+        style={{
+          backgroundColor: "var(--surface-card)",
+          border: "var(--border-width-hairline) solid var(--border-subtle)",
+          borderRadius: "var(--radius-card)",
+          boxShadow: "none",
+        }}
+      >
+        <CardContent className="p-4 sm:p-5">
+          {latestCandlingEntry ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                  <div className="min-w-0">
+                    <h3
                       style={{
-                        marginLeft: 6,
+                        fontSize: "var(--type-caption)",
+                        fontWeight: "var(--weight-extrabold)",
+                        letterSpacing: "var(--tracking-label)",
+                        color: "var(--brand-primary)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Latest Inspection
+                    </h3>
+                    <p
+                      className="mt-1"
+                      style={{
+                        fontSize: "var(--type-body)",
+                        fontWeight: "var(--weight-bold)",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      Day {latestCandlingEntry.day}, {latestCandlingEntry.label}
+                    </p>
+                    <p
+                      className="mt-1"
+                      style={{
+                        fontSize: "var(--type-caption)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {fmtTimestamp(latestCandlingEntry.date)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      style={{
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-semibold)",
+                        color: "var(--text-secondary)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Fertility
+                    </p>
+                    <p
+                      className="mt-1"
+                      style={{
                         fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-heading-sm)",
+                        fontSize: "var(--type-heading-md)",
                         fontWeight: "var(--weight-extrabold)",
                         lineHeight: "var(--leading-tight)",
-                        color: "var(--brand-primary)",
+                        color: "var(--text-primary)",
                       }}
                     >
                       {summaryFertilityRate !== null
                         ? `${summaryFertilityRate}%`
                         : "N/A"}
-                    </span>
-                  </p>
+                    </p>
+                    <p
+                      className="mt-1"
+                      style={{
+                        fontSize: "var(--type-caption)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {latestCandlingEntry.fertile} of {totalEggsSet} eggs
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <EggDevelopmentSummary segments={developmentSegments} />
                 </div>
               </div>
 
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--surface-subtle)] px-3 py-2">
+                <p
+                  className="min-w-0 flex-1 text-balance"
+                  style={{
+                    fontSize: "var(--type-body-sm)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  <strong
+                    className="inline-block max-w-full"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {pendingCheckpoint
+                      ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}.`
+                      : currentDay > totalDays
+                        ? "Past expected hatch day."
+                        : "Candling checks complete."}
+                  </strong>{" "}
+                  <span className="inline-block max-w-full text-balance">
+                    {pendingCheckpoint
+                      ? checkpointTiming
+                      : "All scheduled candling checks are complete."}
+                  </span>
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <h3
+                style={{
+                  fontSize: "var(--type-caption)",
+                  fontWeight: "var(--weight-extrabold)",
+                  color: "var(--brand-primary)",
+                  letterSpacing: "var(--tracking-label)",
+                  textTransform: "uppercase",
+                }}
+              >
+                Latest Inspection
+              </h3>
+              <p className="text-(length:--type-body) text-[var(--text-secondary)]">
+                No inspection recorded yet.
+              </p>
               <div className="grid grid-cols-1 gap-2">
                 <p
                   style={{
@@ -2176,196 +2210,83 @@ export function CandlingJournalTab({
                 >
                   Egg Development
                 </p>
-                {/* High-contrast stat tiles with big numbers */}
-                <SummaryTiles
-                  gridClassName="grid grid-cols-4 gap-2 md:grid-cols-2"
-                  tiles={isLaterSummary ? laterTiles : firstTiles}
-                />
+                <EggDevelopmentSummary segments={developmentSegments} />
               </div>
-            </div>
-
-            <div
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t pt-4"
-              style={{ borderColor: "var(--border-default)" }}
-            >
-              <div className="col-start-1 flex flex-wrap items-center gap-2">
-                <p
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-extrabold)",
-                    letterSpacing: "var(--tracking-label)",
-                    lineHeight: "var(--leading-snug)",
-                    color: "var(--text-secondary)",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
-                </p>
-                {pendingCheckpoint && checkpointDistance !== null && (
-                  <span
-                    className="inline-flex items-center rounded-full px-2.5 py-0.5"
-                    style={{
-                      backgroundColor:
-                        checkpointDistance < 0
-                          ? "var(--status-danger-bg)"
-                          : checkpointDistance === 0
-                            ? "var(--status-warning-bg)"
-                            : "var(--surface-muted)",
-                      color:
-                        checkpointDistance < 0
-                          ? "var(--status-danger-fg)"
-                          : checkpointDistance === 0
-                            ? "var(--status-warning-fg)"
-                            : "var(--text-secondary)",
-                      fontSize: "var(--type-label)",
-                      fontWeight: "var(--weight-bold)",
-                      letterSpacing: "var(--tracking-label)",
-                    }}
-                  >
-                    {checkpointTiming}
-                  </span>
-                )}
-              </div>
-              {canLog && (
-                <Button
-                  onClick={openNewInspection}
-                  aria-label="Log inspection"
-                  className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-6 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
-                  style={{ ...rustBtn }}
-                >
-                  <Plus size={14} /> Log
-                </Button>
-              )}
-              <div className="col-start-1 mt-1">
-                <span
-                  style={{
-                    fontSize: "var(--type-body)",
-                    fontWeight: "var(--weight-bold)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {pendingCheckpoint
-                    ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
-                    : "All scheduled checks completed"}
-                </span>
-              </div>
-              {!canLog && (
-                <p
-                  className="col-span-2 w-full md:text-right"
-                  style={{
-                    color: "var(--text-secondary)",
-                    fontSize: "var(--type-caption)",
-                  }}
-                >
-                  Start an incubation cycle to log inspections.
-                </p>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-2">
-              <p
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "var(--type-label)",
-                  fontWeight: "var(--weight-extrabold)",
-                  letterSpacing: "var(--tracking-label)",
-                  lineHeight: "var(--leading-snug)",
-                  color: "var(--text-secondary)",
-                  textTransform: "uppercase",
-                }}
+              <div
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t pt-4"
+                style={{ borderColor: "var(--border-default)" }}
               >
-                Egg Development
-              </p>
-              <SummaryTiles
-                gridClassName="grid grid-cols-4 gap-2 md:grid-cols-4"
-                tiles={emptyTiles}
-              />
-            </div>
-            <div
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t pt-4"
-              style={{ borderColor: "var(--border-default)" }}
-            >
-              <div className="col-start-1 flex flex-wrap items-center gap-2">
-                <p
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "var(--type-label)",
-                    fontWeight: "var(--weight-extrabold)",
-                    letterSpacing: "var(--tracking-label)",
-                    lineHeight: "var(--leading-snug)",
-                    color: "var(--text-secondary)",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {pendingCheckpoint ? "Next checkpoint" : "Candling schedule"}
-                </p>
-                {pendingCheckpoint && checkpointDistance !== null && (
-                  <span
-                    className="inline-flex items-center rounded-full px-2.5 py-0.5"
+                <div className="col-start-1 flex flex-wrap items-center gap-2">
+                  <p
                     style={{
-                      backgroundColor:
-                        checkpointDistance < 0
-                          ? "var(--status-danger-bg)"
-                          : checkpointDistance === 0
-                            ? "var(--status-warning-bg)"
-                            : "var(--surface-muted)",
-                      color:
-                        checkpointDistance < 0
-                          ? "var(--status-danger-fg)"
-                          : checkpointDistance === 0
-                            ? "var(--status-warning-fg)"
-                            : "var(--text-secondary)",
+                      fontFamily: "var(--font-display)",
                       fontSize: "var(--type-label)",
-                      fontWeight: "var(--weight-bold)",
+                      fontWeight: "var(--weight-extrabold)",
                       letterSpacing: "var(--tracking-label)",
+                      lineHeight: "var(--leading-snug)",
+                      color: "var(--text-secondary)",
+                      textTransform: "uppercase",
                     }}
                   >
-                    {checkpointTiming}
+                    {pendingCheckpoint
+                      ? "Next checkpoint"
+                      : "Candling schedule"}
+                  </p>
+                  {pendingCheckpoint && checkpointDistance !== null && (
+                    <span
+                      className="inline-flex items-center rounded-full px-2.5 py-0.5"
+                      style={{
+                        backgroundColor:
+                          checkpointDistance < 0
+                            ? "var(--status-danger-bg)"
+                            : checkpointDistance === 0
+                              ? "var(--status-warning-bg)"
+                              : "var(--surface-muted)",
+                        color:
+                          checkpointDistance < 0
+                            ? "var(--status-danger-fg)"
+                            : checkpointDistance === 0
+                              ? "var(--status-warning-fg)"
+                              : "var(--text-secondary)",
+                        fontSize: "var(--type-label)",
+                        fontWeight: "var(--weight-bold)",
+                        letterSpacing: "var(--tracking-label)",
+                      }}
+                    >
+                      {checkpointTiming}
+                    </span>
+                  )}
+                </div>
+
+                <div className="col-start-1 mt-1">
+                  <span
+                    style={{
+                      fontSize: "var(--type-body)",
+                      fontWeight: "var(--weight-bold)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {pendingCheckpoint
+                      ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
+                      : "Candling checks scheduled"}
                   </span>
+                </div>
+                {!canLog && (
+                  <p
+                    className="col-span-2 w-full md:text-right"
+                    style={{
+                      color: "var(--text-secondary)",
+                      fontSize: "var(--type-caption)",
+                    }}
+                  >
+                    Start an incubation cycle to log inspections.
+                  </p>
                 )}
               </div>
-              {canLog && (
-                <Button
-                  onClick={openNewInspection}
-                  disabled={isUpdating}
-                  aria-label="Log inspection"
-                  className="col-start-2 row-span-2 h-[var(--control-height-default)] shrink-0 items-center justify-self-end gap-1 self-center rounded-full px-6 text-(length:--type-filter-label) font-bold md:h-[var(--control-height-toolbar)] md:text-sm md:font-medium"
-                  style={{ ...rustBtn }}
-                >
-                  <Plus size={14} /> Log
-                </Button>
-              )}
-              <div className="col-start-1 mt-1">
-                <span
-                  style={{
-                    fontSize: "var(--type-body)",
-                    fontWeight: "var(--weight-bold)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {pendingCheckpoint
-                    ? `${pendingCheckpoint.label} on Day ${pendingCheckpoint.day}`
-                    : "Candling checks scheduled"}
-                </span>
-              </div>
-              {!canLog && (
-                <p
-                  className="col-span-2 w-full md:text-right"
-                  style={{
-                    color: "var(--text-secondary)",
-                    fontSize: "var(--type-caption)",
-                  }}
-                >
-                  Start an incubation cycle to log inspections.
-                </p>
-              )}
             </div>
-          </div>
-        )}
-      </SectionCard>
+          )}
+        </CardContent>
+      </Card>
 
       <LogModal
         open={showLogForm && (canLog || editingEntry !== null)}
@@ -2389,28 +2310,48 @@ export function CandlingJournalTab({
         {/* LEFT — inspection history feed */}
         <div className="space-y-2 lg:col-span-3">
           <div className="flex items-center justify-between gap-3">
-            <p
-              style={{
-                fontSize: "calc(var(--type-heading-md) - 2px)",
-                fontWeight: "var(--weight-bold)",
-                color: "var(--text-primary)",
-              }}
-            >
-              Candling Journal
-            </p>
-            <button
-              type="button"
-              onClick={() => setCalOpen(true)}
-              aria-label="Open calendar"
-              title="Open calendar"
-              className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-sm transition-colors hover:bg-[var(--surface-action-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 lg:hidden"
-            >
-              <CalendarDays size={18} aria-hidden="true" />
-            </button>
+            <div className="min-w-0">
+              <p
+                style={{
+                  fontSize: "calc(var(--type-heading-md) - 2px)",
+                  fontWeight: "var(--weight-bold)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                Candling Journal
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              {canLog && (
+                <Button
+                  onClick={openNewInspection}
+                  disabled={isUpdating}
+                  aria-label="Log inspection"
+                  className="h-[var(--control-height-mobile)] shrink-0 gap-1 rounded-[12px] px-4 py-0 md:h-[var(--control-height-default)]"
+                  style={{
+                    ...rustBtn,
+                    fontSize: "var(--type-button-label)",
+                    lineHeight: "var(--leading-button)",
+                  }}
+                >
+                  <Plus size={14} aria-hidden="true" />
+                  <span>Log</span>
+                </Button>
+              )}
+              <button
+                type="button"
+                onClick={() => setCalOpen(true)}
+                aria-label="Open calendar"
+                title="Open calendar"
+                className="inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-[12px] border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--brand-primary)] shadow-sm transition-colors hover:bg-[var(--surface-action-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 lg:hidden"
+              >
+                <CalendarDays size={18} aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
           <div className="relative">
-            <div className="relative h-6">
+            <div className="relative h-4 lg:h-6">
               <span
                 className="absolute left-0 top-0 flex w-10 justify-center font-bold"
                 style={{
@@ -2427,34 +2368,26 @@ export function CandlingJournalTab({
               </span>
             </div>
             <div className="relative">
-              <div
-                className="absolute top-0 bottom-0 left-0 flex flex-col items-center"
-                style={{ width: 40 }}
-              >
-                <div
-                  className="w-0.5 flex-1"
-                  style={{
-                    marginTop: 16,
-                    backgroundColor: "var(--border-subtle)",
-                  }}
-                />
-              </div>
-
               <ul className="space-y-5">
-                {feedNodes.map((n) =>
+                {feedNodes.map((n, nodeIndex) =>
                   n.kind === "logged" ? (
                     <li
                       key={journalEntryTargetId(unit.id, n.entry)}
                       className="group relative flex items-start"
                     >
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-[19px] w-0.5 bg-[var(--border-subtle)]"
+                        style={{
+                          top: nodeIndex === 0 ? "50%" : 0,
+                          bottom:
+                            nodeIndex === feedNodes.length - 1
+                              ? "50%"
+                              : "-1.25rem",
+                        }}
+                      />
                       <div
-                        className={
-                          expandedDays.has(
-                            journalEntryTargetId(unit.id, n.entry),
-                          )
-                            ? "shrink-0 relative z-10 flex justify-center self-start"
-                            : "shrink-0 relative z-10 flex justify-center self-center"
-                        }
+                        className="relative z-10 flex shrink-0 justify-center self-center"
                         style={{ width: 40 }}
                       >
                         <span
@@ -2466,6 +2399,7 @@ export function CandlingJournalTab({
                             color: "var(--surface-card)",
                             fontSize: "var(--type-body-sm)",
                             fontWeight: "var(--weight-bold)",
+                            lineHeight: 1,
                             boxShadow: `0 0 0 3px var(--surface-app)`,
                           }}
                         >
@@ -2473,9 +2407,9 @@ export function CandlingJournalTab({
                         </span>
                       </div>
 
-                      <div className="flex-1 min-w-0 pl-3">
+                      <div className="ml-3 min-w-0 flex-1 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-3 md:p-4">
                         <div
-                          className="flex items-center justify-between gap-2"
+                          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1"
                           style={{ minHeight: "var(--control-height-compact)" }}
                         >
                           <button
@@ -2492,9 +2426,9 @@ export function CandlingJournalTab({
                                 return next;
                               })
                             }
-                            className="flex min-h-[var(--control-height-default)] min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 md:min-h-8"
+                            className="flex min-h-[var(--control-height-default)] min-w-0 cursor-pointer flex-wrap items-center gap-1.5 rounded-lg py-1 text-left transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 md:min-h-8"
                             style={{
-                              fontSize: "calc(var(--type-filter-label) - 1px)",
+                              fontSize: "var(--type-body-sm)",
                               fontWeight: "var(--weight-bold)",
                               color: "var(--text-primary)",
                             }}
@@ -2512,11 +2446,15 @@ export function CandlingJournalTab({
                                 ? (CANDLE_SHORT_LABELS[n.idx] ?? n.entry.label)
                                 : n.entry.label}
                             </span>
-                            <CircleCheck
-                              size={14}
-                              strokeWidth={2.5}
-                              className="shrink-0 text-[var(--status-success-fg)]"
-                              aria-hidden="true"
+                            <StatusIconBadge
+                              size="sm"
+                              tone="success"
+                              icon={
+                                <CheckFat
+                                  size={statusIconBadgeGlyphSize("sm")}
+                                  weight="fill"
+                                />
+                              }
                             />
                             <ChevronDown
                               size={16}
@@ -2524,23 +2462,14 @@ export function CandlingJournalTab({
                               aria-hidden="true"
                             />
                           </button>
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            <span
-                              className="mr-3 text-right"
-                              style={{
-                                fontSize: "var(--type-label)",
-                                color: "var(--text-farm)",
-                              }}
-                            >
-                              {fmtTimestamp(n.entry.date)}
-                            </span>
+                          <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => {
                                 setEditingEntry(n.entry);
                                 setShowLogForm(true);
                               }}
-                              className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
+                              className="inline-flex h-[var(--control-height-mobile)] w-[var(--control-height-mobile)] shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--surface-action-hover)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
                               aria-label={`Edit entry for Day ${n.entry.day}`}
                               title="Edit Inspection"
                             >
@@ -2549,13 +2478,37 @@ export function CandlingJournalTab({
                             <button
                               type="button"
                               onClick={() => setEntryToDelete(n.entry)}
-                              className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
+                              className="inline-flex h-[var(--control-height-mobile)] w-[var(--control-height-mobile)] shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-faint)] transition-colors hover:bg-[var(--status-danger-bg)] hover:text-[var(--status-danger-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 md:h-8 md:w-8"
                               aria-label={`Delete entry for Day ${n.entry.day}`}
                               title="Delete Journal Entry"
                             >
                               <Trash2 size={16} />
                             </button>
                           </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                          <p
+                            className="min-w-0 text-(length:--type-caption)"
+                            style={{
+                              lineHeight: "var(--leading-normal)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {n.entry.checkpointType === "later" ||
+                            n.entry.developing !== undefined ||
+                            n.entry.stoppedDeveloping !== undefined
+                              ? `${n.entry.developing ?? n.entry.fertile} developing and ${n.entry.stoppedDeveloping ?? 0} stopped`
+                              : `${n.entry.fertile} fertile, with ${n.entry.clear} clear and ${n.entry.uncertain} uncertain`}
+                          </p>
+                          <time
+                            dateTime={n.entry.date}
+                            className="shrink-0 text-right text-(length:--type-caption)"
+                            style={{
+                              color: "var(--text-farm)",
+                            }}
+                          >
+                            {fmtTimestamp(n.entry.date)}
+                          </time>
                         </div>
                         <div
                           id={journalEntryTargetId(unit.id, n.entry)}
@@ -2564,7 +2517,7 @@ export function CandlingJournalTab({
                               journalEntryTargetId(unit.id, n.entry),
                             )
                               ? "visible mt-3 grid-rows-[1fr] opacity-100"
-                              : "invisible grid-rows-[0fr] opacity-0 group-hover:visible group-hover:mt-3 group-hover:grid-rows-[1fr] group-hover:opacity-100"
+                              : "invisible grid-rows-[0fr] opacity-0"
                           }`}
                         >
                           <div className="min-h-0 overflow-hidden">
@@ -2587,6 +2540,17 @@ export function CandlingJournalTab({
                           id={candlingMilestoneTargetId(unit.id, n.day)}
                           className="relative flex items-center min-h-[var(--control-height-compact)]"
                         >
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-[19px] w-0.5 bg-[var(--border-subtle)]"
+                            style={{
+                              top: nodeIndex === 0 ? "50%" : 0,
+                              bottom:
+                                nodeIndex === feedNodes.length - 1
+                                  ? "50%"
+                                  : "-1.25rem",
+                            }}
+                          />
                           <div
                             className="shrink-0 flex justify-center relative z-10"
                             style={{ width: 40 }}
@@ -2605,6 +2569,7 @@ export function CandlingJournalTab({
                                   : "var(--text-muted)",
                                 fontSize: "var(--type-body-sm)",
                                 fontWeight: "var(--weight-bold)",
+                                lineHeight: 1,
                                 boxShadow: `0 0 0 3px var(--surface-app)`,
                               }}
                             >
@@ -2623,12 +2588,22 @@ export function CandlingJournalTab({
                                 }}
                               >
                                 {CANDLE_SHORT_LABELS[n.idx] ?? n.cp.label}
-                                <AlertCircle
-                                  size={15}
-                                  color="var(--status-warning-fg)"
-                                  strokeWidth={2}
+                                <span
+                                  role="img"
                                   aria-label="Inspection due"
-                                />
+                                  className="inline-flex shrink-0 items-center justify-center rounded-full"
+                                  style={{
+                                    width: "var(--status-icon-badge-size-sm)",
+                                    height: "var(--status-icon-badge-size-sm)",
+                                    backgroundColor: "var(--status-warning-fg)",
+                                    color: "var(--status-icon-badge-fg)",
+                                  }}
+                                >
+                                  <ExclamationIcon
+                                    size={statusIconBadgeGlyphSize("sm")}
+                                    color="var(--status-icon-badge-fg)"
+                                  />
+                                </span>
                               </p>
                             ) : (
                               <p
@@ -2656,7 +2631,7 @@ export function CandlingJournalTab({
                   size="sm"
                   tone="warning"
                   title="No inspection recorded yet"
-                  description="Check the eggs, then click “Log Inspection” above to record your count. Notes and photos are optional."
+                  description="Check the eggs, then click “+ Log” above to record your count. Notes and photos are optional."
                 />
               </div>
             )}
@@ -2740,6 +2715,7 @@ export function CandlingJournalTab({
         {/* RIGHT — Incubation Calendar */}
         <div className="hidden space-y-5 lg:col-span-2 lg:block">
           <IncubationCalendar
+            entries={loggedEntries}
             currentDay={currentDay}
             totalDays={totalDays}
             candling={candling}
@@ -2752,9 +2728,11 @@ export function CandlingJournalTab({
           >
             <DialogTitle className="sr-only">Incubation calendar</DialogTitle>
             <CalendarSheetBody
+              entries={loggedEntries}
               currentDay={currentDay}
               totalDays={totalDays}
               candling={candling}
+              monthFirst
               onPageChange={() => {
                 calScrollRef.current?.scrollTo({ top: 0 });
               }}

@@ -1,4 +1,5 @@
-import { Check, Lock, Sparkle } from "@phosphor-icons/react";
+import { CheckFat, EggCrackIcon, EggIcon } from "@phosphor-icons/react";
+import { IconLockFilled } from "@tabler/icons-react";
 import { CANDLE_SHORT_LABELS, dayFraction, markerStatus } from "./types";
 
 interface TimelineProps {
@@ -47,83 +48,89 @@ export function Timeline({
   const COMPACT_LABELS = ["1st", "2nd", "Lockdown"];
   const milestoneSize =
     labelSize === 9 ? "var(--type-label-micro)" : "var(--type-label-compact)";
+  const overdueDays = currentDay - totalDays;
 
-  // Badge state configuration (tone, labels, and accents)
-  let badgeTitle = "Today";
-  let badgeDayText = `DAY ${Math.max(0, currentDay)}`;
-  let badgeBg = "var(--brand-primary)";
-  let badgeFg = "var(--on-brand)";
-  let badgeBorder: string | undefined;
-  let badgeShadow = "var(--shadow-accent)";
-  let arrowColor = "var(--brand-primary)";
-
-  if (isReady) {
-    badgeTitle = "Ready";
-    badgeDayText = "DAY 0";
-    badgeBg = "var(--surface-subtle)";
-    badgeFg = "var(--text-secondary)";
-    badgeBorder = "var(--border-width-hairline) solid var(--border-default)";
-    badgeShadow = "var(--shadow-subtle)";
-    arrowColor = "var(--text-secondary)";
-  } else if (isOverdue) {
-    badgeTitle = "Overdue";
-    badgeDayText = `DAY ${currentDay}`;
-    badgeBg = "var(--status-warning-bg)";
-    badgeFg = "var(--status-warning-fg)";
-    badgeBorder = "1.5px solid var(--status-warning-fg)";
-    badgeShadow = "0 2px 8px rgba(180, 83, 9, 0.25)";
-    arrowColor = "var(--status-warning-fg)";
-  } else if (isHatchDay) {
-    badgeTitle = "Hatch Day!";
-    badgeDayText = `DAY ${currentDay}`;
-    badgeBg = "var(--status-success-fg)";
-    badgeFg = "var(--on-brand)";
-    badgeShadow = "0 2px 8px rgba(21, 128, 61, 0.3)";
-    arrowColor = "var(--status-success-fg)";
-  } else if (isLockdown) {
-    badgeTitle = "Lockdown";
-    badgeDayText = `DAY ${currentDay}`;
-    badgeBg = "var(--status-warning-fg)";
-    badgeFg = "var(--on-brand)";
-    badgeShadow = "0 2px 8px rgba(180, 83, 9, 0.28)";
-    arrowColor = "var(--status-warning-fg)";
-  }
-
-  // Boundary-safe badge clamping:
-  // Pill is ~74px wide, so clamping center between 38px and calc(100% - 38px) guarantees
-  // the pill NEVER clips past container bounds on either side.
-  const badgeLeft = `clamp(38px, ${fillPct}%, calc(100% - 38px))`;
-
-  // Elbowed leader line geometry:
-  // The line ALWAYS starts at the exact bottom center (x = 0) of the badge pill.
-  // When near edges, the line steps with orthogonal elbow bends to anchor at 0% or 100% on the track.
-  // In the middle, the line drops vertically down (x = 0) to the active milestone node.
-  const isStartZone = fillPct <= 12;
-  const isEndZone = fillPct >= 88;
-  const stemHeight = 13;
-  const targetX = isStartZone
-    ? -38 * (1 - fillPct / 12)
-    : isEndZone
-      ? 38 * ((fillPct - 88) / 12)
-      : 0;
+  const statusLabel = isReady
+    ? "Ready to start"
+    : isOverdue
+      ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} past hatch`
+      : isHatchDay
+        ? "Hatch Day!"
+        : isLockdown
+          ? "Lockdown"
+          : "Incubating";
+  const statusBg =
+    isOverdue || isLockdown
+      ? "var(--status-warning-bg)"
+      : isHatchDay
+        ? "var(--status-success-bg)"
+        : "var(--surface-subtle)";
+  const statusFg =
+    isOverdue || isLockdown
+      ? "var(--status-warning-fg)"
+      : isHatchDay
+        ? "var(--status-success-fg)"
+        : "var(--text-secondary)";
+  const trackTop = "var(--timeline-track-top)";
+  const trackCenter = `calc(${trackTop} + var(--progress-thickness) / 2)`;
   const handleNodeClick = (day: number) => onSelectMilestone(day);
 
   return (
     <div className="w-full">
-      <div className="max-w-full overflow-x-auto scrollbar-none">
-        <div className="min-w-[var(--timeline-min-width)] px-5 md:px-6">
-          <div className="relative overflow-visible pt-16 pb-9 md:pt-18 md:pb-10">
-            {/* Track frame — pinned with explicit headroom */}
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <p
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--type-heading-sm)",
+            fontWeight: "var(--weight-extrabold)",
+            lineHeight: "var(--leading-tight)",
+            color: "var(--text-primary)",
+          }}
+        >
+          <span>Day {Math.max(0, currentDay)}</span>{" "}
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "var(--type-body)",
+              fontWeight: "var(--weight-semibold)",
+              color: "var(--text-muted)",
+            }}
+          >
+            / {totalDays}
+          </span>
+        </p>
+        <span
+          className="shrink-0 rounded-full px-3 py-1"
+          style={{
+            backgroundColor: statusBg,
+            color: statusFg,
+            fontSize: "var(--type-caption)",
+            fontWeight: "var(--weight-bold)",
+          }}
+        >
+          {statusLabel}
+        </span>
+      </div>
+      <div className="max-w-full overflow-x-auto py-2 scrollbar-none">
+        <div className="min-w-[var(--timeline-min-width)] px-8 md:px-10">
+          <div className="timeline-rail-labels relative overflow-visible pt-5 pb-12">
+            {/* Track and milestone nodes share one centerline. */}
             <div
               className="absolute left-0 right-0"
               style={{
                 height: "var(--progress-thickness)",
-                top: "58px",
+                top: trackTop,
               }}
             >
               {/* Base track: Incubation Phase rail (Days 1 to Lockdown) */}
               <div
                 className="absolute inset-0 rounded-full"
+                role="progressbar"
+                aria-label="Incubation cycle progress"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(fillPct)}
+                aria-valuetext={`Day ${Math.max(0, currentDay)} of ${totalDays}${isOverdue ? `, ${overdueDays} ${overdueDays === 1 ? "day" : "days"} past hatch` : ""}`}
                 style={{ backgroundColor: "var(--track-gauge)" }}
               />
 
@@ -140,7 +147,7 @@ export function Timeline({
 
               {/* Progress fill */}
               <div
-                className="absolute inset-y-0 left-0 rounded-full transition-all duration-300 ease-out"
+                className="absolute inset-y-0 left-0 rounded-full transition-[width,background-color] duration-500 ease-out motion-reduce:transition-none"
                 style={{
                   width: `${fillPct}%`,
                   backgroundColor: isOverdue
@@ -151,92 +158,14 @@ export function Timeline({
                 }}
               />
 
-              {/* "Today / Status" Floating Badge (Clamped & strictly visible) */}
-              <div
-                className="absolute flex flex-col pointer-events-none"
-                style={{
-                  left: badgeLeft,
-                  bottom: "calc(100% + 11px)",
-                  transform: "translateX(-50%)",
-                  zIndex: "var(--z-top)",
-                  transition: "left 0.3s ease",
-                }}
-              >
-                {/* Badge pill — spacious capsule with clear hierarchy */}
-                <div
-                  className="relative flex min-h-[34px] flex-col items-center justify-center whitespace-nowrap rounded-xl px-3.5 py-1"
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    backgroundColor: badgeBg,
-                    color: badgeFg,
-                    border: badgeBorder,
-                    boxShadow: badgeShadow,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "var(--type-label-compact)",
-                      fontWeight: "var(--weight-bold)",
-                      letterSpacing: "0.06em",
-                      lineHeight: 1.2,
-                      textTransform: "uppercase",
-                      opacity: isReady ? 0.85 : 0.95,
-                    }}
-                  >
-                    {badgeTitle}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "var(--type-label)",
-                      fontWeight: "var(--weight-extrabold)",
-                      lineHeight: 1.2,
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    {badgeDayText}
-                  </span>
-                </div>
-                <div className="relative w-full" style={{ height: stemHeight }}>
-                  <svg
-                    width={80}
-                    height={stemHeight + 4}
-                    viewBox={`-40 0 80 ${stemHeight + 4}`}
-                    className="absolute top-0 left-1/2 -translate-x-1/2 overflow-visible"
-                    aria-hidden
-                  >
-                    {/* Elbowed path originating strictly from bottom center (0, 0) */}
-                    <path
-                      d={
-                        Math.abs(targetX) < 1
-                          ? `M 0 0 V ${stemHeight}`
-                          : `M 0 0 V ${stemHeight * 0.5} H ${targetX} V ${stemHeight}`
-                      }
-                      fill="none"
-                      stroke={arrowColor}
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    {/* Target terminal dot */}
-                    <circle
-                      cx={targetX}
-                      cy={stemHeight}
-                      r={2.5}
-                      fill={arrowColor}
-                    />
-                  </svg>
-                </div>
-              </div>
-
               {/* Single Unified Baseline: Milestone Labels */}
               {/* Day 1 (Set) */}
               <span
                 role="img"
                 aria-label={`Start of incubation, Day 1`}
-                className="absolute flex flex-col items-center whitespace-nowrap"
+                className="timeline-milestone-label absolute flex flex-col items-center whitespace-nowrap"
                 style={{
                   left: "0%",
-                  top: "calc(100% + 10px)",
                   transform: "translateX(-50%)",
                   zIndex: "var(--z-raised)",
                   maxWidth: 72,
@@ -279,17 +208,15 @@ export function Timeline({
                 const fullLabel = CANDLE_SHORT_LABELS[i] ?? c.label;
                 const compactLabel = COMPACT_LABELS[i] ?? fullLabel;
                 const isPassed = currentDay >= c.day;
+                const alternateAbove = i % 2 === 0;
                 return (
                   <span
                     key={c.day}
                     role="img"
                     aria-label={`${fullLabel}, Day ${c.day}`}
-                    className="absolute flex flex-col items-center whitespace-nowrap"
+                    className={`timeline-milestone-label absolute flex flex-col items-center whitespace-nowrap ${alternateAbove ? "timeline-milestone-label--above" : ""} ${i === 2 ? "-translate-x-1/2 md:-translate-x-[58%]" : "-translate-x-1/2"}`}
                     style={{
                       left: `${pct}%`,
-                      top: "calc(100% + 10px)",
-                      transform:
-                        i === 2 ? "translateX(-58%)" : "translateX(-50%)",
                       zIndex: "var(--z-raised)",
                       maxWidth: 88,
                       overflow: "hidden",
@@ -367,10 +294,9 @@ export function Timeline({
               <span
                 role="img"
                 aria-label={`Expected Hatch, Day ${totalDays}`}
-                className="absolute flex flex-col items-center whitespace-nowrap"
+                className="timeline-milestone-label absolute flex flex-col items-center whitespace-nowrap"
                 style={{
                   left: "100%",
-                  top: "calc(100% + 10px)",
                   transform: "translateX(-50%)",
                   zIndex: "var(--z-raised)",
                   maxWidth: 76,
@@ -408,28 +334,35 @@ export function Timeline({
               </span>
             </div>
 
-            {/* Milestone Nodes (Centered on track line at top: 54px) */}
+            {/* Milestone nodes share the actual track center, including its thickness. */}
             {/* Node 0: Day 1 (Set) */}
             <div
               className="absolute"
               style={{
                 left: "0%",
-                top: "58px",
+                top: trackCenter,
                 transform: "translate(-50%, -50%)",
                 zIndex: "var(--z-above)",
               }}
             >
               <div
-                className="h-3 w-3 rounded-full"
+                className="flex h-5 w-5 items-center justify-center rounded-full"
                 style={{
                   backgroundColor:
                     currentDay >= 1
                       ? "var(--brand-primary)"
                       : "var(--surface-card)",
                   border: `2px solid ${currentDay >= 1 ? "var(--brand-primary)" : "var(--border-default)"}`,
-                  boxShadow: "0 0 0 2px var(--surface-card)",
+                  boxShadow: "0 0 0 2.5px var(--surface-card)",
                 }}
-              />
+              >
+                <EggIcon
+                  size={12}
+                  weight="fill"
+                  color="var(--on-brand)"
+                  aria-hidden="true"
+                />
+              </div>
             </div>
 
             {/* Nodes 1..3: Candling Checkpoints */}
@@ -444,7 +377,7 @@ export function Timeline({
                   className="absolute"
                   style={{
                     left: `${pct}%`,
-                    top: "58px",
+                    top: trackCenter,
                     transform: "translate(-50%, -50%)",
                     zIndex: "var(--z-above)",
                   }}
@@ -466,10 +399,10 @@ export function Timeline({
                     }}
                     aria-label={`${c.label}, Day ${c.day}`}
                   >
-                    {status === "logged" ? (
-                      <Check size={12} weight="bold" />
-                    ) : isLockdownNode && filled ? (
-                      <Lock size={10} weight="bold" />
+                    {isLockdownNode && filled ? (
+                      <IconLockFilled size={12} />
+                    ) : status === "logged" ? (
+                      <CheckFat size={12} weight="fill" />
                     ) : (
                       <span
                         style={{
@@ -492,7 +425,7 @@ export function Timeline({
               className="absolute"
               style={{
                 left: "100%",
-                top: "58px",
+                top: trackCenter,
                 transform: "translate(-50%, -50%)",
                 zIndex: "var(--z-above)",
               }}
@@ -512,9 +445,10 @@ export function Timeline({
                   boxShadow: "0 0 0 2.5px var(--surface-card)",
                 }}
               >
-                <Sparkle
-                  size={11}
+                <EggCrackIcon
+                  size={12}
                   weight={isHatchDay || isOverdue ? "fill" : "regular"}
+                  aria-hidden="true"
                 />
               </div>
             </div>
