@@ -26,14 +26,13 @@ export function SignInScreen({
   const [show, setShow] = useState(false);
   const [err, setErr] = useState<string | undefined>();
   const [submitError, setSubmitError] = useState<string | undefined>();
-  const [rememberMe, setRememberMe] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
     const r = SignInSchema.safeParse({
       email,
       password: pw,
-      rememberMe,
+      rememberMe: false,
     });
     if (!r.success) {
       setErr(r.error.issues[0].message);
@@ -56,9 +55,9 @@ export function SignInScreen({
   };
 
   return (
-    <AuthCard>
+    <AuthCard compactHeader>
       <div className="mb-2 flex flex-col items-center text-center">
-        <p
+        <h1
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-label)",
@@ -69,30 +68,7 @@ export function SignInScreen({
           }}
         >
           WELCOME BACK
-        </p>
-        <h1
-          className="mt-1"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "var(--type-page-title)",
-            fontWeight: "var(--weight-bold)",
-            color: "var(--text-primary)",
-            lineHeight: "var(--leading-snug)",
-          }}
-        >
-          Check on your clutch.
         </h1>
-        <p
-          className="mt-1.5 max-w-[var(--measure-auth)]"
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "var(--type-body)",
-            color: "var(--text-secondary)",
-          }}
-        >
-          Sign in to monitor temperature, humidity and hatch progress across
-          every chamber.
-        </p>
       </div>
       <div className="mt-4 flex flex-col gap-4">
         <FormInput
@@ -126,31 +102,6 @@ export function SignInScreen({
           }
         />
       </div>
-      <div className="mt-3 flex items-center justify-between">
-        <label
-          className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"
-          style={{
-            fontFamily: "var(--font-body)",
-            color: "var(--text-secondary)",
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(event) => setRememberMe(event.target.checked)}
-            className="cursor-pointer rounded border-[var(--border-default)]"
-          />{" "}
-          Keep me signed in
-        </label>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          className="flex min-h-11 items-center justify-center rounded px-1 text-sm font-semibold text-[var(--brand-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-8"
-        >
-          <span>Password recovery coming soon</span>
-        </button>
-      </div>
       {(submitError ?? authError) && (
         <p className="mt-2 text-sm text-[var(--status-danger-fg)]" role="alert">
           {submitError ?? authError}
@@ -162,7 +113,7 @@ export function SignInScreen({
         onClick={() => void submit()}
         className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
-        <span>{busy ? "Signing in…" : "Sign in →"}</span>
+        <span>{busy ? "Signing in…" : "Sign in"}</span>
       </button>
       {canRegister ? (
         <>

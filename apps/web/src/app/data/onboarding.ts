@@ -26,6 +26,7 @@ export interface OnboardingState {
   primaryFocus: PrimaryFocus;
   species: string[];
   chamberName: string;
+  deviceId: string;
   startingModeId: string;
 }
 
@@ -48,9 +49,11 @@ export const CreateAccountSchema = z
     message: "Passwords do not match.",
   });
 
+export const ONBOARDING_NAME_MAX = 32;
+
 export const OnboardingStep1Schema = z.object({
-  name: z.string().min(1).max(ACCOUNT_HOLDER_MAX).trim(),
-  farmName: z.string().min(1).max(FARM_NAME_MAX).trim(),
+  name: z.string().trim().min(1).max(ONBOARDING_NAME_MAX),
+  farmName: z.string().trim().min(1).max(ONBOARDING_NAME_MAX),
   location: z.string().max(60).trim().optional().default(""),
 });
 
@@ -60,7 +63,8 @@ export const OnboardingStep2Schema = z.object({
 });
 
 export const OnboardingStep3Schema = z.object({
-  chamberName: z.string().min(1).max(CHAMBER_NAME_MAX).trim(),
+  chamberName: z.string().trim().min(1, "Enter a chamber name.").max(CHAMBER_NAME_MAX),
+  deviceId: z.string().trim().toUpperCase().min(1, "Enter a chamber code.").max(20, "Use no more than 20 characters."),
   startingModeId: z.string().min(1),
 });
 
@@ -71,5 +75,6 @@ export const defaultOnboarding: OnboardingState = {
   primaryFocus: "commercial",
   species: ["chicken"],
   chamberName: "Incubator One",
+  deviceId: "",
   startingModeId: "broiler",
 };

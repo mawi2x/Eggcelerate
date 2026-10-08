@@ -32,9 +32,6 @@ const candlingScreen = recoverableLazy(async () => ({
   default: (await import("../components/screens/CandlingLogsScreen"))
     .CandlingLogsScreen,
 }));
-const onboarding2 = recoverableLazy(async () => ({
-  default: (await import("../components/auth/OnboardingStep2")).OnboardingStep2,
-}));
 const onboarding3 = recoverableLazy(async () => ({
   default: (await import("../components/auth/OnboardingStep3")).OnboardingStep3,
 }));
@@ -48,7 +45,6 @@ export const SettingsScreen = settingsScreen.Component;
 export const IncubatorsScreen = incubatorsScreen.Component;
 export const TrendsScreen = trendsScreen.Component;
 export const CandlingLogsScreen = candlingScreen.Component;
-export const OnboardingStep2 = onboarding2.Component;
 export const OnboardingStep3 = onboarding3.Component;
 export function retryLazyScreens() {
   [
@@ -61,7 +57,6 @@ export function retryLazyScreens() {
     incubatorsScreen,
     trendsScreen,
     candlingScreen,
-    onboarding2,
     onboarding3,
   ].forEach((screen) => {
     screen.retry();

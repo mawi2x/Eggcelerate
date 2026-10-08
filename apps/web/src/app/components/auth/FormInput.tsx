@@ -6,6 +6,7 @@ export function FormInput({
   icon: Icon,
   trailing,
   error,
+  characterCount,
   ...props
 }: {
   label: string;
@@ -17,7 +18,9 @@ export function FormInput({
   }>;
   trailing?: React.ReactNode;
   error?: string;
+  characterCount?: number;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const invalid = !!error || props["aria-invalid"] === true || props["aria-invalid"] === "true";
   return (
     <div className="flex flex-col gap-1.5 text-left">
       <label
@@ -44,12 +47,18 @@ export function FormInput({
         <input
           id={id}
           {...props}
-          aria-describedby={error ? `${id}-error` : undefined}
-          aria-invalid={!!error}
+          aria-describedby={
+            [
+              props["aria-describedby"],
+              error ? `${id}-error` : undefined,
+              characterCount !== undefined ? `${id}-count` : undefined,
+            ].filter(Boolean).join(" ") || undefined
+          }
+          aria-invalid={invalid}
           className={`w-full rounded-xl border bg-[var(--surface-input)] px-3.5 py-2.5 transition-colors focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 ${
             Icon ? "pl-10" : ""
           } ${trailing ? "pr-14" : ""} ${
-            error
+            invalid
               ? "border-[var(--status-danger-fg)]"
               : "border-[var(--border-default)] hover:border-[var(--input-border)]"
           }`}
@@ -65,16 +74,33 @@ export function FormInput({
           </div>
         )}
       </div>
-      {error && (
-        <p
-          id={`${id}-error`}
-          style={{
-            fontSize: "var(--type-caption)",
-            color: "var(--status-danger-fg)",
-          }}
-        >
-          {error}
-        </p>
+      {(error || characterCount !== undefined) && (
+        <div className="flex items-start justify-between gap-2">
+          {error && (
+            <p
+              id={`${id}-error`}
+              className="min-w-0"
+              style={{
+                fontSize: "var(--type-caption)",
+                color: "var(--status-danger-fg)",
+              }}
+            >
+              {error}
+            </p>
+          )}
+          {characterCount !== undefined && (
+            <p
+              id={`${id}-count`}
+              className="ml-auto shrink-0 text-right"
+              style={{
+                fontSize: "var(--type-caption)",
+                color: "var(--text-muted)",
+              }}
+            >
+              {characterCount}/{props.maxLength}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

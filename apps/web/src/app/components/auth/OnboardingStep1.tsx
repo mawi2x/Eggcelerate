@@ -1,6 +1,6 @@
-import { Feather, MapPin, User } from "lucide-react";
+import { Feather, User } from "lucide-react";
 import { useState } from "react";
-import { OnboardingStep1Schema } from "../../data/onboarding";
+import { ONBOARDING_NAME_MAX, OnboardingStep1Schema } from "../../data/onboarding";
 import { AuthCard } from "./AuthCard";
 import { FormInput } from "./FormInput";
 import { StepperBar } from "./StepperBar";
@@ -18,15 +18,13 @@ export function OnboardingStep1({
 }) {
   const [name, setName] = useState("");
   const [farmName, setFarmName] = useState("");
-  const [location, setLocation] = useState("");
   const [errors, setErrors] = useState<{
     name?: string;
     farmName?: string;
-    location?: string;
   }>({});
 
   const submit = () => {
-    const r = OnboardingStep1Schema.safeParse({ name, farmName, location });
+    const r = OnboardingStep1Schema.safeParse({ name, farmName });
     if (!r.success) {
       const next: typeof errors = {};
       for (const issue of r.error.issues) {
@@ -37,7 +35,7 @@ export function OnboardingStep1({
       return;
     }
     setErrors({});
-    onContinue({ name, farmName, location });
+    onContinue(r.data);
   };
 
   return (
@@ -69,6 +67,8 @@ export function OnboardingStep1({
           id="onboard-name"
           icon={User}
           value={name}
+          maxLength={ONBOARDING_NAME_MAX}
+          characterCount={name.length}
           onChange={(e) => setName(e.target.value)}
           placeholder="Marisol Vega"
           error={errors.name}
@@ -78,18 +78,11 @@ export function OnboardingStep1({
           id="onboard-farm"
           icon={Feather}
           value={farmName}
+          maxLength={ONBOARDING_NAME_MAX}
+          characterCount={farmName.length}
           onChange={(e) => setFarmName(e.target.value)}
           placeholder="Brightwood Poultry Co."
           error={errors.farmName}
-        />
-        <FormInput
-          label="Location"
-          id="onboard-location"
-          icon={MapPin}
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="Willamette Valley, OR"
-          error={errors.location}
         />
       </div>
       <button
@@ -97,7 +90,7 @@ export function OnboardingStep1({
         onClick={submit}
         className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
-        <span>Continue →</span>
+        <span>Continue</span>
       </button>
     </AuthCard>
   );

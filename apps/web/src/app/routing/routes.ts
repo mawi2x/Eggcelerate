@@ -17,7 +17,7 @@ export interface AppRouteState {
   screen: ScreenId;
   selectedUnit: string | null;
   detailTab: DetailTab;
-  onboardingStep: 1 | 2 | 3;
+  onboardingStep: 1 | 2;
   redirectTo?: string;
 }
 
@@ -49,7 +49,7 @@ export function trendsPath(id?: string | null): string {
 }
 
 export function onboardingPath(step: number): string {
-  const safeStep = step === 2 || step === 3 ? step : 1;
+  const safeStep = step === 2 || step === 3 ? 2 : 1;
   return `/onboarding/${safeStep}`;
 }
 
@@ -133,7 +133,15 @@ export function parseAppPath(pathname: string): AppRouteState {
   }
   if (segments[0] === "onboarding" && segments.length === 2) {
     const step = Number(segments[1]);
-    if (step === 1 || step === 2 || step === 3) {
+    if (step === 3) {
+      return {
+        ...defaultRoute(),
+        screen: "onboarding",
+        onboardingStep: 2,
+        redirectTo: onboardingPath(2),
+      };
+    }
+    if (step === 1 || step === 2) {
       return { ...defaultRoute(), screen: "onboarding", onboardingStep: step };
     }
     return {

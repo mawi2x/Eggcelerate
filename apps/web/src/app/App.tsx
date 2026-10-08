@@ -27,7 +27,6 @@ import {
   DetailScreen,
   IncubatorsScreen,
   OnboardingStep1,
-  OnboardingStep2,
   OnboardingStep3,
   retryLazyScreens,
   SettingsScreen,
@@ -198,21 +197,6 @@ function AppContent() {
         />
         <Toaster position="top-right" richColors />
       </>
-    );
-  }
-  if (screen === "onboarding" && onboardingStep === 2) {
-    return (
-      <Suspense fallback={<SuspenseFallback label="Loading onboarding..." />}>
-        <OnboardingStep2
-          onContinue={(data) => {
-            setOnboardingState((prev) => ({ ...prev, ...data }));
-            openOnboarding(3);
-          }}
-          onBack={() => openOnboarding(1)}
-          onHaveAccount={() => openLogin()}
-        />
-        <Toaster position="top-right" richColors />
-      </Suspense>
     );
   }
   if (!isAuthenticated && screen !== "onboarding") {
@@ -581,6 +565,10 @@ function AppContent() {
         <OnboardingStep3
           modes={modes}
           onEnter={async (data) => {
+            if (incubators.some((unit) => unit.deviceId.toUpperCase() === data.deviceId)) {
+              toast.error("This chamber code is already assigned to another chamber.");
+              return false;
+            }
             setOnboardingState((prev) => ({ ...prev, ...data }));
             // set state then finish — use updated value directly for toast/name
             // merge data synchronously for finish
@@ -594,7 +582,7 @@ function AppContent() {
             const newIncubator: Incubator = {
               id: `chamber-${Date.now()}`,
               name: merged.chamberName,
-              deviceId: `EGG-${String(Date.now()).slice(-4)}`,
+              deviceId: data.deviceId,
               modeId: merged.startingModeId,
               dayOfIncubation: 1,
               totalEggsLoaded: CURRENT_TRAY_CAPACITY,
@@ -636,7 +624,7 @@ function AppContent() {
             navigate("overview");
             return true;
           }}
-          onBack={() => openOnboarding(2)}
+          onBack={() => openOnboarding(1)}
           onHaveAccount={() => openLogin()}
         />
         <Toaster position="top-right" richColors />

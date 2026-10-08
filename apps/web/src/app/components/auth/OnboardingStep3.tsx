@@ -1,9 +1,9 @@
-import { CheckFat } from "@phosphor-icons/react";
-import { Droplets, Thermometer } from "lucide-react";
 import { useState } from "react";
+import { KeyRound, Loader2, TriangleAlert } from "lucide-react";
+import { CHAMBER_NAME_MAX } from "../../data/account";
 import { OnboardingStep3Schema } from "../../data/onboarding";
 import type { Mode } from "../../domain/types";
-import { IncubatingIcon } from "../icons";
+import { IncubatorDeviceIcon } from "../icons";
 import { AuthCard } from "./AuthCard";
 import { FormInput } from "./FormInput";
 import { StepperBar } from "./StepperBar";
@@ -12,10 +12,10 @@ export function OnboardingStep3({
   onEnter,
   onBack,
   onHaveAccount,
-  modes,
 }: {
   onEnter: (data: {
     chamberName: string;
+    deviceId: string;
     startingModeId: string;
   }) => Promise<boolean>;
   onBack: () => void;
@@ -23,28 +23,45 @@ export function OnboardingStep3({
   modes: Mode[];
 }) {
   const [chamberName, setChamberName] = useState("Incubator One");
+  const [deviceId, setDeviceId] = useState("");
   const [startingModeId] = useState("broiler");
-  const [error, setError] = useState<string | undefined>();
+  const [errors, setErrors] = useState<{ chamberName?: string; deviceId?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const mode =
-    modes.find((candidate) => candidate.id === startingModeId) ?? modes[0];
+  const [connectError, setConnectError] = useState<string | null>(null);
 
   const submit = async () => {
-    const r = OnboardingStep3Schema.safeParse({ chamberName, startingModeId });
+    if (isSubmitting) return;
+    setConnectError(null);
+    const r = OnboardingStep3Schema.safeParse({ chamberName, deviceId, startingModeId });
     if (!r.success) {
-      setError(r.error.issues[0].message);
+      const fields = r.error.flatten().fieldErrors;
+      setErrors({ chamberName: fields.chamberName?.[0], deviceId: fields.deviceId?.[0] });
       return;
     }
-    setError(undefined);
+    setErrors({});
     setIsSubmitting(true);
-    await onEnter({ chamberName, startingModeId });
-    setIsSubmitting(false);
+    try {
+      // Mock connection attempt; no physical device discovery is performed.
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      if (!/^EGG-\d{4}$/.test(r.data.deviceId)) {
+        setConnectError(
+          `Could not find an incubator with chamber code '${deviceId.trim()}'. Please check the display screen on your incubator and try again.`,
+        );
+        return;
+      }
+      if (!(await onEnter(r.data))) {
+        setConnectError("Could not connect this chamber. Check that its code is not already assigned, then try again.");
+      }
+    } catch {
+      setConnectError("Could not complete the connection. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <AuthCard>
-      <StepperBar step={3} onHaveAccount={onHaveAccount} />
+      <StepperBar step={2} onHaveAccount={onHaveAccount} />
       <h1
         style={{
           fontFamily: "var(--font-display)",
@@ -54,7 +71,7 @@ export function OnboardingStep3({
           lineHeight: "var(--leading-snug)",
         }}
       >
-        Name your first chamber.
+        Connect your first chamber.
       </h1>
       <p
         style={{
@@ -66,125 +83,61 @@ export function OnboardingStep3({
         You can add more incubators any time from the dashboard.
       </p>
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-col gap-4">
+        {connectError && (
+          <div
+            className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
+            style={{
+              backgroundColor: "var(--status-danger-bg)",
+              border: "var(--border-width-hairline) solid var(--border-blush)",
+            }}
+            role="alert"
+          >
+            <TriangleAlert size={16} className="mt-0.5 shrink-0" color="var(--status-danger-fg)" />
+            <div>
+              <p style={{ fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", color: "var(--status-danger-fg)" }}>
+                Connection Failed
+              </p>
+              <p id="chamber-connection-error" className="mt-0.5" style={{ fontSize: "var(--type-caption)", color: "var(--status-danger-fg)", lineHeight: "var(--leading-normal)" }}>
+                {connectError}
+              </p>
+            </div>
+          </div>
+        )}
+        <FormInput
+          label="Chamber code"
+          id="chamber-code"
+          icon={KeyRound}
+          value={deviceId}
+          onChange={(e) => {
+            setDeviceId(e.target.value);
+            setConnectError(null);
+            setErrors((prev) => ({ ...prev, deviceId: undefined }));
+          }}
+          placeholder="EGG-1015"
+          maxLength={20}
+          autoCapitalize="characters"
+          spellCheck={false}
+          disabled={isSubmitting}
+          error={errors.deviceId}
+          aria-invalid={!!connectError}
+          aria-describedby={connectError ? "chamber-connection-error" : undefined}
+        />
         <FormInput
           label="Chamber name"
           id="chamber-name"
-          icon={IncubatingIcon}
+          icon={IncubatorDeviceIcon}
           value={chamberName}
-          onChange={(e) => setChamberName(e.target.value)}
-          placeholder="Incubator One"
-          error={error}
-        />
-      </div>
-
-      <div className="mt-5">
-        <p
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "var(--type-label)",
-            fontWeight: "var(--weight-bold)",
-            letterSpacing: "var(--tracking-label)",
-            textTransform: "uppercase",
-            color: "var(--text-primary)",
+          onChange={(e) => {
+            setChamberName(e.target.value);
+            setErrors((prev) => ({ ...prev, chamberName: undefined }));
           }}
-        >
-          Recommended starting Mode
-        </p>
-        <div className="mt-2 rounded-2xl border border-[var(--border-illustration)] bg-[var(--surface-illustration)] p-4">
-          {" "}
-          {/* illustration exception per color-guidelines.md:163 */}
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]">
-              <IncubatingIcon size={18} />
-            </span>
-            <div className="flex flex-col text-left">
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-body)",
-                  fontWeight: "var(--weight-bold)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                Chicken (Standard)
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-caption)",
-                  color: "var(--text-muted)",
-                }}
-              >
-                {mode.targetTemp.min}°C, {mode.targetHumidity.min}% RH,{" "}
-                {mode.incubationDays}-day cycle
-              </span>
-            </div>
-          </div>
-          <div className="mt-3.5 grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-3 text-left">
-              <div
-                className="flex items-center gap-1.5"
-                style={{ color: "var(--text-muted)" }}
-              >
-                <Thermometer
-                  size={14}
-                  className="text-[var(--brand-primary)]"
-                />
-                <span
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-label)",
-                    letterSpacing: "var(--tracking-label)",
-                    textTransform: "uppercase",
-                    fontWeight: "var(--weight-bold)",
-                  }}
-                >
-                  Target temp
-                </span>
-              </div>
-              <p
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-body)",
-                  fontWeight: "var(--weight-bold)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                {mode.targetTemp.min}°C
-              </p>
-            </div>
-            <div className="flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-3 text-left">
-              <div
-                className="flex items-center gap-1.5"
-                style={{ color: "var(--text-muted)" }}
-              >
-                <Droplets size={14} className="text-[var(--icon-info)]" />
-                <span
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--type-label)",
-                    letterSpacing: "var(--tracking-label)",
-                    textTransform: "uppercase",
-                    fontWeight: "var(--weight-bold)",
-                  }}
-                >
-                  Humidity
-                </span>
-              </div>
-              <p
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-body)",
-                  fontWeight: "var(--weight-bold)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                {mode.targetHumidity.min}% RH
-              </p>
-            </div>
-          </div>
-        </div>
+          maxLength={CHAMBER_NAME_MAX}
+          characterCount={chamberName.length}
+          disabled={isSubmitting}
+          placeholder="Incubator One"
+          error={errors.chamberName}
+        />
       </div>
 
       <div className="mt-6 flex gap-3">
@@ -198,7 +151,7 @@ export function OnboardingStep3({
             color: "var(--text-primary)",
           }}
         >
-          <span>← Back</span>
+          <span>Back</span>
         </button>
         <button
           type="button"
@@ -208,12 +161,16 @@ export function OnboardingStep3({
           className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
           {isSubmitting ? (
-            <span>{"Preparing dashboard…"}</span>
+            <>
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+              <span>Connecting…</span>
+            </>
+          ) : connectError ? (
+            <span>Retry Connection</span>
           ) : (
             <>
               <span className="md:hidden">Enter</span>
               <span className="hidden md:inline">Enter dashboard</span>
-              <CheckFat size={16} weight="fill" aria-hidden="true" />
             </>
           )}
         </button>

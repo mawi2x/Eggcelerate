@@ -2,7 +2,7 @@ export function StepperBar({
   step,
   onHaveAccount,
 }: {
-  step: 1 | 2 | 3;
+  step: 1 | 2;
   onHaveAccount: () => void;
 }) {
   return (
@@ -18,7 +18,7 @@ export function StepperBar({
             color: "var(--text-muted)",
           }}
         >
-          STEP {step} OF 3
+          STEP {step} OF 2
         </span>
         <button
           type="button"
@@ -33,10 +33,10 @@ export function StepperBar({
         role="progressbar"
         aria-valuenow={step}
         aria-valuemin={1}
-        aria-valuemax={3}
-        aria-label={`Step ${step} of 3`}
+        aria-valuemax={2}
+        aria-label={`Step ${step} of 2`}
       >
-        {[1, 2, 3].map((i) => (
+        {[1, 2].map((i) => (
           <div
             key={i}
             className="h-1.5 flex-1 rounded-full"
