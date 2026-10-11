@@ -1,3 +1,4 @@
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { CheckFat as Check } from "@phosphor-icons/react";
 import { ChevronRight } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -78,17 +79,18 @@ function OffTargetRow({
   onOpen: (id: string) => void;
 }) {
   const { unit, mode, dev, dir, value } = entry;
+  const temperature = useTemperatureDisplay();
   const isOff = dev > 0.005;
-  const unitLabel = kind === "temp" ? "°C" : "%";
+  const unitLabel = kind === "temp" ? temperature.unit : "%";
   const displayValue =
-    kind === "temp" ? value.toFixed(1) : Math.round(value).toString();
-  const delta = dev.toFixed(kind === "temp" ? 1 : 0);
+    kind === "temp" ? temperature.number(value) : Math.round(value).toString();
+  const delta = (kind === "temp" ? temperature.delta(dev) : dev).toFixed(kind === "temp" ? 1 : 0);
 
   let statusText: string;
   if (!isOff) statusText = "Within target";
   else if (kind === "temp")
     statusText =
-      dir === "high" ? `Too warm by ${delta}°C` : `Too cool by ${delta}°C`;
+      dir === "high" ? `Too warm by ${delta}${temperature.unit}` : `Too cool by ${delta}${temperature.unit}`;
   else
     statusText =
       dir === "high" ? `Too humid by ${delta}%` : `Too dry by ${delta}%`;

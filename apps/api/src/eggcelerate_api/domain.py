@@ -57,7 +57,6 @@ def condition_severity(
     if (
         not paired
         or telemetry_critical
-        or not water_ok
         or temp_critical
         or humidity_critical
         or battery_critical

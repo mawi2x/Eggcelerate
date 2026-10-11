@@ -32,15 +32,6 @@ export function getConnectionPresentation(
   };
 }
 
-export function getWaterStatusInfo(ok: boolean): {
-  label: string;
-  color: string;
-} {
-  return ok
-    ? { label: "Normal", color: "var(--status-success-fg)" }
-    : { label: "Low", color: "var(--status-danger-fg)" };
-}
-
 export const readingStateColors: Record<ReadingState, string> = {
   ok: "var(--text-primary)",
   warning: "var(--status-warning-fg)",

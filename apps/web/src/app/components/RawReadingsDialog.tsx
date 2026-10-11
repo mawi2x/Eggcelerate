@@ -1,3 +1,4 @@
+import { useTemperatureDisplay } from "../providers/temperature-context";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -32,6 +33,7 @@ export function RawReadingsDialog({
   window: ReadingWindow;
   onClose: () => void;
 }) {
+  const temperature = useTemperatureDisplay();
   const repository = useRepository();
   const { isAuthenticated } = useAuth();
   const [end] = useState(() => new Date().toISOString());
@@ -126,7 +128,6 @@ export function RawReadingsDialog({
                   <TableHead>Timestamp (UTC)</TableHead>
                   <TableHead>Temperature</TableHead>
                   <TableHead>Humidity</TableHead>
-                  <TableHead>Water</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -136,9 +137,8 @@ export function RawReadingsDialog({
                     <TableCell>
                       {new Date(p.reading.ts).toISOString()}
                     </TableCell>
-                    <TableCell>{p.reading.temp}°C</TableCell>
+                    <TableCell>{temperature.format(p.reading.temp)}</TableCell>
                     <TableCell>{p.reading.humidity}%</TableCell>
-                    <TableCell>{p.waterOk ? "OK" : "Low"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

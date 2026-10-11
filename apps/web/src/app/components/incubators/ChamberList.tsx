@@ -1,4 +1,5 @@
-import { rangeState, waterState } from "../../domain/incubator";
+import { useTemperatureDisplay } from "../../providers/temperature-context";
+import { rangeState } from "../../domain/incubator";
 import type { Incubator } from "../../domain/types";
 import { EmptyState } from "../EmptyState";
 import { IncubatorCard } from "../IncubatorCard";
@@ -29,6 +30,7 @@ export function ChamberList({
   onHarvest: (unit: Incubator) => void;
   onAdd: () => void;
 }) {
+  const temperature = useTemperatureDisplay();
   const {
     isMobile,
     totalUnits,
@@ -211,7 +213,7 @@ export function ChamberList({
                       {h}
                     </TableHead>
                   ))}
-                  {["TEMP", "HUMIDITY", "WATER"].map((h) => (
+                  {["TEMP", "HUMIDITY"].map((h) => (
                     <TableHead
                       key={h}
                       className="sticky top-0 z-10 text-right"
@@ -252,7 +254,6 @@ export function ChamberList({
                   const mode = modeOf(unit.modeId);
                   const tempSt = rangeState(unit.temp, mode.targetTemp);
                   const humSt = rangeState(unit.humidity, mode.targetHumidity);
-                  const waterSt = waterState(unit.waterOk);
                   return (
                     <TableRow
                       key={unit.id}
@@ -289,7 +290,7 @@ export function ChamberList({
                           fontWeight: "var(--weight-bold)",
                         }}
                       >
-                        {unit.temp}°C
+                        {temperature.format(unit.temp)}
                       </TableCell>
                       <TableCell
                         className="text-right"
@@ -299,15 +300,6 @@ export function ChamberList({
                         }}
                       >
                         {unit.humidity}%
-                      </TableCell>
-                      <TableCell
-                        className="text-right"
-                        style={{
-                          color: readingStateColors[waterSt],
-                          fontWeight: "var(--weight-bold)",
-                        }}
-                      >
-                        {unit.waterOk ? "Normal" : "Low"}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={unit.status} />

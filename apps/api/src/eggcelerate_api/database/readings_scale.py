@@ -174,7 +174,6 @@ def csv_chunk(rows: list[dict[str, Any]], *, header: bool = False) -> str:
                 "Received (UTC)",
                 "Temperature (C)",
                 "Humidity (%)",
-                "Water OK",
             ]
         )
     for r in rows:
@@ -190,7 +189,6 @@ def csv_chunk(rows: list[dict[str, Any]], *, header: bool = False) -> str:
                 r["received_at"].astimezone(UTC).isoformat(),
                 r["temperature_c"],
                 r["humidity_pct"],
-                str(r["water_ok"]).lower(),
             ]
         )
     return output.getvalue()

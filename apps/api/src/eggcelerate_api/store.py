@@ -314,16 +314,6 @@ FARM_ALERTS = [
         False,
     ),
     (
-        "a2",
-        "warning",
-        "water-low",
-        "chamber-3",
-        "Water Reservoir Low",
-        "Water reservoir low (12%). Refill the mist maker to keep humidity stable.",
-        25,
-        False,
-    ),
-    (
         "a3",
         "critical",
         "turning-overdue",
@@ -352,16 +342,6 @@ FARM_ALERTS = [
         "Humidity is 51%, below the target. Add water to the reservoir.",
         88,
         False,
-    ),
-    (
-        "a6",
-        "warning",
-        "water-low",
-        "chamber-2",
-        "Water Reservoir Low",
-        "Water reservoir is low. Top it up soon.",
-        1500,
-        True,
     ),
     (
         "a7",
@@ -409,7 +389,7 @@ FARM_ALERTS = [
         "reservoir-refilled",
         "chamber-1",
         "Reservoir Refilled",
-        "Water reservoir refilled to 100%.",
+        "Water reservoir checked and refilled.",
         10590,
         True,
     ),
@@ -644,6 +624,39 @@ class MemoryStore:
         # A primitive Lock can be released by another worker thread: FastAPI
         # may enter and exit a sync generator dependency on different workers.
         self._transaction_lock = Lock()
+        self.water_reminders_managed_externally = False
+        self._water_reminder_day = ""
+        self._water_reminder_units: set[str] = set()
+
+    def refresh_water_reminders(self, now: datetime) -> None:
+        if self.water_reminders_managed_externally:
+            return
+        day = now.astimezone(UTC).date().isoformat()
+        if self._water_reminder_day != day:
+            self._water_reminder_day = day
+            self._water_reminder_units.clear()
+        if not self.preferences.notifications.enabled.get("water", True):
+            return
+        for unit in self.incubators.values():
+            if (
+                unit.cycle_phase not in {
+                    "incubating", "lockdown", "hatching", "awaiting_finish"
+                }
+                or unit.id in self._water_reminder_units
+            ):
+                continue
+            self._water_reminder_units.add(unit.id)
+            public_id = f"water-check-{unit.id}-{day}"
+            self.alerts[public_id] = AlertDTO(
+                id=public_id,
+                incubator_id=unit.id,
+                unit_name=unit.name,
+                severity="info",
+                code="water-check",
+                title="Check water reservoir",
+                message="Check the reservoir manually and refill if needed to maintain humidity.",
+                occurred_at=now,
+            )
 
     @contextmanager
     def transaction(self) -> Iterator[MemoryStore]:

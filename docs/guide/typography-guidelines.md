@@ -226,7 +226,7 @@ Raw `px` may remain when it expresses physical UI detail, not typographic scale:
 
 - `1px` hairlines: `border: 1px solid var(--border-subtle)` — must stay `1px` crisp, not grow with font
 - Chart library props: Recharts `strokeWidth`, `dot r`, `tickMargin`, `margin` (`TrendsScreen.tsx`) — numeric px required
-- Illustration geometry: `IncubationCalendar` phase bands `height 38 width 44`, `Timeline` nodes `32`, `GaugeDial` `Math.round(size*0.07)` `WaterDroplet` `size*0.14` — deliberate measurements
+- Illustration geometry: `IncubationCalendar` phase bands `height 38 width 44`, `Timeline` nodes `32`, `GaugeDial` `Math.round(size*0.07)` — deliberate measurements
 - Icon geometry: `lucide-react` `size={16}` etc.
 
 Every exception should have a nearby comment or be an obvious chart/illustration prop. Do not add raw `fontSize` for new prose.

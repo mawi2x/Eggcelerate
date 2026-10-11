@@ -52,7 +52,7 @@ after recorded hardware testing. Setup must not interrupt local incubation contr
 
 ### Displays
 
-- **Square OLED:** incubation condition, water/sensor warnings, connection state,
+- **Square OLED:** incubation condition, temperature/humidity warnings, connection state,
   queued-reading count, and setup/pairing instructions including the code.
 - **16×2 I²C LCD:** current temperature and humidity, with explicit unavailable/
   sensor-error indication. Do not present stale or invalid values as current readings.

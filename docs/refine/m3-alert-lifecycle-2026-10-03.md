@@ -3,7 +3,7 @@
 M3 is implemented and verified locally for the PostgreSQL dashboard pilot. Migration
 `0015` adds device ownership, episode lifecycle fields and durable monitoring state.
 Existing alerts retain null lifecycle fields; their read/dismiss behavior is preserved.
-The memory demo remains fixture based.
+Updated October 11: water checks are manual daily reminders in both the PostgreSQL and memory implementations. Water sensor readings no longer affect chamber conditions.
 
 ## Condition rules
 
@@ -11,14 +11,14 @@ The memory demo remains fixture based.
 | --- | --- | --- | --- | --- |
 | Temperature | Assigned mode's temperature minimum/maximum | 60 seconds | Critical | Fresh reading within the recovery band |
 | Humidity | Assigned mode's humidity minimum/maximum | 60 seconds | Warning | Fresh reading within the recovery band |
-| Water | Device `water_ok=false` | 30 seconds | Warning | Fresh `water_ok=true` |
+| Water reminder | Active cycle, once per UTC day | None | Reminder | Next day or monitoring ends |
 | Offline | Server receipt time of advancing telemetry | More than 180 seconds | Critical | Advancing telemetry received |
 
-Temperature, humidity and water require a paired chamber in an active cycle:
+Temperature and humidity require a paired chamber in an active cycle:
 incubating, lockdown, hatching or awaiting finish. Offline monitoring applies to all
 paired assigned devices, including chambers without an active cycle. A device with
 no telemetry uses the later chamber/device creation timestamp as its offline anchor.
-Reassigning an existing device does not create a new grace timestamp.
+Reassigning an existing device does not create a new grace timestamp. Water reminders require an active cycle only; they do not require pairing or fresh sensor telemetry.
 
 Environmental evidence must be fresh (at most 45 seconds old). Stale evidence clears
 pending candidate timing but does not resolve an open episode. A telemetry gap also

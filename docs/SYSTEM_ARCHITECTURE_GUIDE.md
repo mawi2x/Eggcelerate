@@ -319,13 +319,13 @@ The following conventions must be resolved and then used by both Zod and Pydanti
 |---|---|
 | Temperature | Celsius in transport and domain calculations; convert only at the presentation boundary. |
 | Humidity | Relative humidity percentage. |
-| Water | waterOk: boolean for the binary float sensor. |
+| Water | Manual daily reservoir check reminder during an active cycle; no sensor reading. |
 | Research telemetry | Fixed five-minute persisted records. |
 | Live sampling | Configurable independently, such as 10 seconds, 30 seconds, or one minute. |
 | Turn interval | Domain/UI models use hours. Wire DTOs and device commands use explicit minutes; conversion occurs in the transport mapper. |
 | Hysteresis | Planned temperature and humidity hysteresis fields; firmware contract must confirm values. |
 
-The current Reading shape still contains numeric water, while the plan calls for waterOk. This is a migration item, not a reason to hide the difference in the API adapter.
+Legacy `water_ok`/`waterOk` fields remain for transport and database compatibility only. They do not represent a measured water level and do not affect chamber status.
 
 The structured ResultError with code, message, and optional details is the selected operation result contract. Some older plan examples use a string error and are superseded by this decision.
 
@@ -341,7 +341,7 @@ These rules apply to both mock and API implementations:
 - fertility is unavailable when the egg-set denominator is zero;
 - counts cannot exceed the loaded count;
 - cycle phase and environmental condition are separate dimensions;
-- water low, disconnected devices, unsafe temperature/humidity, and critical battery state cannot be represented as healthy;
+- disconnected devices, unsafe temperature/humidity, and critical battery state cannot be represented as healthy;
 - candling entries must validate day range, inspected counts, cumulative category rules, checkpoint type, image type/size, cycle ID, and timestamp;
 - IDs and timestamps must survive persistence and reload.
 

@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 CONDITIONS = {
     "temp": (60, "critical", "temperature-out-of-range", "Temperature out of range"),
     "humidity": (60, "warning", "humidity-out-of-range", "Humidity out of range"),
-    "water": (30, "warning", "water-low", "Water supply low"),
+    "water": (0, "info", "water-check", "Check water reservoir"),
     "offline": (0, "critical", "device-offline", "Device offline"),
 }
 ACTIVE_PHASES = {"incubating", "lockdown", "hatching", "awaiting_finish"}
@@ -63,6 +63,21 @@ async def evaluate_farm(
         )
     )
     preferences = preferences or {}
+    # Retain obsolete sensor alerts as history without showing misleading warnings.
+    await session.execute(
+        update(alerts)
+        .where(
+            alerts.c.farm_id == farm_id,
+            alerts.c.code == "water-low",
+            alerts.c.dismissed.is_(False),
+        )
+        .values(
+            dismissed=True,
+            condition_state="resolved",
+            resolved_at=now,
+            resolution_reason="monitoring_ended",
+        )
+    )
     rows = (
         (
             await session.execute(
@@ -84,7 +99,6 @@ async def evaluate_farm(
                     device_telemetry_state.c.last_seen_at,
                     device_telemetry_state.c.temperature_c,
                     device_telemetry_state.c.humidity_pct,
-                    device_telemetry_state.c.water_ok,
                 )
                 .select_from(incubators)
                 .join(
@@ -176,7 +190,11 @@ async def evaluate_farm(
                     )
                 )
                 if condition in {"temp", "humidity"}
-                else row["public_id"]
+                else (
+                    f"{row['public_id']}:{now.astimezone(UTC).date()}"
+                    if condition == "water"
+                    else row["public_id"]
+                )
             )
             if monitor["source_signature"] != signature:
                 await resolve(session, monitor, now, "configuration_changed")
@@ -189,7 +207,10 @@ async def evaluate_farm(
             age = (now - last_seen).total_seconds() if last_seen else None
             fresh = age is not None and age <= 45
             truth: bool | None
-            if not paired or (condition != "offline" and not running):
+            if condition == "water":
+                truth = running and preferences.get("water", True)
+                reason = "monitoring_ended"
+            elif not paired or (condition != "offline" and not running):
                 truth = False
                 reason = "monitoring_ended"
             elif condition == "offline":
@@ -198,9 +219,6 @@ async def evaluate_farm(
                 reason = "recovered"
             elif not fresh:
                 truth = None  # Unknown is never evidence of recovery.
-                reason = "recovered"
-            elif condition == "water":
-                truth = not row["water_ok"]
                 reason = "recovered"
             else:
                 temperature = condition == "temp"
@@ -240,7 +258,7 @@ async def evaluate_farm(
                         elif condition == "offline":
                             message += " No advancing telemetry received for more than 180 seconds."
                         else:
-                            message += " The device reports insufficient water; check the supply."
+                            message += " Check the reservoir manually and refill if needed to maintain humidity."
                         await session.execute(
                             insert(alerts).values(
                                 farm_id=farm_id,

@@ -23,6 +23,9 @@ blob-report/
 .env.*
 !.env.example
 
+# ESP32 local credentials and certificates
+/apps/firmware/test/config.h
+
 # logs
 npm-debug.log*
 pnpm-debug.log*

@@ -1,3 +1,4 @@
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { Egg as EggIcon } from "@phosphor-icons/react";
 import { IconClipboardText } from "@tabler/icons-react";
 import {
@@ -134,6 +135,7 @@ export function DetailScreen({
   onOpenTrends: () => void;
   onTabChange?: (tab: DetailTab) => void;
 }) {
+  const temperature = useTemperatureDisplay();
   const { completeCycle, stopCycle: archiveStoppedCycle } =
     useCycleHistoryActions();
   const turnCommand = useTurnCommandStatus(unit.id);
@@ -501,7 +503,7 @@ export function DetailScreen({
                       },
                       {
                         label: "Temperature",
-                        value: `${setupMode.targetTemp.min}–${setupMode.targetTemp.max}°C`,
+                        value: `${temperature.formatRange(setupMode.targetTemp)}`,
                         icon: Thermometer,
                       },
                       {

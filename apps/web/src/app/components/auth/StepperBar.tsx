@@ -23,7 +23,7 @@ export function StepperBar({
         <button
           type="button"
           onClick={onHaveAccount}
-          className="flex min-h-11 items-center justify-center rounded px-1 text-sm font-semibold text-[var(--brand-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 md:min-h-8"
+          className="flex h-[var(--control-height-default)] items-center justify-center rounded px-1 text-sm font-semibold text-[var(--brand-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1"
         >
           <span>I have an account</span>
         </button>

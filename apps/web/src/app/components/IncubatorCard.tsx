@@ -1,3 +1,4 @@
+import { useTemperatureDisplay } from "../providers/temperature-context";
 import {
   Bird,
   CheckFatIcon,
@@ -8,7 +9,7 @@ import {
 } from "@phosphor-icons/react";
 import { ChevronRight, Droplets, Thermometer } from "lucide-react";
 import { conditionDisplayLabels } from "../domain/cycle";
-import { rangeState, waterState } from "../domain/incubator";
+import { rangeState } from "../domain/incubator";
 import type { Incubator, Mode, ReadingState } from "../domain/types";
 import {
   ChamberCardFooter,
@@ -19,7 +20,7 @@ import { FilledCheckIcon as CheckCircle } from "./icons/CheckIcon";
 import { ExclamationIcon } from "./icons/ExclamationIcon";
 import { SegmentedBattery } from "./SegmentedBattery";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
-import { getWaterStatusInfo, readingStateColors } from "./statusPresentation";
+import { readingStateColors } from "./statusPresentation";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 
@@ -240,7 +241,7 @@ function Trend({ delta }: { delta: number }) {
   );
 }
 
-// Uniform 3-line metric box shared by TEMP / HUMIDITY / WATER. Fixed line
+// Uniform 3-line metric box shared by TEMP / HUMIDITY. Fixed line
 // heights keep the Line 2 and Line 3 baselines aligned across all three tiles.
 function Reading({
   icon,
@@ -374,10 +375,9 @@ export function IncubatorCard({
   onHarvest,
   highlighted = false,
 }: Props) {
+  const temperature = useTemperatureDisplay();
   const tempSt = rangeState(unit.temp, mode.targetTemp);
   const humSt = rangeState(unit.humidity, mode.targetHumidity);
-  const waterSt = waterState(unit.waterOk);
-  const waterInfo = getWaterStatusInfo(unit.waterOk);
   const progress =
     mode.incubationDays > 0
       ? Math.min(
@@ -506,13 +506,13 @@ export function IncubatorCard({
         </div>
       ) : (
         <div className="flex-1">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Reading
               icon={<Thermometer size={15} />}
               label="TEMP"
-              value={unit.temp}
-              unit="°C"
-              delta={unit.tempTrend}
+              value={temperature.number(unit.temp)}
+              unit={temperature.unit}
+              delta={temperature.delta(unit.tempTrend)}
               state={tempSt}
             />
             <Reading
@@ -522,18 +522,6 @@ export function IncubatorCard({
               unit="%"
               delta={unit.humidityTrend}
               state={humSt}
-            />
-            <Reading
-              label="WATER"
-              value={unit.waterOk ? "Good" : "Low"}
-              state={waterSt}
-              valueColor={waterInfo.color}
-              valueSize={16}
-              subtext={
-                <span style={{ color: waterInfo.color }}>
-                  {unit.waterOk ? "Sufficient" : "Refill"}
-                </span>
-              }
             />
           </div>
 

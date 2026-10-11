@@ -1,10 +1,6 @@
 import { connectionStateFromPairing } from "./cycle";
 import type { Incubator, Mode, Range, ReadingState } from "./types";
 
-export function waterState(ok: boolean): ReadingState {
-  return ok ? "ok" : "critical";
-}
-
 export function rangeState(value: number, safe: Range): ReadingState {
   return value >= safe.min && value <= safe.max ? "ok" : "critical";
 }
@@ -15,7 +11,6 @@ export function getUnitIssues(unit: Incubator, mode: Mode): string[] {
   else if (unit.temp < mode.targetTemp.min) issues.push("temperature low");
   if (unit.humidity > mode.targetHumidity.max) issues.push("humidity high");
   else if (unit.humidity < mode.targetHumidity.min) issues.push("humidity low");
-  if (waterState(unit.waterOk) !== "ok") issues.push("water reservoir low");
   if (unit.powerSource === "battery" && unit.batteryPct <= 25)
     issues.push("battery low");
   if (new Date(unit.nextTurn).getTime() < Date.now())

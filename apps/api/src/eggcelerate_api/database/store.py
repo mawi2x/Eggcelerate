@@ -346,6 +346,8 @@ class PostgresStore:
                             if kind in ("alerts", "candling_delete", "mode_delete")
                             else schemas[kind].model_validate(receipt["response"])
                         )
+                # The durable evaluator owns daily reminders and their dismissal history.
+                state.water_reminders_managed_externally = True
                 yield state
                 removed = set(before) - set(state.modes)
                 if removed:

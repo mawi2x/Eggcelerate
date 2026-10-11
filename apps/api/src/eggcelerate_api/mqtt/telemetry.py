@@ -26,7 +26,8 @@ class DeviceTelemetry(TelemetrySample):
     seq: Annotated[StrictInt, Field(ge=0, le=2147483647)]
     battery_pct: Annotated[float, Field(ge=0, le=100)]
     power_source: Literal["grid", "battery"]
-    water_ok: StrictBool
+    # Legacy storage compatibility only; water is a manual reminder.
+    water_ok: StrictBool = True
 
 
 async def ingest_telemetry(

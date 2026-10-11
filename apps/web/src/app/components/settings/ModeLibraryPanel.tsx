@@ -1,3 +1,4 @@
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import {
   CalendarDays,
   Copy,
@@ -154,6 +155,7 @@ export function ModeLibraryPanel({
   onAddMode,
   onDeleteMode,
 }: Props) {
+  const temperature = useTemperatureDisplay();
   const [view, setView] = useState<ViewMode>("list");
   const isMobile = useIsMobile();
   const [modeSearch, setModeSearch] = useState("");
@@ -251,7 +253,7 @@ export function ModeLibraryPanel({
     const inRange = (v: number, lo: number, hi: number) =>
       Number.isFinite(v) && v >= lo && v <= hi;
     if (!inRange(tempMin, 30, 42) || !inRange(tempMax, 30, 42)) {
-      toast.error("Temperature must be between 30.0°C and 42.0°C.");
+      toast.error(`Temperature must be between ${temperature.format(30)} and ${temperature.format(42)}.`);
       return;
     }
     if (tempMin > tempMax) {
@@ -674,7 +676,7 @@ export function ModeLibraryPanel({
                     >
                       <Thermometer size={14} /> Temp
                     </span>
-                    {m.targetTemp.min} to {m.targetTemp.max}°C
+                    {temperature.formatRange(m.targetTemp)}
                   </span>
                   <span className="flex items-center justify-between">
                     <span
@@ -788,7 +790,7 @@ export function ModeLibraryPanel({
                         color: TEXT,
                       }}
                     >
-                      {m.targetTemp.min} to {m.targetTemp.max}°C
+                      {temperature.formatRange(m.targetTemp)}
                     </TableCell>
                     <TableCell
                       style={{
@@ -922,16 +924,16 @@ export function ModeLibraryPanel({
             </div>
             <div className="grid grid-cols-2 gap-2">
               {draftField(
-                "Temp min °C",
-                draft.tempMin,
-                (n) => setDraft({ ...draft, tempMin: n }),
-                { step: 0.1, min: 30, max: 42 },
+                `Temp min ${temperature.unit}`,
+                Number(temperature.number(draft.tempMin)),
+                (n) => setDraft({ ...draft, tempMin: temperature.toCelsius(n) }),
+                { step: 0.1, min: temperature.value(30), max: temperature.value(42) },
               )}
               {draftField(
-                "Temp max °C",
-                draft.tempMax,
-                (n) => setDraft({ ...draft, tempMax: n }),
-                { step: 0.1, min: 30, max: 42 },
+                `Temp max ${temperature.unit}`,
+                Number(temperature.number(draft.tempMax)),
+                (n) => setDraft({ ...draft, tempMax: temperature.toCelsius(n) }),
+                { step: 0.1, min: temperature.value(30), max: temperature.value(42) },
               )}
               {draftField(
                 "Hum min %",

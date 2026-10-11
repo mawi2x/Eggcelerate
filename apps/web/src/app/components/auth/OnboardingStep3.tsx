@@ -145,7 +145,7 @@ export function OnboardingStep3({
           type="button"
           onClick={onBack}
           disabled={isSubmitting}
-          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl border bg-[var(--surface-card)] font-semibold transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          className="flex h-[var(--control-height-default)] flex-1 cursor-pointer items-center justify-center rounded-xl border bg-[var(--surface-card)] font-semibold transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           style={{
             borderColor: "var(--border-default)",
             color: "var(--text-primary)",
@@ -158,7 +158,7 @@ export function OnboardingStep3({
           onClick={() => void submit()}
           disabled={isSubmitting}
           aria-busy={isSubmitting}
-          className="flex h-12 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          className="flex h-[var(--control-height-default)] flex-1 cursor-pointer items-center justify-center rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
           {isSubmitting ? (
             <>

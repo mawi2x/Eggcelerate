@@ -21,16 +21,6 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       acknowledged: false,
     },
     {
-      id: "a2",
-      title: "Water Reservoir Low",
-      severity: "warning",
-      unit: "Chamber Three",
-      message:
-        "Water reservoir low (12%). Refill the mist maker to keep humidity stable.",
-      timestamp: isoMinutesAgo(25),
-      acknowledged: false,
-    },
-    {
       id: "a3",
       title: "Egg Turning Overdue",
       severity: "critical",
@@ -57,15 +47,6 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       message: "Humidity is 51%, below the target. Add water to the reservoir.",
       timestamp: isoMinutesAgo(88),
       acknowledged: false,
-    },
-    {
-      id: "a6",
-      title: "Water Reservoir Low",
-      severity: "warning",
-      unit: "Chamber Two",
-      message: "Water reservoir is low. Top it up soon.",
-      timestamp: isoDaysAgo(1, 18, 25),
-      acknowledged: true,
     },
     {
       id: "a7",
@@ -108,7 +89,7 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       title: "Reservoir Refilled",
       severity: "info",
       unit: "Chamber One",
-      message: "Water reservoir refilled to 100%.",
+      message: "Water reservoir checked and refilled.",
       timestamp: isoDaysAgo(7, 8, 30),
       acknowledged: true,
     },

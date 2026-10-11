@@ -464,6 +464,9 @@ def delete_mode(store: StoreState, mode_id: str) -> str:
 
 
 def list_alerts(store: StoreState) -> list[AlertDTO]:
+    refresh = getattr(store, "refresh_water_reminders", None)
+    if refresh is not None:
+        refresh(utcnow())
     return list(store.alerts.values())
 
 

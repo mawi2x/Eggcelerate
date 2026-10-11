@@ -55,7 +55,7 @@ export function FormInput({
             ].filter(Boolean).join(" ") || undefined
           }
           aria-invalid={invalid}
-          className={`w-full rounded-xl border bg-[var(--surface-input)] px-3.5 py-2.5 transition-colors focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 ${
+          className={`h-[var(--control-height-default)] w-full rounded-xl border bg-[var(--surface-input)] px-3.5 py-1 transition-colors focus-visible:bg-[var(--surface-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 ${
             Icon ? "pl-10" : ""
           } ${trailing ? "pr-14" : ""} ${
             invalid

@@ -58,7 +58,7 @@ routine testing because that removes the development database volume.
 - Store timestamps as `TIMESTAMPTZ` in UTC; localize only for display.
 - Store temperature in Celsius and humidity as relative percentage.
 - Store the device/wire turn interval in minutes; map to frontend domain hours at the transport boundary.
-- Store the float sensor as `water_ok BOOLEAN`; retire the mock-only numeric `Reading.water` field at the API mapper.
+- Water is a manual reminder only. Existing `water_ok BOOLEAN` columns remain for compatibility; they are not sensor readings and do not affect chamber status.
 - Persist research telemetry at a fixed five-minute interval unless the research protocol explicitly changes it. Live sampling and UI refresh frequency remain separate settings.
 
 ### 3.3 Historical integrity

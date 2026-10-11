@@ -1,3 +1,4 @@
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { useCallback, useMemo, useState } from "react";
 import type { Incubator, Mode } from "../../domain/types";
 import { resolvedTelemetryStatus } from "../../features/farm/telemetry";
@@ -24,6 +25,7 @@ export function useEnvironmentalTrends(
   modes: Mode[],
   initialUnitId?: string,
 ) {
+  const temperature = useTemperatureDisplay();
   const [unitId, setUnitId] = useState(initialUnitId ?? units[0]?.id ?? "");
   const [range, setRange] = useState<RangeKey>("24h");
   const [readingsOpen, setReadingsOpen] = useState(false);
@@ -80,25 +82,41 @@ export function useEnvironmentalTrends(
     (activeUnit) => resolvedTelemetryStatus(activeUnit) !== "fresh",
   );
 
+  const displayedReadings = useMemo(
+    () => Object.fromEntries(
+      Object.entries(readingsByIncubator).map(([id, readings]) => [
+        id,
+        readings.map((reading) => ({
+          ...reading,
+          temp: temperature.value(reading.temp),
+          tempMin: reading.tempMin === undefined ? undefined : temperature.value(reading.tempMin),
+          tempMax: reading.tempMax === undefined ? undefined : temperature.value(reading.tempMax),
+        })),
+      ]),
+    ),
+    [readingsByIncubator, temperature],
+  );
+  const metricUnit = metric === "temp" ? temperature.unit : "%";
+
   // Merge each active chamber's readings for the chosen metric onto a shared axis.
   const chartData = useMemo(
     () =>
       mergeChartReadings(
         activeUnits.map((u) => u.id),
-        readingsByIncubator,
+        displayedReadings,
         metric,
       ),
-    [activeUnits, metric, readingsByIncubator],
+    [activeUnits, metric, displayedReadings],
   );
   const chartSeriesByUnit = useMemo(
     () =>
       Object.fromEntries(
         activeUnits.map((u) => [
           u.id,
-          mergeChartReadings([u.id], readingsByIncubator, metric),
+          mergeChartReadings([u.id], displayedReadings, metric),
         ]),
       ),
-    [activeUnits, readingsByIncubator, metric],
+    [activeUnits, displayedReadings, metric],
   );
   const readingGroups = compare ? activeUnits : [unit];
 
@@ -107,11 +125,11 @@ export function useEnvironmentalTrends(
     const seen = new Map<string, { min: number; max: number }>();
     activeUnits.forEach((u) => {
       const band =
-        metric === "temp" ? modeOf(u).targetTemp : modeOf(u).targetHumidity;
+        metric === "temp" ? temperature.range(modeOf(u).targetTemp) : modeOf(u).targetHumidity;
       seen.set(`${band.min}-${band.max}`, band);
     });
     return Array.from(seen.values());
-  }, [activeUnits, metric, modeOf]);
+  }, [activeUnits, metric, modeOf, temperature]);
 
   // Auto-scale the y-axis to fit all active values plus each safe band.
   const domain = useMemo<[number, number]>(() => {
@@ -132,13 +150,15 @@ export function useEnvironmentalTrends(
       if (b.max > max) max = b.max;
     });
     if (!Number.isFinite(min) || !Number.isFinite(max))
-      return metricInfo[metric].domain;
-    const pad = metric === "temp" ? 0.5 : 3;
+      return metric === "temp"
+        ? [temperature.value(35), temperature.value(40)]
+        : metricInfo[metric].domain;
+    const pad = metric === "temp" ? temperature.delta(0.5) : 3;
     return [
       Math.floor((min - pad) * 10) / 10,
       Math.ceil((max + pad) * 10) / 10,
     ];
-  }, [chartData, activeUnits, bands, metric]);
+  }, [chartData, activeUnits, bands, metric, temperature]);
 
   // Explicit x ticks (5 on all viewports) so axis labels are deterministic.
   // Five ticks over 24h land ~6h apart, which reads as a progression
@@ -170,23 +190,23 @@ export function useEnvironmentalTrends(
     activeUnits.forEach((u) => {
       const m = modeOf(u);
       map[u.id] = {
-        band: metric === "temp" ? m.targetTemp : m.targetHumidity,
+        band: metric === "temp" ? temperature.range(m.targetTemp) : m.targetHumidity,
         metricLabel: metricInfo[metric].label,
       };
     });
     return map;
-  }, [activeUnits, metric, modeOf]);
+  }, [activeUnits, metric, modeOf, temperature]);
 
   // One target-range label when every active chamber shares a band, otherwise a hint.
   // Short forms fit the one-line header slot beside the metric toggle (~25 chars
   // at caption/10px); full text stays on `title` as a supplement.
   const targetRangeLabel =
     bands.length === 1
-      ? `Target Safe Range is ${bands[0].min} to ${bands[0].max}${metricInfo[metric].unit}`
+      ? `Target Safe Range is ${bands[0].min.toFixed(metric === "temp" ? 1 : 0)} to ${bands[0].max.toFixed(metric === "temp" ? 1 : 0)}${metricUnit}`
       : "Target Safe Range varies by incubation mode";
   const targetRangeShort =
     bands.length === 1
-      ? `Safe range ${bands[0].min} to ${bands[0].max}${metricInfo[metric].unit}`
+      ? `Safe range ${bands[0].min.toFixed(metric === "temp" ? 1 : 0)} to ${bands[0].max.toFixed(metric === "temp" ? 1 : 0)}${metricUnit}`
       : "Varies by incubation mode";
   // Never allow the selection to drop below two chambers — that would blank the chart.
 
@@ -206,6 +226,7 @@ export function useEnvironmentalTrends(
   };
 
   return {
+    metricUnit,
     unitId,
     setUnitId,
     range,

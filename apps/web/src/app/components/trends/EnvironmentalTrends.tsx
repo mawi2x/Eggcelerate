@@ -58,6 +58,7 @@ export function EnvironmentalTrends({
   units: Incubator[];
 }) {
   const {
+    metricUnit,
     unitId,
     setUnitId,
     range,
@@ -502,7 +503,7 @@ export function EnvironmentalTrends({
                     isMobile
                       ? undefined
                       : {
-                          value: `${metricInfo[metric].label} (${metricInfo[metric].unit})`,
+                          value: `${metricInfo[metric].label} (${metricUnit})`,
                           angle: -90,
                           position: "insideLeft",
                           fill: MUTED,
@@ -520,7 +521,7 @@ export function EnvironmentalTrends({
                   allowEscapeViewBox={{ x: false, y: true }}
                   content={
                     <ChartTooltip
-                      unit={metricInfo[metric].unit}
+                      unit={metricUnit}
                       meta={tooltipMeta}
                       highlightedId={activeHighlightedUnitId}
                       compact={isMobile}

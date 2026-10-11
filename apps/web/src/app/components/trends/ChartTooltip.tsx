@@ -20,7 +20,7 @@ function formatTooltipTime(timestamp: number) {
 
 function formatMeasurement(value: number, unit: string) {
   return `${value.toLocaleString(undefined, {
-    maximumFractionDigits: unit === "°C" ? 1 : 0,
+    maximumFractionDigits: unit === "°C" || unit === "°F" ? 1 : 0,
   })}${unit}`;
 }
 
@@ -174,7 +174,7 @@ export function ChartTooltip({
                 fontWeight: "var(--weight-semibold)",
               }}
             >
-              {info.band.min} to {info.band.max}
+              {info.band.min.toFixed(unit === "%" ? 0 : 1)} to {info.band.max.toFixed(unit === "%" ? 0 : 1)}
               {unit}
             </span>
           </div>

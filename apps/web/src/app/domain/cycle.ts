@@ -69,7 +69,6 @@ export function deriveConditionSeverity(
   if (
     !params.paired ||
     telemetryCritical ||
-    !params.waterOk ||
     temperatureCritical ||
     humidityCritical ||
     batteryCritical

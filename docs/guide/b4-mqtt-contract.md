@@ -30,7 +30,7 @@ persists an atomic command journal, and replays the original ACK after restart.
 
 | Topic suffix under `eggcelerate/v1/devices/{device_id}` | Current simulator behavior |
 |---|---|
-| `/telemetry` | QoS0, non-retained; schema_v, device_id, incubator_id, boot_id, booted_at, seq, observed_at, temperature_c, humidity_pct, water_ok, battery_pct, power_source |
+| `/telemetry` | QoS0, non-retained; schema_v, device_id, incubator_id, boot_id, booted_at, seq, observed_at, temperature_c, humidity_pct, battery_pct, power_source |
 | `/state` | QoS1 retained; online/offline, at, optional reason; registered LWT before connection |
 | `/commands` | Subscribed QoS1; validated schema_v, command_id, device_id, turn_now, interval, requested_at and expires_at; non-retained dispatch |
 | `/ack` | QoS1 non-retained; command_id, device_id, optional boot_id/booted_at, seq, observed_at, acked/rejected and nullable error_code |
@@ -55,7 +55,7 @@ topic/body mismatch, and unassigned farm/device/chamber identity. The caller
 provides trusted farm scope; no tenant is accepted from the payload. `received_at`
 is server assigned.
 
-Temperature/humidity/water and observed time enter the B3 raw sample table;
+Temperature/humidity and observed time enter the B3 raw sample table;
 battery/power, boot identity, sequence, observation time and server receipt times
 also update `device_telemetry_state` in migration `0009`. Command identity and claim
 constraints continue through migrations `0010` and `0011`. Exact retries preserve the
@@ -141,3 +141,5 @@ changes together and maintain synchronized UTC device clocks.
 Build with `VITE_LIVE_REFRESH_ENABLED=false` to pause automatic polling while
 keeping REST reads and ageing status. The separate B5 LED harness remains
 unqualified; refinement Phase 5 belongs to B4 simulator integration.
+
+Water is a manual daily reservoir reminder during active cycles. Devices do not need a water sensor or `water_ok` telemetry. Legacy `water_ok` input is optional and defaults to a compatibility placeholder; it is not shown or used for water status.

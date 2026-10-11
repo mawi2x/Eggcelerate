@@ -72,6 +72,8 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
   private rawExports = new Map<string, string>();
   private exportSequence = 0;
   private alerts: AlertEntry[];
+  private waterReminderDay = "";
+  private waterReminderUnits = new Set<string>();
   private hatchRecords: HatchRecord[];
   private abortedCycles: AbortedCycleRecord[] = [];
   private readonly turnCommands = new Map<
@@ -804,7 +806,37 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
   }
 
   listAlerts() {
-    return this.execute("listAlerts", () => ok(this.alerts));
+    return this.execute("listAlerts", () => {
+      const now = this.now();
+      const day = now.toISOString().slice(0, 10);
+      if (this.waterReminderDay !== day) {
+        this.waterReminderDay = day;
+        this.waterReminderUnits.clear();
+      }
+      if (this.settings.notifications.enabled.water !== false) {
+        for (const unit of this.incubators) {
+          if (
+            !["incubating", "lockdown", "hatching", "awaiting_finish"].includes(
+              unit.cyclePhase,
+            ) ||
+            this.waterReminderUnits.has(unit.id)
+          ) {
+            continue;
+          }
+          this.waterReminderUnits.add(unit.id);
+          this.alerts.push({
+            id: `water-check-${unit.id}-${day}`,
+            title: "Check water reservoir",
+            severity: "info",
+            unit: unit.name,
+            message: "Check the reservoir manually and refill if needed to maintain humidity.",
+            timestamp: now.toISOString(),
+            acknowledged: false,
+          });
+        }
+      }
+      return ok(this.alerts);
+    });
   }
 
   acknowledgeAlert(id: string) {

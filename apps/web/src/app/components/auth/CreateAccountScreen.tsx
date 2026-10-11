@@ -77,7 +77,7 @@ export function CreateAccountScreen({
         <button
           type="button"
           onClick={onHaveAccount}
-          className="mt-6 w-full rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          className="mt-6 w-full rounded-xl border border-[var(--border-default)] h-[var(--control-height-default)] py-0 font-semibold text-[var(--brand-primary)] hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
           <span>Return to sign in</span>
         </button>
@@ -183,7 +183,7 @@ export function CreateAccountScreen({
               type="button"
               onClick={() => setShowPassword((shown) => !shown)}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-md text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] md:h-8 md:w-8"
+              className="flex h-[var(--control-height-default)] w-[var(--control-height-default)] cursor-pointer items-center justify-center rounded-md text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
               style={{ color: "var(--text-muted)" }}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -210,14 +210,14 @@ export function CreateAccountScreen({
         type="button"
         disabled={busy}
         onClick={() => void submit()}
-        className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        className="mt-6 flex h-[var(--control-height-default)] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
         <span>{busy ? "Creating account…" : "Create account"}</span>
       </button>
       <button
         type="button"
         onClick={onHaveAccount}
-        className="mt-3 w-full rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        className="mt-3 w-full rounded-xl border border-[var(--border-default)] h-[var(--control-height-default)] py-0 font-semibold text-[var(--brand-primary)] hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
         <span>I already have an account</span>
       </button>

@@ -8,7 +8,7 @@ interface GaugeDialProps {
   unit: string;
   label: string;
   size?: number;
-  /** Decimal places on the centre value. Water reads as a whole number. */
+  /** Decimal places on the centre value. */
   decimals?: number;
   /** Overrides the numeric "Safe range: x–y" caption, e.g. "Optimal". */
   safeLabel?: string;
@@ -184,7 +184,7 @@ export function GaugeDial({
               Safe range
             </span>
             <span className="text-(length:--type-label-compact) font-semibold text-[var(--text-primary)] md:text-(length:--type-caption)">
-              {safe.min} to {safe.max}
+              {unit === "%" ? safe.min : safe.min.toFixed(decimals)} to {unit === "%" ? safe.max : safe.max.toFixed(decimals)}
               {unit === "%" ? "% RH" : unit}
             </span>
           </>

@@ -15,7 +15,7 @@ const FAQS = [
   {
     question: "What does Needs Attention mean?",
     answer:
-      "One or more chamber checks are outside the normal range. Review temperature, humidity, water, power, connectivity, and the next tray-turn time in Live Monitor.",
+      "One or more chamber checks are outside the normal range. Review temperature, humidity, power, connectivity, and the next tray-turn time in Live Monitor. Check the water reservoir manually when reminded.",
   },
   {
     question: "When should I candle the eggs?",
@@ -30,7 +30,7 @@ const FAQS = [
   {
     question: "Where can I see past readings?",
     answer:
-      "Open Trends for historical temperature, humidity, water, and hatch-performance information. From Live Monitor, select Full trends.",
+      "Open Trends for historical temperature, humidity, and hatch-performance information. From Live Monitor, select Full trends.",
   },
 ] as const;
 

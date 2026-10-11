@@ -1,5 +1,6 @@
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { Egg, WifiSlash } from "@phosphor-icons/react";
-import { ChevronRight, RotateCw, Zap } from "lucide-react";
+import { RotateCw, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type {
@@ -9,7 +10,7 @@ import type {
   TurnCommandStatus,
 } from "../../domain/types";
 import type { IncubatorUpdateIntent } from "../../features/farm/use-farm-data";
-import { IncubatingIcon } from "../icons";
+import { IncubatorDeviceIcon } from "../icons";
 import { getConnectionPresentation } from "../statusPresentation";
 import { Button } from "../ui/button";
 import { Progress } from "../ui/progress";
@@ -58,6 +59,7 @@ export function DeviceSettingsTab({
   onStopCycle,
   onTurnClick,
 }: DeviceSettingsTabProps) {
+  const temperature = useTemperatureDisplay();
   const [settingTab, setSettingTab] = useState<"mode" | "turning" | "device">(
     "mode",
   );
@@ -142,7 +144,7 @@ export function DeviceSettingsTab({
                 id: "mode" as const,
                 label: "Incubation mode",
                 mobileLabel: "Mode",
-                Icon: IncubatingIcon,
+                Icon: IncubatorDeviceIcon,
               },
               {
                 id: "turning" as const,
@@ -336,7 +338,7 @@ export function DeviceSettingsTab({
                 {[
                   {
                     label: "Target temperature",
-                    value: `${mode.targetTemp.min} to ${mode.targetTemp.max}°C`,
+                    value: `${temperature.formatRange(mode.targetTemp)}`,
                   },
                   {
                     label: "Target humidity",
@@ -384,24 +386,6 @@ export function DeviceSettingsTab({
                   </div>
                 ))}
               </dl>
-              <button
-                type="button"
-                onClick={() =>
-                  toast("Mode Library", {
-                    description:
-                      "Edit this preset under Settings → Mode Library.",
-                  })
-                }
-                className="inline-flex min-h-[var(--control-height-default)] cursor-pointer items-center gap-1.5 rounded-lg px-1 text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 md:min-h-10"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--type-body-sm)",
-                  fontWeight: "var(--weight-semibold)",
-                }}
-              >
-                <span>Edit preset for future cycles </span>
-                <ChevronRight size={14} aria-hidden="true" />
-              </button>
             </div>
           </div>
         )}

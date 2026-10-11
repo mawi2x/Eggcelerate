@@ -54,12 +54,6 @@ const triggerGroups: TriggerGroup[] = [
         hint: "Opens after 60 seconds outside the mode humidity target during an active cycle.",
         toastLabel: "Humidity alerts",
       },
-      {
-        id: "water",
-        label: "Water reservoir critical low",
-        hint: "Opens after 30 seconds reporting low water during an active cycle.",
-        toastLabel: "Water reservoir alerts",
-      },
     ],
   },
   {
@@ -96,6 +90,12 @@ const triggerGroups: TriggerGroup[] = [
     id: "schedule",
     title: "Schedule Reminders",
     triggers: [
+      {
+        id: "water",
+        label: "Check water reservoir",
+        hint: "Daily reminder during an active cycle. Check the reservoir manually and refill if needed.",
+        toastLabel: "Water reservoir reminders",
+      },
       {
         id: "candling",
         label: "Candling checkpoint due",

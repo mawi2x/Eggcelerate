@@ -12,7 +12,7 @@ farm/device/time-range queries. The composite foreign key prevents associating a
 device with another farm. Device IDs are internal UUIDs, not chamber IDs.
 
 The ingestion caller supplies a timezone-aware observed timestamp, finite
-`temperature_c`, `humidity_pct` in 0–100 and boolean `water_ok`. The server assigns
+`temperature_c` and `humidity_pct` in 0–100. Legacy `water_ok` is optional and defaults to a storage compatibility placeholder; water checks are manual reminders, not sensor readings. The server assigns
 `received_at` on first ingestion. PostgreSQL stores timestamp instants independently
 of the input timezone. There is one measurement per device per observed instant:
 exact retries are no-ops, including preservation of first receipt time; changed
@@ -26,7 +26,7 @@ Internal queries use aware `[start, end)` bounds and return ascending observed
 instants. Raw rows preserve the existing ReadingDTO field names. Research queries
 use UTC-aligned five-minute buckets and return `bucket_start`, `count`,
 `temperature_c_avg/min/max`, `humidity_pct_avg/min/max`, and
-`water_not_ok_count`. Only samples inside the requested interval participate;
+legacy `water_not_ok_count` (retained for API compatibility, not a current water measurement). Only samples inside the requested interval participate;
 edge buckets can be partial. Empty buckets are omitted, and gaps are never filled.
 Research values are calculated from durable raw samples at query time, so late
 arrivals appear immediately. They are not persisted continuous aggregates.

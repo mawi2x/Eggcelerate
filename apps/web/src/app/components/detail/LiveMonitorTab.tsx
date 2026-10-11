@@ -1,3 +1,4 @@
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import {
   BatteryPlus,
   Fan,
@@ -30,7 +31,6 @@ import {
 import { GaugeDial } from "../GaugeDial";
 import { Button } from "../ui/button";
 import { useIsMobile } from "../ui/use-mobile";
-import { WaterDroplet } from "../WaterDroplet";
 import { SectionCard } from "./primitives";
 import { Timeline } from "./Timeline";
 
@@ -210,6 +210,7 @@ function EnvironmentalSummary({
   error: unknown;
   onRetry: () => void;
 }) {
+  const temperature = useTemperatureDisplay();
   if (readings.length === 0) {
     return (
       <SectionCard
@@ -394,7 +395,7 @@ function EnvironmentalSummary({
             <span className="inline-flex items-center gap-1">
               <Thermometer size={13} aria-hidden="true" />
               {temperatureException
-                ? `Temperature went ${temperatureException.direction}: ${temperatureException.direction === "high" ? "peaked at" : "dropped to"} ${temperatureException.value.toFixed(1)}°C`
+                ? `Temperature went ${temperatureException.direction}: ${temperatureException.direction === "high" ? "peaked at" : "dropped to"} ${temperature.format(temperatureException.value)}`
                 : "Temperature stayed within target"}
             </span>
             <span className="inline-flex items-center gap-1">
@@ -413,15 +414,15 @@ function EnvironmentalSummary({
           <div className="grid grid-cols-2 gap-2 md:gap-2.5 lg:grid-cols-4">
             <ExtremumTile
               label="Highest temperature"
-              value={highestTemp.temp.toFixed(1)}
-              unit="°C"
+              value={temperature.number(highestTemp.temp)}
+              unit={temperature.unit}
               reading={highestTemp}
               icon={<TrendingUp size={15} />}
             />
             <ExtremumTile
               label="Lowest temperature"
-              value={lowestTemp.temp.toFixed(1)}
-              unit="°C"
+              value={temperature.number(lowestTemp.temp)}
+              unit={temperature.unit}
               reading={lowestTemp}
               icon={<TrendingDown size={15} />}
             />
@@ -494,7 +495,7 @@ function EnvironmentalSummary({
                           color={"var(--brand-primary)"}
                           aria-hidden="true"
                         />
-                        {reading.temp.toFixed(1)}°C
+                        {temperature.format(reading.temp)}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Droplets
@@ -545,12 +546,13 @@ export function LiveMonitorTab({
   onOpenTrends,
   onSelectCandlingDay,
 }: LiveMonitorTabProps) {
+  const temperature = useTemperatureDisplay();
   const isMobile = useIsMobile();
   const dialSize = isMobile ? 96 : 120;
   const heaterOn = unit.temp < mode.targetTemp.max;
   const overheating = unit.temp > mode.targetTemp.max;
   const fanOn = heaterOn || overheating;
-  const mistOn = unit.humidity < mode.targetHumidity.max && unit.waterOk;
+  const mistOn = unit.humidity < mode.targetHumidity.max;
   const telemetryStatus = resolvedTelemetryStatus(unit);
   const telemetryVerified = telemetryStatus === "fresh";
   const receiptTimestamp = telemetryReceiptTimestamp(unit);
@@ -584,13 +586,13 @@ export function LiveMonitorTab({
         divider
         density="compact"
       >
-        <div className="grid grid-cols-3 items-start gap-2 md:gap-6">
+        <div className="grid grid-cols-2 items-start gap-2 md:gap-6">
           <GaugeDial
-            value={unit.temp}
-            min={30}
-            max={42}
-            safe={mode.targetTemp}
-            unit="°C"
+            value={temperature.value(unit.temp)}
+            min={temperature.value(30)}
+            max={temperature.value(42)}
+            safe={temperature.range(mode.targetTemp)}
+            unit={temperature.unit}
             label="Temperature"
             size={dialSize}
           />
@@ -603,7 +605,6 @@ export function LiveMonitorTab({
             label="Humidity"
             size={dialSize}
           />
-          <WaterDroplet ok={unit.waterOk} size={dialSize} />
         </div>
       </SectionCard>
 

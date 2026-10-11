@@ -94,7 +94,7 @@ export function SignInScreen({
               type="button"
               onClick={() => setShow(!show)}
               aria-label={show ? "Hide password" : "Show password"}
-              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 md:h-8 md:w-8"
+              className="flex h-[var(--control-height-default)] w-[var(--control-height-default)] cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
               style={{ color: "var(--text-muted)" }}
             >
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -111,7 +111,7 @@ export function SignInScreen({
         type="button"
         disabled={busy}
         onClick={() => void submit()}
-        className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        className="mt-6 flex h-[var(--control-height-default)] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
         <span>{busy ? "Signing in…" : "Sign in"}</span>
       </button>
@@ -133,7 +133,7 @@ export function SignInScreen({
           <button
             type="button"
             onClick={onSetup}
-            className="w-full cursor-pointer rounded-xl border border-[var(--border-default)] py-3 font-semibold text-[var(--brand-primary)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+            className="w-full cursor-pointer rounded-xl border border-[var(--border-default)] h-[var(--control-height-default)] py-0 font-semibold text-[var(--brand-primary)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           >
             <span>{onSetupLabel}</span>
           </button>

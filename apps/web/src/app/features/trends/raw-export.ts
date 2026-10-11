@@ -7,7 +7,7 @@ export function rawReadingsCsv(rows: ScopedRawReading[]): string {
     return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   };
   return `${[
-    "Chamber ID,Chamber,Timestamp (UTC),Received (UTC),Temperature (C),Humidity (%),Water OK",
+    "Chamber ID,Chamber,Timestamp (UTC),Received (UTC),Temperature (C),Humidity (%)",
     ...rows.map((p) =>
       [
         p.incubatorId,
@@ -16,7 +16,6 @@ export function rawReadingsCsv(rows: ScopedRawReading[]): string {
         p.receivedAt,
         p.reading.temp,
         p.reading.humidity,
-        p.waterOk,
       ]
         .map(cell)
         .join(","),

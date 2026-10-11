@@ -1,3 +1,4 @@
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { WifiSlash } from "@phosphor-icons/react";
 import { BatteryMedium, Info, Minus, Plug, Plus, Wifi } from "lucide-react";
 import type { Incubator } from "../../domain/types";
@@ -44,6 +45,7 @@ export function HardwarePanel({
   onViewChange,
   onOpenUnit,
 }: Props) {
+  const temperature = useTemperatureDisplay();
   return (
     <div>
       <PanelHeader
@@ -307,7 +309,7 @@ export function HardwarePanel({
             <div className="mt-2">
               <SettingRow
                 label="Temperature Calibration Offset"
-                hint="Preview offset in °C. Changes cannot be saved or applied yet."
+                hint={`Preview offset in ${temperature.unit}. Changes cannot be saved or applied yet.`}
                 htmlFor="calibration"
                 layout="stacked"
                 borderless
@@ -348,7 +350,7 @@ export function HardwarePanel({
                         style={{ color: MUTED }}
                         aria-hidden="true"
                       >
-                        °C
+                        {temperature.unit}
                       </span>
                       <button
                         type="button"

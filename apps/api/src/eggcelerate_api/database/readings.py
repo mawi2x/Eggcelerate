@@ -24,7 +24,8 @@ class TelemetrySample(BaseModel):
     observed_at: AwareDatetime
     temperature_c: float
     humidity_pct: Annotated[float, Field(ge=0, le=100)]
-    water_ok: bool
+    # Legacy storage compatibility only; water is a manual reminder.
+    water_ok: bool = True
 
 
 TelemetryFreshness = Literal["fresh", "stale", "offline"]

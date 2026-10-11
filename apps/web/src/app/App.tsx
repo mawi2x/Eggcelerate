@@ -1,3 +1,4 @@
+import { TemperatureUnitContext } from "./providers/temperature-context";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { Redirect, useLocation } from "wouter";
@@ -677,6 +678,7 @@ function AppContent() {
 
   return (
     <RequireAuth>
+      <TemperatureUnitContext.Provider value={settings.temperatureUnit}>
       <div
         className="min-h-dvh w-full overflow-x-clip"
         style={{ backgroundColor: "var(--surface-app)" }}
@@ -864,6 +866,7 @@ function AppContent() {
         <Toaster position="top-right" richColors />
         <HelpWidget open={helpOpen} onOpenChange={setHelpOpen} />
       </div>
+      </TemperatureUnitContext.Provider>
     </RequireAuth>
   );
 }
