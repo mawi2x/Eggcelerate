@@ -2,12 +2,22 @@
 
 from fastapi import APIRouter, Depends
 
-from . import alerts, auth, history, incubators, modes, preferences, readings_scale
+from . import (
+    alerts,
+    auth,
+    history,
+    incubators,
+    modes,
+    platform_admin,
+    preferences,
+    readings_scale,
+)
 from .dependencies import require_api_csrf, require_api_session
 
 router = APIRouter()
 auth_routes = APIRouter(prefix="/api/v1")
 auth_routes.include_router(auth.router)
+auth_routes.include_router(platform_admin.router)
 router.include_router(auth_routes)
 
 farm_routes = APIRouter(

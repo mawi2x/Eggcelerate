@@ -1,0 +1,14 @@
+# Local rehearsal with isolated project name and loopback-only ports.
+services:
+  web:
+    ports: !override
+      - "127.0.0.1:18080:80"
+  dashboard-https:
+    ports: !override
+      - "127.0.0.1:18081:80"
+      - "127.0.0.1:18443:443"
+  hardware-broker:
+    ports: !override
+      - "127.0.0.1:18883:8883"
+  db:
+    ports: !override []

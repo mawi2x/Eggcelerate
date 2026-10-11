@@ -167,6 +167,16 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
 
   addIncubator(unit: Incubator) {
     return this.execute("addIncubator", () => {
+      if (
+        /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}-?[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}$/.test(
+          unit.deviceId,
+        )
+      ) {
+        return error(
+          "offline",
+          "Hardware pairing requires the connected Eggcelerate server.",
+        );
+      }
       if (this.incubators.some((candidate) => candidate.id === unit.id)) {
         return error("conflict", `Incubator ${unit.id} already exists.`);
       }
@@ -336,6 +346,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         return error("not_found", `Incubator ${id} was not found.`);
       if (
         input.modeId === undefined &&
+        input.preparing === undefined &&
         input.autoTurn === undefined &&
         input.turnIntervalHours === undefined
       ) {
@@ -371,6 +382,14 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         ...current,
         id,
         modeId: input.modeId ?? current.modeId,
+        preparationStartedAt:
+          input.preparing === true
+            ? new Date().toISOString()
+            : input.preparing === false
+              ? null
+              : current.preparationStartedAt,
+        preparationStableSince: null,
+        preparationReady: false,
         autoTurn: input.autoTurn ?? current.autoTurn,
         turnInterval: input.turnIntervalHours ?? current.turnInterval,
       });
@@ -829,7 +848,8 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
             title: "Check water reservoir",
             severity: "info",
             unit: unit.name,
-            message: "Check the reservoir manually and refill if needed to maintain humidity.",
+            message:
+              "Check the reservoir manually and refill if needed to maintain humidity.",
             timestamp: now.toISOString(),
             acknowledged: false,
           });

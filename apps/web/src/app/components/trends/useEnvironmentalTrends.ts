@@ -63,9 +63,12 @@ export function useEnvironmentalTrends(
   const readingUnitIds = useMemo(
     () =>
       Array.from(
-        new Set([...activeUnits.map((activeUnit) => activeUnit.id), unit.id]),
+        new Set([
+          ...activeUnits.map((activeUnit) => activeUnit.id),
+          ...(unit ? [unit.id] : []),
+        ]),
       ),
-    [activeUnits, unit.id],
+    [activeUnits, unit],
   );
   const {
     readingsByIncubator,
@@ -118,7 +121,7 @@ export function useEnvironmentalTrends(
       ),
     [activeUnits, displayedReadings, metric],
   );
-  const readingGroups = compare ? activeUnits : [unit];
+  const readingGroups = compare ? activeUnits : unit ? [unit] : [];
 
   // Unique safe bands across the active chambers, so we can shade the target zone.
   const bands = useMemo(() => {

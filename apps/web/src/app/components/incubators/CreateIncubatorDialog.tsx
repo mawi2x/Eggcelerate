@@ -65,8 +65,8 @@ export function CreateIncubatorDialog({
                 lineHeight: "var(--leading-normal)",
               }}
             >
-              Enter the Device ID generated on your physical incubator screen
-              and name this chamber.
+              Enter the fixed pairing code from your incubator’s setup page and
+              name this chamber.
             </DialogDescription>
           </DialogHeader>
 
@@ -94,7 +94,7 @@ export function CreateIncubatorDialog({
                       color: "var(--status-danger-fg)",
                     }}
                   >
-                    Connection Failed
+                    Pairing Failed
                   </p>
                   <p
                     style={{
@@ -105,14 +105,14 @@ export function CreateIncubatorDialog({
                     }}
                   >
                     {connectError === "invalid"
-                      ? `Could not find an incubator with Device ID '${deviceId.trim()}'. Please check the display screen on your incubator and try again.`
-                      : `Device '${deviceId.trim()}' is offline. Please make sure your incubator is powered on and connected to WiFi.`}
+                      ? `Enter the 10-character pairing code shown on your incubator’s setup page.`
+                      : `The pairing service is unavailable. Check your connection and try again.`}
                   </p>
                 </div>
               </div>
             )}
             <div>
-              <Label htmlFor="deviceId">Device ID</Label>
+              <Label htmlFor="deviceId">Pairing code</Label>
               <div className="relative mt-1.5">
                 <Cpu
                   size={16}
@@ -124,13 +124,16 @@ export function CreateIncubatorDialog({
                   value={deviceId}
                   onChange={(e) => {
                     setDeviceId(
-                      e.target.value.replace(/[^A-Za-z0-9-]/g, "").slice(0, 20),
+                      e.target.value
+                        .replace(/[^A-Za-z0-9-]/g, "")
+                        .toUpperCase()
+                        .slice(0, 11),
                     );
                     if (connectError) setConnectError(null);
                   }}
-                  maxLength={20}
+                  maxLength={11}
                   disabled={connecting}
-                  placeholder="EGG-1015"
+                  placeholder="XXXXX-XXXXX"
                   className="rounded-xl pl-9"
                   style={{
                     ...inputStyle,
@@ -151,7 +154,7 @@ export function CreateIncubatorDialog({
                   }}
                 >
                   <Loader2 size={13} className="animate-spin" /> Verifying
-                  hardware ID and establishing connection...
+                  pairing code...
                 </p>
               )}
             </div>

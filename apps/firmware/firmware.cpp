@@ -1,4 +1,4 @@
-// EGGCELERATE production firmware entry point placeholder.
+// Legacy placeholder; the Arduino entry point is Eggcelerate/Eggcelerate.ino.
 //
 // The MQTT connectivity checker is in test/test.ino. Production firmware still
 // needs a confirmed board/toolchain, local safety control, actuator handling,

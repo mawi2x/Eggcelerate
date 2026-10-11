@@ -125,7 +125,7 @@ def new_incubator(
         last_turned_at=now,
         next_turn_at=now + timedelta(minutes=mode.default_turn_interval_min),
         turn_interval_min=mode.default_turn_interval_min,
-        auto_turn=True,
+        auto_turn=False,
         paired=True,
         cycle_phase="ready",
         condition_severity="info",
@@ -151,10 +151,43 @@ def update_configuration(
 ) -> IncubatorDTO:
     unit = require_incubator(store, incubator_id)
     patch: dict[str, Any] = {}
+    if (
+        body.preparing is not None or body.mode_id is not None
+    ) and unit.cycle_phase != "ready":
+        raise AppError(
+            "conflict", "Stop or finish the current cycle before changing its mode."
+        )
     if body.mode_id is not None:
         require_mode(store, body.mode_id)
         patch["mode_id"] = body.mode_id
+    if body.preparing is True:
+        if body.mode_id is None:
+            raise AppError("validation_error", "Select a mode before preparing.")
+        patch.update(
+            preparation_started_at=now,
+            preparation_ready=False,
+            preparation_stable_since=None,
+            auto_turn=False,
+        )
+    elif body.preparing is False:
+        patch.update(
+            preparation_started_at=None,
+            preparation_ready=False,
+            preparation_stable_since=None,
+            auto_turn=False,
+        )
+    elif body.mode_id is not None and unit.preparation_started_at:
+        patch.update(
+            preparation_started_at=now,
+            preparation_ready=False,
+            preparation_stable_since=None,
+        )
     if body.auto_turn is not None:
+        if body.auto_turn and unit.cycle_phase == "ready":
+            raise AppError(
+                "conflict",
+                "Automatic turning begins after eggs are loaded and the cycle starts.",
+            )
         patch["auto_turn"] = body.auto_turn
     if body.turn_interval_min is not None:
         patch["turn_interval_min"] = body.turn_interval_min
@@ -166,6 +199,17 @@ def start_cycle(
 ) -> IncubatorDTO:
     unit = require_incubator(store, incubator_id)
     mode = require_mode(store, body.mode_id)
+    if unit.cycle_phase != "ready":
+        raise AppError("conflict", "A cycle has already started in this chamber.")
+    if (
+        not unit.preparation_started_at
+        or unit.mode_id != mode.id
+        or not unit.preparation_ready
+    ):
+        raise AppError(
+            "conflict",
+            "Prepare this mode with fresh readings in range for five minutes before loading eggs and starting.",
+        )
     old = store.cycles.get(store.current_cycles.get(incubator_id, ""))
     if old and old.status == "active":
         store.cycles[old.id] = replace(old, status="reset")
@@ -183,6 +227,10 @@ def start_cycle(
                 "total_eggs_loaded": body.total_eggs,
                 "fertile_eggs": None,
                 "cycle_phase": "incubating",
+                "preparation_started_at": None,
+                "preparation_ready": False,
+                "preparation_stable_since": None,
+                "auto_turn": True,
                 "turn_interval_min": mode.default_turn_interval_min,
                 "candled_days": [],
                 "candling_entries": [],
@@ -205,6 +253,9 @@ def reset_chamber(store: StoreState, unit: IncubatorDTO, now: datetime) -> Incub
                 "candled_days": [],
                 "candling_entries": [],
                 "auto_turn": False,
+                "preparation_started_at": None,
+                "preparation_ready": False,
+                "preparation_stable_since": None,
                 "last_turned_at": now,
                 "next_turn_at": now + timedelta(hours=24),
             }

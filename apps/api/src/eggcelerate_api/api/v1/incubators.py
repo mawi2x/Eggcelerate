@@ -6,11 +6,13 @@ import uuid
 
 from fastapi import APIRouter, Depends, Header, Request
 from fastapi.concurrency import contextmanager_in_threadpool
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from ... import services
 from ...context import RequestContext
+from ...database.device_registry import resolve_pairing_code
 from ...database.readings import chamber_readings
 from ...database.schema import device_commands, incubators
 from ...errors import AppError, ok_envelope, validated, validation_error
@@ -27,6 +29,30 @@ from ...models import (
 from .dependencies import Store, get_request_context
 
 router = APIRouter(prefix="/incubators", tags=["incubators"])
+
+
+class PairingCodeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    pairing_code: str = Field(min_length=10, max_length=11)
+
+
+@router.post("/resolve-pairing-code")
+async def resolve_incubator_code(
+    body: PairingCodeRequest,
+    request: Request,
+    context: RequestContext = Depends(get_request_context),
+) -> dict:
+    database = request.app.state.database
+    if database is None:
+        raise AppError("offline", "Hardware pairing requires the connected server.")
+    try:
+        async with database.sessions() as session:
+            device_id = await resolve_pairing_code(
+                session, uuid.UUID(context.farm_id), body.pairing_code
+            )
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "Pairing service is unavailable.") from exc
+    return ok_envelope({"device_id": device_id})
 
 
 @router.get("/{incubator_id}/commands/{command_id}")

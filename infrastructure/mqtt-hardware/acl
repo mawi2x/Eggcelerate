@@ -1,0 +1,8 @@
+# Never grant an ESP32 the worker account or wildcard device writes.
+user EGG-001
+topic write eggcelerate/v1/devices/EGG-001/telemetry
+topic read eggcelerate/v1/devices/EGG-001/receipt
+
+user eggcelerate-worker
+topic read eggcelerate/v1/devices/+/telemetry
+topic write eggcelerate/v1/devices/+/receipt

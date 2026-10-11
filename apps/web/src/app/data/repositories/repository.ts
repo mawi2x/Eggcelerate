@@ -68,6 +68,7 @@ export type UpdateIncubatorProfileInput = {
 };
 
 export type UpdateIncubatorConfigurationInput = {
+  preparing?: boolean;
   modeId?: string;
   autoTurn?: boolean;
   turnIntervalHours?: number;

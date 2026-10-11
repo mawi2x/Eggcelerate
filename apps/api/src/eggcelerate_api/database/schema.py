@@ -38,6 +38,7 @@ users = Table(
     Column("email", Text, nullable=False, unique=True),
     Column("password_hash", Text, nullable=False),
     Column("display_name", Text, nullable=False),
+    Column("is_platform_admin", Boolean, nullable=False, server_default="false"),
     Column(
         "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
     ),
@@ -150,6 +151,7 @@ devices = Table(
 device_registry = Table(
     "device_registry",
     metadata,
+    Column("pairing_code_hash", Text),
     Column("identity_key", Text, primary_key=True),
     Column("public_id", Text, nullable=False),
     Column("farm_id", Uuid, ForeignKey("farms.id", ondelete="CASCADE"), nullable=False),
@@ -168,6 +170,9 @@ device_registry = Table(
     ),
 )
 Index("ix_device_registry_farm", device_registry.c.farm_id)
+device_registry.append_constraint(
+    UniqueConstraint("pairing_code_hash", name="uq_device_registry_pairing_code")
+)
 incubators = Table(
     "incubators",
     metadata,
@@ -344,6 +349,7 @@ incubator_runtime = Table(
     Column("total_eggs_loaded", Integer),
     Column("fertile_eggs", Integer),
     Column("cycle_phase", Text, nullable=False),
+    Column("preparation_started_at", DateTime(timezone=True)),
     Column("last_turned_at", DateTime(timezone=True), nullable=False),
     Column("next_turn_at", DateTime(timezone=True), nullable=False),
     ForeignKeyConstraint(

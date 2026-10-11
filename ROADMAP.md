@@ -160,11 +160,24 @@ Deployment, operator acceptance, and release approval remain M7/M9 work.
 
 Approved October 3: [ESP32 connection, pairing, and offline recovery plan](apps/firmware/provisioning-plan.md).
 Scope includes protected AP setup after 30 seconds of Wi-Fi loss or 15 minutes
-without confirmed uploads, permanent device identity with changeable pairing code,
+without confirmed uploads, permanent device identity with a fixed pairing code,
 OLED status/setup, LCD readings, physical setup fallback, and persistent bounded
 offline storage with confirmed, deduplicated batch uploads. These are planned M8
 capabilities with API/web support. Queue capacity, code format, setup hardware,
 and retry/session timing remain design details.
+
+October 11 update: local DHT22 communication on GPIO4 demonstrated by the user's
+Serial Monitor screenshot (11 successful reads, zero failures). This is not sensor
+calibration or VPS qualification. A connectivity checker and local sensor sketch
+now exist. The user selected one fixed pairing code per incubator; dashboard code
+rotation is outside the current scope. Follow the [phase plan](apps/firmware/phase-plan.md):
+identity/code persistence → protected Wi-Fi AP → VPS enrollment → dashboard pairing
+→ confirmed telemetry → recovery → displays/offline queue → bench acceptance.
+Initial local identity/AP firmware is now in [wifi-setup](apps/firmware/wifi-setup/README.md),
+including fixed-code persistence, protected local portal, saved-network rollback,
+and GPIO4 sensor sampling. Compilation and hardware acceptance remain pending.
+Next: upload and record local AP/persistence behavior; VPS enrollment and cloud
+pairing remain open.
 
 ## Pause and resume checkpoint
 
@@ -288,3 +301,93 @@ milestone only when its completion gates are met.
 M3 rules, verification and rollout notes: [alert lifecycle handoff](docs/refine/m3-alert-lifecycle-2026-10-03.md).
 M4 measurement, chart/export contracts and verification: [telemetry scale handoff](docs/refine/m4-telemetry-scale-2026-10-03.md).
 M5 loading measurements, budgets and CI verification: [loading and CI handoff](docs/refine/m5-loading-ci-2026-10-03.md).
+
+### October 11 sensor cloud integration
+
+Main Eggcelerate firmware now integrates verified TLS MQTT temperature/humidity
+uploads with the existing GPIO4 sensor and saved Wi-Fi setup. Added operator
+fixed-code enrollment (migration 0017), farm-scoped dashboard code resolution,
+server-side chamber routing, database receipts, and a sensor-only hardware broker
+Compose overlay. NodeMCU-32S compilation, web type checking, Python syntax
+compilation, and changed Python source lint passed. VPS access/configuration,
+migration execution, configured firmware upload, and end-to-end hardware
+acceptance remain pending; M8 is not complete.
+
+### October 11 local-first VPS pilot deployment
+
+Built and rehearsed an isolated local PostgreSQL/HTTPS/MQTT stack, fixed readiness
+to require migration 0017, then loaded the same checked API/web images into a
+separate VPS project `eggcelerate-hardware`. PostgreSQL migrated to 0017;
+public HTTPS readiness passed and the sensor worker connected to MQTT. Added
+trusted IP dashboard TLS and eight-hour certificate renewal scheduling. The
+original HTTP demo/Git checkout remain intact; deployment is an unpublished
+working-source snapshot under `/opt/eggcelerate/hardware-pilot-20261011`.
+
+Prepared private cloud settings and compiled the main NodeMCU-32S firmware;
+no firmware upload or synthetic readings were performed. Azure inbound TCP 8883,
+owner details, existing-code enrollment, and physical sensor-to-dashboard
+acceptance remain outstanding. Certificate future renewal and database backup
+operations are not yet qualified. See infrastructure/https/README.md for operations.
+
+### October 11 local account administration
+
+Azure TCP 8883 is now reachable, and EGG-001's MQTT authentication succeeds.
+Added a local `/admin` page matching the existing theme to create farm owner
+accounts and list registered users. Migration 0018 adds explicit platform admin
+permission; admin routes require authenticated sessions and CSRF protection for
+writes. The initial administrator is provisioned through the operator command
+with a database password hash, without browser or environment credentials.
+This page is local only; the VPS remains on its previous snapshot and migration
+0017. Real device enrollment, firmware upload, and live readings remain pending.
+
+### October 11 VPS administration rollout
+
+Deployed the locally built admin API/web images as `admin-20261011`, applied
+migration 0018, and created the initial platform administrator on the VPS.
+API/web readiness and MQTT worker connectivity are healthy. HTTP now redirects
+to the real HTTPS dashboard; ACME challenge routing remains reachable. Saved
+pre-admin database/source/config backups in the active snapshot. The local test
+owner was not copied. Create the real farm owner at `/admin`, then enroll the
+existing EGG-001 code and upload the configured firmware; physical acceptance
+remains pending.
+
+### October 11 phantom reminder fix
+
+Fixed PostgreSQL read projections to disable the demo store reminder generator.
+The durable evaluator remains responsible for real chamber reminders. The VPS
+Charles Farm had zero persisted incubators and alerts; the 12 visible reminders
+were generated only in the response from demo fixtures. Deployed the corrected
+API as `alerts-fix-20261011`; the admin web image remains `admin-20261011`.
+
+### October 11 empty-farm navigation
+
+Removed the full-screen empty-farm shortcut. Every dashboard page now keeps
+the shared sidebar/header and uses its own empty state. Settings remain
+accessible before adding a chamber; Incubators keep their full toolbar; Overview
+provides a pairing-code onboarding action. Invalid empty-farm detail links return
+to Incubators. Web build and type checking passed; deployed the same image as
+`empty-farm-20261011` to the VPS.
+
+### October 11 empty-farm Trends fix
+
+The newly reachable Trends route dereferenced a missing incubator in its readings
+hook. Empty farms now produce no reading IDs or raw-reading groups and display
+an environmental empty state while keeping the header and both tabs. The focused
+Trends state suite passed all three tests, including the new empty-farm regression.
+Web build and type checking passed; deployed `trends-fix-20261011` to the VPS.
+
+### October 11 preparation before incubation
+
+Added a persisted preparation stage (migration 0019) while the chamber remains
+idle: select a mode, monitor real readings for five minutes inside both ranges,
+then load 1–38 eggs and confirm Start cycle. Only that confirmation starts Day 1.
+The server checks continuous samples, freshness and matching mode; changing
+mode/cancelling resets preparation. Idle/preparing chambers stay out of Active
+Incubators. Heater/mist/fan states now say Not reported rather than inferring
+physical state from a sensor value. Control remains manual in this phase.
+
+API lint, web type checking and API/web image builds passed. Local and VPS
+databases upgraded to 0019, services deployed as preparation-20261011. A database,
+source and Compose backup was saved before rollout. Full physical preparation
+and start acceptance remains to be exercised with equipment; no synthetic sensor
+data was inserted. See docs/guide/incubator-preparation-guide.md.

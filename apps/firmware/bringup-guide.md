@@ -41,7 +41,7 @@ Use a permanent device identity plus a distinct per-device AP password. Proposed
 pairing code: 10 random uppercase letters/digits excluding ambiguous characters,
 generated once with the platform random source and persisted across restarts.
 This format is a proposal, not an implemented contract. Do not derive either secret
-from a public MAC/device ID. Code rotation and cloud claims require backend support.
+from a public MAC/device ID. The code is fixed per incubator; cloud claims require backend support.
 During bench development, show setup instructions in Serial Monitor; add OLED
 output after its model and wiring are confirmed.
 
@@ -55,8 +55,8 @@ a durable receipt. Production dispatch is not implemented by the simulator worke
 
 ## 4. Dashboard pairing, then recovery
 
-Implement farm-scoped, rate-limited claims for eligible devices and acknowledged
-pairing-code changes. Then implement the persistent offline queue, original
+Implement farm-scoped, rate-limited claims for eligible devices using their fixed
+pairing codes. Then implement the persistent offline queue, original
 timestamps, durable upload receipts, and deduplicated retries. Keep pairing codes,
 AP passwords, and broker credentials separate. Heater/turner control and local
 safety firmware are later work and are not included in the sensor check.

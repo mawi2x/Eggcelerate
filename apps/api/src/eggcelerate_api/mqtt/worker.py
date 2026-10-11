@@ -1,4 +1,4 @@
-"""Opt-in local simulator worker; broker credentials/ACLs are a deployment concern."""
+"""MQTT ingestion worker; hardware mode receives sensor telemetry only."""
 
 import asyncio
 import json
@@ -130,7 +130,23 @@ def configure_broker_security(client: mqtt.Client) -> None:
 
 async def run() -> None:
     settings = load_settings()
-    if settings.app_env == "production":
+    hardware = os.environ.get("MQTT_HARDWARE_TELEMETRY_ONLY") == "true"
+    if hardware:
+        if (
+            settings.auth_mode != "sessions"
+            or not os.environ.get("MQTT_TLS_CA_FILE")
+            or not os.environ.get("MQTT_USERNAME")
+            or not os.environ.get("MQTT_PASSWORD")
+            or os.environ.get("MQTT_DEVICE_ACL_CONFIRMED") != "true"
+        ):
+            raise RuntimeError(
+                "Hardware ingestion requires sessions, verified TLS, worker credentials, and per-device broker ACLs."
+            )
+        if os.environ.get("SIMULATOR_DISPATCH_ENABLED") == "true":
+            raise RuntimeError(
+                "Hardware telemetry mode cannot dispatch actuator commands."
+            )
+    if settings.app_env == "production" and not hardware:
         raise RuntimeError(
             "The bundled MQTT worker is simulator-only; production dispatch requires a commissioned device-authentication protocol."
         )
@@ -145,9 +161,17 @@ async def run() -> None:
     configure_broker_security(client)
 
     def connected(client, userdata, flags, reason_code, properties):
+        if reason_code.is_failure:
+            log.warning("MQTT broker rejected worker connection: %s", reason_code)
+            return
+        log.info(
+            "MQTT worker connected; mode=%s",
+            "hardware-sensors-only" if hardware else "simulator",
+        )
         if not reason_code.is_failure:
             client.subscribe("eggcelerate/v1/devices/+/telemetry", qos=0)
-            client.subscribe("eggcelerate/v1/devices/+/ack", qos=1)
+            if not hardware:
+                client.subscribe("eggcelerate/v1/devices/+/ack", qos=1)
 
     def acknowledge(inbound: InboundMqttMessage):
         if inbound.qos > 0:
@@ -291,6 +315,16 @@ async def run() -> None:
                         log.warning(
                             "MQTT ACK discarded after validation; total=%d",
                             queues.dropped_ack_count,
+                        )
+                else:
+                    # Transaction has committed. A socket send alone is not a DB receipt.
+                    if hardware and not inbound.is_ack:
+                        body = json.loads(inbound.payload)
+                        client.publish(
+                            f"eggcelerate/v1/devices/{body['device_id']}/receipt",
+                            f"{body['boot_id']}:{body['seq']}",
+                            qos=1,
+                            retain=False,
                         )
                 acknowledge(inbound)
             except SQLAlchemyError, OSError, TimeoutError:

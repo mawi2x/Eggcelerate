@@ -232,6 +232,13 @@ export class ApiRepository implements EggcelerateRepository {
     unit: Incubator,
     options?: MutationOptions,
   ): Promise<Result<Incubator>> {
+    // Resolve the private fixed code to the embedded hardware ID on the server.
+    const pairing = await this.request<{ device_id: string }>(
+      "/api/v1/incubators/resolve-pairing-code",
+      z.object({ device_id: z.string().min(1) }),
+      { method: "POST", body: { pairing_code: unit.deviceId } },
+    );
+    if (!pairing.ok) return pairing;
     const result = await this.request<unknown>(
       "/api/v1/incubators",
       IncubatorDTOSchema,
@@ -239,7 +246,7 @@ export class ApiRepository implements EggcelerateRepository {
         method: "POST",
         body: {
           name: unit.name,
-          device_id: unit.deviceId,
+          device_id: pairing.data.device_id,
           mode_id: unit.modeId,
         },
         idempotent: true,
@@ -271,7 +278,12 @@ export class ApiRepository implements EggcelerateRepository {
 
   async updateIncubatorConfiguration(
     id: string,
-    input: { modeId?: string; autoTurn?: boolean; turnIntervalHours?: number },
+    input: {
+      modeId?: string;
+      preparing?: boolean;
+      autoTurn?: boolean;
+      turnIntervalHours?: number;
+    },
     options?: MutationOptions,
   ): Promise<Result<Incubator>> {
     const result = await this.request<unknown>(
@@ -281,6 +293,9 @@ export class ApiRepository implements EggcelerateRepository {
         method: "PATCH",
         body: {
           ...(input.modeId === undefined ? {} : { mode_id: input.modeId }),
+          ...(input.preparing === undefined
+            ? {}
+            : { preparing: input.preparing }),
           ...(input.autoTurn === undefined
             ? {}
             : { auto_turn: input.autoTurn }),

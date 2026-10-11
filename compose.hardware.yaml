@@ -1,0 +1,62 @@
+# Add to compose.yaml + compose.production.yaml after preparing TLS and passwords.
+# This worker ingests sensors only; it does not dispatch actuator commands.
+services:
+  web:
+    ports: !override []
+
+  dashboard-https:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/https/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infrastructure/https/private:/etc/eggcelerate-tls:ro
+      - ./infrastructure/https/acme:/var/www/acme:ro
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+  hardware-broker:
+    image: eclipse-mosquitto:2
+    ports:
+      - "8883:8883"
+    volumes:
+      - ./infrastructure/mqtt-hardware/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./infrastructure/mqtt-hardware/private/acl:/mosquitto/config/acl:ro
+      - ./infrastructure/mqtt-hardware/private:/mosquitto/config/private:ro
+      - hardware-mqtt-data:/mosquitto/data
+    restart: unless-stopped
+
+  hardware-telemetry:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ["python", "-m", "eggcelerate_api.mqtt.worker"]
+    environment:
+      APP_ENV: production
+      AUTH_MODE: sessions
+      STORAGE_BACKEND: postgres_incubators
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
+      AUTH_RATE_LIMIT_KEY: ${AUTH_RATE_LIMIT_KEY:?Set AUTH_RATE_LIMIT_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set HTTPS web origin}
+      MQTT_HOST: hardware-broker
+      MQTT_PORT: "8883"
+      MQTT_USERNAME: eggcelerate-worker
+      MQTT_PASSWORD: ${MQTT_WORKER_PASSWORD:?Set a separate MQTT worker password}
+      MQTT_TLS_CA_FILE: /etc/eggcelerate/ca.crt
+      MQTT_HARDWARE_TELEMETRY_ONLY: "true"
+      MQTT_DEVICE_ACL_CONFIRMED: ${MQTT_DEVICE_ACL_CONFIRMED:?Set true after installing the supplied device ACL}
+      SIMULATOR_DISPATCH_ENABLED: "false"
+    volumes:
+      - ./infrastructure/mqtt-hardware/private/ca.crt:/etc/eggcelerate/ca.crt:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      hardware-broker:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  hardware-mqtt-data:

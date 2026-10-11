@@ -171,6 +171,11 @@ export function DetailScreen({
   const [harvestOpen, setHarvestOpen] = useState(false);
 
   const isReady = unit.cyclePhase === "ready";
+  const isPreparing = isReady && !!unit.preparationStartedAt;
+  const preparationReady = isPreparing && !!unit.preparationReady;
+  useEffect(() => {
+    if (unit.preparationStartedAt) setSetupModeId(unit.modeId);
+  }, [unit.id, unit.preparationStartedAt, unit.modeId]);
   const cycleEnded =
     unit.cyclePhase === "awaiting_finish" || unit.cyclePhase === "hatching";
   const turningStopped =
@@ -181,12 +186,26 @@ export function DetailScreen({
 
   const setupMode = modes.find((m) => m.id === setupModeId);
   const setupEggsCount = Number(setupEggs) || 0;
-  const setupEggsValid = setupEggsCount >= 1;
+  const setupEggsValid =
+    setupEggsCount >= 1 && setupEggsCount <= CURRENT_TRAY_CAPACITY;
+  const canLoadEggs = preparationReady && setupModeId === unit.modeId;
+
+  const prepareIncubator = async () => {
+    if (!setupMode) return;
+    const saved = await onUpdate({
+      type: "configuration",
+      input: { modeId: setupMode.id, preparing: true, autoTurn: false },
+    });
+    if (saved) {
+      setSetupOpen(false);
+      toast.success(`Preparing ${unit.name} for ${setupMode.name}`);
+    }
+  };
 
   const environmentalReadings = readings;
 
   const startCycle = async () => {
-    if (!setupMode || !setupEggsValid) return;
+    if (!setupMode || !setupEggsValid || !canLoadEggs) return;
     const eggs = setupEggsCount;
     const saved = await onUpdate({
       type: "start-cycle",
@@ -283,7 +302,11 @@ export function DetailScreen({
                 color: "var(--brand-primary-hover)",
               }}
             >
-              Ready for New Cycle
+              {isPreparing
+                ? preparationReady
+                  ? "Ready to load eggs"
+                  : "Preparing incubator"
+                : "Prepare a New Cycle"}
             </p>
             <p
               style={{
@@ -291,7 +314,11 @@ export function DetailScreen({
                 color: "var(--text-secondary)",
               }}
             >
-              Load the tray, choose an incubation mode, and begin Day 1.
+              {isPreparing
+                ? preparationReady
+                  ? "Conditions have stayed within range for five minutes. Load eggs, confirm the count, and start Day 1."
+                  : "Adjust equipment manually to reach the selected mode’s targets. The incubation timer has not started."
+                : "Choose a mode and stabilize conditions before loading eggs."}
             </p>
           </div>
           <Button
@@ -304,9 +331,57 @@ export function DetailScreen({
               height: "var(--control-height-mobile)",
             }}
           >
-            <span>Set Up</span>
+            <span>
+              {isPreparing
+                ? preparationReady
+                  ? "Load Eggs"
+                  : "Change Mode"
+                : "Prepare"}
+            </span>
           </Button>
         </div>
+      )}
+
+      {isPreparing && (
+        <SectionCard
+          title="Preparation"
+          titleVariant="headingSmall"
+          density="compact"
+          divider
+        >
+          <div className="space-y-3">
+            <p className="text-sm text-[var(--text-secondary)]">
+              {mode.name} · Temperature{" "}
+              {temperature.formatRange(mode.targetTemp)} · Humidity{" "}
+              {mode.targetHumidity.min}–{mode.targetHumidity.max}% RH
+            </p>
+            <StatusCallout
+              tone={preparationReady ? "success" : "info"}
+              title={
+                preparationReady
+                  ? "Conditions stable — ready to load"
+                  : unit.telemetryStatus !== "fresh"
+                    ? "Waiting for fresh sensor readings"
+                    : unit.preparationStableSince
+                      ? "Conditions in range — checking stability"
+                      : "Waiting for target conditions"
+              }
+              description="Both readings must remain within range for five minutes. A reading outside the targets or a sensor data gap restarts the check. Heating, humidity, and fan control are manual in this phase."
+            />
+            <Button
+              variant="outline"
+              disabled={isUpdating}
+              onClick={() =>
+                void onUpdate({
+                  type: "configuration",
+                  input: { preparing: false },
+                })
+              }
+            >
+              Cancel preparation
+            </Button>
+          </div>
+        </SectionCard>
       )}
 
       <Dialog
@@ -327,8 +402,9 @@ export function DetailScreen({
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              if (setupMode && setupEggsValid && !isUpdating)
-                setSetupConfirmOpen(true);
+              if (!setupMode || isUpdating) return;
+              if (canLoadEggs && setupEggsValid) setSetupConfirmOpen(true);
+              else if (!canLoadEggs) void prepareIncubator();
             }}
           >
             <DialogHeader className="px-5 pt-5 text-left">
@@ -341,7 +417,9 @@ export function DetailScreen({
                   lineHeight: "var(--leading-snug)",
                 }}
               >
-                Set up incubation cycle
+                {canLoadEggs
+                  ? "Load eggs and start incubation"
+                  : "Prepare incubator"}
               </DialogTitle>
               <DialogDescription
                 className="space-y-0.5"
@@ -352,10 +430,14 @@ export function DetailScreen({
                 }}
               >
                 <span className="block">
-                  Configure the new batch for {unit.name}.
+                  {canLoadEggs
+                    ? `Confirm the eggs loaded into ${unit.name}.`
+                    : `Choose a mode for ${unit.name}.`}
                 </span>
                 <span className="block">
-                  Monitoring and the incubation timeline will begin on Day 1.
+                  {canLoadEggs
+                    ? "Day 1 begins only when you confirm Start cycle."
+                    : "Preparation monitors conditions without starting the incubation timer."}
                 </span>
               </DialogDescription>
             </DialogHeader>
@@ -405,56 +487,58 @@ export function DetailScreen({
                 </Select>
               </div>
 
-              <div>
-                <Label
-                  htmlFor="setup-eggs"
-                  style={{
-                    fontSize: "var(--type-body-sm)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  Eggs loaded
-                </Label>
-                <Input
-                  id="setup-eggs"
-                  type="text"
-                  inputMode="numeric"
-                  value={setupEggs}
-                  onChange={(e) =>
-                    setSetupEggs(
-                      e.target.value.replace(/[^0-9]/g, "").slice(0, 3),
-                    )
-                  }
-                  placeholder="0"
-                  className="mt-2 rounded-xl"
-                  style={{
-                    borderColor: "var(--input-border)",
-                    backgroundColor: "var(--surface-card)",
-                    color: "var(--text-primary)",
-                  }}
-                  aria-describedby="setup-eggs-help"
-                  disabled={isUpdating}
-                />
-                <p
-                  id="setup-eggs-help"
-                  className="mt-1.5"
-                  style={{
-                    fontSize: "var(--type-caption)",
-                    color:
-                      setupEggs !== "" && !setupEggsValid
-                        ? "var(--status-danger-fg)"
-                        : "var(--text-secondary)",
-                    fontWeight:
-                      setupEggs !== "" && !setupEggsValid
-                        ? "var(--weight-semibold)"
-                        : "var(--weight-regular)",
-                  }}
-                >
-                  {setupEggs !== "" && !setupEggsValid
-                    ? "Enter at least 1 egg to start."
-                    : "Enter the number of eggs you are loading."}
-                </p>
-              </div>
+              {canLoadEggs && (
+                <div>
+                  <Label
+                    htmlFor="setup-eggs"
+                    style={{
+                      fontSize: "var(--type-body-sm)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    Eggs loaded
+                  </Label>
+                  <Input
+                    id="setup-eggs"
+                    type="text"
+                    inputMode="numeric"
+                    value={setupEggs}
+                    onChange={(e) =>
+                      setSetupEggs(
+                        e.target.value.replace(/[^0-9]/g, "").slice(0, 3),
+                      )
+                    }
+                    placeholder="0"
+                    className="mt-2 rounded-xl"
+                    style={{
+                      borderColor: "var(--input-border)",
+                      backgroundColor: "var(--surface-card)",
+                      color: "var(--text-primary)",
+                    }}
+                    aria-describedby="setup-eggs-help"
+                    disabled={isUpdating}
+                  />
+                  <p
+                    id="setup-eggs-help"
+                    className="mt-1.5"
+                    style={{
+                      fontSize: "var(--type-caption)",
+                      color:
+                        setupEggs !== "" && !setupEggsValid
+                          ? "var(--status-danger-fg)"
+                          : "var(--text-secondary)",
+                      fontWeight:
+                        setupEggs !== "" && !setupEggsValid
+                          ? "var(--weight-semibold)"
+                          : "var(--weight-regular)",
+                    }}
+                  >
+                    {setupEggs !== "" && !setupEggsValid
+                      ? `Enter between 1 and ${CURRENT_TRAY_CAPACITY} eggs to start.`
+                      : "Enter the number of eggs you are loading."}
+                  </p>
+                </div>
+              )}
 
               {setupMode ? (
                 <div
@@ -480,7 +564,8 @@ export function DetailScreen({
                           fontSize: "var(--type-caption)",
                         }}
                       >
-                        These targets will be applied when the cycle starts.
+                        Use these targets to prepare the chamber before loading
+                        eggs.
                       </p>
                     </div>
                     <span
@@ -578,18 +663,28 @@ export function DetailScreen({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!setupMode || !setupEggsValid || isUpdating}
+                  disabled={
+                    !setupMode || (canLoadEggs && !setupEggsValid) || isUpdating
+                  }
                   aria-busy={isUpdating}
                   className="rounded-full px-5"
                   style={{
                     backgroundColor: "var(--brand-primary)",
                     color: "var(--on-brand)",
                     opacity:
-                      !setupMode || !setupEggsValid || isUpdating ? 0.5 : 1,
+                      !setupMode ||
+                      (canLoadEggs && !setupEggsValid) ||
+                      isUpdating
+                        ? 0.5
+                        : 1,
                   }}
                 >
                   <span>
-                    {isUpdating ? "Starting…" : "Start Incubation Cycle"}
+                    {isUpdating
+                      ? "Saving…"
+                      : canLoadEggs
+                        ? "Start Incubation Cycle"
+                        : "Begin Preparation"}
                   </span>
                 </Button>
               </div>
@@ -661,7 +756,7 @@ export function DetailScreen({
                 height: "var(--control-height-mobile)",
                 fontSize: "var(--type-body)",
               }}
-              disabled={isUpdating}
+              disabled={isUpdating || !canLoadEggs || !setupEggsValid}
               aria-busy={isUpdating}
               onClick={(event) => {
                 event.preventDefault();

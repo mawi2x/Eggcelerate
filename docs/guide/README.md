@@ -9,7 +9,9 @@ Source of truth for behavior is code + `../SYSTEM_ARCHITECTURE_GUIDE.md`.
 - [UI control-size guidelines](./ui-control-size-guidelines.md) — search, select, button, chip, toggle, segment, and tab geometry.
 - [Screen notes](./screen-note-guidelines.md) — bottom placement for standalone explanations and informational notices.
 - [Auth & Onboarding](./auth-onboarding-guide.md) — app-managed API sessions, farm ownership, local mock flow, and remaining release gates.
+- [Local user administration](./platform-admin-guide.md) — administrator sign-in, creating farm owners, and the local database bootstrap.
 - [Device provisioning](./device-provisioning-guide.md) — operator-owned device IDs, farm routing, and the local simulator-only boundary.
+- [Incubator preparation](./incubator-preparation-guide.md) — mode selection, measured stability, loading eggs, and starting Day 1.
 - [Frontend restructuring](./frontend-restructuring-guide.md) — active F0–F6 execution checklist (domain → repository → Query → routing/auth → states → gate).
 - [Backend dashboard-first](./backend-dashboard-first-guide.md) — B0B resume point; refine mock writes to service commands before HTTP.
 - [Database setup](./database-setup-guide.md) — contract-first FastAPI, PostgreSQL/TimescaleDB, migrations, adapter integration, verification, and operational handoff plan.

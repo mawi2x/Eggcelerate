@@ -76,13 +76,16 @@ export function DeviceSettingsTab({
         type: "configuration",
         input: {
           modeId,
+          preparing: true,
+          autoTurn: false,
           turnIntervalHours: m.defaultTurnInterval,
         },
       }))
     )
       return;
-    toast(`Mode changed to ${m.name}`, {
-      description: "Turning interval reset to mode default.",
+    toast(`Preparing for ${m.name}`, {
+      description:
+        "The stability check has restarted. The incubation timer has not started.",
     });
   };
 
@@ -253,7 +256,11 @@ export function DeviceSettingsTab({
                           fontWeight: "var(--weight-bold)",
                         }}
                       >
-                        Active preset
+                        {isReady
+                          ? unit.preparationStartedAt
+                            ? "Preparation mode"
+                            : "Mode"
+                          : "Active preset"}
                       </p>
                       <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
                         <p
@@ -267,7 +274,9 @@ export function DeviceSettingsTab({
                             wordBreak: "break-word",
                           }}
                         >
-                          {mode.name}
+                          {isReady && !unit.preparationStartedAt
+                            ? "Unassigned"
+                            : mode.name}
                         </p>
                       </div>
                     </div>
@@ -275,10 +284,11 @@ export function DeviceSettingsTab({
 
                   {isReady && (
                     <Select
-                      value={unit.modeId}
+                      value={unit.preparationStartedAt ? unit.modeId : ""}
                       disabled={isUpdating}
                       onValueChange={(val) => {
-                        if (val !== unit.modeId) void changeMode(val);
+                        if (val !== unit.modeId || !unit.preparationStartedAt)
+                          void changeMode(val);
                       }}
                     >
                       <SelectTrigger
@@ -292,7 +302,7 @@ export function DeviceSettingsTab({
                           fontWeight: "var(--weight-bold)",
                         }}
                       >
-                        <SelectValue />
+                        <SelectValue placeholder="Select a mode to prepare" />
                       </SelectTrigger>
                       <SelectContent>
                         {modes.map((m) => (
@@ -328,64 +338,66 @@ export function DeviceSettingsTab({
               >
                 Mode Information
               </p>
-              <dl
-                className="grid grid-cols-2 overflow-hidden rounded-[var(--radius-dialog)]"
-                style={{
-                  border: `var(--border-width-hairline) solid var(--border-default)`,
-                  backgroundColor: "var(--surface-card)",
-                }}
-              >
-                {[
-                  {
-                    label: "Target temperature",
-                    value: `${temperature.formatRange(mode.targetTemp)}`,
-                  },
-                  {
-                    label: "Target humidity",
-                    value: `${mode.targetHumidity.min} to ${mode.targetHumidity.max}% RH`,
-                  },
-                  {
-                    label: "Turning schedule",
-                    value: `Every ${mode.defaultTurnInterval} hours`,
-                  },
-                  {
-                    label: "Scheduled candling",
-                    value: candling.map((c) => `Day ${c.day}`).join(", "),
-                  },
-                ].map((item, index) => (
-                  <div
-                    key={item.label}
-                    className={`p-4 ${index < 2 ? "border-b" : ""} ${index % 2 === 0 ? "border-r" : ""}`}
-                    style={{
-                      backgroundColor: "var(--surface-porcelain)",
-                      borderColor: "var(--border-default)",
-                    }}
-                  >
-                    <dt
+              {(!isReady || unit.preparationStartedAt) && (
+                <dl
+                  className="grid grid-cols-2 overflow-hidden rounded-[var(--radius-dialog)]"
+                  style={{
+                    border: `var(--border-width-hairline) solid var(--border-default)`,
+                    backgroundColor: "var(--surface-card)",
+                  }}
+                >
+                  {[
+                    {
+                      label: "Target temperature",
+                      value: `${temperature.formatRange(mode.targetTemp)}`,
+                    },
+                    {
+                      label: "Target humidity",
+                      value: `${mode.targetHumidity.min} to ${mode.targetHumidity.max}% RH`,
+                    },
+                    {
+                      label: "Turning schedule",
+                      value: `Every ${mode.defaultTurnInterval} hours`,
+                    },
+                    {
+                      label: "Scheduled candling",
+                      value: candling.map((c) => `Day ${c.day}`).join(", "),
+                    },
+                  ].map((item, index) => (
+                    <div
+                      key={item.label}
+                      className={`p-4 ${index < 2 ? "border-b" : ""} ${index % 2 === 0 ? "border-r" : ""}`}
                       style={{
-                        color: "var(--text-secondary)",
-                        fontFamily: "var(--font-body)",
-                        fontSize: "var(--type-caption)",
-                        fontWeight: "var(--weight-bold)",
+                        backgroundColor: "var(--surface-porcelain)",
+                        borderColor: "var(--border-default)",
                       }}
                     >
-                      {item.label}
-                    </dt>
-                    <dd
-                      className="mt-1 tabular-nums"
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "var(--type-body)",
-                        fontWeight: "var(--weight-extrabold)",
-                        lineHeight: "var(--leading-normal)",
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      {item.value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
+                      <dt
+                        style={{
+                          color: "var(--text-secondary)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--type-caption)",
+                          fontWeight: "var(--weight-bold)",
+                        }}
+                      >
+                        {item.label}
+                      </dt>
+                      <dd
+                        className="mt-1 tabular-nums"
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: "var(--type-body)",
+                          fontWeight: "var(--weight-extrabold)",
+                          lineHeight: "var(--leading-normal)",
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        {item.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
             </div>
           </div>
         )}
@@ -448,7 +460,7 @@ export function DeviceSettingsTab({
                 </div>
                 <Switch
                   checked={unit.autoTurn}
-                  disabled={turningStopped || isUpdating}
+                  disabled={isReady || turningStopped || isUpdating}
                   onCheckedChange={(autoTurn) =>
                     void onUpdate({
                       type: "configuration",

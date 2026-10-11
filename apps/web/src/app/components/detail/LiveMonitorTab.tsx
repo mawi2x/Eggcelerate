@@ -26,7 +26,6 @@ import type {
 import {
   resolvedTelemetryStatus,
   telemetryReceiptTimestamp,
-  telemetryStatusLabel,
 } from "../../features/farm/telemetry";
 import { GaugeDial } from "../GaugeDial";
 import { Button } from "../ui/button";
@@ -549,35 +548,33 @@ export function LiveMonitorTab({
   const temperature = useTemperatureDisplay();
   const isMobile = useIsMobile();
   const dialSize = isMobile ? 96 : 120;
-  const heaterOn = unit.temp < mode.targetTemp.max;
-  const overheating = unit.temp > mode.targetTemp.max;
-  const fanOn = heaterOn || overheating;
-  const mistOn = unit.humidity < mode.targetHumidity.max;
+  const hasSelectedMode =
+    unit.cyclePhase !== "ready" || !!unit.preparationStartedAt;
   const telemetryStatus = resolvedTelemetryStatus(unit);
   const telemetryVerified = telemetryStatus === "fresh";
   const receiptTimestamp = telemetryReceiptTimestamp(unit);
-  const actuatorValue = (active: boolean, on: string, off: string) =>
-    telemetryVerified ? (active ? on : off) : "Unavailable";
 
   return (
     <div className="space-y-3 md:space-y-5">
-      <SectionCard
-        title="Incubation Timeline"
-        titleVariant="headingSmall"
-        titleId="incubation-timeline-title"
-        section
-        divider
-        density="compact"
-      >
-        <Timeline
-          currentDay={currentDay}
-          totalDays={totalDays}
-          candling={candling}
-          candled={effectiveCandled}
-          labelSize={9}
-          onSelectMilestone={onSelectCandlingDay}
-        />
-      </SectionCard>
+      {unit.cyclePhase !== "ready" && (
+        <SectionCard
+          title="Incubation Timeline"
+          titleVariant="headingSmall"
+          titleId="incubation-timeline-title"
+          section
+          divider
+          density="compact"
+        >
+          <Timeline
+            currentDay={currentDay}
+            totalDays={totalDays}
+            candling={candling}
+            candled={effectiveCandled}
+            labelSize={9}
+            onSelectMilestone={onSelectCandlingDay}
+          />
+        </SectionCard>
+      )}
 
       <SectionCard
         title="Sensor readings"
@@ -592,6 +589,10 @@ export function LiveMonitorTab({
             min={temperature.value(30)}
             max={temperature.value(42)}
             safe={temperature.range(mode.targetTemp)}
+            showSafeRange={hasSelectedMode}
+            safeLabel={
+              hasSelectedMode ? undefined : "Select a mode to set targets"
+            }
             unit={temperature.unit}
             label="Temperature"
             size={dialSize}
@@ -601,6 +602,10 @@ export function LiveMonitorTab({
             min={20}
             max={90}
             safe={mode.targetHumidity}
+            showSafeRange={hasSelectedMode}
+            safeLabel={
+              hasSelectedMode ? undefined : "Select a mode to set targets"
+            }
             unit="%"
             label="Humidity"
             size={dialSize}
@@ -619,17 +624,17 @@ export function LiveMonitorTab({
           <SystemStatusTile
             icon={<Flame size={18} weight="fill" />}
             label="Heating element"
-            value={actuatorValue(heaterOn, "Heating", "Standby")}
+            value="Not reported"
           />
           <SystemStatusTile
             icon={<Waves size={20} weight="bold" />}
             label="Mist maker"
-            value={actuatorValue(mistOn, "Misting", "Off")}
+            value="Not reported"
           />
           <SystemStatusTile
             icon={<Fan size={18} weight="fill" />}
             label="Circulation fan"
-            value={actuatorValue(fanOn, "Active", "Off")}
+            value="Not reported"
           />
           <SystemStatusTile
             icon={<Lightning size={18} weight="fill" />}
@@ -647,7 +652,13 @@ export function LiveMonitorTab({
               )
             }
             label="Telemetry"
-            value={telemetryStatusLabel(telemetryStatus, receiptTimestamp)}
+            value={
+              telemetryStatus === "fresh"
+                ? "Live"
+                : telemetryStatus === "stale"
+                  ? "Stale"
+                  : "Offline"
+            }
           />
           <SystemStatusTile
             icon={<BatteryPlus size={18} weight="fill" />}

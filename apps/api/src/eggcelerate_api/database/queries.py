@@ -20,6 +20,9 @@ async def read_state(
     # in-memory values remain an explicit development fallback when a device
     # has never sent telemetry; telemetry_status marks that fallback offline.
     state = MemoryStore()
+    # PostgreSQL's durable evaluator owns reminders. Never run the demo-store
+    # reminder generator against fixtures left in a partial read projection.
+    state.water_reminders_managed_externally = True
     farm = database.farm_id
     async with database.sessions.begin() as session:
         await session.execute(
@@ -78,6 +81,7 @@ async def read_state(
         elif resource == "cycles":
             await load_history(session, farm, state)
         elif resource == "alerts":
+            state.incubators = {}
             await load_alerts(session, farm, state)
         elif resource == "preferences":
             preference_row = (

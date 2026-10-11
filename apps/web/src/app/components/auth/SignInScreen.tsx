@@ -10,6 +10,7 @@ export function SignInScreen({
   onSetupLabel = "Set up your farm",
   canRegister = true,
   authError,
+  heading = "WELCOME BACK",
 }: {
   onSignIn: (
     email: string,
@@ -20,6 +21,7 @@ export function SignInScreen({
   onSetupLabel?: string;
   canRegister?: boolean;
   authError?: string | null;
+  heading?: string;
 }) {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -67,7 +69,7 @@ export function SignInScreen({
             color: "var(--text-muted)",
           }}
         >
-          WELCOME BACK
+          {heading}
         </h1>
       </div>
       <div className="mt-4 flex flex-col gap-4">

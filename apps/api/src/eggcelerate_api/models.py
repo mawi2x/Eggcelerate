@@ -207,6 +207,9 @@ class IncubatorDTO(BaseModel):
     telemetry_observed_at: datetime | None = None
     telemetry_received_at: datetime | None = None
     telemetry_last_seen_at: datetime | None = None
+    preparation_started_at: datetime | None = None
+    preparation_stable_since: datetime | None = None
+    preparation_ready: bool = False
 
 
 class ReadingDTO(BaseModel):
@@ -327,6 +330,7 @@ class UpdateConfigurationRequest(BaseModel):
     model_config = Strict
 
     mode_id: NonEmpty | None = None
+    preparing: bool | None = None
     auto_turn: bool | None = None
     turn_interval_min: Annotated[int, Field(ge=1)] | None = None
 
@@ -334,6 +338,7 @@ class UpdateConfigurationRequest(BaseModel):
     def _non_empty(self) -> UpdateConfigurationRequest:
         if (
             self.mode_id is None
+            and self.preparing is None
             and self.auto_turn is None
             and self.turn_interval_min is None
         ):

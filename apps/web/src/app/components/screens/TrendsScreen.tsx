@@ -8,6 +8,8 @@ import {
   telemetryStatusLabel,
 } from "../../features/farm/telemetry";
 import { RawReadingsDialog } from "../RawReadingsDialog";
+import { EmptyState } from "../EmptyState";
+import { Button } from "../ui/button";
 import { EnvironmentalTrends } from "../trends/EnvironmentalTrends";
 import { HatchHistory } from "../trends/HatchHistory";
 import { BORDER, type TrendView, WARN, WARN_BG } from "../trends/presentation";
@@ -149,7 +151,14 @@ export function TrendsScreen({
       </div>
 
       {trendView === "environmental" ? (
-        <EnvironmentalTrends model={environmental} units={units} />
+        units.length === 0 ? (
+          <EmptyState
+            size="page"
+            title="No environmental readings yet"
+            description="Add an incubator and connect its sensor to start collecting temperature and humidity readings."
+            action={<Button asChild className="rounded-xl"><a href="/incubators">Add your first incubator</a></Button>}
+          />
+        ) : <EnvironmentalTrends model={environmental} units={units} />
       ) : (
         <HatchHistory
           model={historyModel}
@@ -158,7 +167,7 @@ export function TrendsScreen({
         />
       )}
 
-      {readingsOpen && (
+      {readingsOpen && readingGroups.length > 0 && (
         <RawReadingsDialog
           key={`${range}:${readingGroups.map((u) => u.id).join(",")}`}
           ids={readingGroups.map((u) => u.id)}

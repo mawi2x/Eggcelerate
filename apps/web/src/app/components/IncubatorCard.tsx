@@ -435,7 +435,9 @@ export function IncubatorCard({
           </>
         }
         titleClassName="flex min-w-0 items-center gap-1"
-        subtitle={ready ? "Unassigned" : mode.name}
+        subtitle={
+          ready && !unit.preparationStartedAt ? "Unassigned" : mode.name
+        }
         subtitleStyle={{
           color: ready ? "var(--text-gray-cool)" : "var(--text-farm)",
           fontWeight: "var(--weight-medium)",
@@ -489,7 +491,11 @@ export function IncubatorCard({
               color: "var(--text-primary)",
             }}
           >
-            Incubator Ready
+            {unit.preparationStartedAt
+              ? unit.preparationReady
+                ? "Ready to load eggs"
+                : "Preparing incubator"
+              : "Incubator idle"}
           </p>
           <p
             style={{
@@ -501,7 +507,9 @@ export function IncubatorCard({
               marginTop: 4,
             }}
           >
-            Load eggs and choose a mode to begin incubation.
+            {unit.preparationStartedAt
+              ? "Monitor conditions before loading eggs and starting the cycle."
+              : "Choose a mode and prepare conditions before loading eggs."}
           </p>
         </div>
       ) : (
@@ -661,7 +669,13 @@ export function IncubatorCard({
               paddingRight: 10,
             }}
           >
-            <span>{ready ? "Start Setup" : cta}</span>{" "}
+            <span>
+              {ready
+                ? unit.preparationStartedAt
+                  ? "View Preparation"
+                  : "Prepare"
+                : cta}
+            </span>{" "}
             <ChevronRight size={15} />
           </Button>
         )}

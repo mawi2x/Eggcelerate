@@ -18,7 +18,7 @@ from .clock import DEVICE_CLOCK_TOLERANCE
 class DeviceTelemetry(TelemetrySample):
     schema_v: Literal[1]
     device_id: Annotated[str, Field(min_length=1, pattern=r"^[A-Za-z0-9_-]+$")]
-    incubator_id: Annotated[str, Field(min_length=1)]
+    incubator_id: Annotated[str, Field(min_length=1)] | None = None
     boot_id: Annotated[
         str, Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9._-]+$")
     ]
@@ -71,24 +71,26 @@ async def ingest_telemetry(
     await session.scalar(
         select(farms.c.id).where(farms.c.id == farm_id).with_for_update()
     )
-    device = await session.scalar(
-        select(devices.c.id)
+    assignment_query = (
+        select(devices.c.id, incubators.c.public_id)
         .join(
             incubators,
             (incubators.c.farm_id == devices.c.farm_id)
             & (incubators.c.device_id == devices.c.id),
         )
-        .where(
-            devices.c.farm_id == farm_id,
-            devices.c.public_id == message.device_id,
-            incubators.c.public_id == message.incubator_id,
-        )
+        .where(devices.c.farm_id == farm_id, devices.c.public_id == message.device_id)
         .with_for_update(of=[devices, incubators])
     )
-    if device is None:
+    if message.incubator_id is not None:
+        assignment_query = assignment_query.where(
+            incubators.c.public_id == message.incubator_id
+        )
+    assignment = (await session.execute(assignment_query)).one_or_none()
+    if assignment is None:
         raise AppError(
             "not_found", "Telemetry device/chamber is not assigned in this farm."
         )
+    device, message.incubator_id = assignment
     # A chamber has exactly one latest projection. On reassignment, discard its
     # old device projection; if a device itself moved chambers, discard its old
     # chamber projection too. Raw telemetry history remains intact.

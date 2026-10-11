@@ -1,5 +1,5 @@
 import { TemperatureUnitContext } from "./providers/temperature-context";
-import { Suspense, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
 import { Redirect, useLocation } from "wouter";
 import { AppSidebar } from "./components/AppSidebar";
@@ -37,11 +37,16 @@ import {
 import { parseAppPath, type ScreenId } from "./routing/routes";
 import { useAppRouter } from "./routing/use-app-router";
 
+const AdminPage = lazy(() =>
+  import("./components/admin/AdminPage").then((module) => ({ default: module.AdminPage })),
+);
+
 export default function App() {
+  const [pathname] = useLocation();
   return (
     <RecoveryBoundary scope="app" onRetry={retryLazyScreens}>
       <Suspense fallback={<SuspenseFallback label="Loading screen..." />}>
-        <AppContent />
+        {pathname === "/admin" || pathname.startsWith("/admin/") ? <AdminPage /> : <AppContent />}
       </Suspense>
     </RecoveryBoundary>
   );
@@ -353,101 +358,17 @@ function AppContent() {
       </div>
     );
   }
-  if (incubators.length === 0 && screen !== "incubators") {
-    return (
-      <div className="mx-auto flex min-h-dvh max-w-3xl items-center px-4 py-8">
-        <EmptyState
-          size="page"
-          title="Your farm is ready"
-          description="Add a chamber with the device ID printed on your incubator to begin monitoring it."
-          action={
-            <>
-              <Button
-                type="button"
-                className="rounded-xl"
-                onClick={() => navigate("incubators")}
-              >
-                <span>Add your first incubator</span>
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-xl"
-                onClick={() => void signOutAndReturn()}
-              >
-                <span>Sign out</span>
-              </Button>
-            </>
-          }
-        />
-      </div>
-    );
-  }
-
-  if (incubators.length === 0 && screen === "incubators") {
-    return (
-      <div
-        className="min-h-dvh w-full overflow-x-clip"
-        style={{ backgroundColor: "var(--surface-app)" }}
-      >
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-[var(--surface-card)] focus:px-4 focus:py-3 focus:text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--ring)]"
-        >
-          Skip to content
-        </a>
-        <AppSidebar
-          active={screen}
-          onNavigate={navigate}
-          alertCount={unreadAlerts}
-          account={account}
-          collapsed={navCollapsed}
-          onToggleCollapsed={() => setNavCollapsed((value) => !value)}
-          onSignOut={() => void signOutAndReturn()}
-          onHelp={() => setHelpOpen(true)}
-        />
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className={`transition-all duration-200 ${navCollapsed ? "md:pl-16" : "md:pl-64"}`}
-        >
-          <div className="mx-auto max-w-6xl px-3 pb-44 sm:px-4 sm:pb-28 md:px-6 md:pb-20 lg:px-8">
-            <IncubatorsScreen
-              units={incubators}
-              modes={modes}
-              onOpenUnit={openUnit}
-              onAddIncubator={addIncubator}
-              isAddingIncubator={actionState.addingIncubator}
-              header={
-                <PageHeader
-                  title="Incubators"
-                  subtitle="Add your first real chamber to this farm."
-                  alertCount={unreadAlerts}
-                  onViewAlerts={() => navigate("alerts")}
-                  alerts={alerts}
-                  alertsStatus={features.alerts}
-                  onMarkAllRead={markAllAlertsRead}
-                  onDismissAlert={dismissAlert}
-                  pendingAlertId={actionState.pendingAlertId}
-                  markingAllRead={actionState.markingAllAlertsRead}
-                />
-              }
-            />
-          </div>
-        </main>
-        <Toaster position="top-right" richColors />
-        <HelpWidget open={helpOpen} onOpenChange={setHelpOpen} />
-      </div>
-    );
+  if (screen === "detail" && incubators.length === 0) {
+    return <Redirect to="/incubators" replace />;
   }
 
   const activeUnit =
     incubators.find((u) => u.id === selectedUnit) ?? incubators[0];
 
   // Inline metadata pills for the Incubator Detail title row.
-  const activeMode = modes.find((m) => m.id === activeUnit.modeId) ?? modes[0];
+  const activeMode = modes.find((m) => m.id === activeUnit?.modeId) ?? modes[0];
   const statusTone =
-    activeUnit.status === "optimal"
+    activeUnit?.status === "optimal"
       ? {
           fg: "var(--status-success-fg)",
           bg: "var(--status-success-bg)",
@@ -459,7 +380,7 @@ function AppContent() {
           label: "Needs Attention",
         };
 
-  const detailHeader = (
+  const detailHeader = activeUnit && activeMode ? (
     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 md:flex md:flex-wrap">
       <h1
         className="min-w-0 max-w-full break-words md:basis-auto"
@@ -483,7 +404,9 @@ function AppContent() {
           fontWeight: "var(--weight-bold)",
         }}
       >
-        Day {activeUnit.dayOfIncubation} of {activeMode.incubationDays}
+        {activeUnit.cyclePhase === "ready"
+          ? activeUnit.preparationStartedAt ? activeUnit.preparationReady ? "Ready to load" : "Preparing" : "Idle"
+          : `Day ${activeUnit.dayOfIncubation} of ${activeMode.incubationDays}`}
       </span>
       <p
         className="min-w-0 max-w-full break-words md:order-3 md:mt-1 md:basis-full"
@@ -495,7 +418,7 @@ function AppContent() {
           overflowWrap: "anywhere",
         }}
       >
-        {activeMode.name}
+        {activeUnit.cyclePhase === "ready" && !activeUnit.preparationStartedAt ? "Unassigned" : activeMode.name}
       </p>
       <span
         className="inline-flex shrink-0 items-center justify-self-end gap-1.5 rounded-full px-3 py-1"
@@ -509,7 +432,7 @@ function AppContent() {
         {statusTone.label}
       </span>
     </div>
-  );
+  ) : undefined;
 
   // One header copy deck, so every screen reads the same way.
   const overviewName = resolveDisplayName(account) || "farmer";
@@ -520,15 +443,15 @@ function AppContent() {
     },
     incubators: {
       title: "Incubators",
-      subtitle: "Manage and monitor your incubators.",
+      subtitle: incubators.length === 0 ? "Add your first real chamber to this farm." : "Manage and monitor your incubators.",
     },
     candling: {
       title: "Candling Logs",
       subtitle: "Your candling journals",
     },
     detail: {
-      title: activeUnit.name,
-      subtitle: `Device ${activeUnit.deviceId} (${activeMode.name})`,
+      title: activeUnit?.name ?? "Incubator",
+      subtitle: activeUnit && activeMode ? `Device ${activeUnit.deviceId} (${activeMode.name})` : "Select an incubator to monitor.",
     },
     trends: {
       title: "Historical Trends",
@@ -728,7 +651,15 @@ function AppContent() {
               scope="screen"
               onRetry={retryLazyScreens}
             >
-              {screen === "overview" && (
+              {screen === "overview" && incubators.length === 0 && (
+                <EmptyState
+                  size="page"
+                  title="No incubators yet"
+                  description="Add an incubator using its pairing code to begin monitoring your farm."
+                  action={<Button className="rounded-xl" onClick={() => navigate("incubators")}>Add your first incubator</Button>}
+                />
+              )}
+              {screen === "overview" && incubators.length > 0 && (
                 <OverviewScreen
                   units={incubators}
                   modes={modes}
@@ -765,7 +696,7 @@ function AppContent() {
                   />
                 </Suspense>
               )}
-              {screen === "detail" && (
+              {screen === "detail" && activeUnit && (
                 <Suspense
                   fallback={<SuspenseFallback label="Loading incubator..." />}
                 >

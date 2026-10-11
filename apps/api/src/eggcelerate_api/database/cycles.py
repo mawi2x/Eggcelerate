@@ -21,6 +21,7 @@ RUNTIME_FIELDS = (
     "total_eggs_loaded",
     "fertile_eggs",
     "cycle_phase",
+    "preparation_started_at",
     "last_turned_at",
     "next_turn_at",
 )
@@ -152,6 +153,9 @@ async def load_cycles(
         )
     if not current_only:
         await load_history(session, farm_id, state)
+    from .preparation import load_preparation
+
+    await load_preparation(session, farm_id, state)
 
 
 async def load_history(

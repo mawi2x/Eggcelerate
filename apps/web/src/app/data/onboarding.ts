@@ -63,8 +63,19 @@ export const OnboardingStep2Schema = z.object({
 });
 
 export const OnboardingStep3Schema = z.object({
-  chamberName: z.string().trim().min(1, "Enter a chamber name.").max(CHAMBER_NAME_MAX),
-  deviceId: z.string().trim().toUpperCase().min(1, "Enter a chamber code.").max(20, "Use no more than 20 characters."),
+  chamberName: z
+    .string()
+    .trim()
+    .min(1, "Enter a chamber name.")
+    .max(CHAMBER_NAME_MAX),
+  deviceId: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}-?[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}$/,
+      "Enter the 10-character pairing code from your incubator setup page.",
+    ),
   startingModeId: z.string().min(1),
 });
 

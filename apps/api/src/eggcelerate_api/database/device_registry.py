@@ -1,10 +1,11 @@
 """Operator provisioned, globally unique device routing identities."""
 
+import hashlib
 import re
 from collections import defaultdict
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..errors import AppError
@@ -84,3 +85,64 @@ async def resolve_registered_farm(session: AsyncSession, public_id: str) -> UUID
             device_registry.c.disabled_at.is_(None),
         )
     )
+
+
+def pairing_code_hash(code: str) -> str:
+    normalized = code.strip().upper().replace("-", "")
+    if not re.fullmatch(r"[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}", normalized):
+        raise AppError(
+            "validation_error",
+            "Enter the 10-character pairing code from your incubator setup page.",
+        )
+    return hashlib.sha256(("eggcelerate-pairing-v1:" + normalized).encode()).hexdigest()
+
+
+async def enroll_pairing_code(
+    session: AsyncSession, farm_id: UUID, public_id: str, code: str
+) -> None:
+    digest = pairing_code_hash(code)
+    row = (
+        (
+            await session.execute(
+                select(device_registry)
+                .where(
+                    device_registry.c.public_id == public_id,
+                    device_registry.c.farm_id == farm_id,
+                    device_registry.c.disabled_at.is_(None),
+                )
+                .with_for_update()
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if row is None:
+        raise AppError(
+            "not_found", "Device must be provisioned before enrolling its code."
+        )
+    if row["pairing_code_hash"] not in (None, digest):
+        raise AppError(
+            "conflict",
+            "The fixed pairing code is already enrolled; replacement is not allowed.",
+        )
+    await session.execute(
+        update(device_registry)
+        .where(device_registry.c.identity_key == row["identity_key"])
+        .values(pairing_code_hash=digest)
+    )
+
+
+async def resolve_pairing_code(session: AsyncSession, farm_id: UUID, code: str) -> str:
+    public_id = await session.scalar(
+        select(device_registry.c.public_id).where(
+            device_registry.c.farm_id == farm_id,
+            device_registry.c.disabled_at.is_(None),
+            device_registry.c.pairing_code_hash == pairing_code_hash(code),
+        )
+    )
+    if public_id is None:
+        raise AppError(
+            "not_found",
+            "Pairing code is not enrolled for your farm. Check the code or contact the installer.",
+        )
+    return public_id

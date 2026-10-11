@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import type { Incubator, Mode } from "../../domain/types";
 
 export function useCreateIncubator(
-  units: Incubator[],
+  _units: Incubator[],
   modes: Mode[],
   onAddIncubator: (unit: Incubator) => Promise<boolean>,
 ) {
@@ -24,33 +24,16 @@ export function useCreateIncubator(
     const trimmedDeviceId = deviceId.trim();
     const trimmedName = name.trim();
     if (!trimmedDeviceId || !trimmedName) {
-      toast.error("Please enter a Device ID and Chamber Name.");
+      toast.error("Please enter a pairing code and chamber name.");
       return;
     }
-    if (!/^[A-Za-z0-9-]{3,20}$/.test(trimmedDeviceId)) {
-      toast.error(
-        "Device ID must be 3 to 20 characters using letters, numbers, or dashes. Example: EGG-1015.",
-      );
-      return;
-    }
-    if (
-      units.some(
-        (u) => u.deviceId.toLowerCase() === trimmedDeviceId.toLowerCase(),
-      )
-    ) {
-      toast.error(
-        `Device ${trimmedDeviceId} is already paired to another chamber.`,
-      );
+    const id = trimmedDeviceId.toUpperCase().replace(/-/g, "");
+    if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(id)) {
+      setConnectError("invalid");
       return;
     }
     setConnectError(null);
     setConnecting(true);
-    const id = trimmedDeviceId.trim().toUpperCase();
-    if (!/^EGG-\d{4}$/.test(id)) {
-      setConnectError("invalid");
-      setConnecting(false);
-      return;
-    }
     const mode = modes[0] ?? modeOf("broiler");
     const nowIso = new Date().toISOString();
     const connected = await onAddIncubator({

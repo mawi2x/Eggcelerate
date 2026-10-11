@@ -5,6 +5,11 @@ and hardware verification pending**. The capstone research group owns delivery.
 Physical integration belongs to M8, with API/web support and M7 Azure VPS
 hosting, broker security, and operational preparation.
 
+Updated October 11: the user selected a **fixed pairing code per incubator**.
+The [phase plan](phase-plan.md) defines the current sequence. The local DHT22
+check has demonstrated sensor communication; AP, pairing, and physical VPS
+integration remain pending.
+
 This supersedes the undecided Wi-Fi transport, LED-flashed/temporary pairing code,
 and immediate AP activation on every disconnect. Selected transport: **AP plus
 browser portal**. Bluetooth provisioning is outside this approved scope.
@@ -13,14 +18,14 @@ browser portal**. Bluetooth provisioning is outside this approved scope.
 
 ### Device identity and pairing
 
-- Permanent internal device ID, separate stable and changeable setup/pairing code
+- Permanent internal device ID, separate fixed setup/pairing code generated once
   per incubator. Display the code on the OLED for entry by a signed-in dashboard user.
 - Treat the code as an authorization secret. Rate-limit guesses and associate an
   eligible unowned device with a farm atomically. Knowing its code must not allow
   takeover of an already-owned device; transfers require explicit authorization.
-- Allow the authorized owner to change the code through the dashboard. Show
-  **Pending device update** until device confirmation. Specify coordinated code
-  activation so the server and device cannot silently disagree after outages/reboot.
+- Preserve the fixed code through restart, Wi-Fi changes, and firmware updates.
+  No owner-facing code-change flow is planned. Erased storage requires controlled
+  reprovisioning from the commissioning record; ownership transfers remain authorized actions.
 - Preserve ownership through Wi-Fi changes, restarts, and network outages.
 - Authenticate devices separately with unique credentials and verified TLS.
   A public device ID or human-entered code does not replace device authentication.
@@ -84,18 +89,18 @@ active-session grace; a large backlog must not keep setup open indefinitely.
 
 - [ ] Confirm firmware source/tooling, board/flash/display variants, full inventory,
       wiring, and physical setup action against the prototype schematic.
-- [ ] Specify code format/secret handling, coordinated code changes, claim/transfer
+- [ ] Specify fixed-code format/secret handling, commissioning recovery, claim/transfer
       rules, and device enrollment/credential recovery.
 - [ ] Implement protected AP/portal, saved configuration, recovery timers, physical
       setup fallback, display behavior, and continuous local control.
 - [ ] Implement durable queue, RTC/clock validation, overflow policy, batch ingestion
       receipts, end-to-end deduplication, and interrupted-write recovery.
-- [ ] Implement dashboard entry/change/pending states and atomic isolated claims,
+- [ ] Implement dashboard code entry/link/connection states and atomic isolated claims,
       reconciling the existing registry and assignment rules.
 - [ ] Verify wrong/correct credentials, interruptions shorter than 30 seconds,
       prolonged disconnection, 15-minute upload failures, server outage,
       replacement-network failure/success, and AP closure without blocking control.
-- [ ] Verify guessing limits, conflicting/concurrent claims, code-change outages/
+- [ ] Verify guessing limits, conflicting/concurrent claims, fixed-code persistence through outages/
       reboot, ownership transfer, TLS, and per-device broker ACLs.
 - [ ] Verify offline sampling/displays, clock failure, reboot/power loss, full
       storage, backlog retries, duplicates, and original-time preservation in

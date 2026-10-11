@@ -1,12 +1,22 @@
 # EGGCELERATE ESP32 firmware
 
-Reserved home for the physical incubator controller firmware. The capstone research
+Home for the physical incubator controller firmware. The capstone research
 group owns this application. Target platform: a 38-pin ESP32 development board;
 the exact board/module variant remains to be confirmed.
+
+**Main sketch: [Eggcelerate.ino](Eggcelerate/Eggcelerate.ino).** Open this for current
+development and later phases. Keep `EggcelerateFirmware.h` beside it. See the
+[main firmware instructions](Eggcelerate/README.md).
 
 Start with the [local DHT22 sketch](dht22-local/dht22-local.ino), which prints readings
 without network configuration. The [bring-up guide](bringup-guide.md) covers wiring,
 Arduino setup, and the sequence for AP setup, pairing, and VPS telemetry.
+The [phase plan](phase-plan.md) is the current implementation sequence, including
+the fixed pairing-code decision and the demonstrated local sensor check.
+For the next bench step, use [Eggcelerate.ino](Eggcelerate/Eggcelerate.ino) and the
+[upload/setup instructions](wifi-setup/README.md): persistent fixed code, protected
+local portal, saved Wi-Fi, and continuing DHT22 readings. Hardware verification is pending.
+The `dht22-local`, `wifi-setup`, and `test` folders remain phase/checker fallbacks.
 
 The [test sketch](test/test.ino) is a small Arduino ESP32 connectivity checker. It
 reads the DHT22 and publishes contract-shaped telemetry over MQTT/TLS every 15
@@ -80,3 +90,7 @@ expected; inventory, wiring, and successful hardware tests remain unconfirmed.
 
 Keep Wi-Fi passwords, broker credentials, and device secrets out of committed
 files. Document configuration with example values when build tooling is added.
+
+Sensor cloud activation is now integrated into the main sketch. See
+[cloud activation](cloud-activation.md) for the prepared broker overlay, fixed-code
+enrollment, firmware configuration, and the remaining VPS/hardware gates.

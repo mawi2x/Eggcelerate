@@ -1,4 +1,4 @@
-import { CheckFat as Check } from "@phosphor-icons/react";
+import { EnvelopeOpen } from "@phosphor-icons/react";
 import { CheckCheck, Eraser, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -479,7 +479,7 @@ export function AlertsScreen({
                                   title="Mark as read"
                                   aria-label={`Mark ${a.title} as read`}
                                 >
-                                  <Check weight="fill" size={14} />
+                                  <EnvelopeOpen weight="regular" size={16} />
                                 </button>
                               )}
                               <button

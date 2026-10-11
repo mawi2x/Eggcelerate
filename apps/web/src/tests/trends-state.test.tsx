@@ -12,6 +12,34 @@ import {
 import { render, waitFor } from "./render";
 
 describe("Trends tab state ownership", () => {
+  it("keeps the header and tabs usable for an empty farm without requesting readings", async () => {
+    const repository = new InMemoryEggcelerateRepository();
+    const readings = vi.spyOn(repository, "listReadings");
+    const queryClient = createAppQueryClient();
+    const mounted = await render(
+      <AppProviders repository={repository} queryClient={queryClient}>
+        <TrendsScreen units={[]} modes={createModeFixtures()} history={[]} header={<h1>Historical Trends</h1>} />
+      </AppProviders>,
+    );
+    try {
+      expect(mounted.container.textContent).toContain("Historical Trends");
+      expect(mounted.container.textContent).toContain("No environmental readings yet");
+      expect(mounted.container.querySelector('a[href="/incubators"]')).toBeTruthy();
+      const clickTab = async (label: string) => {
+        const button = [...mounted.container.querySelectorAll("button")].find(node => node.textContent?.trim() === label);
+        if (!button) throw new Error(`Missing tab: ${label}`);
+        await act(async () => button.click());
+      };
+      await clickTab("Hatch History");
+      expect(mounted.container.textContent).not.toContain("No environmental readings yet");
+      await clickTab("Environmental Trends");
+      expect(mounted.container.textContent).toContain("No environmental readings yet");
+      expect(readings).not.toHaveBeenCalled();
+    } finally {
+      await mounted.unmount();
+      queryClient.clear();
+    }
+  });
   it("draws sparse-reading markers, dashed connections and shading with its note below the chart", async () => {
     const modes = createModeFixtures();
     const units = createIncubatorFixtures(modes).slice(0, 1);

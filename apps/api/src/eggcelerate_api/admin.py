@@ -15,7 +15,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from .auth_security import hash_password
 from .config import Settings, load_settings
 from .database.accounts import create_farm_owner
-from .database.device_registry import provision_device
+from .database.device_registry import enroll_pairing_code, provision_device
 from .database.schema import auth_rate_limits, auth_sessions, users
 from .database.store import PostgresStore
 from .errors import AppError
@@ -30,6 +30,13 @@ def _parser() -> argparse.ArgumentParser:
     create_owner.add_argument("--email", required=True)
     create_owner.add_argument("--name", required=True)
     create_owner.add_argument("--farm", required=True)
+    create_admin = commands.add_parser(
+        "create-admin",
+        help="create the platform administrator and an empty operator farm",
+    )
+    create_admin.add_argument("--email", required=True)
+    create_admin.add_argument("--name", required=True)
+    create_admin.add_argument("--farm", required=True)
     reset_password = commands.add_parser(
         "reset-password", help="set a new password and revoke current sessions"
     )
@@ -39,6 +46,11 @@ def _parser() -> argparse.ArgumentParser:
     )
     provision.add_argument("--farm-id", required=True)
     provision.add_argument("--device-id", required=True)
+    provision.add_argument(
+        "--with-pairing-code",
+        action="store_true",
+        help="privately enroll the fixed code from the commissioning record",
+    )
     return parser
 
 
@@ -66,6 +78,7 @@ async def _create_owner(
                 password_hash=password_hash,
                 display_name=body.display_name,
                 farm_name=body.farm_name,
+                is_platform_admin=args.command == "create-admin",
             )
     except IntegrityError as exc:
         raise AppError(
@@ -125,13 +138,15 @@ async def _run(args: argparse.Namespace) -> None:
         )
     database = PostgresStore(settings.database_url, settings.default_farm_id)
     try:
-        if args.command == "create-owner":
+        if args.command in ("create-owner", "create-admin"):
             password = getpass("New password (12–128 characters): ")
             confirm = getpass("Confirm password: ")
             if password != confirm:
                 raise AppError("validation_error", "Passwords do not match.")
             user_id, farm_id = await _create_owner(database, args, password)
-            print(f"Created owner {user_id} with farm {farm_id}.")
+            print(
+                f"Created {args.command.removeprefix('create-')} {user_id} with farm {farm_id}."
+            )
         elif args.command == "reset-password":
             password = getpass("New password (12–128 characters): ")
             confirm = getpass("Confirm password: ")
@@ -141,10 +156,19 @@ async def _run(args: argparse.Namespace) -> None:
             print("Password updated; all active sessions revoked.")
         else:
             provision_farm_id = UUID(args.farm_id)
+            pairing_code = (
+                getpass("Fixed pairing code from commissioning record: ")
+                if args.with_pairing_code
+                else None
+            )
             async with database.sessions.begin() as session:
                 created = await provision_device(
                     session, provision_farm_id, args.device_id
                 )
+                if pairing_code is not None:
+                    await enroll_pairing_code(
+                        session, provision_farm_id, args.device_id, pairing_code
+                    )
             state = "Provisioned" if created else "Already provisioned"
             print(f"{state} device {args.device_id} for farm {provision_farm_id}.")
     finally:

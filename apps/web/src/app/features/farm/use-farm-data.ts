@@ -139,6 +139,8 @@ export function useFarmData(historyActive = false) {
     incubators: (incubatorsQuery.data ?? []).map((unit) => ({
       ...unit,
       telemetryStatus: resolvedTelemetryStatus(unit, now),
+      preparationReady:
+        unit.preparationReady && resolvedTelemetryStatus(unit, now) === "fresh",
     })),
     alerts: alertsQuery.data ?? [],
     hatchRecords: hatchRecordsQuery.data ?? [],

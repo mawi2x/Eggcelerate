@@ -5,6 +5,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { AlertEntry, Incubator, Mode } from "../../domain/types";
 import { resolvedTelemetryStatus } from "../../features/farm/telemetry";
 import { ActiveIncubatorCard } from "../ActiveIncubatorCard";
+import { EmptyState } from "../EmptyState";
 import { OverviewSummary } from "../OverviewSummary";
 import {
   SegmentedControl,
@@ -84,13 +85,17 @@ function OffTargetRow({
   const unitLabel = kind === "temp" ? temperature.unit : "%";
   const displayValue =
     kind === "temp" ? temperature.number(value) : Math.round(value).toString();
-  const delta = (kind === "temp" ? temperature.delta(dev) : dev).toFixed(kind === "temp" ? 1 : 0);
+  const delta = (kind === "temp" ? temperature.delta(dev) : dev).toFixed(
+    kind === "temp" ? 1 : 0,
+  );
 
   let statusText: string;
   if (!isOff) statusText = "Within target";
   else if (kind === "temp")
     statusText =
-      dir === "high" ? `Too warm by ${delta}${temperature.unit}` : `Too cool by ${delta}${temperature.unit}`;
+      dir === "high"
+        ? `Too warm by ${delta}${temperature.unit}`
+        : `Too cool by ${delta}${temperature.unit}`;
   else
     statusText =
       dir === "high" ? `Too humid by ${delta}%` : `Too dry by ${delta}%`;
@@ -262,7 +267,9 @@ export function OverviewScreen({
     const nextHatch = withRemaining[0];
 
     return {
-      needsAttention: units.filter((u) => u.status !== "optimal").length,
+      needsAttention: units.filter(
+        (u) => u.cyclePhase !== "ready" && u.status !== "optimal",
+      ).length,
       connected,
       totalEggs,
       modesInUse,
@@ -279,8 +286,7 @@ export function OverviewScreen({
   // Active chambers nearest to completing their incubation cycle (highest progress percentage first)
   const priorityUnits = useMemo(() => {
     const running = units.filter((u) => u.cyclePhase !== "ready" && u.paired);
-    const candidateUnits = running.length > 0 ? running : units;
-    return candidateUnits
+    return running
       .map((u) => {
         const m = modeOf(u.modeId);
         const pct =
@@ -298,6 +304,7 @@ export function OverviewScreen({
   // Most off-target by deviation from mode target (not absolute value) — only off-target shown
   const offTarget = useMemo(() => {
     const tempEntries: OffTargetEntry[] = units
+      .filter((u) => u.cyclePhase !== "ready")
       .map((u) => {
         const m = modeOf(u.modeId);
         const off = getTempOff(u, m);
@@ -308,6 +315,7 @@ export function OverviewScreen({
       .slice(0, 3);
 
     const humidityEntries: OffTargetEntry[] = units
+      .filter((u) => u.cyclePhase !== "ready")
       .map((u) => {
         const m = modeOf(u.modeId);
         const off = getHumidityOff(u, m);
@@ -428,24 +436,31 @@ export function OverviewScreen({
           className="my-3 h-px w-full sm:my-4"
           style={{ backgroundColor: "var(--border-sand)" }}
         />
-        <div
-          ref={carouselRef}
-          onScroll={handleCarouselScroll}
-          className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:pb-0 lg:grid-cols-4"
-        >
-          {priorityUnits.map((u) => (
-            <div
-              key={u.id}
-              className="w-[calc((100%-10px)/2)] shrink-0 snap-start md:w-auto md:shrink md:snap-none"
-            >
-              <ActiveIncubatorCard
-                unit={u}
-                mode={modeOf(u.modeId)}
-                onOpen={onOpenUnit}
-              />
-            </div>
-          ))}
-        </div>
+        {priorityUnits.length === 0 ? (
+          <EmptyState
+            title="No active incubators"
+            description="Start a cycle in an incubator to see it here."
+          />
+        ) : (
+          <div
+            ref={carouselRef}
+            onScroll={handleCarouselScroll}
+            className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:pb-0 lg:grid-cols-4"
+          >
+            {priorityUnits.map((u) => (
+              <div
+                key={u.id}
+                className="w-[calc((100%-10px)/2)] shrink-0 snap-start md:w-auto md:shrink md:snap-none"
+              >
+                <ActiveIncubatorCard
+                  unit={u}
+                  mode={modeOf(u.modeId)}
+                  onOpen={onOpenUnit}
+                />
+              </div>
+            ))}
+          </div>
+        )}
         {priorityUnits.length > 2 && (
           <div className="mt-3 flex justify-center gap-1.5 md:hidden">
             {Array.from(

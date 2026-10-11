@@ -19,6 +19,7 @@ export function ActiveIncubatorCard({
 }) {
   const telemetryStatus = resolvedTelemetryStatus(unit);
   const offline = telemetryStatus === "offline";
+  const ready = unit.cyclePhase === "ready";
   const overdue = Math.max(0, unit.dayOfIncubation - mode.incubationDays);
   const receivedAt = telemetryReceiptTimestamp(unit);
   const timestamp = receivedAt ? Date.parse(receivedAt) : Number.NaN;
@@ -44,7 +45,7 @@ export function ActiveIncubatorCard({
       <button
         type="button"
         aria-labelledby={`mini-card-${unit.id}`}
-        aria-describedby={`mini-card-mode-${unit.id} ${offline ? "" : `mini-card-status-${unit.id}`} mini-card-day-${unit.id} mini-card-seen-${unit.id}`}
+        aria-describedby={`mini-card-mode-${unit.id} ${telemetryStatus === "stale" ? `mini-card-status-${unit.id}` : ""} mini-card-day-${unit.id} ${offline ? `mini-card-seen-${unit.id}` : ""}`}
         onClick={() => onOpen(unit.id)}
         className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-[var(--radius-overview-card-mobile)] border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-left transition-colors duration-200 hover:border-[var(--nav-hover-border)] hover:bg-[var(--nav-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] md:rounded-[var(--radius-dialog)] md:p-4"
       >
@@ -75,7 +76,7 @@ export function ActiveIncubatorCard({
             <span
               className="block min-w-0 truncate text-(length:--type-caption) lg:text-(length:--type-body-sm)"
               id={`mini-card-mode-${unit.id}`}
-              title={mode.name}
+              title={ready ? "Unassigned" : mode.name}
               style={{
                 fontFamily: "var(--font-body)",
                 fontWeight: "var(--weight-semibold)",
@@ -83,17 +84,14 @@ export function ActiveIncubatorCard({
                 color: "var(--text-farm)",
               }}
             >
-              {mode.name}
+              {ready ? "Unassigned" : mode.name}
             </span>
-            {!offline && (
+            {telemetryStatus === "stale" && (
               <span
                 id={`mini-card-status-${unit.id}`}
                 className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium"
                 style={{
-                  color:
-                    telemetryStatus === "fresh"
-                      ? "var(--status-success-fg)"
-                      : "var(--status-warning-fg)",
+                  color: "var(--status-warning-fg)",
                 }}
                 title={telemetryStatusLabel(
                   telemetryStatus,
@@ -103,13 +101,10 @@ export function ActiveIncubatorCard({
                 <span
                   className="h-1.5 w-1.5 rounded-full"
                   style={{
-                    backgroundColor:
-                      telemetryStatus === "fresh"
-                        ? "var(--status-success-fg)"
-                        : "var(--status-warning-fg)",
+                    backgroundColor: "var(--status-warning-fg)",
                   }}
                 />
-                {telemetryStatus === "fresh" ? "Live" : "Stale"}
+                Stale
               </span>
             )}
           </div>
@@ -123,9 +118,15 @@ export function ActiveIncubatorCard({
               lineHeight: "var(--leading-normal)",
               color: "var(--text-farm)",
             }}
-            title={`Progress: Day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
+            title={
+              ready
+                ? "Select a mode to start a cycle"
+                : `Progress: Day ${unit.dayOfIncubation} of ${mode.incubationDays}`
+            }
           >
-            Day {unit.dayOfIncubation} of {mode.incubationDays}
+            {ready
+              ? "Ready to start"
+              : `Day ${unit.dayOfIncubation} of ${mode.incubationDays}`}
           </span>
         </div>
 
@@ -138,7 +139,9 @@ export function ActiveIncubatorCard({
             aria-label={
               offline
                 ? "Offline: cycle progress unavailable"
-                : `Cycle progress ${pct}%`
+                : ready
+                  ? "Ready to start a cycle"
+                  : `Cycle progress ${pct}%`
             }
             style={{ transform: "rotate(-90deg)" }}
           >
@@ -159,7 +162,9 @@ export function ActiveIncubatorCard({
               strokeWidth={width}
               strokeLinecap="round"
               strokeDasharray={circumference}
-              strokeDashoffset={offline ? 0 : circumference * (1 - pct / 100)}
+              strokeDashoffset={
+                offline ? 0 : circumference * (1 - (ready ? 0 : pct) / 100)
+              }
               opacity={offline ? 0.35 : 1}
             />
           </svg>
@@ -180,7 +185,7 @@ export function ActiveIncubatorCard({
                   lineHeight: "var(--leading-tight)",
                 }}
               >
-                {pct}%
+                {ready ? "Ready" : `${pct}%`}
               </span>
             )}
           </div>
@@ -194,7 +199,7 @@ export function ActiveIncubatorCard({
             visibility: offline ? "visible" : "hidden",
           }}
         >
-          {offline ? lastSeen : "Live"}
+          {offline ? lastSeen : ""}
         </span>
       </button>
     </div>

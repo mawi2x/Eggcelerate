@@ -25,32 +25,46 @@ export function OnboardingStep3({
   const [chamberName, setChamberName] = useState("Incubator One");
   const [deviceId, setDeviceId] = useState("");
   const [startingModeId] = useState("broiler");
-  const [errors, setErrors] = useState<{ chamberName?: string; deviceId?: string }>({});
+  const [errors, setErrors] = useState<{
+    chamberName?: string;
+    deviceId?: string;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
 
   const submit = async () => {
     if (isSubmitting) return;
     setConnectError(null);
-    const r = OnboardingStep3Schema.safeParse({ chamberName, deviceId, startingModeId });
+    const r = OnboardingStep3Schema.safeParse({
+      chamberName,
+      deviceId,
+      startingModeId,
+    });
     if (!r.success) {
       const fields = r.error.flatten().fieldErrors;
-      setErrors({ chamberName: fields.chamberName?.[0], deviceId: fields.deviceId?.[0] });
+      setErrors({
+        chamberName: fields.chamberName?.[0],
+        deviceId: fields.deviceId?.[0],
+      });
       return;
     }
     setErrors({});
     setIsSubmitting(true);
     try {
-      // Mock connection attempt; no physical device discovery is performed.
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      if (!/^EGG-\d{4}$/.test(r.data.deviceId)) {
+      if (
+        !/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(
+          r.data.deviceId.replace(/-/g, ""),
+        )
+      ) {
         setConnectError(
-          `Could not find an incubator with chamber code '${deviceId.trim()}'. Please check the display screen on your incubator and try again.`,
+          `Enter the 10-character fixed pairing code shown on your incubator setup page.`,
         );
         return;
       }
       if (!(await onEnter(r.data))) {
-        setConnectError("Could not connect this chamber. Check that its code is not already assigned, then try again.");
+        setConnectError(
+          "Could not connect this chamber. Check that its code is not already assigned, then try again.",
+        );
       }
     } catch {
       setConnectError("Could not complete the connection. Please try again.");
@@ -93,19 +107,37 @@ export function OnboardingStep3({
             }}
             role="alert"
           >
-            <TriangleAlert size={16} className="mt-0.5 shrink-0" color="var(--status-danger-fg)" />
+            <TriangleAlert
+              size={16}
+              className="mt-0.5 shrink-0"
+              color="var(--status-danger-fg)"
+            />
             <div>
-              <p style={{ fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-bold)", color: "var(--status-danger-fg)" }}>
+              <p
+                style={{
+                  fontSize: "var(--type-body-sm)",
+                  fontWeight: "var(--weight-bold)",
+                  color: "var(--status-danger-fg)",
+                }}
+              >
                 Connection Failed
               </p>
-              <p id="chamber-connection-error" className="mt-0.5" style={{ fontSize: "var(--type-caption)", color: "var(--status-danger-fg)", lineHeight: "var(--leading-normal)" }}>
+              <p
+                id="chamber-connection-error"
+                className="mt-0.5"
+                style={{
+                  fontSize: "var(--type-caption)",
+                  color: "var(--status-danger-fg)",
+                  lineHeight: "var(--leading-normal)",
+                }}
+              >
                 {connectError}
               </p>
             </div>
           </div>
         )}
         <FormInput
-          label="Chamber code"
+          label="Pairing code"
           id="chamber-code"
           icon={KeyRound}
           value={deviceId}
@@ -114,14 +146,16 @@ export function OnboardingStep3({
             setConnectError(null);
             setErrors((prev) => ({ ...prev, deviceId: undefined }));
           }}
-          placeholder="EGG-1015"
-          maxLength={20}
+          placeholder="XXXXX-XXXXX"
+          maxLength={11}
           autoCapitalize="characters"
           spellCheck={false}
           disabled={isSubmitting}
           error={errors.deviceId}
           aria-invalid={!!connectError}
-          aria-describedby={connectError ? "chamber-connection-error" : undefined}
+          aria-describedby={
+            connectError ? "chamber-connection-error" : undefined
+          }
         />
         <FormInput
           label="Chamber name"

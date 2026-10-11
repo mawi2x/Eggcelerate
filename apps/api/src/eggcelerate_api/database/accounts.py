@@ -20,6 +20,7 @@ async def create_farm_owner(
     password_hash: str,
     display_name: str,
     farm_name: str,
+    is_platform_admin: bool = False,
 ) -> None:
     """Create an owner, a separate farm, and the farm's built-in defaults."""
     await session.execute(
@@ -28,6 +29,7 @@ async def create_farm_owner(
             email=email,
             password_hash=password_hash,
             display_name=display_name,
+            is_platform_admin=is_platform_admin,
         )
     )
     await session.execute(insert(farms).values(id=farm_id, name=farm_name))

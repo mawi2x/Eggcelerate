@@ -29,3 +29,11 @@ README.md
 docs
 flow
 review
+
+# ESP32 and deployment secrets
+apps/firmware/Eggcelerate/CloudConfig.h
+apps/firmware/test/config.h
+infrastructure/mqtt-hardware/private
+infrastructure/https/private
+infrastructure/https/acme
+infrastructure/https/letsencrypt

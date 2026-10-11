@@ -25,6 +25,7 @@ blob-report/
 
 # ESP32 local credentials and certificates
 /apps/firmware/test/config.h
+/apps/firmware/Eggcelerate/CloudConfig.h
 
 # logs
 npm-debug.log*
@@ -51,3 +52,10 @@ docs/*
 !docs/guide
 !docs/SYSTEM_ARCHITECTURE_GUIDE.md
 !docs/refine
+
+# Hardware broker certificates, private keys, and password database
+/infrastructure/mqtt-hardware/private/
+
+/infrastructure/https/private/
+/infrastructure/https/acme/
+/infrastructure/https/letsencrypt/

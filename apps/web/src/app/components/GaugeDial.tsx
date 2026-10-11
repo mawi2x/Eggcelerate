@@ -12,6 +12,7 @@ interface GaugeDialProps {
   decimals?: number;
   /** Overrides the numeric "Safe range: x–y" caption, e.g. "Optimal". */
   safeLabel?: string;
+  showSafeRange?: boolean;
   /** Extra content under the caption — sub-label, action button, etc. */
   footer?: React.ReactNode;
   /** Binary sensors: force the arc to a fixed color ("ok"=green, "crit"=red). */
@@ -41,6 +42,7 @@ export function GaugeDial({
   size = 176,
   decimals = 1,
   safeLabel,
+  showSafeRange = true,
   footer,
   accent,
   centerLabel,
@@ -76,8 +78,9 @@ export function GaugeDial({
   };
 
   const inSafe = value >= safe.min && value <= safe.max;
-  const arcColor =
-    accent === "ok"
+  const arcColor = !showSafeRange
+    ? MUTED
+    : accent === "ok"
       ? SAFE
       : accent === "crit"
         ? CRITICAL
@@ -111,7 +114,7 @@ export function GaugeDial({
           strokeLinecap="round"
         />
         {/* Safe band (binary sensors have no safe range) */}
-        {!accent && (
+        {!accent && showSafeRange && (
           <path
             d={arc(valueToAngle(safe.min), valueToAngle(safe.max))}
             stroke={SAFE}
@@ -184,7 +187,8 @@ export function GaugeDial({
               Safe range
             </span>
             <span className="text-(length:--type-label-compact) font-semibold text-[var(--text-primary)] md:text-(length:--type-caption)">
-              {unit === "%" ? safe.min : safe.min.toFixed(decimals)} to {unit === "%" ? safe.max : safe.max.toFixed(decimals)}
+              {unit === "%" ? safe.min : safe.min.toFixed(decimals)} to{" "}
+              {unit === "%" ? safe.max : safe.max.toFixed(decimals)}
               {unit === "%" ? "% RH" : unit}
             </span>
           </>

@@ -90,6 +90,9 @@ export interface Incubator {
   cyclePhase: CyclePhase;
   conditionSeverity: ConditionSeverity;
   connectionState: ConnectionState;
+  preparationStartedAt?: string | null;
+  preparationStableSince?: string | null;
+  preparationReady?: boolean;
   telemetryStatus?: TelemetryStatus;
   telemetryObservedAt?: string | null;
   telemetryReceivedAt?: string | null;
