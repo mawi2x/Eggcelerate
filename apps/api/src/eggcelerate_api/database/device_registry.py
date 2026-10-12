@@ -89,10 +89,13 @@ async def resolve_registered_farm(session: AsyncSession, public_id: str) -> UUID
 
 def pairing_code_hash(code: str) -> str:
     normalized = code.strip().upper().replace("-", "")
-    if not re.fullmatch(r"[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}", normalized):
+    if not re.fullmatch(
+        r"(?:EGG(?:0[1-9]|[1-9][0-9])|[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10})",
+        normalized,
+    ):
         raise AppError(
             "validation_error",
-            "Enter the 10-character pairing code from your incubator setup page.",
+            "Enter the pairing code shown on your incubator, for example EGG01.",
         )
     return hashlib.sha256(("eggcelerate-pairing-v1:" + normalized).encode()).hexdigest()
 
@@ -129,6 +132,49 @@ async def enroll_pairing_code(
         update(device_registry)
         .where(device_registry.c.identity_key == row["identity_key"])
         .values(pairing_code_hash=digest)
+    )
+
+
+async def replace_pairing_code(
+    session: AsyncSession, farm_id: UUID, public_id: str, old_code: str, new_code: str
+) -> None:
+    """Operator-only rotation with the current code; ownership/identity are retained."""
+    old_digest = pairing_code_hash(old_code)
+    new_digest = pairing_code_hash(new_code)
+    row = (
+        (
+            await session.execute(
+                select(device_registry)
+                .where(
+                    device_registry.c.farm_id == farm_id,
+                    device_registry.c.public_id == public_id,
+                    device_registry.c.disabled_at.is_(None),
+                )
+                .with_for_update()
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if row is None:
+        raise AppError("not_found", "Device is not provisioned for this farm.")
+    if row["pairing_code_hash"] == new_digest:
+        return
+    if row["pairing_code_hash"] != old_digest:
+        raise AppError(
+            "conflict", "Current pairing code does not match the enrolled code."
+        )
+    if await session.scalar(
+        select(device_registry.c.identity_key).where(
+            device_registry.c.pairing_code_hash == new_digest,
+            device_registry.c.identity_key != row["identity_key"],
+        )
+    ):
+        raise AppError("conflict", "The replacement code is already assigned.")
+    await session.execute(
+        update(device_registry)
+        .where(device_registry.c.identity_key == row["identity_key"])
+        .values(pairing_code_hash=new_digest)
     )
 
 

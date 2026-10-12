@@ -1,7 +1,17 @@
 # Later LCD/OLED temperature display integration
 
-Current scope: ESP32 DHT22 → server → Eggcelerate dashboard. Physical LCD/OLED
-temperature output is deferred. Serial and the setup portal remain diagnostics.
+Current scope: ESP32 DHT22 → server → Eggcelerate dashboard, with a 1602 LCD
+service now added to the main sketch. See [LCD 1602 setup](lcd-1602.md).
+LCD wiring/upload/physical acceptance remain pending. A provisional SSD1306
+OLED status service is now prepared; actual OLED controller/voltage remain
+unconfirmed. The LCD always shows temperature/humidity,
+including while the setup AP is open. OLED shows pairing code plus status in
+both modes; setup adds a SETUP header.
+Serial and the setup portal remain diagnostics.
+
+The schematic and planned display/light assignments are recorded in
+[hardware-pin-map.md](hardware-pin-map.md). Existing I²C wires are SDA GPIO21
+and SCL GPIO23; the default GPIO22 clock pin does not match that drawing.
 
 ## Add to the main firmware later
 

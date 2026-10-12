@@ -27,6 +27,7 @@ import { CandlingJournalTab } from "../detail/CandlingJournalTab";
 import { DeviceSettingsTab } from "../detail/DeviceSettingsTab";
 import { LiveMonitorTab } from "../detail/LiveMonitorTab";
 import { SectionCard, StatusCallout } from "../detail/primitives";
+import { Typography } from "../ui/typography";
 import type { DetailTab } from "../detail/types";
 import { HarvestModal } from "../HarvestModal";
 import { statusIconBadgeGlyphSize } from "../StatusIconBadge";
@@ -350,26 +351,27 @@ export function DetailScreen({
           divider
         >
           <div className="space-y-3">
-            <p className="text-sm text-[var(--text-secondary)]">
-              {mode.name} · Temperature{" "}
-              {temperature.formatRange(mode.targetTemp)} · Humidity{" "}
-              {mode.targetHumidity.min}–{mode.targetHumidity.max}% RH
-            </p>
+            <Typography variant="body" className="text-[var(--text-secondary)]">
+              For {mode.name}, the target temperature is{" "}
+              {temperature.formatRange(mode.targetTemp)} and the target humidity is{" "}
+              {mode.targetHumidity.min} to {mode.targetHumidity.max}% RH.
+            </Typography>
             <StatusCallout
               tone={preparationReady ? "success" : "info"}
               title={
                 preparationReady
-                  ? "Conditions stable — ready to load"
+                  ? "Conditions are stable and ready to load"
                   : unit.telemetryStatus !== "fresh"
                     ? "Waiting for fresh sensor readings"
                     : unit.preparationStableSince
-                      ? "Conditions in range — checking stability"
+                      ? "Checking stability within target ranges"
                       : "Waiting for target conditions"
               }
               description="Both readings must remain within range for five minutes. A reading outside the targets or a sensor data gap restarts the check. Heating, humidity, and fan control are manual in this phase."
             />
             <Button
               variant="outline"
+              className="text-(length:--type-button-label)"
               disabled={isUpdating}
               onClick={() =>
                 void onUpdate({
@@ -593,7 +595,7 @@ export function DetailScreen({
                       },
                       {
                         label: "Humidity",
-                        value: `${setupMode.targetHumidity.min}–${setupMode.targetHumidity.max}%`,
+                        value: `${setupMode.targetHumidity.min} to ${setupMode.targetHumidity.max}% RH`,
                         icon: Droplets,
                       },
                       {

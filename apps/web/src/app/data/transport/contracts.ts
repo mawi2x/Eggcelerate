@@ -418,7 +418,8 @@ export function alertFromDTO(input: unknown): AlertEntry {
     severity: dto.severity,
     title: dto.title,
     unit: dto.unit_name ?? dto.incubator_id ?? "",
-    message: dto.message,
+    // Older stored alerts can contain dash ranges; normalize only their display copy.
+    message: dto.message.replace(/(-?\d+(?:\.\d+)?)\s*–\s*(-?\d+(?:\.\d+)?)/g, "$1 to $2"),
     timestamp: dto.occurred_at,
     acknowledged: dto.acknowledged_at !== null,
     conditionState: dto.condition_state ?? undefined,

@@ -547,7 +547,7 @@ export function EnvironmentalTrends({
                   <Area
                     key={`extrema-${u.id}`}
                     dataKey={`${u.id}_range`}
-                    name={`${u.name} min–max`}
+                    name={`${u.name} range`}
                     type="linear"
                     stroke={colorFor(u.id)}
                     strokeWidth={0.5}

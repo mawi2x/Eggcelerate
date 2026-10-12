@@ -1,12 +1,24 @@
 # EGGCELERATE main firmware
 
-Current reading destination: **the server and Eggcelerate dashboard**. Physical
-LCD/OLED output comes later; the marked firmware hook and
-[display integration guide](../display-integration.md) describe that addition.
+Current reading destination: **the server and Eggcelerate dashboard**, plus
+a newly added 1602 HD44780 I²C LCD service. See [LCD setup](../lcd-1602.md)
+for wiring, the hd44780 library, and upload. LCD physical acceptance is pending;
+a provisional SSD1306 OLED status service is also prepared. Its controller and
+voltage still require confirmation. The LCD always shows temperature/humidity;
+the OLED shows the pairing code and online/offline status in both normal and
+setup operation.
 
 Open **Eggcelerate.ino** in Arduino IDE. Keep **EggcelerateFirmware.h** in this
 same folder; it appears as the implementation tab and is compiled with the sketch.
 This is the main program to extend as subsequent phases are implemented.
+
+For future wiring and code additions, use the recorded
+[hardware pin map](../hardware-pin-map.md) and [phase plan](../phase-plan.md).
+Revised relay board allocation and later control work are documented in the
+[actuator integration guide](../actuator-integration-guide.md).
+The LCD/OLED shared bus is planned on SDA GPIO21 / SCL GPIO23; the light is
+planned on four-channel board B IN2 with GPIO26 proposed. Display/module specifications
+and that light assignment still need confirmation before implementation.
 
 Current implementation integrates the local Phases 1–2 baseline and sensor cloud transport: DHT22 on GPIO4, persistent
 device identity/fixed pairing code, protected Wi-Fi setup page, saved-network
@@ -18,7 +30,16 @@ See [cloud activation](../cloud-activation.md) for the deployment and enrollment
 **Embedded device ID: `EGG-001`**, set by `kDeviceId` in `EggcelerateFirmware.h`.
 Its setup network is **`Eggcelerate-Setup-EGG-001`**. Give each additional board
 its own embedded ID (`EGG-002`, `EGG-003`, etc.) before commissioning/enrollment.
-The random fixed pairing code remains the only identifier the user enters in the system.
+Pilot pairing code: **EGG01**, configured by `kPairingCode`. Device ID remains
+**EGG-001**. Set a unique ID/code pair and enroll it for each additional board.
+The website accepts EGG01-style codes and existing ten-character codes.
+
+When this pilot main sketch is uploaded with flash erasure disabled, it safely
+updates EGG-001’s old ten-character saved code to EGG01, retaining Wi-Fi and the
+AP password. The NVS record layout remains unchanged. The operator must rotate
+the corresponding enrolled server code; already paired chambers/history remain.
+Short sequential codes are friendly identifiers, not high-entropy secrets;
+server account/farm provisioning checks remain required.
 
 When updating the already commissioned board from the original MAC-based ID,
 the main sketch migrates that board's saved ID to `EGG-001` and retains its pairing
@@ -66,7 +87,7 @@ The locally ignored `CloudConfig.h` is now prepared for the deployed pilot broke
 at 4.193.224.4:8883 with this device's credentials and public MQTT CA. The configured
 sketch compiled successfully for NodeMCU-32S (81% flash, 15% static RAM). TCP,
 TLS handshake, and MQTT response timeouts are bounded, but blocking timing still
-needs hardware acceptance. Do not regenerate the saved pairing code.
+needs hardware acceptance. Do not run commission again; the pilot migration updates only the saved code.
 
 The server is running PostgreSQL, authenticated API access, trusted dashboard
 HTTPS, and sensor-only MQTT ingestion. Public MQTT 8883 is still blocked pending

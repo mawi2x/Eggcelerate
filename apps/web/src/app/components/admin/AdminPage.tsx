@@ -338,7 +338,7 @@ function UserManagement() {
         {list.data && list.data.total > 20 && (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] p-5">
             <p className="text-(length:--type-body) text-[var(--text-secondary)]">
-              {offset + 1}–{Math.min(offset + 20, list.data.total)} of{" "}
+              {offset + 1} to {Math.min(offset + 20, list.data.total)} of{" "}
               {list.data.total}
             </p>
             <div className="flex gap-2">
@@ -451,7 +451,7 @@ function UserManagement() {
               }
             />
             <p className="text-(length:--type-caption) text-[var(--text-secondary)]">
-              Use 12–128 characters. Share the password with the owner.
+              Use 12 to 128 characters. Share the password with the owner.
             </p>
             <FormInput
               id="admin-confirmPassword"

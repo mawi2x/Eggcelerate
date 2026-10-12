@@ -57,7 +57,7 @@ export function OnboardingStep3({
         )
       ) {
         setConnectError(
-          `Enter the 10-character fixed pairing code shown on your incubator setup page.`,
+          `Enter the fixed pairing code shown on your OLED or setup page, for example EGG01.`,
         );
         return;
       }
@@ -146,7 +146,7 @@ export function OnboardingStep3({
             setConnectError(null);
             setErrors((prev) => ({ ...prev, deviceId: undefined }));
           }}
-          placeholder="XXXXX-XXXXX"
+          placeholder="EGG01"
           maxLength={11}
           autoCapitalize="characters"
           spellCheck={false}

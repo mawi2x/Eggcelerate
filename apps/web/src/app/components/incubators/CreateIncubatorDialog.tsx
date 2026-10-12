@@ -105,7 +105,7 @@ export function CreateIncubatorDialog({
                     }}
                   >
                     {connectError === "invalid"
-                      ? `Enter the 10-character pairing code shown on your incubator’s setup page.`
+                      ? `Enter the pairing code shown on your incubator, for example EGG01.`
                       : `The pairing service is unavailable. Check your connection and try again.`}
                   </p>
                 </div>
@@ -133,7 +133,7 @@ export function CreateIncubatorDialog({
                   }}
                   maxLength={11}
                   disabled={connecting}
-                  placeholder="XXXXX-XXXXX"
+                  placeholder="EGG01"
                   className="rounded-xl pl-9"
                   style={{
                     ...inputStyle,

@@ -64,7 +64,7 @@ export function ChartTooltip({
   const timestamp = reading.payload?.ts;
   const extrema = reading.payload?.[`${reading.dataKey}_range`];
   const extremaText = Array.isArray(extrema)
-    ? `${formatMeasurement(Number(extrema[0]), unit)} – ${formatMeasurement(Number(extrema[1]), unit)}`
+    ? `${formatMeasurement(Number(extrema[0]), unit)} to ${formatMeasurement(Number(extrema[1]), unit)}`
     : null;
 
   // Mobile: minimal dark value pill pinned near the touch point (ref pattern).
@@ -89,7 +89,7 @@ export function ChartTooltip({
           {formatMeasurement(reading.value, unit)}
         </span>
         {extremaText && (
-          <span className="w-full text-xs">Min–max {extremaText}</span>
+          <span className="w-full text-xs">Range {extremaText}</span>
         )}
         {typeof timestamp === "number" && (
           <span
@@ -158,7 +158,7 @@ export function ChartTooltip({
         </div>
         {extremaText && (
           <div className="flex items-baseline justify-between gap-5">
-            <span className="text-xs text-[var(--text-muted)]">Min–max</span>
+            <span className="text-xs text-[var(--text-muted)]">Range</span>
             <span className="text-xs font-semibold">{extremaText}</span>
           </div>
         )}

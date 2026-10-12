@@ -113,3 +113,31 @@ in firmware, and add credential recovery/revocation tests. Then verify
 telemetry replay, cross-farm command isolation, acknowledgments, clock behavior, network
 loss, and local safety cutoffs on the selected hardware. Never use a public serial number
 alone as proof that a device belongs to a farm.
+
+## October 12 pilot pairing format
+
+Pilot device EGG-001 uses the short pairing code **EGG01**. It is a friendly
+identifier, with account/farm provisioning checks still enforced. The API and
+website also accept legacy ten-character codes for other enrolled devices.
+The registry continues to store the domain-separated SHA-256 code hash under
+its existing uniqueness constraint; no schema migration is needed.
+
+An operator can rotate a code without unpairing the chamber:
+
+```sh
+python -m eggcelerate_api.admin replace-pairing-code --farm-id FARM_UUID --device-id EGG-001
+```
+
+This privately prompts for the current/new code and confirmation, checks farm
+ownership and code uniqueness, and updates only the code hash. Firmware reflash
+with erase disabled migrates this pilot's old saved code to EGG01 while retaining
+its Wi-Fi and AP password. Old compiled firmware will continue to display the
+old code until reflashed; actual telemetry uses device/MQTT identity, not pairing
+code, so readings and historical cycles are unaffected. Update the installer’s
+commissioning record after uploading. EGG01-style codes cover EGG01–EGG99; do
+not reuse a code for another device or silently wrap numbering.
+
+An old firmware image that only accepts ten-character saved codes is not a
+drop-in rollback after this migration. A controlled rollback must restore its
+original code/AP-password record and matching server enrollment. Keep the
+private commissioning record; use the revised main sketch for routine reflashes.

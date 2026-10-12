@@ -1,6 +1,6 @@
 #pragma once
 // EGGCELERATE main sensor, Wi-Fi setup, and cloud telemetry firmware. DHT22 DATA -> GPIO4.
-// Install Adafruit DHT sensor library, Adafruit Unified Sensor, and PubSubClient.
+// Install Adafruit DHT sensor library, Adafruit Unified Sensor, PubSubClient, and hd44780 by Bill Perry.
 // Copy CloudConfig.example.h to CloudConfig.h to configure verified MQTT TLS. Serial Monitor: 115200 baud, Newline.
 #include <Arduino.h>
 #include <DHT.h>
@@ -19,10 +19,14 @@
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
+#include "LcdDisplay.h"
+#include "OledDisplay.h"
 
 namespace {
 // Embedded commissioning identity. Use EGG-002, EGG-003, etc. for other boards.
 constexpr char kDeviceId[] = "EGG-001";
+// Fixed short pilot code. Assign a unique code and enroll it for each new board.
+constexpr char kPairingCode[] = "EGG01";
 static_assert(sizeof(kDeviceId) <= 17, "Device ID exceeds the saved record capacity");
 constexpr uint32_t kIdentityMagic = 0x45474731;
 constexpr uint32_t kWifiMagic = 0x57494631;
@@ -212,6 +216,13 @@ bool validSecret(const char *secret, size_t length) {
   return true;
 }
 
+bool validPairingCode(const char *code) {
+  if (strlen(code) == 5 && strncmp(code, "EGG", 3) == 0 &&
+      code[3] >= '0' && code[3] <= '9' && code[4] >= '0' && code[4] <= '9' &&
+      !(code[3] == '0' && code[4] == '0')) return true;
+  return validSecret(code, 10);
+}
+
 template <typename T>
 bool saveBlob(const char *space, const T &value) {
   Preferences preferences;
@@ -238,11 +249,12 @@ bool loadBlob(const char *space, T &value, bool &exists) {
 bool validIdentityRecord(const Identity &value) {
   return value.magic == kIdentityMagic && value.deviceId[16] == '\0' &&
     value.code[10] == '\0' && value.apPassword[16] == '\0' &&
-    validSecret(value.code, 10) &&
+    validPairingCode(value.code) &&
     validSecret(value.apPassword, 16) && String(value.apPassword).indexOf(value.code) < 0;
 }
 
 String groupedCode() {
+  if (strlen(identity.code) == 5) return String(identity.code);
   return String(identity.code).substring(0, 5) + "-" + String(identity.code).substring(5);
 }
 
@@ -379,7 +391,7 @@ void commission(const String &code = "", const String &apPassword = "") {
   Identity next = {};
   next.magic = kIdentityMagic;
   String(kDeviceId).toCharArray(next.deviceId, sizeof(next.deviceId));
-  const String pairing = code.length() ? code : randomSecret(10);
+  const String pairing = code.length() ? code : String(kPairingCode);
   String access = apPassword.length() ? apPassword : randomSecret(16);
   while (!apPassword.length() && access.indexOf(pairing) >= 0) access = randomSecret(16);
   pairing.toCharArray(next.code, sizeof(next.code));
@@ -405,11 +417,11 @@ void serialCommand(String command) {
     commission();
   } else if (command.startsWith("restore ")) {
     const int split = command.indexOf(' ', 8);
-    if (split < 0) { Serial.println("Use restore RAW10CHARCODE AP16CHARPASSWORD from your commissioning record."); return; }
+    if (split < 0) { Serial.println("Use restore CODE AP16CHARPASSWORD from your commissioning record."); return; }
     const String code = command.substring(8, split);
     const String password = command.substring(split + 1);
-    if (code.length() != 10 || password.length() != 16) {
-      Serial.println("Restore needs the original ungrouped 10-character code and 16-character AP password."); return;
+    if (!validPairingCode(code.c_str()) || password.length() != 16) {
+      Serial.println("Restore needs the saved short/legacy code and 16-character AP password."); return;
     }
     commission(code, password);
   } else if (command == "setup") {
@@ -526,6 +538,8 @@ void setup() {
   Serial.begin(115200);
   delay(300);
   dht.begin();
+  eggcelerate_display::begin();
+  eggcelerate_oled::begin();
   initializeCloud();
   sensorAt = millis();
   WiFi.persistent(false); // Only our validated NVS blob commits Wi-Fi settings.
@@ -553,6 +567,17 @@ void setup() {
       Serial.println("Device ID migration failed. Saved identity retained; inspect storage before continuing.");
     }
   }
+  // Pilot-only code migration. Keep record size, AP password and Wi-Fi unchanged.
+  if (identityLoaded && identityExists && validIdentity(identity) &&
+      String(kDeviceId) == "EGG-001" && validSecret(identity.code, 10)) {
+    Identity migrated = identity;
+    memset(migrated.code, 0, sizeof(migrated.code));
+    String(kPairingCode).toCharArray(migrated.code, sizeof(migrated.code));
+    if (saveBlob("egg-ident", migrated)) {
+      identity = migrated;
+      Serial.println("Pilot pairing code updated to EGG01. Wi-Fi and AP password retained.");
+    } else Serial.println("Pairing code migration failed; previous code retained.");
+  }
   identityReady = identityLoaded && identityExists && validIdentity(identity);
   identityDamaged = identityExists && !identityReady;
   const bool wifiValid = wifiLoaded && (!wifiExists ||
@@ -573,12 +598,15 @@ void setup() {
 
 void loop() {
   serviceSensor(millis());
-  // Future LCD/OLED hook: serviceDisplays(millis()) uses temperatureC,
-  // humidityPct, sensorValid, and sensorAt; do not read the DHT again here.
-  // See ../display-integration.md. Current destination is the server dashboard.
   serviceSerial();
   if (apActive) portal.handleClient();
   serviceWifi(millis());
   serviceCloud(millis());
+  const uint32_t displayNow = millis();
+  const bool serverOnline = cloudEnabled && WiFi.status() == WL_CONNECTED &&
+    cloudMqtt.connected() && cloudHasReceipt && displayNow - cloudReceiptAt < 45000;
+  eggcelerate_display::service(displayNow, sensorValid, sensorAt, temperatureC,
+    humidityPct);
+  eggcelerate_oled::service(displayNow, apActive, serverOnline, identityReady, identity.code);
   delay(2);
 }

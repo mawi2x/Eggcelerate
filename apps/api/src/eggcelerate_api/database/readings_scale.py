@@ -26,7 +26,7 @@ async def scopes(
     if window not in {"24h", "7d", "full"}:
         raise AppError("validation_error", "window must be 24h, 7d or full.")
     if not ids or len(ids) > 100 or len(set(ids)) != len(ids):
-        raise AppError("validation_error", "Select 1–100 distinct chamber identifiers.")
+        raise AppError("validation_error", "Select 1 to 100 distinct chamber identifiers.")
     rows = (
         (
             await session.execute(

@@ -19,7 +19,7 @@ export function useTemperatureDisplay() {
       toCelsius: (displayed: number) => selectedUnit === "f" ? (displayed - 32) * 5 / 9 : displayed,
       format: (celsius: number) => `${number(celsius)}${unit}`,
       range: (range: Range) => ({ min: value(range.min), max: value(range.max) }),
-      formatRange: (range: Range) => `${number(range.min)}–${number(range.max)}${unit}`,
+      formatRange: (range: Range) => `${number(range.min)} to ${number(range.max)}${unit}`,
     };
   }, [selectedUnit]);
 }

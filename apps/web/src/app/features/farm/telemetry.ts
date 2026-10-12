@@ -60,5 +60,5 @@ export function telemetryStatusLabel(
 ): string {
   const label =
     status === "fresh" ? "Live" : status === "stale" ? "Stale" : "Offline";
-  return `${label} · ${telemetryAgeLabel(lastSeenAt, now)}`;
+  return `${label}. Last reading: ${telemetryAgeLabel(lastSeenAt, now)}.`;
 }

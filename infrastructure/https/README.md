@@ -19,8 +19,8 @@ Source: https://letsencrypt.org/2026/03/11/shorter-certs-certbot.html
 - Compose project: `eggcelerate-hardware`.
 - Operator wrapper: `./hardware-compose.sh` in that directory.
 - Private environment: `.env.hardware`; certificates and passwords remain ignored.
-- API/web images: `eggcelerate-api:preparation-20261011` and
-  `eggcelerate-web:preparation-20261011`, built locally and loaded onto the VPS.
+- API/web images: `eggcelerate-api:readable-ranges-20261012` and
+  `eggcelerate-web:preparation-type-20261012`, built locally and loaded onto the VPS.
 - Original Git checkout: `/opt/eggcelerate/Eggcelerate`, unchanged at `068ff9b`.
   Its old containers remain available for rollback; HTTP now redirects to HTTPS.
 

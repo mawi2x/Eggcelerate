@@ -1,6 +1,13 @@
 # EGGCELERATE roadmap and timeline
 
-Last updated: **2026-10-06**. Saved checkpoint: local tag
+Last updated: **2026-10-12**. Current working progress and the explicit
+next-session audit reminder are saved in
+[the October 12 checkpoint](docs/current-progress-2026-10-12.md).
+
+**Next review: frontend audit plus backend, firmware/hardware and deployment
+audit. Pending, not completed.** See the checkpoint checklist before resuming.
+
+Historical saved checkpoint: local tag
 `checkpoint-2026-10-06-papers` on `experiment`, following `493f051`
 (`oct 4 frontend test`). Includes M6 extractions, UI refinements, profile-photo
 support with migration `0016`, and restored frontend verification gates.
@@ -10,7 +17,13 @@ This is the current entry point for project plans and progress. “Roadmap” an
 “timeline” both refer to this document. Detailed plans and handoffs remain linked
 as supporting records. Update this roadmap as work is implemented and verified.
 
-**Overall status:** the dashboard and backend foundation are implemented. Release
+**Current pilot:** real DHT22 readings reach the VPS dashboard; Charles Farm has
+EGG-001 paired with short code EGG01. Preparation is implemented with manual
+equipment control. LCD/OLED firmware is prepared and compiled; relay/MOSFET
+control remains unimplemented. Recent UI cleanup is deployed. Current edits are
+local/uncommitted and deployed as staging images, not a new published Git release.
+
+**Historical October 6 baseline:** the dashboard and backend foundation are implemented. Release
 readiness remains open. The October 6 preparation review found frontend regression and asset-budget
 failures; the follow-up repair restored the **local frontend baseline: 356 tests,
 coverage gates, and asset budgets pass**. API/database and live-contract checks
@@ -54,6 +67,10 @@ a current check fails. Historical passes do not imply a fresh passing baseline.
 | October 6 | Frontend baseline repair: updated stale behavior assertions, retained official Font Awesome paths without the runtime renderer, and reran coverage/build budgets | Complete locally: 356 tests and all frontend gates pass; M6 remains in progress |
 
 ## Project review — demo, testing and production boundaries
+
+This section records the earlier repository-default review. The deployed pilot
+has since moved to real accounts, PostgreSQL and hardware sensor data; use the
+[October 12 checkpoint](docs/current-progress-2026-10-12.md) for current status.
 
 Reviewed **2026-10-04** against source and checked-in configuration. This is a code
 and documentation review, not a new deployment, hardware test, or full test run.
@@ -391,3 +408,214 @@ databases upgraded to 0019, services deployed as preparation-20261011. A databas
 source and Compose backup was saved before rollout. Full physical preparation
 and start acceptance remains to be exercised with equipment; no synthetic sensor
 data was inserted. See docs/guide/incubator-preparation-guide.md.
+
+### October 12 hardware wiring context and next additions
+
+Recorded the user's schematic and DHT22 wiring correction in
+[the hardware pin map](apps/firmware/hardware-pin-map.md). Use this as the
+starting point for future firmware work; physical wiring and module details
+still need confirmation before outputs are enabled.
+
+- DHT22 DATA is **GPIO4**, replacing the schematic's GPIO2.
+- Relay IN1 / motor is GPIO12; IN2 / mist maker GPIO14; IN3 / heater GPIO27.
+- Upper fan MOSFET control is GPIO19; lower fan MOSFET control GPIO18.
+- The time module's I²C bus is **SDA GPIO21 / SCL GPIO23** as drawn.
+- Planned four-pin LCD and OLED share that bus after confirming models,
+  addresses, supply voltages, and safe logic levels. Explicitly configure
+  `Wire.begin(21, 23)`; GPIO22 is not the drawn clock connection.
+- Planned LED light uses spare relay channel 4 / IN4. **GPIO26 is proposed**,
+  not a confirmed physical connection. Confirm relay polarity and light ratings.
+
+Next hardware steps:
+
+1. Identify both screens and the time module; check I²C addresses and pull-up
+   voltage. Confirm relay active levels, including GPIO12's boot behavior.
+2. Add nonblocking LCD/OLED display services to the main Eggcelerate firmware,
+   reusing current DHT22 readings. Show temperature/humidity, EGG-001, setup
+   pairing code, and connectivity as screen space permits.
+3. Add the relay-controlled light with an explicit safe startup state after
+   its wiring is confirmed. Preserve existing sensor and cloud transport.
+4. Continue heater/mist/fan/turning control and local safeguards as separate
+   hardware work. Displays/light do not imply those controls are implemented.
+
+See [the firmware phase plan](apps/firmware/phase-plan.md) and
+[display integration](apps/firmware/display-integration.md). This checkpoint
+records context only; it does not change firmware or require a reflash.
+
+### October 12 — 1602 LCD firmware prepared
+
+User identified the first display as a blue 1602 16×2 HD44780 LCD with an I²C
+backpack. Added `Eggcelerate/LcdDisplay.h` to the main sketch and installed Bill
+Perry's hd44780 1.3.2 library locally. It detects the compatible backpack address,
+uses SDA21/SCL23, displays existing temperature/humidity samples, writes only
+changed rows, and reports stale/failed sensors. Missing/failed display handling
+does not halt the sensor/cloud loop; OLED and light control remain deferred.
+
+The NodeMCU-32S build with LCD support passed (1,094,149 bytes / 83% flash,
+51,276 bytes / 15% static RAM). No upload was performed. The LCD's actual power
+wiring and I²C level converter are still unconfirmed; resolve 5 V backpack
+pull-ups before exposing ESP32 GPIO to the bus. Then upload with flash erasure
+disabled and confirm both physical LCD readings and ongoing cloud delivery.
+See [LCD setup](apps/firmware/lcd-1602.md).
+
+### October 12 — OLED purpose and model recorded
+
+User identified a LAFVIN 0.96-inch four-pin I²C **128×64 blue OLED**. The intended
+screen split is LCD for temperature/humidity, OLED for online/offline status.
+Reuse the main firmware's Wi-Fi and cloud receipt state: distinguish no Wi-Fi,
+Wi-Fi connected but server delivery pending, and recent server-confirmed reading
+delivery. OLED controller, actual I²C address and supply/logic voltage are still
+unconfirmed; the purchase title does not identify the controller. OLED code has
+not been added or flashed. Resolve LCD address explicitly before adding another
+device in its backpack auto-detection address range on the shared SDA21/SCL23 bus.
+
+### October 12 — agreed LCD/OLED switching implemented
+
+Updated the main firmware to the user's final display layout:
+
+- **Setup AP open:** 16×2 LCD shows the fixed pairing code as XXXXX-XXXXX;
+  OLED shows Online/Offline plus current temperature and humidity.
+- **Normal operation:** LCD shows temperature/humidity; OLED shows Online/Offline.
+- Online requires connected Wi-Fi/MQTT and a matching database receipt within
+  45 seconds. Opening setup does not itself force an Offline state.
+- Both LCD rows are overwritten when setup closes; no passwords are shown.
+- The common I²C bus stays SDA21/SCL23 at 100 kHz. LCD probes 0x27/0x3F only,
+  avoiding the OLED's 0x3C/0x3D addresses; ambiguous OLED addresses disable it.
+
+Added `OledDisplay.h` using the locally installed Adafruit SSD1306 driver as a
+provisional choice. The LAFVIN listing does not confirm its controller or voltage;
+physical module/wiring confirmation remains required. Missing screens do not
+halt sensor/cloud operation. The NodeMCU-32S build passed with both services:
+1,108,629 bytes (84% flash), 51,620 bytes (15% static RAM). Not flashed; wiring,
+level conversion, visible OLED output and physical acceptance remain pending.
+See [display setup](apps/firmware/lcd-1602.md). Keep flash erasure disabled on upload.
+
+### October 12 — display readability revision (current layout)
+
+User prefers the larger LCD for environmental readings at all times. Updated
+the main firmware: **LCD always shows temperature/humidity**, while **OLED
+always shows fixed pairing code and Online/Offline**. Setup only changes the
+OLED header to SETUP; it no longer replaces LCD readings. The OLED's full
+XXXXX-XXXXX code uses size-1 text to fit the 128-pixel width; status uses size-2
+text. This supersedes the preceding AP-dependent screen split.
+
+NodeMCU-32S compile passed: 1,107,769 bytes (84% flash), 51,620 bytes (15% static
+RAM). No upload performed for this revision. User should re-upload the main
+sketch with flash erasure disabled to apply it; saved pairing/Wi-Fi are retained.
+
+### October 12 — revised relay boards and actuator guide
+
+User supplied purchase screenshots and revised the physical allocation:
+
+- MakerLab **5 V two-channel relay board:** heater and mist maker.
+- MakerLab **5 V four-channel relay board:** DC egg-tray rotation and **12 V LED
+  light**; remaining channels reserved pending the motor's direction requirements.
+- Two advertised **15 A / 400 W MOSFET trigger/PWM modules:** fan switching/control
+  from the original schematic. Trigger compatibility and fan PWM behavior are
+  not yet qualified.
+
+This supersedes the single-board relay grouping and 220AC tray-motor label in
+the old drawing. Current intent is a DC tray motor; its voltage/current,
+direction, position/limit feedback and maximum run duration remain to be recorded.
+
+Prepared [the actuator integration guide](apps/firmware/actuator-integration-guide.md)
+and updated [the pin map](apps/firmware/hardware-pin-map.md). **Proposed** layout:
+two-channel A IN1 heater GPIO27, IN2 mist GPIO14; four-channel B IN1 tray GPIO25,
+IN2 light GPIO26; upper/lower fan MOSFETs GPIO19/GPIO18. GPIO25 replaces the old
+GPIO12 motor assignment only if the physical change is adopted. The light's B
+IN2 proposal replaces the earlier unused-IN4 plan. DHT22 GPIO4 and shared I²C
+GPIO21/GPIO23 remain unchanged.
+
+Later implementation order: confirm interfaces and wiring → isolated channel
+bring-up → light/fans → local heater/mist control → bounded tray motion → device
+commands/ACKs and real output telemetry → automatic preparation integration.
+Use the main firmware with separate phase fallbacks; retain sensor/display/cloud
+operation. Relay active levels, logic compatibility, load limits and fault states
+must be established before outputs are enabled. The current preparation feature
+is monitoring/manual control; the server does not yet drive these outputs.
+
+Guide/planning only: no actuator code enabled, no tests run, no board flashed.
+
+### October 12 — short pilot pairing code and larger OLED text
+
+User requested **EGG01** for the pilot to fit a larger OLED readout. Updated
+firmware short/legacy validation, OLED formatting, website validation/help, API
+validation/hash input and an operator-only code replacement command. Existing
+hash storage/uniqueness support the new format without a schema migration;
+legacy ten-character formats remain accepted for other enrolled devices.
+
+Deployed API/web `short-pairing-20261012` after local builds and replaced this
+pilot's enrolled code from its previous value to **EGG01** under Charles Farm.
+Device ID remains EGG-001; provisioning, existing chamber, cycles/readings, Wi-Fi,
+AP password, MQTT credentials/topics and server routing are unchanged. Short
+sequential codes are friendly identifiers, not random secrets; authenticated
+farm-bound enrollment/lookup remains enforced. Do not reuse codes; the format
+covers EGG01–EGG99 while legacy format remains available.
+
+The updated main firmware migrates EGG-001's existing ten-character saved code
+to EGG01 through an atomic NVS save/readback without changing record size or
+other settings. New commissions use the embedded kPairingCode. OLED renders the
+five-character code at size 3 (90×24 px) alongside status; LCD readings remain.
+Firmware compiled (1,108,325 bytes / 84% flash, 51,620 bytes / 15% static RAM), web
+type checking/API lint and API/web builds passed. No firmware upload performed.
+User must upload with flash erasure disabled and inspect status/OLED to complete
+hardware acceptance. No re-pairing or new commissioning is needed.
+
+Compatibility: old firmware that validates only ten-character codes will not
+recognize the migrated short identity. Use the revised main for subsequent
+uploads; a firmware rollback requires controlled restoration of the old code
+and matching server enrollment using the private commissioning record. Server
+source/database/Compose backups were taken in rollback-short-pairing-20261012.
+
+### October 12 — OLED label consistency
+
+Changed the pairing label to **PAIRING CODE**. SETUP/EGGCELERATE and PAIRING CODE
+both use size-1 uppercase text; status stays size 2 and EGG01 stays size 3.
+This is a firmware display-only revision, with no pairing/server/data changes.
+Upload the updated main sketch with flash erasure disabled to apply it.
+
+### October 12 — OLED heading alignment
+
+Right-aligned SETUP/EGGCELERATE and PAIRING CODE with the same four-pixel inset,
+using actual text bounds. Both remain uppercase/size 1; EGG01 remains centered
+at size 3, with status unchanged. Firmware display-only revision; no upload
+performed or pairing/server changes required.
+
+### October 12 — readable range and summary wording
+
+User reaffirmed numeric ranges must use **to** and summaries must read as
+sentences instead of middle-dot-separated fragments. Fixed the shared
+temperature range formatter (Celsius/Fahrenheit), preparation summary/profile
+preview, trend tooltips/legends, timeline day ranges, admin counts/password help,
+calendar captions, alert resolution labels, telemetry captions and settings help.
+Server-generated alert ranges and chamber-selection validation use **to** too.
+Older stored alert ranges are normalized for display without rewriting history.
+
+Recorded the rule in docs/guide/ui-copy-guidelines.md and linked it from the
+typography guide and guide index. Updated existing copy assertions without adding
+new test cases. Web type checking/API lint and both Docker builds passed; no test
+suite was run. Deployed readable-ranges-20261012 locally and on the VPS. Source
+and Compose backups are in rollback-readable-ranges-20261012. This is copy only:
+thresholds, unit conversion, sampling, preparation gating and firmware are unchanged.
+
+### October 12 — OLED left alignment (current)
+
+User requested all OLED lines left-aligned: EGGCELERATE/SETUP, ONLINE/OFFLINE,
+PAIRING CODE and EGG01. Updated every line to x=0, retaining font sizes 1/2/1/3.
+This supersedes the previous right-aligned labels and centered pairing code.
+Firmware display-only change; apply by uploading the revised main with flash
+erasure disabled. No server changes or firmware upload performed here.
+
+### October 12 — preparation typography audit
+
+Checked the highlighted preparation panel against active desktop/phone theme
+tokens. Section/status headings and callout instructions already use shared
+tokens. Replaced the target summary's fixed text-sm with Typography body and
+the Cancel button's fixed size with --type-button-label. Headings are 16px
+desktop/14px phone; body/instructions and action text are 14px desktop/12px phone
+at their documented breakpoints. No global type scale change.
+
+Web type checking and build passed. Updated local/VPS web to
+preparation-type-20261012; API remains readable-ranges-20261012. No browser
+viewport test or test suite run. Documented the panel's token roles in the
+incubator preparation guide.

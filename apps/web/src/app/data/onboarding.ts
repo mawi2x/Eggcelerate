@@ -73,8 +73,8 @@ export const OnboardingStep3Schema = z.object({
     .trim()
     .toUpperCase()
     .regex(
-      /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}-?[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}$/,
-      "Enter the 10-character pairing code from your incubator setup page.",
+      /^(?:EGG(?:0[1-9]|[1-9][0-9])|[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}-?[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5})$/,
+      "Enter the pairing code shown on your incubator, for example EGG01.",
     ),
   startingModeId: z.string().min(1),
 });

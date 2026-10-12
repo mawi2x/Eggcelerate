@@ -186,7 +186,7 @@ export function FarmAccountPanel({
             }}
           />
           <p style={{ fontSize: "var(--type-caption)", color: MUTED }}>
-            JPG, PNG or WebP · Max 2 MB
+            Use JPG, PNG or WebP files up to 2 MB.
           </p>
           {photoError && (
             <p

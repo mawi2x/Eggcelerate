@@ -15,7 +15,11 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from .auth_security import hash_password
 from .config import Settings, load_settings
 from .database.accounts import create_farm_owner
-from .database.device_registry import enroll_pairing_code, provision_device
+from .database.device_registry import (
+    enroll_pairing_code,
+    provision_device,
+    replace_pairing_code,
+)
 from .database.schema import auth_rate_limits, auth_sessions, users
 from .database.store import PostgresStore
 from .errors import AppError
@@ -51,6 +55,12 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="privately enroll the fixed code from the commissioning record",
     )
+    rotate = commands.add_parser(
+        "replace-pairing-code",
+        help="replace an enrolled code without changing device ownership",
+    )
+    rotate.add_argument("--farm-id", required=True)
+    rotate.add_argument("--device-id", required=True)
     return parser
 
 
@@ -139,7 +149,7 @@ async def _run(args: argparse.Namespace) -> None:
     database = PostgresStore(settings.database_url, settings.default_farm_id)
     try:
         if args.command in ("create-owner", "create-admin"):
-            password = getpass("New password (12–128 characters): ")
+            password = getpass("New password (12 to 128 characters): ")
             confirm = getpass("Confirm password: ")
             if password != confirm:
                 raise AppError("validation_error", "Passwords do not match.")
@@ -148,12 +158,25 @@ async def _run(args: argparse.Namespace) -> None:
                 f"Created {args.command.removeprefix('create-')} {user_id} with farm {farm_id}."
             )
         elif args.command == "reset-password":
-            password = getpass("New password (12–128 characters): ")
+            password = getpass("New password (12 to 128 characters): ")
             confirm = getpass("Confirm password: ")
             if password != confirm:
                 raise AppError("validation_error", "Passwords do not match.")
             await _reset_password(database, args.email, password, settings)
             print("Password updated; all active sessions revoked.")
+        elif args.command == "replace-pairing-code":
+            old_code = getpass("Current pairing code: ")
+            new_code = getpass("New pairing code: ")
+            confirm = getpass("Confirm new pairing code: ")
+            if new_code != confirm:
+                raise AppError("validation_error", "Pairing codes do not match.")
+            async with database.sessions.begin() as session:
+                await replace_pairing_code(
+                    session, UUID(args.farm_id), args.device_id, old_code, new_code
+                )
+            print(
+                f"Pairing code replaced for {args.device_id}; ownership and readings retained."
+            )
         else:
             provision_farm_id = UUID(args.farm_id)
             pairing_code = (

@@ -93,21 +93,21 @@ function GlanceView({ currentDay, totalDays, model }: CalendarViewProps) {
   let statusTitle: string;
   let statusDescription: string;
   if (currentDay > totalDays) {
-    statusTitle = `Day ${currentDay} — ${overdueDays} day${overdueDays === 1 ? "" : "s"} past expected hatch`;
+    statusTitle = `Day ${currentDay}. ${overdueDays} day${overdueDays === 1 ? "" : "s"} past expected hatch`;
     statusDescription = "Check hatch progress and finish the cycle when ready.";
   } else if (currentDay === totalDays) {
-    statusTitle = `Day ${currentDay} — Expected hatch today`;
+    statusTitle = `Day ${currentDay}. Expected hatch today`;
     statusDescription = "Check hatch progress and finish the cycle when ready.";
   } else if (currentDay < 1) {
     statusTitle = "Cycle not started";
     statusDescription = `Eggs are scheduled to be loaded on ${model.cycleStartDate.toLocaleDateString([], { month: "short", day: "numeric" })}.`;
   } else if (currentMilestone) {
-    statusTitle = `Day ${currentDay} of ${totalDays} — ${currentMilestone.label} today`;
+    statusTitle = `Day ${currentDay} of ${totalDays}. ${currentMilestone.label} today`;
     statusDescription = `Scheduled for ${model.dayOffset(currentDay).toLocaleDateString([], { month: "short", day: "numeric" })}.`;
   } else {
     statusTitle = `Day ${currentDay} of ${totalDays}`;
     statusDescription = nextMilestone
-      ? `Next: ${nextMilestone.label} in ${nextMilestone.day - currentDay} day${nextMilestone.day - currentDay === 1 ? "" : "s"} · ${model.dayOffset(nextMilestone.day).toLocaleDateString([], { month: "short", day: "numeric" })}.`
+      ? `Next: ${nextMilestone.label} in ${nextMilestone.day - currentDay} day${nextMilestone.day - currentDay === 1 ? "" : "s"} on ${model.dayOffset(nextMilestone.day).toLocaleDateString([], { month: "short", day: "numeric" })}.`
       : "Cycle in progress.";
   }
 
@@ -219,7 +219,7 @@ function MonthView({
         ? "Cycle start"
         : selectedDay === totalDays
           ? "Hatch is expected today. Please check your incubator."
-          : "Planned milestone · No inspection recorded"
+          : "Planned milestone. No inspection recorded."
       : next
         ? `${next.day - selectedDay} day${next.day - selectedDay === 1 ? "" : "s"} until ${next.label.toLowerCase()}`
         : "Check hatch progress and finish the cycle when ready.";

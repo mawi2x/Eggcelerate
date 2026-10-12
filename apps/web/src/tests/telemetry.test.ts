@@ -11,13 +11,13 @@ describe("telemetry freshness presentation", () => {
 
   it("uses server receipt age and preserves stale/offline labels", () => {
     expect(telemetryStatusLabel("fresh", "2026-09-22T23:59:45Z", now)).toBe(
-      "Live · 15s ago",
+      "Live. Last reading: 15s ago.",
     );
     expect(telemetryStatusLabel("stale", "2026-09-22T23:57:00Z", now)).toBe(
-      "Stale · 3m ago",
+      "Stale. Last reading: 3m ago.",
     );
     expect(telemetryStatusLabel("offline", null, now)).toBe(
-      "Offline · no recent data",
+      "Offline. Last reading: no recent data.",
     );
   });
 
@@ -69,7 +69,7 @@ describe("telemetry freshness presentation", () => {
       telemetryLastSeenAt: "2026-09-22T23:50:00Z",
     });
     expect(telemetryStatusLabel("fresh", receivedAt, now)).toBe(
-      "Live · 10s ago",
+      "Live. Last reading: 10s ago.",
     );
   });
 });

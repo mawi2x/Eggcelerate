@@ -254,7 +254,7 @@ export function HardwarePanel({
                       border: `var(--border-width-hairline) solid ${BORDER}`,
                     }}
                   >
-                    5 min · Fixed
+                    Fixed at 5 minutes
                   </span>
                 }
               />

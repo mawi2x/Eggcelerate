@@ -33,7 +33,7 @@ router = APIRouter(prefix="/incubators", tags=["incubators"])
 
 class PairingCodeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    pairing_code: str = Field(min_length=10, max_length=11)
+    pairing_code: str = Field(min_length=5, max_length=11)
 
 
 @router.post("/resolve-pairing-code")

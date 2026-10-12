@@ -62,7 +62,7 @@ export function PhotoActionMenu({
             <span className="grid gap-0.5">
               <span className="text-sm font-semibold">Open camera</span>
               <span className="text-xs text-[var(--text-muted)]">
-                Guided egg framing · coming soon
+                Guided egg framing is coming soon
               </span>
             </span>
           </button>

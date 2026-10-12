@@ -193,6 +193,14 @@ Deferred: current temperature/humidity work targets the server dashboard only.
 The main loop contains a future display hook; follow
 [display integration](display-integration.md) when hardware details are available.
 
+October 12 wiring context is recorded in [hardware-pin-map.md](hardware-pin-map.md).
+Keep DHT22 DATA on GPIO4. The existing time module uses SDA GPIO21 / SCL GPIO23;
+plan both I²C displays on that shared bus after confirming their models,
+addresses and voltage levels. Do not rely on the default GPIO22 SCL assignment.
+The revised LED light plan uses four-channel relay board B IN2, with GPIO26 proposed and
+unconfirmed. Its relay polarity, ratings and safe startup state must be known
+before enabling it. This is a future addition, not existing actuator support.
+
 - Confirm OLED/LCD models, I²C addresses, pins, and DS3231 RTC wiring.
 - OLED shows setup/code, connection status, and queued readings; LCD shows real
   temperature/humidity or explicit sensor-error/stale state.
@@ -222,6 +230,16 @@ fan, mist, turning control, and full local safety qualification. Sensor integrat
 does not qualify those actuator functions.
 
 ## Immediate implementation batch
+
+### October 12 revised actuator hardware
+
+The current user allocation supersedes the original one-board relay diagram:
+5 V two-channel board A for heater/mist; 5 V four-channel board B for DC tray
+rotation/12 V light; two MOSFET modules for the fans. Follow
+[actuator-integration-guide.md](actuator-integration-guide.md) for the proposed
+pin/channel map, missing hardware details, local fault behavior and later phase
+order. GPIO25 for the tray and GPIO26 for the light are proposals, not confirmed
+physical connections. No relay/MOSFET output is enabled in the current sketch.
 
 Implement Phases 1–2 locally first. VPS discovery can proceed alongside them when
 access is available. Do not deploy server changes or flash the board as part of

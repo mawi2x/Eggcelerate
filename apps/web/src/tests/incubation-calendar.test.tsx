@@ -23,7 +23,7 @@ describe("incubation calendar summary", () => {
       );
 
       expect(mounted.container.textContent).toContain(
-        "Day 22 — 1 day past expected hatch",
+        "Day 22. 1 day past expected hatch",
       );
       expect(mounted.container.textContent).toContain("2nd Candling");
       expect(

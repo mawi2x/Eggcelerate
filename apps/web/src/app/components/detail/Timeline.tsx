@@ -142,7 +142,7 @@ export function Timeline({
                   backgroundColor: "var(--brand-primary-soft)",
                   opacity: 0.65,
                 }}
-                title={`Lockdown Phase: Days ${lockdownDay}–${totalDays}`}
+                title={`Lockdown Phase: Days ${lockdownDay} to ${totalDays}`}
               />
 
               {/* Progress fill */}

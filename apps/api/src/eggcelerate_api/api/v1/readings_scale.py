@@ -70,7 +70,7 @@ def demo_rows(
     request: Request, ids: list[str], window: str, end: datetime
 ) -> list[dict[str, Any]]:
     if not ids or len(ids) > 100 or len(set(ids)) != len(ids):
-        raise AppError("validation_error", "Select 1–100 distinct chambers.")
+        raise AppError("validation_error", "Select 1 to 100 distinct chambers.")
     store = request.app.state.store
     rows: list[dict[str, Any]] = []
     for chamber_id in ids:

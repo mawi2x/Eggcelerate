@@ -3,8 +3,13 @@
 Project implementation and design handoff guides live here.
 Source of truth for behavior is code + `../SYSTEM_ARCHITECTURE_GUIDE.md`.
 
+**Next-session reminder:** frontend and system audit is pending. Start with the
+[October 12 current progress checkpoint](../current-progress-2026-10-12.md),
+then follow its frontend/backend/firmware/operations checklist.
+
 - [Color guidelines](./color-guidelines.md) — semantic color tokens, navigation hierarchy, status contrast, chart exceptions, and accessibility rules.
 - [Typography guidelines](./typography-guidelines.md) — semantic type/weight/leading/tracking tokens, hierarchy, component usage, and accessibility rules (Baloo 2 / Nunito, rem scale, 100% root).
+- [UI wording](./ui-copy-guidelines.md) — numeric ranges use “to”; summaries use readable sentences instead of middle-dot separators.
 - [Typography — experimental](./typography-experimental.md) — EXPERIMENTAL filter-value/filter-label tablet+mobile tiers only; stable contract stays in Typography guidelines.
 - [UI control-size guidelines](./ui-control-size-guidelines.md) — search, select, button, chip, toggle, segment, and tab geometry.
 - [Screen notes](./screen-note-guidelines.md) — bottom placement for standalone explanations and informational notices.
@@ -12,6 +17,8 @@ Source of truth for behavior is code + `../SYSTEM_ARCHITECTURE_GUIDE.md`.
 - [Local user administration](./platform-admin-guide.md) — administrator sign-in, creating farm owners, and the local database bootstrap.
 - [Device provisioning](./device-provisioning-guide.md) — operator-owned device IDs, farm routing, and the local simulator-only boundary.
 - [Incubator preparation](./incubator-preparation-guide.md) — mode selection, measured stability, loading eggs, and starting Day 1.
+- [Hardware pin map](../../apps/firmware/hardware-pin-map.md) — schematic GPIO context, corrected DHT22 pin, and planned LCD/OLED/light connections.
+- [Relay and fan integration](../../apps/firmware/actuator-integration-guide.md) — revised two-/four-channel relay allocation, proposed GPIOs, and later actuator implementation phases.
 - [Frontend restructuring](./frontend-restructuring-guide.md) — active F0–F6 execution checklist (domain → repository → Query → routing/auth → states → gate).
 - [Backend dashboard-first](./backend-dashboard-first-guide.md) — B0B resume point; refine mock writes to service commands before HTTP.
 - [Database setup](./database-setup-guide.md) — contract-first FastAPI, PostgreSQL/TimescaleDB, migrations, adapter integration, verification, and operational handoff plan.

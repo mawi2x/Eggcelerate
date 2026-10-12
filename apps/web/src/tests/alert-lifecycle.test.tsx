@@ -68,7 +68,7 @@ describe("alert condition lifecycle", () => {
       />,
     );
     try {
-      expect(mounted.container.textContent).toContain("Resolved · recovered");
+      expect(mounted.container.textContent).toContain("Resolved after recovery");
       const categories = mounted.container.querySelector(
         '[aria-label="Alert filter"]',
       );

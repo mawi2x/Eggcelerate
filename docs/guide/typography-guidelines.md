@@ -2,6 +2,8 @@
 
 This guide defines how to use typography in the Eggcelerate web app. It mirrors `color-guidelines.md` — the token flow is **Primitive → semantic role → component**. It is intended for new screens, component work, design reviews, and visual QA. Source of truth is `apps/web/src/styles/theme.css`.
 
+For range notation and readable summaries, follow [UI wording](ui-copy-guidelines.md): use **to** between range endpoints and sentences instead of middle-dot separators.
+
 ## Source of truth
 
 Use the role-named CSS variables in `theme.css`. Do not add a new `fontSize`, `fontFamily`, or `fontWeight` value directly to a component when an existing semantic token describes the same purpose.

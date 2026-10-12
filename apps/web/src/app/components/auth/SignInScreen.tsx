@@ -117,7 +117,7 @@ export function SignInScreen({
       >
         <span>{busy ? "Signing in…" : "Sign in"}</span>
       </button>
-      {canRegister ? (
+      {canRegister && (
         <>
           <div className="my-4 flex items-center gap-3">
             <div className="h-px flex-1 bg-[var(--border-default)]" />
@@ -140,10 +140,6 @@ export function SignInScreen({
             <span>{onSetupLabel}</span>
           </button>
         </>
-      ) : (
-        <p className="mt-4 text-center text-sm text-[var(--text-muted)]">
-          New accounts are created by an authorized operator.
-        </p>
       )}
     </AuthCard>
   );

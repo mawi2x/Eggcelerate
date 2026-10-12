@@ -252,9 +252,9 @@ async def evaluate_farm(
                         )
                         message = f"{row['name']}: {title.lower()}."
                         if condition == "temp":
-                            message += f" {row['temperature_c']:g}°C; mode target {row['temp_min']:g}–{row['temp_max']:g}°C."
+                            message += f" The temperature is {row['temperature_c']:.1f}°C and its target is {row['temp_min']:.1f} to {row['temp_max']:.1f}°C."
                         elif condition == "humidity":
-                            message += f" {row['humidity_pct']:g}%; mode target {row['humidity_min']:g}–{row['humidity_max']:g}%."
+                            message += f" The humidity is {row['humidity_pct']:g}% RH and its target is {row['humidity_min']:g} to {row['humidity_max']:g}% RH."
                         elif condition == "offline":
                             message += " No advancing telemetry received for more than 180 seconds."
                         else:
