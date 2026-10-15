@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..config import load_settings
+from ..database import tray_control
 from ..database.climate_control import command_packets, reconcile
 from ..database.device_registry import (
     registered_device_targets,
@@ -268,6 +269,13 @@ async def run() -> None:
                             packets = await command_packets(
                                 session, farm_id, datetime.now(UTC)
                             )
+                            if settings.tray_control_enabled:
+                                await tray_control.reconcile(
+                                    session, farm_id, datetime.now(UTC)
+                                )
+                                packets += await tray_control.packets(
+                                    session, farm_id, datetime.now(UTC)
+                                )
                         for device_id, packet in packets:
                             if device_ids is not None and device_id not in device_ids:
                                 continue

@@ -4,6 +4,7 @@
 services:
   api:
     environment:
+      TRAY_CONTROL_ENABLED: ${TRAY_CONTROL_ENABLED:-false}
       CLIMATE_CONTROL_ENABLED: ${CLIMATE_CONTROL_ENABLED:-false}
   web:
     ports: !override []
@@ -50,6 +51,7 @@ services:
       MQTT_USERNAME: eggcelerate-worker
       MQTT_PASSWORD: ${MQTT_WORKER_PASSWORD:?Set a separate MQTT worker password}
       MQTT_TLS_CA_FILE: /etc/eggcelerate/ca.crt
+      TRAY_CONTROL_ENABLED: ${TRAY_CONTROL_ENABLED:-false}
       CLIMATE_CONTROL_ENABLED: ${CLIMATE_CONTROL_ENABLED:-false}
       MQTT_HARDWARE_TELEMETRY_ONLY: "true"
       MQTT_DEVICE_ACL_CONFIRMED: ${MQTT_DEVICE_ACL_CONFIRMED:?Set true after installing the supplied device ACL}

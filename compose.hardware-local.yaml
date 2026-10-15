@@ -3,6 +3,7 @@ services:
   api:
     environment:
       CLIMATE_CONTROL_ENABLED: "true"
+      TRAY_CONTROL_ENABLED: "true"
   web:
     ports: !override
       - "127.0.0.1:18080:80"
@@ -20,5 +21,6 @@ services:
   hardware-telemetry:
     environment:
       CLIMATE_CONTROL_ENABLED: "true"
+      TRAY_CONTROL_ENABLED: "true"
     volumes:
       - ./infrastructure/mqtt-hardware/private/local-ca.crt:/etc/eggcelerate/ca.crt:ro

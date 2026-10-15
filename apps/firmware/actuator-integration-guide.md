@@ -1,5 +1,13 @@
 # Relay and fan integration — revised hardware
 
+> **Latest tray confirmation — October 15:** The installed motor is **220 V AC**,
+> and the user confirms **90 degrees total rocking travel**. Earlier DC motor
+> assumptions below are historical and superseded. Control remains relay IN2 /
+> GPIO25 (LOW on / HIGH off); main firmware holds it off. Cycle duration,
+> self-stop/continuous-power behavior and position/home feedback remain unknown.
+> Use the [current handoff](../../docs/guide/capstone-next-phases-2026-10-15.md).
+
+
 October 14: a separate [local two-fan MOSFET bench](mosfet-bench/README.md)
 now contains a draft sketch and control page. Main pilot firmware still has no
 actuator outputs. Confirm actual GPIO/trigger interfaces before arming the bench;

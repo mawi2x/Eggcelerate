@@ -34,6 +34,14 @@ class ClimateReport(BaseModel):
     fault: int = Field(ge=0, le=6)
     command_id: str = Field(max_length=36, pattern=r"^([0-9a-f-]{36})?$")
     accepted: StrictBool
+    tray_capability: StrictBool = False
+    tray_running: StrictBool = False
+    tray_position: int = Field(default=0, ge=0, le=3)
+    tray_status: int = Field(default=0, ge=0, le=5)
+    tray_id: int = Field(default=0, ge=0, le=4294967295)
+    tray_highest: int = Field(default=0, ge=0, le=4294967295)
+    tray_ack: int = Field(default=0, ge=0, le=4294967295)
+    tray_accepted: StrictBool = False
 
 
 PRESETS = {
@@ -335,6 +343,7 @@ async def record_report(
                     report.mist,
                     report.upper,
                     report.exhaust,
+                    report.tray_running,
                 )
             )
             expected_phase = {"prepare": 1, "incubate": 2}.get(req["action"], 0)

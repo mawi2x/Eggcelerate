@@ -302,7 +302,7 @@ export function DeviceSettingsTab({
                           fontWeight: "var(--weight-bold)",
                         }}
                       >
-                        <SelectValue placeholder="Select a mode to prepare" />
+                        <SelectValue placeholder="Mode" />
                       </SelectTrigger>
                       <SelectContent>
                         {currentModes(modes).map((m) => (

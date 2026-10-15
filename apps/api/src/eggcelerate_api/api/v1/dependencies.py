@@ -274,6 +274,19 @@ async def get_store(
             return
         from ...database.climate_control import set_intent
 
+        if request.app.state.settings.tray_control_enabled:
+            from ...database import tray_control
+
+            if route_path.endswith("/commands/turn"):
+                await tray_control.queue(
+                    session, database.farm_id, unit_id, "turn", key=key
+                )
+            elif cycle_end:
+                from ...database.climate_control import row_for
+
+                current = await row_for(session, database.farm_id, unit_id)
+                if current and (current["report"] or {}).get("tray_capability"):
+                    await tray_control.queue(session, database.farm_id, unit_id, "stop")
         if cycle_end:
             await set_intent(session, database.farm_id, unit_id, "stop")
         elif cycle_start:

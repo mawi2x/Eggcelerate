@@ -12,6 +12,7 @@ from . import (
     platform_admin,
     preferences,
     readings_scale,
+    tray_control,
 )
 from .dependencies import require_api_csrf, require_api_session
 
@@ -26,6 +27,7 @@ farm_routes = APIRouter(
     dependencies=[Depends(require_api_session), Depends(require_api_csrf)],
 )
 farm_routes.include_router(climate_control.router)
+farm_routes.include_router(tray_control.router)
 farm_routes.include_router(incubators.router)
 farm_routes.include_router(readings_scale.router)
 farm_routes.include_router(modes.router)

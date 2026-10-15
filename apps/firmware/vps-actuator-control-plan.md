@@ -1,5 +1,13 @@
 # Integrated actuators, VPS manual controls and threshold control
 
+> **Latest tray confirmation — October 15:** The installed motor is **220 V AC**,
+> and the user confirms **90 degrees total rocking travel**. Earlier DC motor
+> assumptions below are historical and superseded. Control remains relay IN2 /
+> GPIO25 (LOW on / HIGH off); main firmware holds it off. Cycle duration,
+> self-stop/continuous-power behavior and position/home feedback remain unknown.
+> Use the [current handoff](../../docs/guide/capstone-next-phases-2026-10-15.md).
+
+
 > **October 15 update:** Earlier mappings/implementation status below include historical proposals.
 > Use the [current capstone handoff](../../docs/guide/capstone-next-phases-2026-10-15.md)
 > for authoritative pins, implemented climate lifecycle and remaining tray/power phases.
@@ -18,7 +26,8 @@ no new hardware outputs, uploads no firmware and changes no deployed service.
 - Tray first movement should reach a chosen angle. User agreed that the final
   movement before lockdown returns the tray to a **level base/home position**,
   confirms arrival, then stops the motor and disables turning throughout lockdown.
-  The target tilt angle and normal pre-lockdown turning pattern remain unresolved.
+  The user subsequently confirmed a 90-degree total rocking arc; cycle timing,
+  dwell behavior and endpoint/home detection remain unresolved.
 
 ## Current pins and existing boundaries
 
@@ -157,7 +166,8 @@ bidirectional motor driver is needed. Do not assume two seconds produces a known
 angle. A home sensor establishes base; a second endpoint sensor can establish a
 fixed tilt endpoint. Arbitrary angles need suitable position feedback or a
 calibrated mechanism whose limits/accuracy are explicitly qualified.
-General direction/feedback reference: [TI brushed-DC control overview](https://www.ti.com/product-category/motor-drivers/brushed-dc/overview.html).
+The earlier brushed-DC driver reference does not describe the now-confirmed
+220 V AC motor. Establish its actual interface before choosing any direction control.
 
 No extra driver or feedback GPIO is allocated until the motor/mechanism is
 identified. Keep GPIO26 reserved for LED. If driver/feedback pins are added,

@@ -30,7 +30,7 @@ namespace {
 constexpr char kDeviceId[] = "EGG-001";
 // Fixed short pilot code. Assign a unique code and enroll it for each new board.
 constexpr char kPairingCode[] = "EGG01";
-constexpr char kSetupApPassword[] = "egg12345";
+constexpr char kSetupApPassword[] = "eggcelerate";
 static_assert(sizeof(kDeviceId) <= 17, "Device ID exceeds the saved record capacity");
 constexpr uint32_t kIdentityMagic = 0x45474731;
 constexpr uint32_t kWifiMagic = 0x57494631;
@@ -115,6 +115,22 @@ bool cloudUtc(time_t epoch, char *output, size_t capacity) {
 
 void receiveCloudReceipt(char *topic, byte *body, unsigned int length) {
   if (strcmp(topic, receiptTopic) != 0 || !cloudLastSent) return;
+  if (length > 5 && length < 256 && memcmp(body,"tray|",5)==0) {
+    char packet[256]; memcpy(packet,body,length); packet[length]=0;
+    char *save=nullptr; char *fields[8]={}; uint8_t count=0;
+    for (char *part=strtok_r(packet,"|",&save);part&&count<8;part=strtok_r(nullptr,"|",&save)) fields[count++]=part;
+    if (count!=7 || strcmp(fields[1],cloudBootId)) return;
+    for (uint8_t n : {2,3,4,5,6}) {
+      if (!fields[n][0] || strlen(fields[n])>10) return;
+      for(char *c=fields[n];*c;++c) if(*c<'0'||*c>'9') return;
+    }
+    const uint64_t seq=strtoull(fields[2],nullptr,10), id=strtoull(fields[3],nullptr,10);
+    const uint64_t action=strtoull(fields[4],nullptr,10), from=strtoull(fields[5],nullptr,10), expires=strtoull(fields[6],nullptr,10);
+    const uint64_t now=time(nullptr);
+    if(seq!=cloudLastSent || !id || id>UINT32_MAX || action>6 || from>3 || expires<=now || expires>now+95 || now<1704067200) return;
+    egg_climate::requestTray({static_cast<egg_climate::TrayAction>(action),uint32_t(id),uint32_t(expires),uint8_t(from),true});
+    return;
+  }
   if (length > 8 && length < 256 && memcmp(body, "climate|", 8) == 0) {
     char packet[256]; memcpy(packet, body, length); packet[length] = 0;
     char *save = nullptr; char *fields[8] = {};
@@ -227,8 +243,9 @@ void serviceCloud(uint32_t now) {
   if (cloudSequence >= 2147483647UL) { Serial.println("Cloud sequence exhausted; restart required."); return; }
   char observedAt[25];
   if (!cloudUtc(time(nullptr), observedAt, sizeof(observedAt))) return;
-  char payload[1024];
+  char payload[1400];
   const auto climate = egg_climate::snapshot();
+  const auto tray = egg_climate::traySnapshot();
   char sampleFields[128];
   const bool freshSensor = climate.valid && now - climate.sampledAt <= 5000;
   if (freshSensor) snprintf(sampleFields, sizeof(sampleFields), "\"temperature_c\":%.2f,\"humidity_pct\":%.2f,\"battery_pct\":100,\"power_source\":\"grid\",", climate.temperature, climate.humidity);
@@ -238,11 +255,13 @@ void serviceCloud(uint32_t now) {
     "{\"schema_v\":1,\"device_id\":\"%s\",\"boot_id\":\"%s\",\"booted_at\":\"%s\","
     "\"seq\":%lu,\"observed_at\":\"%s\",%s"
     "\"climate_test\":{\"halted\":%s,\"resuming\":%s,\"lifecycle\":1,\"phase\":%u,\"stop_all\":true,\"sensor_valid\":%s,\"running\":%s,\"mode\":%u,\"heater\":%s,\"mist\":%s,\"upper\":%s,\"exhaust\":%s,"
-    "\"fault\":%u,\"command_id\":\"%s\",\"accepted\":%s}}",
+    "\"fault\":%u,\"command_id\":\"%s\",\"accepted\":%s,"
+    "\"tray_capability\":true,\"tray_running\":%s,\"tray_position\":%u,\"tray_status\":%u,\"tray_id\":%lu,\"tray_highest\":%lu,\"tray_ack\":%lu,\"tray_accepted\":%s}}",
     kDeviceId, cloudBootId, cloudBootedAt, static_cast<unsigned long>(sequence), observedAt, sampleFields, climate.halted ? "true" : "false", climate.resuming ? "true" : "false", climate.phase, freshSensor ? "true" : "false",
     climate.running ? "true" : "false", climate.mode, climate.out.heater ? "true" : "false", climate.out.mist ? "true" : "false",
     climate.out.upper ? "true" : "false", climate.out.exhaust ? "true" : "false", static_cast<unsigned int>(climate.fault),
-    climate.commandId, climate.accepted ? "true" : "false");
+    climate.commandId, climate.accepted ? "true" : "false",
+    tray.running?"true":"false",tray.position,unsigned(tray.status),(unsigned long)tray.id,(unsigned long)tray.highestId,(unsigned long)tray.ackId,tray.accepted?"true":"false");
   cloudPublishedAt = now;
   cloudHasPublished = true;
   if (size > 0 && static_cast<size_t>(size) < sizeof(payload) && cloudMqtt.publish(cloudTopic, payload, false)) {
@@ -383,12 +402,11 @@ void servePage() {
   userActivityAt = millis();
   noCache();
   String page = F("<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Eggcelerate setup</title><style>body{font:16px system-ui;background:#faf7f1;color:#24211d;margin:0;padding:24px}main{max-width:440px;margin:auto;background:white;padding:24px;border-radius:16px}label{display:block;margin-top:18px}input,button{box-sizing:border-box;width:100%;font:inherit;padding:12px;border:1px solid #aaa;border-radius:8px;margin-top:6px}button{background:#a83c20;color:white;cursor:pointer}code{font-size:20px}p{line-height:1.5}#status{min-height:3em}small{color:#555}</style><main><h1>Eggcelerate setup</h1>");
-  page += "<p>Device: " + escapeHtml(identity.deviceId) + "<br>Fixed pairing code: <code>" + groupedCode() + "</code></p>";
-  page += F("<small>Keep your code private. Enter this fixed code when adding your incubator in Eggcelerate.</small><p id='status' role='status'>");
-  page += escapeHtml(portalMessage) + "</p><p id='sensor'>Waiting for a sensor reading...</p>";
+  page += F("<p id='status' role='status'>");
+  page += escapeHtml(portalMessage) + "</p>";
   page += "<form method='post' action='/wifi'><input type='hidden' name='token' value='" + csrfToken + "'>";
   page += "<label for='ssid'>Wi-Fi name (2.4 GHz)</label><input id='ssid' name='ssid' maxlength='32' required value='" + escapeHtml(savedWifi.ssid) + "'>";
-  page += F("<label for='password'>Wi-Fi password</label><input id='password' name='password' type='password' maxlength='64' autocomplete='new-password'><small>Leave blank only for an open network.</small><button type='submit'>Connect and save</button></form><p>Details stay on this incubator. If connection fails, your previous saved network is retained.</p><small>After connection, setup closes after two minutes without a page visit or submission. Serial command: setup.</small><script>async function refresh(){try{const r=await fetch('/status',{cache:'no-store'});const s=await r.json();document.getElementById('status').textContent=s.message+(s.connected?' Connected to Wi-Fi. Cloud: '+s.cloud+'.':'');document.getElementById('sensor').textContent=s.sensorValid?'Temperature: '+s.temperature.toFixed(1)+' °C | Humidity: '+s.humidity.toFixed(1)+'% RH':'Sensor reading unavailable; check wiring.';}catch(e){document.getElementById('status').textContent='Setup page disconnected. Reconnect to the setup Wi-Fi if needed.';}}setInterval(refresh,3000);refresh();</script></main></html>");
+  page += F("<label for='password'>Wi-Fi password</label><input id='password' name='password' type='password' maxlength='64' autocomplete='new-password'><small>Leave blank only for an open network.</small><button type='submit'>Connect and save</button></form><script>async function refresh(){try{const r=await fetch('/status',{cache:'no-store'});const s=await r.json();document.getElementById('status').textContent=s.message+(s.connected?' Connected to Wi-Fi. Cloud: '+s.cloud+'.':'');}catch(e){document.getElementById('status').textContent='Setup page disconnected. Reconnect to the setup Wi-Fi if needed.';}}setInterval(refresh,3000);refresh();</script></main></html>");
   portal.send(200, "text/html; charset=utf-8", page);
 }
 

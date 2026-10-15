@@ -209,7 +209,7 @@ def start_cycle(
     ):
         raise AppError(
             "conflict",
-            "Prepare this mode with fresh readings in range for five minutes before loading eggs and starting.",
+            "Prepare this mode with fresh readings in range for one minute before loading eggs and starting.",
         )
     old = store.cycles.get(store.current_cycles.get(incubator_id, ""))
     if old and old.status == "active":

@@ -638,6 +638,7 @@ climate_tests = Table(
     Column("incubator_id", Text, primary_key=True),
     Column("request", JSONB),
     Column("intent", JSONB),
+    Column("tray", JSONB),
     Column("report", JSONB),
     Column("reported_at", DateTime(timezone=True)),
     Column("boot_id", Text),

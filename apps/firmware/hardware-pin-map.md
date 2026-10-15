@@ -1,5 +1,13 @@
 # Eggcelerate hardware pin map
 
+> **Latest tray confirmation — October 15:** The installed motor is **220 V AC**,
+> and the user confirms **90 degrees total rocking travel**. Earlier DC motor
+> assumptions below are historical and superseded. Control remains relay IN2 /
+> GPIO25 (LOW on / HIGH off); main firmware holds it off. Cycle duration,
+> self-stop/continuous-power behavior and position/home feedback remain unknown.
+> Use the [current handoff](../../docs/guide/capstone-next-phases-2026-10-15.md).
+
+
 > **October 15 update:** Earlier mappings/implementation status below include historical proposals.
 > Use the [current capstone handoff](../../docs/guide/capstone-next-phases-2026-10-15.md)
 > for authoritative pins, implemented climate lifecycle and remaining tray/power phases.
@@ -47,7 +55,8 @@ not a GPIO assignment. The user-confirmed USB arrangement disconnects external
 October 14 current decision: use **one MakerLab 5 V four-channel relay board**
 for DC tray rotation, mist, heater and 12 V light. The purchased two-channel board
 is spare. This supersedes the October 12 two-board allocation; the original
-220AC tray motor label remains superseded by the DC motor decision. See [actuator integration](actuator-integration-guide.md).
+earlier DC motor decision was superseded on October 15 by user confirmation
+of the installed 220 V AC motor. See [actuator integration](actuator-integration-guide.md).
 
 | ESP32 GPIO | Current / proposed connection | Status |
 | --- | --- | --- |

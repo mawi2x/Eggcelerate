@@ -1,4 +1,5 @@
 import { ClimateControlStatus } from "./ClimateControlStatus";
+import { TrayControlStatus } from "./TrayControlStatus";
 import { Fan, Flame, Waves, WifiHigh, WifiSlash } from "@phosphor-icons/react";
 import {
   ArrowUpRight,
@@ -669,6 +670,7 @@ export function LiveMonitorTab({
           </p>
         )}
         <ClimateControlStatus unit={unit} />
+        <TrayControlStatus unit={unit} />
       </SectionCard>
 
       <EnvironmentalSummary

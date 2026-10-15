@@ -1,7 +1,7 @@
 # EGGCELERATE roadmap and timeline
 
 Last updated: **2026-10-15**. Current work: integrated automatic preparation →
-confirmed incubation climate control with local Docker recording. See the
+confirmed incubation climate control and timed tray scheduling with local Docker recording. See the
 [preparation guide](docs/guide/incubator-preparation-guide.md).
 **Resume/next phases:** [October 15 capstone handoff](docs/guide/capstone-next-phases-2026-10-15.md).
 The October 14 handoff remains historical.
@@ -11,17 +11,18 @@ historical sensor/deployment record and broader audit reminder.
 **Next review: frontend audit plus backend, firmware/hardware and deployment
 audit. Pending, not completed.** See the checkpoint checklist before resuming.
 
-**Current hardware checkpoint (October 14): manual relay and fan MOSFET controls
+**Current hardware checkpoint (October 15): manual relay and fan MOSFET controls
 reported working by the user.** See [mosfet-bench](apps/firmware/mosfet-bench/README.md)
 and [relay-bench](apps/firmware/relay-bench/README.md). The complete current pin
 allocation is recorded below. Main firmware now integrates preparation/incubation
 climate control and acknowledged local website commands. PWM, physical tray
 control and physical qualification remain pending.
 
-**Next implementation plan:** [VPS manual controls, local threshold control and
-final tray return before lockdown](apps/firmware/vps-actuator-control-plan.md).
-User agreed to level/home positioning for lockdown. Plan prepared; implementation
-and motor/position-feedback qualification remain pending.
+**Current phase sequence:** follow the [October 15 handoff](docs/guide/capstone-next-phases-2026-10-15.md).
+First accept the locally implemented climate owner flow, then identify and implement
+the tray interface, scheduled turning and verified home before lockdown, followed
+by power recovery and release review. The earlier
+[actuator plan](apps/firmware/vps-actuator-control-plan.md) is supporting history.
 
 **Current mode scope:** three built-in choices — **Chicken, Duck and Quail** —
 plus user-created custom modes.
@@ -53,7 +54,7 @@ allocation. Sensor/display/cloud services remain in the separate main firmware.
 | **19** | Lower exhaust fan MOSFET trigger | User confirms working in combined bench test | Swapped from the upper-fan slot per latest user instruction |
 | **21** | Shared I²C SDA — LCD/OLED/time-module bus | Allocated in main firmware; full physical acceptance remains unrecorded | Same SDA pin as schematic |
 | **23** | Shared I²C SCL — LCD/OLED/time-module bus | Allocated in main firmware; full physical acceptance remains unrecorded | Same SCL pin; do not substitute default GPIO22 |
-| **25** | Relay IN2 — DC tray motor enable | User confirms working in combined bench test | Replaces schematic GPIO12 / old IN1 |
+| **25** | Relay IN2 — 220 V AC tray motor enable | User confirms working in combined bench test | Replaces schematic GPIO12 / old IN1 |
 | **27** | Relay IN1 — heater | User confirms working in combined bench test | Same GPIO; original relay channel IN3 |
 | **26** | Unassigned | Former LED allocation removed; no relay output assigned | GPIO26 is vacated |
 
@@ -76,11 +77,13 @@ Permanent details: [hardware pin map](apps/firmware/hardware-pin-map.md),
 [relay reference](apps/firmware/hardware/relay-reference.md).
 
 **Current pilot:** real DHT22 readings reach the VPS dashboard; Charles Farm has
-EGG-001 paired with short code EGG01. Preparation is implemented with manual
-equipment control. LCD/OLED firmware is prepared and compiled; relay/MOSFET
-manual bench control is user-confirmed, while main-program actuator integration
-remains pending. Recent UI cleanup is deployed. Current edits are
-local/uncommitted and deployed as staging images, not a new published Git release.
+EGG-001 paired with short code EGG01. Automatic preparation/incubation climate
+control is implemented locally; LCD/OLED and main firmware were compiled at the
+recorded checkpoint. Manual relay/MOSFET bench control is user-confirmed. Updated
+main-firmware upload and integrated physical acceptance remain unconfirmed. Latest
+local API/worker/web rebuild includes one-minute readiness; VPS climate rollout
+remains pending. Recent UI cleanup was deployed as staging images, not a new
+published Git release.
 
 **Historical October 6 baseline:** the dashboard and backend foundation are implemented. Release
 readiness remains open. The October 6 preparation review found frontend regression and asset-budget
@@ -1768,3 +1771,246 @@ It preserves the normal preparation/confirmation flow and explicitly forbids
 reintroducing the rejected Start Test panel or treating simulator dispatch as
 real tray control. Current work remains uncommitted and physical acceptance is
 pending. No additional runtime or hardware behavior changed while writing this plan.
+
+### October 15 — preparation stability shortened to one minute
+
+Preparation now requires 60 seconds of fresh, in-range temperature and humidity
+readings, replacing five minutes. Updated readiness enforcement, owner-facing
+messages, notification copy and current guides. Existing sample-gap resets and
+controller acknowledgement requirements remain in effect. Source change only;
+no deployment or physical acceptance performed for this update.
+
+### October 15 — Phase 1 local rebuild and device checkpoint
+
+Rebuilt and recreated local API, hardware-telemetry and web. Web typecheck and
+Docker builds passed; API/web healthy, HTTPS health check passed, worker connected
+in hardware-climate-control mode. Runtime API confirms STABILITY_SECONDS=60;
+database remains at 0022. No migrations or data resets required. No pending
+climate commands were present before restart; no new actuator command issued.
+
+Physical acceptance remains open: latest device report at this check was about
+11 minutes old, lifecycle=0, sensor_valid=false, running=false, fault=0. No serial
+device was available. Upload the complete current main sketch with flash erasure
+disabled, then verify fresh lifecycle=1 and valid sensor reports before the owner
+preparation check. Phase 2 awaits the motor stop/direction/endpoint details. No VPS
+action or hardware upload was performed.
+
+### October 15 — Phase 2 desired tray rocking motion clarified
+
+User requests back-and-forth tray rocking, approximately -45 degrees to +45
+degrees from vertical (90 degrees total arc), describing one rotation as a
+back-and-forth operation. Recorded this intended motion in the current handoff.
+Actual linkage, motor stop/reversal behavior, measured endpoints, dwell pattern
+and home detection remain unconfirmed. Asked whether continuous IN2 power drives
+repeated crank rocking, one-way travel requiring reversal, or a self-stopping
+cycle. Tray GPIO25 remains off in the main firmware pending the hardware facts.
+
+### October 15 — purchased tray listing supplied; motor type unresolved
+
+User supplied a yellow 56-egg, roughly 42 x 42 cm automatic tray listing advertised
+as 220 V, with a round motor and linked egg rows. This conflicts with the earlier
+DC-tray-motor assumption; actual label voltage/type and wiring must be confirmed.
+Rocking through a mechanical linkage is plausible, not yet demonstrated. Do not
+choose motor reversal, on-time, completed-turn or home detection from the seller
+image. Phase 2 next evidence is the actual motor label/linkage and any switches
+or controller. No tray output or hardware configuration was changed.
+
+### October 15 — confirmed 220 V AC tray motor and 90-degree rocking arc
+
+User confirms the installed tray motor uses **220 V AC** and rocks through a
+**90-degree total arc**. This supersedes earlier DC motor assumptions and the
+listing-only voltage uncertainty. Relay IN2 / GPIO25 remains the control signal;
+the main firmware still holds the tray off. The requested nominal endpoints were
+-45/+45 degrees; measured endpoints, cycle duration, continuous-power/self-stop
+behavior, dwell pattern and level/home feedback remain unresolved. Updated the
+current handoff, pin-map note, actuator guide and control plan. Documentation
+only: no electrical wiring, firmware output or running service changed.
+
+### October 15 — separate local motor timing bench implemented
+
+User requested a motor-only local page with a seconds input to establish rocking
+cycle timing. Added [motor-bench](apps/firmware/motor-bench/README.md): 1–120 whole
+seconds (default 2), Start timed run, Stop motor, reported relay duration/remaining
+time and browser-saved observation notes. Only IN2/GPIO25 can turn on; heater,
+mist and both fan outputs initialize/stay off. Independent task enforces cutoff
+and 5-second browser heartbeat loss; no bench run resumes on boot. Duplicate IDs
+cannot restart/extend a run; one-second off interval and 32-run session bound.
+No motor angle, completed rocking or home position is inferred from the timer.
+
+Separate sketch uses AP Eggcelerate-Motor-Test and http://192.168.4.1; it pauses
+main sensor/display/cloud services without erasing main configuration. Laptop
+preview at http://127.0.0.1:8766/?preview=1 has controls disabled. No main dashboard
+Start Test feature was restored. No firmware upload, motor activation or VPS
+change was performed. Physical cutoff/contact/motion observations remain pending.
+
+Verification: host C++ timer checks passed (bounds, overlapping starts, cutoff,
+heartbeat loss, manual Stop, off interval, 120-second run and millis wraparound).
+Embedded-page generation, JavaScript syntax and localhost HTTP 200 passed.
+NodeMCU-32S compile passed: 934,976 bytes flash (71%), 47,592 bytes RAM (14%).
+Firefox mobile preview inspected at 390x844; desktop preview captured at 1280x900.
+
+### October 15 — user-reported physical tray timing observations
+
+The user reports the following motor-bench observations for the **220 V AC**
+tray motor on **relay IN2 / GPIO25**. Base means the user's level/base reference;
+angles below are relative to that base. These are observed results, not automatic
+position feedback or a calibrated positioning rule.
+
+| Run duration | Starting position | Reported motion and resting position |
+| --- | --- | --- |
+| **5 seconds** | Base | Tray rocks and stays at **45°** from base |
+| **10 seconds** | Base | Tray rocks back and forth and returns to **base** |
+| **15 seconds** | Base | Tray rocks back and forth and rests at **45°** from base |
+| **15 seconds** | 45° | Tray rocks back and forth and rests at **base** |
+| **20 seconds** | 45° | Tray rocks back and forth and rests at **45°** from base |
+| **10 seconds** | 45° | Tray rocks and stays at **−45°** from base |
+
+Keep both 15-second observations: their starting positions differ. The reported
+10-second runs also have different starting positions and results. Do not infer
+that ten seconds always completes a full rocking cycle or returns home. Exact
+motor/linkage phase, initial motion direction, repeatability, loaded-tray behavior
+and home/endpoint feedback remain unestablished. These observations provide
+physical timing evidence for Phase 2; reliable bounded positioning and automatic
+turning acceptance remain open. No firmware or timing settings changed in this
+documentation update.
+
+### October 15 — repeated opposite-side movement confirmed by user
+
+In response to the requested repeated **+45° → −45° / 10-second** check, the
+user confirms it consistently reaches the opposite side. Record repeatability
+for that starting position and duration only. Repetition count, loaded-tray
+conditions, long-term holding after switch-off, reverse transfer and level/home
+arrival were not separately reported. Phase 2 now has repeatable observed timing
+for this movement. This supports planning Phase 3 bounded timed movement;
+verified home positioning and integrated preparation acceptance remain open.
+No firmware, motor output or running service changed in this update.
+
+### October 15 — opposite-side and base-return timings clarified
+
+User confirms the following observed movements, with angles relative to level/base:
+
+| Starting position | Motor ON duration | Observed ending position |
+| --- | --- | --- |
+| **+45°** | **10 seconds** | **−45°** (previously reported consistently reaching) |
+| **+45°** | **5 seconds** | **Base / level (0°)** |
+
+These are candidate durations for Phase 3 bounded timed movement from the stated
+starting position. The five-second base return is user-observed arrival, not
+sensor-confirmed homing. A rocking mechanism can pass the same angle in different
+motion phases; do not assume either duration works from an unknown position or
+after interrupted movement/reboot. Reverse movement, repeated base-return checks,
+loaded behavior and any home feedback remain unrecorded. No firmware or actuator
+settings were changed.
+
+### October 15 — Phase 3 bounded tray movement implemented locally
+
+Added main-firmware `TrayMotion.h` and integrated it into the independent climate
+control task. Explicit Serial commissioning supports **+45° → −45° / 10 seconds**
+and **+45° → level / 5 seconds**, with an operator-confirmed +45° starting position
+valid for 30 seconds. Main controls require healthy confirmed-incubation climate
+phase; no movement while idle/preparing. Separate empty-tray motor bench now has
+the same fixed-duration presets and a starting-position checkbox; firmware chooses
+the preset duration. Normal website remains unchanged.
+
+Main-firmware movement uses one pending tray request, a one-second off interval,
+and positive increasing IDs stored/read back before energizing. Repeated IDs
+cannot replay across reboot. Motion/known position are never resumed on boot.
+Explicit tray Stop preserves climate services; all-equipment Stop cancels tray
+motion and queue. Faults, invalid/stale sensing or leaving incubation phase stop
+motion. Timer completion reports **check actual position**, not confirmed endpoint
+or home. Main commissioning status is Serial-only; schedule, MQTT tray commands,
+full lifecycle/lockdown permission and remote acknowledgement are Phase 4 work.
+
+Recorded checks: host tray-state assertions pass for unknown/expired starts,
+fixed 5/10-second durations, overlapping requests, Stop, off interval, replay,
+restored ID high-water mark, unconfirmed ending position and clock rollover.
+Existing bench timer checks and JavaScript syntax pass; fixed-preset form requires
+starting-position confirmation and locks its duration in Firefox. Local preview
+returns HTTP 200. NodeMCU-32S builds pass: main **1,128,921 bytes flash (86%),
+51,996 bytes RAM (15%)**; bench **936,716 bytes flash (71%), 47,592 bytes RAM (14%)**.
+
+**Phase 3 remains in progress:** source implementation is ready for supervised
+acceptance, but no new firmware upload, actuator command or live-server deployment
+was performed. Reverse movement, repeated level returns, loaded behavior and
+verified home/endpoint feedback remain open. Phase 1 owner-flow acceptance is
+also still unconfirmed. See the updated main and motor-bench READMEs for use.
+
+### October 15 — proceed with confirmed timings; Phase 4 tray integration
+
+User states the motor timing has already been tested sufficiently and requests
+implementation without more timing tests. Accepted the existing observations and
+implemented the scheduled/manual hardware path. No additional behavioral, browser
+or physical motor tests were run for this batch.
+
+- Added migration **0023** and durable tray schedule/request state on climate_tests.
+- Existing manual Turn and scheduled turns use the same real hardware worker path,
+  separate from simulator dispatch; boot/sequence/expiry/increasing-ID protection.
+- Main firmware accepts bounded requests and reports tray capability, running,
+  correlated acceptance and estimated position. Used/rejected IDs persist before
+  energizing; reboot leaves motion stopped and position unknown.
+- Ten seconds changes sides; five seconds returns toward level. An observed level
+  start uses five seconds to tilt toward +45°, based on the earlier observation.
+  Symmetric reverse-side timing is an implementation assumption, not new evidence.
+- Existing automatic-turn setting and Chicken/Quail 4h, Duck 6h defaults apply.
+  At most one missed due turn is scheduled, with the next interval after completion;
+  no catch-up burst. Cursors advance on matching device timed-run completion.
+- No idle/preparation or regular lockdown/hatching turns. Normal turns stop two
+  minutes before the UTC-date lockdown boundary; an authorized tray returns toward
+  level for five seconds, then stays paused pending owner level confirmation.
+  Explicit Stop/fault/unknown position prevents automatic recovery motion.
+- Added normal Live Monitor tray status, Stop/pause, return toward level and current
+  position controls. Saving an observed position resumes normal automatic turning
+  when enabled. New firmware/healthy confirmed incubation is required.
+
+Compilation/type checking and targeted Python lint passed. Main NodeMCU-32S build:
+**1,130,405 bytes flash (86%), 52,020 bytes RAM (15%)**. Behavioral/end-to-end suites
+were not run under the user's instruction. Firmware was not uploaded; no motor
+command or VPS rollout was performed by the agent.
+
+Current guide: [timed tray turning](docs/guide/tray-turning-guide.md). Phase 4
+implementation is local; runtime installation status is recorded in the next
+entry. Next substantive phase is the separate power/restart reliability issue.
+
+### October 15 — Phase 4 local installation complete
+
+Final API/worker/web images rebuilt and recreated in egg-hardware-local. Migration
+**0023** applied successfully to the existing database; API/web are healthy and
+MQTT worker connected. HTTPS proxy reloaded after container replacement. Local
+tray opt-in is enabled for API/worker; old firmware reports no tray capability,
+and no tray command was queued. Existing farm/chamber data was preserved.
+A full local pre-migration dump was saved privately; restore was not exercised
+(pg_dump noted TimescaleDB circular foreign-key restoration considerations).
+
+Latest firmware compilation is **1,130,405 bytes flash (86%), 52,020 bytes RAM
+(15%)**. Final web typecheck and targeted Python lint pass. No additional timing,
+behavioral, browser or physical motor tests were run. The agent did not flash
+firmware, start equipment, create incubation records or change the VPS.
+
+To activate: upload the complete current Eggcelerate main sketch with flash erasure
+disabled, then use normal incubation and save the current observed tray position
+in Live Monitor. This is operational initialization, not another timing test.
+Phase 5 intake began: asked about the existing LCD/OLED behavior before EN; source
+review notes existing 25-ms I²C timeout and 6-second control-task watchdog. The
+power/EN cause remains unknown; no speculative reset/power changes were made.
+
+### October 16 — AP setup UI simplified; phase work paused
+
+User requested pausing phase work and removing the marked blocks from the AP
+setup page. Removed visible device ID/fixed pairing code and its now-orphaned
+pairing hint, temperature/humidity summary and its DOM update, and the footer
+privacy/recovery/auto-close/Serial-command notes. Kept Wi-Fi name/password, password
+help, connection/cloud status and Connect and save. Identity, pairing, sensor
+readings, Wi-Fi recovery and AP timing behavior are unchanged. Main firmware source
+only; no upload, equipment command, service restart or VPS deployment performed.
+Resume only when requested; Phase 5 power/EN diagnosis remains open.
+
+### October 16 — setup AP password corrected to eggcelerate
+
+User clarified the expected setup network password is **eggcelerate**. Updated
+the main firmware constant and current setup/handoff notes, superseding the earlier
+egg12345 choice. Existing verified NVS password migration preserves device ID,
+pairing and router Wi-Fi. AP remains **Eggcelerate-001**, **http://10.10.10.10**.
+Wildcard DNS, DHCP captive-portal hint and HTTP connectivity-probe redirects are
+already implemented. Automatic prompt appearance depends on the client device;
+manual URL remains available. Source change only; no board upload performed.
+Phase work remains paused under the user's prior request.

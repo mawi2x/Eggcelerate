@@ -101,19 +101,22 @@ export function ClimateControlStatus({ unit }: { unit: Incubator }) {
   else if (report?.running)
     message =
       report.phase === 1
-        ? "Automatically regulating for preparation. Day 1 has not started."
+        ? ""
         : "Automatically maintaining incubation temperature and humidity.";
   else if (report)
     message =
       "Equipment is off. Sensor readings, displays and recording remain active.";
+  if (!message && authorized && !mutation.error) return null;
   return (
     <div
       className="mt-4 space-y-3 border-t pt-4"
       style={{ borderColor: "var(--border-default)" }}
     >
-      <p role="status" aria-live="polite">
-        {message}
-      </p>
+      {message && (
+        <p role="status" aria-live="polite">
+          {message}
+        </p>
+      )}
       {fresh && report?.lifecycle === 1 && !report.running && (
         <div className="flex flex-wrap gap-2">
           {!!report.fault && (

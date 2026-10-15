@@ -1,4 +1,4 @@
-"""Five minutes of real stable samples after acknowledged automatic preparation."""
+"""One minute of real stable samples after acknowledged automatic preparation."""
 
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid5
@@ -18,7 +18,7 @@ from .schema import (
     telemetry_samples,
 )
 
-STABILITY_SECONDS = 300
+STABILITY_SECONDS = 60
 MAX_SAMPLE_GAP_SECONDS = 45
 
 
@@ -220,7 +220,7 @@ async def notify_ready(session, farm_id, now):
                 severity="info",
                 code="preparation-ready",
                 title="Ready to load eggs",
-                message=f"{row['name']} has maintained the {row['mode_name']} temperature and humidity targets for five minutes. Load 1–38 eggs, confirm the count and start incubation. Readiness is checked again before starting.",
+                message=f"{row['name']} has maintained the {row['mode_name']} temperature and humidity targets for one minute. Load 1–38 eggs, confirm the count and start incubation. Readiness is checked again before starting.",
                 occurred_at=now,
                 dismissed=False,
             )

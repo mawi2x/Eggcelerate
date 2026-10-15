@@ -12,7 +12,7 @@
    circulates air, the heater regulates temperature, the mist maker raises low
    humidity, and lower exhaust removes excess heat/humidity. Tray relay stays off.
 4. After acknowledgement, both actual readings must remain within the selected
-   ranges for five minutes, without sample gaps over 45 seconds. Stale sensor or
+   ranges for one minute, without sample gaps over 45 seconds. Stale sensor or
    controller reports, faults, or a changed mode prevent readiness.
 5. The page shows **Ready to load eggs** and a durable **Ready to load eggs**
    notification is added to Alerts once for this preparation. Notification history
@@ -26,7 +26,7 @@
    sensors, LCD/OLED, Wi-Fi and database recording continue.
 
 An idle/available chamber is not automatically ready for eggs. Changing the
-preparation mode restarts the five-minute check. Current firmware accepts the
+preparation mode restarts the one-minute check. Current firmware accepts the
 unchanged built-in normal-incubation target ranges; unsupported/edited presets
 are rejected before preparation is committed.
 
@@ -61,6 +61,6 @@ levels, thermal protection, actual climate regulation, reliable reboot and the
 full owner flow require supervised acceptance on the real incubator before eggs
 are entrusted to it. Commanded output states do not prove physical operation.
 
-The five-minute stability duration is the current product setting, not a validated
+The one-minute stability duration is the current product setting, not a validated
 stabilization duration for every incubator. Readings and target ranges should be
 checked against an independent reference during commissioning.

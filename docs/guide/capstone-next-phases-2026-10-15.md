@@ -2,6 +2,23 @@
 
 ## Resume here
 
+**October 16 pause:** User explicitly paused phase work. AP setup UI cleanup was
+requested as the final change: remove displayed identity/code, live sensor summary
+and footer notes, retaining the Wi-Fi form and connection status. Main firmware
+source updated; flash/upload remains a separate step. No more phase work until
+requested. Latest status is in ROADMAP.md's October 16 entry.
+
+**Latest implementation checkpoint:** User accepts the existing motor timing
+observations and requests no further timing tests. Phase 4 scheduled/manual tray
+integration is installed in local Docker with migration 0023 applied. API/web
+are healthy and the worker is connected; no tray command was queued. Follow the
+[timed tray turning guide](tray-turning-guide.md) for the current owner flow,
+transport, pause/home behavior and position-estimation limits. Earlier source
+status/build entries below are historical. Updated main firmware upload remains
+unconfirmed; no motor was started by the agent. Next substantive phase is power
+and restart reliability, not another motor timing exercise.
+
+
 Read this file, the top and latest October 15 entries in ROADMAP.md, and
 `docs/guide/incubator-preparation-guide.md` before editing. The user is pausing
 because session usage is nearly exhausted. This handoff is a plan, not approval
@@ -11,10 +28,24 @@ The user rejected the separate **Start Test** panel. It has been removed. Do not
 reintroduce it or a separate testing workflow. Use the existing owner flow:
 
 **Add/pair chamber → Prepare → select mode → Begin Preparation → automatic
-regulation → five minutes stable → Ready to load eggs notification → load 1–38
+regulation → one minute stable → Ready to load eggs notification → load 1–38
 eggs → confirm incubation → Day 1.** Regulation continues through confirmation.
 Cancel preparation, Stop Cycle and completion request all actuators off. Sensors,
 LCD/OLED, Wi-Fi and recording remain active. Explicit Stop stays stopped.
+
+## Phase 1 resume checkpoint — local rebuild after one-minute change
+
+- Rebuilt/recreated local API, worker and web; API/web healthy, HTTPS health check
+  passed, worker connected in hardware-climate-control mode. Web typecheck passed.
+- Running API confirms a 60-second stability window; schema remains 0022.
+- Latest device report at this check was about 11 minutes old: lifecycle 0,
+  sensor_valid false, running false, fault 0. This is a stale recorded state,
+  not proof of current physical outputs. No serial device was available.
+- Updated main sketch upload and fresh lifecycle 1 / valid readings are required
+  before supervised owner-flow acceptance. No hardware command/upload or VPS
+  deployment was performed. Phase 1 physical acceptance remains open.
+- Phase 2 motor stop behavior was asked again; await the user's answer before
+  choosing the tray implementation.
 
 ## Current implemented state and evidence
 
@@ -26,7 +57,7 @@ LCD/OLED, Wi-Fi and recording remain active. Explicit Stop stays stopped.
   transaction; worker dispatches expiring, ordered, boot/sequence-bound commands
   over the device's authenticated TLS MQTT receipt channel. Device reports
   running phase, fault, outputs and command acknowledgement.
-- Five-minute readiness requires fresh real samples and acknowledged, healthy,
+- One-minute readiness requires fresh real samples and acknowledged, healthy,
   matching preparation. Durable Ready to load eggs notification is generated once
   per preparation. Server checks readiness again on owner confirmation.
 - Firmware phase handoff preserves regulation; old 60-minute timer removed.
@@ -55,7 +86,7 @@ LCD/OLED, Wi-Fi and recording remain active. Explicit Stop stays stopped.
 | Equipment | Pin/channel | Control |
 |---|---|---|
 | Heater | GPIO27, relay IN1 | LOW on, HIGH off |
-| Tray motor enable | GPIO25, relay IN2 | LOW on, HIGH off; currently held off |
+| 220 V AC tray motor enable | GPIO25, relay IN2 | LOW on, HIGH off; bounded manual commissioning only; no schedule |
 | Mist maker | GPIO14, relay IN3 | LOW on, HIGH off |
 | Vacant channel | IN4; GPIO26 unused | Do not enable LED or drive GPIO26 |
 | Upper heater-facing circulation fan | GPIO18 MOSFET | HIGH on, LOW off |
@@ -104,9 +135,53 @@ acceptance. Keep live server unchanged during local work.
 
 ## Phase 2 — identify the tray mechanism (next missing information)
 
-**Outstanding question already asked, not answered:**
-When IN2 turns on, does the motor complete a movement and stop automatically, or
-keep moving until the relay is switched off?
+**New user-authorized bench:** The user requested a separate local motor-only
+seconds-input test to measure the physical cycle. Implemented in
+[`apps/firmware/motor-bench`](../../apps/firmware/motor-bench/README.md).
+This supersedes the earlier no-separate-testing-workflow restriction only for
+this temporary motor bench; the normal product owner flow still has no Start Test
+panel. Upload and actual motion observations remain pending. The laptop preview
+is http://127.0.0.1:8766/?preview=1; actual control is on the ESP32 AP after upload.
+
+
+**User-confirmed hardware and motion — October 15:**
+The installed tray motor uses **220 V AC**, superseding the earlier DC-motor
+assumption. The user confirms the tray rocks through a **90-degree total arc**.
+The earlier requested target was approximately 45 degrees left and 45 degrees
+right; exact endpoint angles and level/home detection remain unmeasured.
+The user describes one rotation as a back-and-forth rocking operation. Exact
+scheduled-operation start/end positions, dwell behavior and cycle duration still
+need establishing against the actual mechanism. Do not assume a motor revolution
+or a timed relay pulse proves a completed tray turn. Level/home before lockdown
+remains the previously agreed requirement.
+
+The supplied seller image depicts a yellow 56-egg tray, approximately 42 x 42 cm,
+with a round motor and linked egg-holding rows. Actual motor model/current,
+linkage, internal stopping/controller behavior and fitted position feedback are
+not established. IN2/GPIO25 is the low-voltage relay-control signal; 220 V AC is
+the motor load supply, not an ESP32 or MOSFET supply. Do not apply brushed-DC
+polarity-reversal assumptions. Main-firmware bounded manual movement is now implemented in Phase 3 below;
+physical acceptance and stopping/position qualification remain pending.
+
+**Latest timing evidence:** The user supplied six timed observations recorded
+in ROADMAP.md and subsequently confirmed consistent arrival for the repeated
++45° to −45° movement using a 10-second run. This establishes observed
+repeatability for that transfer, not generic home detection or all starting
+positions. Reverse transfer, loaded operation and long-term holding remain
+unrecorded. Use this evidence when planning Phase 3 bounded timed movement;
+do not mark verified home or the complete turning schedule accepted.
+
+**Latest base-return clarification:** From +45°, the user reports **10 seconds
+to −45°** and **5 seconds to base/level (0°)**. These are candidate bounded run
+durations only from the stated starting position. Five-second return is observed
+arrival, not sensor-confirmed homing; repeatability of base return, reverse
+movement and recovery from unknown motor/linkage phase remain to establish.
+
+**Outstanding hardware question:**
+With IN2 continuously on, does a crank rock the tray repeatedly, does the tray
+move in one direction and require motor reversal, or does an internal controller
+complete one rocking cycle and stop itself? The desired arc alone does not
+answer how the current hardware stops or confirms position.
 
 Also establish the motor's voltage/current, drive/direction arrangement, whether
 it already has internal travel limits/controller, fitted external limit/home
@@ -115,9 +190,22 @@ what available photos/part numbers/wiring cannot establish.
 
 Do not infer two-direction control from a single enable relay. Do not assign new
 GPIOs or energize a motor until its actual interface and endpoints are known.
-Current IN2 GPIO25 stays off pending that information.
+IN2 GPIO25 remains off except for explicit bounded commissioning commands
+implemented in Phase 3; no automatic tray movement is enabled.
 
 ## Phase 3 — implement bounded tray movement
+
+**Implementation checkpoint:** `Eggcelerate/TrayMotion.h` and `ClimateRuntime.h`
+now implement manually requested 10-second opposite/5-second level runs from a
+fresh operator-confirmed +45° start. Status remains unmeasured after timer expiry.
+Main task stops on explicit Stop, invalid/stale sensing, climate fault or leaving
+incubation phase; persists unique increasing run IDs before energizing; never
+resumes tray motion or restores a known position on reboot. Serial commissioning
+only; no schedule or remote tray start. See the main firmware README for commands.
+The separate motor bench has matching fixed presets with starting-position
+confirmation. Physical acceptance, reverse movement, hardware feedback and verified
+home remain open. Do not mark Phase 3 complete from build success.
+
 
 Based on Phase 2, integrate the actual actuator interface into the independent
 firmware task, retaining its climate, sensing, display and network services.
@@ -201,7 +289,7 @@ actual laptop/UPS arrangement; no EN press needed for normal recovery.
 - Dashboard: **https://127.0.0.1:18443**; isolated Compose project egg-hardware-local.
 - Wrapper: `./hardware-local-compose.sh`; persistent existing PostgreSQL preserved.
 - Local MQTT: **192.168.1.115:18883**, TLS. Laptop IP may change: check first.
-- Setup AP: **Eggcelerate-001**, password **egg12345**, page **http://10.10.10.10**.
+- Setup AP: **Eggcelerate-001**, password **eggcelerate**, page **http://10.10.10.10**.
   Send `setup`; captive portal prompt is OS dependent. Setup AP address is not
   the Docker dashboard or MQTT broker address.
 - Device **EGG-001**, pairing code **EGG01**. Fixed stale frontend validation;
@@ -234,3 +322,13 @@ actual laptop/UPS arrangement; no EN press needed for normal recovery.
 API paths above are relative to `apps/api/src/eggcelerate_api/`; web paths are
 relative to `apps/web/src/app/` unless given in full. The internal legacy table and
 MQTT property name `climate_test` remains for compatibility; it is not a test UI.
+
+## Phase 5 intake — source review while awaiting symptom details
+
+The separate EN-button outage issue remains undiagnosed. Asked whether LCD/OLED
+go blank, freeze or continue updating before EN is pressed; awaiting the user's
+existing observation, not requesting another motor timing test. Read-only source
+review confirms LCD I²C timeout is already 25 ms and the independent control task
+has a 6-second watchdog. Display initialization currently precedes control-task
+startup. These are diagnostic facts, not proof of the failure cause. No power,
+reset circuit or display-startup changes were made in this batch.
