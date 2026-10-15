@@ -51,16 +51,6 @@ export function OnboardingStep3({
     setErrors({});
     setIsSubmitting(true);
     try {
-      if (
-        !/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(
-          r.data.deviceId.replace(/-/g, ""),
-        )
-      ) {
-        setConnectError(
-          `Enter the fixed pairing code shown on your OLED or setup page, for example EGG01.`,
-        );
-        return;
-      }
       if (!(await onEnter(r.data))) {
         setConnectError(
           "Could not connect this chamber. Check that its code is not already assigned, then try again.",

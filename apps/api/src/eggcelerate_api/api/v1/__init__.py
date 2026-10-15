@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from . import (
     alerts,
     auth,
+    climate_control,
     history,
     incubators,
     modes,
@@ -24,6 +25,7 @@ farm_routes = APIRouter(
     prefix="/api/v1",
     dependencies=[Depends(require_api_session), Depends(require_api_csrf)],
 )
+farm_routes.include_router(climate_control.router)
 farm_routes.include_router(incubators.router)
 farm_routes.include_router(readings_scale.router)
 farm_routes.include_router(modes.router)

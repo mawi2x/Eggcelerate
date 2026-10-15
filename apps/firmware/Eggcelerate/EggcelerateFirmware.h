@@ -1,16 +1,19 @@
 #pragma once
-// EGGCELERATE main sensor, Wi-Fi setup, and cloud telemetry firmware. DHT22 DATA -> GPIO4.
+// EGGCELERATE preparation/incubation climate, sensor/display, Wi-Fi and cloud firmware. DHT22 DATA -> GPIO4.
 // Install Adafruit DHT sensor library, Adafruit Unified Sensor, PubSubClient, and hd44780 by Bill Perry.
 // Copy CloudConfig.example.h to CloudConfig.h to configure verified MQTT TLS. Serial Monitor: 115200 baud, Newline.
 #include <Arduino.h>
-#include <DHT.h>
+#include "ClimateRuntime.h"
 #include <Preferences.h>
 #include <WebServer.h>
+#include <DNSServer.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <time.h>
-#if __has_include("CloudConfig.h")
+#if __has_include("LocalCloudConfig.h")
+#include "LocalCloudConfig.h"
+#elif __has_include("CloudConfig.h")
 #include "CloudConfig.h"
 #else
 #include "CloudConfig.example.h"
@@ -27,16 +30,16 @@ namespace {
 constexpr char kDeviceId[] = "EGG-001";
 // Fixed short pilot code. Assign a unique code and enroll it for each new board.
 constexpr char kPairingCode[] = "EGG01";
+constexpr char kSetupApPassword[] = "egg12345";
 static_assert(sizeof(kDeviceId) <= 17, "Device ID exceeds the saved record capacity");
 constexpr uint32_t kIdentityMagic = 0x45474731;
 constexpr uint32_t kWifiMagic = 0x57494631;
-constexpr uint32_t kSensorMs = 2500;
 constexpr uint32_t kConnectMs = 25000;
 constexpr uint32_t kRetryMs = 10000;
 constexpr uint32_t kRecoveryMs = 30000;
 constexpr uint32_t kPortalIdleMs = 120000;
 constexpr char kAlphabet[] = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const IPAddress kPortalIp(192, 168, 4, 1);
+const IPAddress kPortalIp(10, 10, 10, 10);
 
 // Each configuration is one NVS blob: interrupted saves cannot mix fields.
 struct Identity {
@@ -53,7 +56,7 @@ struct WifiSettings {
 Identity identity = {};
 WifiSettings savedWifi = {};
 WifiSettings candidateWifi = {};
-DHT dht(4, DHT22);
+DNSServer setupDns;
 WebServer portal(kPortalIp, 80); // Bind to setup AP, not the home-network interface.
 bool identityReady = false;
 bool identityDamaged = false;
@@ -112,6 +115,40 @@ bool cloudUtc(time_t epoch, char *output, size_t capacity) {
 
 void receiveCloudReceipt(char *topic, byte *body, unsigned int length) {
   if (strcmp(topic, receiptTopic) != 0 || !cloudLastSent) return;
+  if (length > 8 && length < 256 && memcmp(body, "climate|", 8) == 0) {
+    char packet[256]; memcpy(packet, body, length); packet[length] = 0;
+    char *save = nullptr; char *fields[8] = {};
+    uint8_t count = 0;
+    for (char *part = strtok_r(packet, "|", &save); part && count < 8; part = strtok_r(nullptr, "|", &save)) fields[count++] = part;
+    if (count != 8 || strcmp(fields[1], cloudBootId)) return;
+    // Strict numeric fields; no trailing junk, signs, or unbounded expiry.
+    for (uint8_t n : {2, 5, 6, 7}) {
+      if (!fields[n][0] || strlen(fields[n]) > 13) return;
+      for (char *c = fields[n]; *c; ++c) if (*c < '0' || *c > '9') return;
+    }
+    if (strtoul(fields[2], nullptr, 10) != cloudLastSent || strlen(fields[3]) != 36) return;
+    for (uint8_t n = 0; n < 36; ++n) {
+      const char c = fields[3][n];
+      if (n == 8 || n == 13 || n == 18 || n == 23) { if (c != '-') return; }
+      else if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) return;
+    }
+    egg_climate::Command cmd;
+    if (!strcmp(fields[4], "prepare")) cmd.action = egg_climate::Action::Prepare;
+    else if (!strcmp(fields[4], "incubate")) cmd.action = egg_climate::Action::Incubate;
+    else if (!strcmp(fields[4], "stop")) cmd.action = egg_climate::Action::Stop;
+    else if (!strcmp(fields[4], "reset")) cmd.action = egg_climate::Action::Reset;
+    else return;
+    const unsigned long mode = strtoul(fields[5], nullptr, 10);
+    const uint64_t expires = strtoull(fields[6], nullptr, 10);
+    cmd.order = strtoull(fields[7], nullptr, 10);
+    const uint64_t utc = static_cast<uint64_t>(time(nullptr));
+    if (mode > 2 || expires <= utc || expires > utc + 95 || !cmd.order || cmd.order > utc * 1000ULL + 5000ULL) return;
+    cmd.mode = mode; cmd.expires = static_cast<uint32_t>(expires);
+    strlcpy(cmd.id, fields[3], sizeof(cmd.id));
+    if (cmd.order <= egg_climate::snapshot().commandOrder) return;
+    egg_climate::request(cmd);
+    return;
+  }
   char configPrefix[112];
   snprintf(configPrefix, sizeof(configPrefix), "interval:%s:%lu:", cloudBootId, static_cast<unsigned long>(cloudLastSent));
   const size_t prefixLength = strlen(configPrefix);
@@ -147,7 +184,7 @@ void initializeCloud() {
   cloudTls.setConnectionTimeout(3000);
   cloudTls.setHandshakeTimeout(3);
   cloudMqtt.setServer(EggCloudConfig::MQTT_HOST, EggCloudConfig::MQTT_PORT);
-  cloudMqtt.setBufferSize(768);
+  cloudMqtt.setBufferSize(1536);
   cloudMqtt.setKeepAlive(30);
   cloudMqtt.setSocketTimeout(3);
   cloudMqtt.setCallback(receiveCloudReceipt);
@@ -185,18 +222,27 @@ void serviceCloud(uint32_t now) {
   }
   cloudMqtt.loop();
   now = millis();
-  if (!sensorValid || now - sensorAt > 5000 || (cloudHasPublished && now - cloudPublishedAt < cloudReportingMs)) return;
+  if (cloudHasPublished && now - cloudPublishedAt < cloudReportingMs) return;
   // Send only a fresh sample. No chamber/farm IDs, codes, or passwords in telemetry.
   if (cloudSequence >= 2147483647UL) { Serial.println("Cloud sequence exhausted; restart required."); return; }
   char observedAt[25];
   if (!cloudUtc(time(nullptr), observedAt, sizeof(observedAt))) return;
-  char payload[512];
+  char payload[1024];
+  const auto climate = egg_climate::snapshot();
+  char sampleFields[128];
+  const bool freshSensor = climate.valid && now - climate.sampledAt <= 5000;
+  if (freshSensor) snprintf(sampleFields, sizeof(sampleFields), "\"temperature_c\":%.2f,\"humidity_pct\":%.2f,\"battery_pct\":100,\"power_source\":\"grid\",", climate.temperature, climate.humidity);
+  else strlcpy(sampleFields, "\"climate_only\":true,", sizeof(sampleFields));
   const uint32_t sequence = ++cloudSequence;
   const int size = snprintf(payload, sizeof(payload),
     "{\"schema_v\":1,\"device_id\":\"%s\",\"boot_id\":\"%s\",\"booted_at\":\"%s\","
-    "\"seq\":%lu,\"observed_at\":\"%s\",\"temperature_c\":%.2f,\"humidity_pct\":%.2f,"
-    "\"battery_pct\":100,\"power_source\":\"grid\"}",
-    kDeviceId, cloudBootId, cloudBootedAt, static_cast<unsigned long>(sequence), observedAt, temperatureC, humidityPct);
+    "\"seq\":%lu,\"observed_at\":\"%s\",%s"
+    "\"climate_test\":{\"halted\":%s,\"resuming\":%s,\"lifecycle\":1,\"phase\":%u,\"stop_all\":true,\"sensor_valid\":%s,\"running\":%s,\"mode\":%u,\"heater\":%s,\"mist\":%s,\"upper\":%s,\"exhaust\":%s,"
+    "\"fault\":%u,\"command_id\":\"%s\",\"accepted\":%s}}",
+    kDeviceId, cloudBootId, cloudBootedAt, static_cast<unsigned long>(sequence), observedAt, sampleFields, climate.halted ? "true" : "false", climate.resuming ? "true" : "false", climate.phase, freshSensor ? "true" : "false",
+    climate.running ? "true" : "false", climate.mode, climate.out.heater ? "true" : "false", climate.out.mist ? "true" : "false",
+    climate.out.upper ? "true" : "false", climate.out.exhaust ? "true" : "false", static_cast<unsigned int>(climate.fault),
+    climate.commandId, climate.accepted ? "true" : "false");
   cloudPublishedAt = now;
   cloudHasPublished = true;
   if (size > 0 && static_cast<size_t>(size) < sizeof(payload) && cloudMqtt.publish(cloudTopic, payload, false)) {
@@ -263,11 +309,19 @@ bool loadBlob(const char *space, T &value, bool &exists) {
   return loaded;
 }
 
+bool validApPassword(const char *password) {
+  const size_t length = strlen(password);
+  if (length < 8 || length > 16) return false; // NVS layout retains 17-byte field.
+  for (size_t n = 0; n < length; ++n)
+    if (password[n] < 32 || password[n] > 126) return false;
+  return true;
+}
+
 bool validIdentityRecord(const Identity &value) {
   return value.magic == kIdentityMagic && value.deviceId[16] == '\0' &&
     value.code[10] == '\0' && value.apPassword[16] == '\0' &&
     validPairingCode(value.code) &&
-    validSecret(value.apPassword, 16) && String(value.apPassword).indexOf(value.code) < 0;
+    validApPassword(value.apPassword) && String(value.apPassword).indexOf(value.code) < 0;
 }
 
 String groupedCode() {
@@ -280,7 +334,7 @@ bool validIdentity(const Identity &value) {
 }
 
 String setupSsid() {
-  return "Eggcelerate-Setup-" + String(kDeviceId);
+  return "Eggcelerate-" + String(kDeviceId).substring(4);
 }
 
 void printIdentity() {
@@ -301,10 +355,20 @@ String escapeHtml(String value) {
   return value;
 }
 
+void redirectToSetup() {
+  if (!apActive) { portal.send(404, "text/plain", "Setup is closed."); return; }
+  portal.sendHeader("Cache-Control", "no-store");
+  portal.sendHeader("Location", "http://10.10.10.10/");
+  portal.send(302, "text/plain", "Open Eggcelerate Wi-Fi setup: http://10.10.10.10/");
+}
+
 bool localRequest() {
   const String host = portal.hostHeader();
-  if (apActive && (host == "192.168.4.1" || host == "192.168.4.1:80")) return true;
-  portal.send(403, "text/plain", "Use http://192.168.4.1 while connected to the setup Wi-Fi.");
+  if (apActive && (host == "10.10.10.10" || host == "10.10.10.10:80")) return true;
+  // OS connectivity probes arrive under their original HTTP hostname. Redirect
+  // reads to the canonical AP address; never accept Wi-Fi credential writes there.
+  if (apActive && portal.method() == HTTP_GET) { redirectToSetup(); return false; }
+  portal.send(403, "text/plain", "Use http://10.10.10.10 while connected to the setup Wi-Fi.");
   return false;
 }
 
@@ -370,7 +434,7 @@ void receiveWifi() {
   candidateQueued = true;
   userActivityAt = millis();
   portalMessage = "Trying the new network. Please wait up to 25 seconds.";
-  portal.sendHeader("Location", "http://192.168.4.1/");
+  portal.sendHeader("Location", "http://10.10.10.10/");
   portal.send(303, "text/plain", "Connecting. Your phone may need to reconnect to the setup Wi-Fi.");
 }
 
@@ -387,13 +451,18 @@ void openPortal() {
       WiFi.softAPdisconnect(true); WiFi.mode(WIFI_STA);
       Serial.println("Could not start setup AP. Send setup to retry."); return;
     }
+    if (!WiFi.AP.enableDhcpCaptivePortal())
+      Serial.println("Captive portal DHCP hint unavailable; manual setup URL still works.");
+    setupDns.setTTL(30);
+    if (!setupDns.start(53, "*", kPortalIp))
+      Serial.println("Captive portal DNS unavailable; open http://10.10.10.10 manually.");
     csrfToken = randomSecret(32);
-    portal.begin();
     apActive = true;
+    portal.begin();
   }
   userActivityAt = millis();
   printIdentity();
-  Serial.println("Connect to setup Wi-Fi, keep connected without internet, then open http://192.168.4.1");
+  Serial.println("Connect to setup Wi-Fi, keep connected without internet, then open http://10.10.10.10");
 }
 
 void connectSaved() {
@@ -409,8 +478,7 @@ void commission(const String &code = "", const String &apPassword = "") {
   next.magic = kIdentityMagic;
   String(kDeviceId).toCharArray(next.deviceId, sizeof(next.deviceId));
   const String pairing = code.length() ? code : String(kPairingCode);
-  String access = apPassword.length() ? apPassword : randomSecret(16);
-  while (!apPassword.length() && access.indexOf(pairing) >= 0) access = randomSecret(16);
+  const String access = apPassword.length() ? apPassword : String(kSetupApPassword);
   pairing.toCharArray(next.code, sizeof(next.code));
   access.toCharArray(next.apPassword, sizeof(next.apPassword));
   if (!validIdentity(next) || !saveBlob("egg-ident", next)) {
@@ -424,8 +492,10 @@ void commission(const String &code = "", const String &apPassword = "") {
 
 void serialCommand(String command) {
   command.trim();
+  if (egg_climate::serialCommand(command)) return;
   if (command == "status") {
     printIdentity();
+    egg_climate::printState();
     Serial.printf("Cloud: %s\n", cloudStatus());
     Serial.printf("Sensor OK: %lu | Failed: %lu | Wi-Fi: %s | Setup AP: %s\n",
       static_cast<unsigned long>(successes), static_cast<unsigned long>(failures),
@@ -434,11 +504,11 @@ void serialCommand(String command) {
     commission();
   } else if (command.startsWith("restore ")) {
     const int split = command.indexOf(' ', 8);
-    if (split < 0) { Serial.println("Use restore CODE AP16CHARPASSWORD from your commissioning record."); return; }
+    if (split < 0) { Serial.println("Use restore CODE APPASSWORD from your commissioning record."); return; }
     const String code = command.substring(8, split);
     const String password = command.substring(split + 1);
-    if (!validPairingCode(code.c_str()) || password.length() != 16) {
-      Serial.println("Restore needs the saved short/legacy code and 16-character AP password."); return;
+    if (!validPairingCode(code.c_str()) || !validApPassword(password.c_str())) {
+      Serial.println("Restore needs the saved short/legacy code and an 8-16 character AP password."); return;
     }
     commission(code, password);
   } else if (command == "setup") {
@@ -475,16 +545,18 @@ void serviceSerial() {
   }
 }
 
-void serviceSensor(uint32_t now) {
-  if (now - sensorAt < kSensorMs) return;
-  sensorAt = now;
-  humidityPct = dht.readHumidity();
-  temperatureC = dht.readTemperature();
-  sensorValid = isfinite(humidityPct) && isfinite(temperatureC) && humidityPct >= 0 && humidityPct <= 100;
-  if (!sensorValid) { ++failures; Serial.println("DHT22 read failed. Check GPIO4, supply, and GND."); return; }
-  ++successes;
-  Serial.printf("Temperature: %.1f C | Humidity: %.1f %% RH | OK: %lu | Failed: %lu\n",
-    temperatureC, humidityPct, static_cast<unsigned long>(successes), static_cast<unsigned long>(failures));
+void serviceSensor(uint32_t) {
+  static uint32_t lastSample = 0;
+  const egg_climate::State state = egg_climate::snapshot();
+  sensorValid = state.valid;
+  sensorAt = state.sampledAt;
+  temperatureC = state.temperature;
+  humidityPct = state.humidity;
+  successes = state.successes;
+  failures = state.failures;
+  if (state.sampleNumber == lastSample) return;
+  lastSample = state.sampleNumber;
+  egg_climate::printState();
 }
 
 void serviceWifi(uint32_t now) {
@@ -539,7 +611,7 @@ void serviceWifi(uint32_t now) {
     previouslyConnected = true;
     disconnectedAt = now;
     if (apActive && now - userActivityAt >= kPortalIdleMs) {
-      portal.stop(); WiFi.softAPdisconnect(true); WiFi.mode(WIFI_STA);
+      setupDns.stop(); portal.stop(); WiFi.softAPdisconnect(true); WiFi.mode(WIFI_STA);
       apActive = false; csrfToken = "";
       Serial.println("Setup AP closed. Send setup to open it again.");
     }
@@ -552,11 +624,13 @@ void serviceWifi(uint32_t now) {
 } // namespace
 
 void setup() {
+  egg_climate::beginOutputs();
   Serial.begin(115200);
   delay(300);
-  dht.begin();
   eggcelerate_display::begin();
   eggcelerate_oled::begin();
+  if (!egg_climate::begin()) Serial.println("Climate control task could not start; outputs remain off.");
+  Serial.println("CLIMATE: website Prepare -> stable targets -> load eggs -> confirm incubation. Authorized operation resumes after fresh sensor checks; manual Stop remains stopped.");
   initializeCloud();
   sensorAt = millis();
   WiFi.persistent(false); // Only our validated NVS blob commits Wi-Fi settings.
@@ -595,6 +669,17 @@ void setup() {
       Serial.println("Pilot pairing code updated to EGG01. Wi-Fi and AP password retained.");
     } else Serial.println("Pairing code migration failed; previous code retained.");
   }
+  // User-approved setup password change; preserve identity, pairing and router Wi-Fi.
+  if (identityLoaded && identityExists && validIdentity(identity) &&
+      strcmp(identity.apPassword, kSetupApPassword) != 0) {
+    Identity migrated = identity;
+    memset(migrated.apPassword, 0, sizeof(migrated.apPassword));
+    strlcpy(migrated.apPassword, kSetupApPassword, sizeof(migrated.apPassword));
+    if (saveBlob("egg-ident", migrated)) {
+      identity = migrated;
+      Serial.println("Setup Wi-Fi password updated and saved.");
+    } else Serial.println("Setup password update failed; previous saved password retained.");
+  }
   identityReady = identityLoaded && identityExists && validIdentity(identity);
   identityDamaged = identityExists && !identityReady;
   const bool wifiValid = wifiLoaded && (!wifiExists ||
@@ -604,10 +689,15 @@ void setup() {
   portal.on("/", HTTP_GET, servePage);
   portal.on("/status", HTTP_GET, serveStatus);
   portal.on("/wifi", HTTP_POST, receiveWifi);
-  portal.onNotFound([]() { if (localRequest()) portal.send(404, "text/plain", "Open http://192.168.4.1/"); });
+  // Android /generate_204, Apple /hotspot-detect.html, Windows /connecttest.txt
+  // and other unknown HTTP probe paths must signal a portal rather than success.
+  portal.onNotFound([]() {
+    if (apActive && portal.method() == HTTP_GET) redirectToSetup();
+    else if (localRequest()) portal.send(404, "text/plain", "Open http://10.10.10.10/");
+  });
   disconnectedAt = millis();
   printIdentity();
-  Serial.println("Serial commands: commission, status, setup, forget-wifi, restore CODE APPASSWORD");
+  Serial.println("Serial commands: climate status/stop/reset, climate mode chicken|duck|quail, commission, status, setup, forget-wifi, restore CODE APPASSWORD");
   if (identityReady) {
     if (savedWifi.ssid[0]) connectSaved(); else openPortal();
   }
@@ -616,7 +706,7 @@ void setup() {
 void loop() {
   serviceSensor(millis());
   serviceSerial();
-  if (apActive) portal.handleClient();
+  if (apActive) { setupDns.processNextRequest(); portal.handleClient(); }
   serviceWifi(millis());
   serviceCloud(millis());
   const uint32_t displayNow = millis();

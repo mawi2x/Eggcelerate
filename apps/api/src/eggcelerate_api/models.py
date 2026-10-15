@@ -172,6 +172,15 @@ class CandlingEntryPatch(BaseModel):
         return self
 
 
+class OutputStateDTO(BaseModel):
+    model_config = Strict
+    heater_on: bool
+    mist_on: bool
+    fan_on: bool
+    exhaust_on: bool
+    received_at: datetime
+
+
 class IncubatorDTO(BaseModel):
     model_config = Strict
 
@@ -207,6 +216,7 @@ class IncubatorDTO(BaseModel):
     telemetry_observed_at: datetime | None = None
     telemetry_received_at: datetime | None = None
     telemetry_last_seen_at: datetime | None = None
+    output_states: OutputStateDTO | None = None
     preparation_started_at: datetime | None = None
     preparation_stable_since: datetime | None = None
     preparation_ready: bool = False

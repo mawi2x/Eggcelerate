@@ -56,7 +56,7 @@ export function StopCycleModal({
                 size="sm"
                 tone="warning"
                 title="Stop cycle"
-                description={`This will stop ${unitName} before the expected hatch period and archive the record as Stopped Early. It will not be counted as a completed hatch.`}
+                description={`This will stop ${unitName} before the expected hatch period and archive the record as Stopped Early. It will not be counted as a completed hatch. The controller is asked to switch off the heater, mist maker, both fans and tray motor; readings and displays continue. Wait for equipment confirmation in Live Monitor.`}
               />
             </div>
           </AlertDialogDescription>

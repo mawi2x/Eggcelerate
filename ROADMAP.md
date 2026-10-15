@@ -1,7 +1,10 @@
 # EGGCELERATE roadmap and timeline
 
-Last updated: **2026-10-14**. Paused at the user's request to continue later.
-Resume from [today's saved handoff](#october-14--session-close-and-resume-handoff).
+Last updated: **2026-10-15**. Current work: integrated automatic preparation →
+confirmed incubation climate control with local Docker recording. See the
+[preparation guide](docs/guide/incubator-preparation-guide.md).
+**Resume/next phases:** [October 15 capstone handoff](docs/guide/capstone-next-phases-2026-10-15.md).
+The October 14 handoff remains historical.
 The [October 12 checkpoint](docs/current-progress-2026-10-12.md) remains the
 historical sensor/deployment record and broader audit reminder.
 
@@ -11,8 +14,9 @@ audit. Pending, not completed.** See the checkpoint checklist before resuming.
 **Current hardware checkpoint (October 14): manual relay and fan MOSFET controls
 reported working by the user.** See [mosfet-bench](apps/firmware/mosfet-bench/README.md)
 and [relay-bench](apps/firmware/relay-bench/README.md). The complete current pin
-allocation is recorded below. Integration into main firmware, PWM and broader
-physical qualification remain pending.
+allocation is recorded below. Main firmware now integrates preparation/incubation
+climate control and acknowledged local website commands. PWM, physical tray
+control and physical qualification remain pending.
 
 **Next implementation plan:** [VPS manual controls, local threshold control and
 final tray return before lockdown](apps/firmware/vps-actuator-control-plan.md).
@@ -1474,3 +1478,293 @@ the same design with "This egg didn’t hatch" and retry/reload/dashboard action
 Download/chunk failures prompt a reload; runtime failures retain retry behavior.
 Actual missing-page 404s and loading failures keep distinct copy. Rebuilt and
 recreated the local Docker web; web typecheck passed. No live deployment.
+
+### October 15 — climate-control roles and coupled effects
+
+User requested these rules for the upcoming empty-incubator regulation test:
+- Heater (IN1/GPIO27) adds heat. The upper fan (GPIO18), facing the heater,
+  distributes that heat and must be commanded on whenever the heater is on.
+- Mist maker (IN3/GPIO14) adds moisture to raise humidity.
+- Lower exhaust fan (GPIO19) exchanges chamber air with outside air to remove
+  excess heat/moisture when ambient conditions permit. Exhaust is not guaranteed
+  to lower temperature or humidity if incoming air is hotter or wetter.
+- Shut off heater and mist maker on sensor failure/stale readings or overheating.
+  Define fault fan behavior explicitly when implementing the controller; do not
+  assume an energized fan proves airflow.
+
+Clarification: the heater does not reduce heat. Heating generally lowers relative
+humidity when the water-vapor content remains unchanged. Temperature and humidity
+must therefore be regulated together: reheating after ventilation can lower RH,
+and misting can affect temperature. Avoid treating the actuators as independent
+controls or running mist against humidity-driven exhaust. These are recorded
+controller requirements; automatic regulation remains unimplemented/unverified.
+
+### October 15 — main firmware built for supervised empty-chamber regulation
+
+Implemented ClimateControl.h and ClimateRuntime.h in the main Eggcelerate sketch.
+Boot leaves heating/misting stopped; explicit serial start requires two fresh
+valid DHT22 readings. Three selectable normal-incubation presets match Chicken,
+Duck and Quail mode ranges. Mode changes require stopping. Tray relay IN2/GPIO25
+is held off; GPIO26/IN4 remain unused. Existing LCD/OLED, identity/pairing, Wi-Fi,
+MQTT receipts and selectable upload cadence remain integrated.
+
+Upper circulation fan GPIO18 runs during testing with a three-second lead before
+heat. Heater IN1/GPIO27 uses the preset temperature bounds. Above the upper
+bound, heater and mist are off and both fans run until temperature reaches the
+midpoint. High RH uses lower exhaust GPIO19 for ten seconds followed by twenty
+seconds mixing; heat may compensate only within its target. Warm-up happens
+before humidity-driven exhaust. Low RH uses mist IN3/GPIO14 for at most three
+seconds followed by twenty seconds off once near operating temperature. Mist
+cannot oppose drying/cooling. Automatic operation ends after sixty minutes.
+
+Invalid/stale sensor readings while running, >=39 C, or ten minutes continuous
+heater command latch a fault: heat/mist off, both fans on. Reset requires recovery
+and stays stopped. Normal stop provides fan cooldown. Dedicated FreeRTOS control
+keeps sensing/GPIO control independent of networking/display calls, with an
+explicit six-second panic/reset task watchdog. Commands are queued in order;
+stop takes priority. No airflow/contact/low-water feedback exists. Independent
+thermal protection and supervised physical acceptance are still required.
+
+Prepared separate LOCAL TLS CA/certificate, LAN binding 192.168.1.115:18883,
+and ignored LocalCloudConfig.h, which overrides but does not modify the existing
+VPS CloudConfig.h. Original VPS certificate material is preserved. Added a
+repeatable prepare-local-recorder.py helper and local-only broker configuration.
+Enrolled EGG-001 / EGG01 under the sole local owner farm `test`; user still needs
+to Add Incubator in the dashboard to assign a chamber before ingestion succeeds.
+Local TLS/EGG-001 authentication confirmed without publishing synthetic readings;
+MQTT worker connected and HTTPS /readyz confirms PostgreSQL up.
+
+Final NodeMCU-32S compile passed: 1,114,329 bytes flash (85%) and 51,684 bytes RAM
+(15%). Private binaries saved under output/firmware/empty-chamber-test. No hardware
+was flashed or energized, and behavioral/physical tests have not been performed.
+See apps/firmware/climate-test.md for upload, serial commands, recording and
+limitations. Dashboard mode/control/state synchronization and tray motion remain
+pending; test control is via Serial Monitor. No VPS deployment or remote changes.
+
+
+### October 15 — local Docker website controls for the empty incubator test
+
+Added a dedicated Empty incubator test panel on the incubator detail page:
+Start test, Stop test and Reset fault, with supervised empty-chamber confirmation.
+The selected unchanged Chicken/Duck/Quail preset is sent with start. The ESP32
+reports running/stopped, faults and all four output commands. Pending, stale and
+unknown states remain explicit; a click alone never confirms execution.
+
+Authenticated farm-scoped/CSRF-protected API requests persist in a separate
+climate_tests table (migration 0021). Local API/worker explicitly enable the
+feature; it is disabled by default elsewhere. The worker uses the existing
+per-device TLS/ACL receipt channel, non-retained QoS1, 90-second deadlines,
+boot/sequence binding and monotonic request ordering. Firmware acknowledges only
+after the control task processes the request; duplicate/older commands cannot
+restart or extend a test. Stop takes priority over queued starts. Sensor failures
+still publish controller status without manufacturing environmental readings.
+Configuration/mode/egg-cycle mutations are blocked while testing or awaiting a
+stop confirmation. Tray dispatch remains separate and disabled for this test.
+
+Requires one new USB upload of the complete Eggcelerate sketch; subsequent test
+start/stop is from https://127.0.0.1:18443. Keep chamber Ready/empty and use its
+detail page, rather than starting a batch with fictitious eggs. Regulation remains
+limited to a supervised 60-minute empty test, with the existing local fault stops
+and cooldown. No physical upload, actuator start or live-server deployment was
+performed by the agent. Physical regulation and website-to-device acceptance
+remain pending the user's upload and supervised test.
+
+Local integration build: web TypeScript check and Docker API/worker/web builds
+passed; migration 0021 applied to the existing local database. HTTPS readiness
+reports PostgreSQL up and the worker connects in hardware-climate-test mode.
+Final firmware compile: 1,116,221 bytes flash (85%), 51,804 bytes RAM (15%); private
+upload artifacts refreshed. Ruff passes for changed Python modules. Full API
+mypy still reports the pre-existing optional-password override in platform_admin.py
+line 137; no new mypy errors. No behavioral tests or physical actions were run.
+At handoff, the local database has zero chambers and zero device projections:
+user must Add incubator with EGG01, upload the updated firmware, and wait for real
+readings before Start test becomes available.
+
+
+### October 15 — explicit Stop turns every actuator off
+
+User requested Stop Cycle leave only sensing/displays/connectivity/recording active.
+Firmware explicit Stop now latches heater IN1/GPIO27, mist IN3/GPIO14, upper fan
+GPIO18, exhaust fan GPIO19 and tray IN2/GPIO25 off. It overrides manual-stop fan
+cooldown and fault ventilation; outputs remain off through subsequent sensor
+readings, mode changes and fault reset until a new accepted Start. Automatic
+fault handling during a running test still removes heat/mist and ventilates.
+
+Local Stop Cycle now queues the same hardware Stop atomically with its archive
+transaction; Stop Test uses it too. Pending status remains until a current ESP32
+acknowledgement reports running=false and heater/mist/upper/exhaust all false.
+Updated firmware advertises stop_all capability; older builds must be uploaded
+before hardware controls or hardware-backed Stop Cycle can proceed. DHT22 reads,
+LCD/OLED, Wi-Fi, TLS MQTT reporting and database recording continue after Stop.
+No live-server deployment or physical actuator operation performed.
+
+All-output Stop build completed: NodeMCU-32S firmware 1,116,313 bytes flash (85%),
+51,804 bytes RAM (15%); web typecheck, local Docker API/worker/web builds and
+changed Python lint passed. Updated private upload artifacts refreshed. Existing
+unrelated platform_admin.py mypy issue remains. Physical shutdown confirmation
+is pending upload of this updated firmware and the user's supervised test.
+
+### October 15 — preparation workflow audit and user clarification
+
+User reaffirmed the existing preparation-first workflow. The saved guide is
+`docs/guide/incubator-preparation-guide.md`; migration 0019 and the current UI/API
+already retain preparation start, selected mode and five minutes of continuous
+fresh in-range temperature/humidity before egg loading and Day 1. A newly added
+chamber's `ready` phase means idle/available, not thermally stable.
+
+Audit: physical DHT22 readings and LCD/OLED run before dashboard pairing, but the
+current authenticated MQTT ingester requires a device-to-farm/chamber assignment
+before accepting web records. Pairing is not needed for the sensor to operate;
+it is needed to associate website readings with the correct chamber.
+
+The separate Empty incubator test panel added today is a bench path, not the
+normal preparation flow. Begin Preparation still changes persisted monitoring
+state only and its UI explicitly says equipment control is manual. The bench
+start currently rejects preparation, and its configuration guard also prevents
+normal preparation/cycle handoff while running. No dedicated preparation-ready
+notification was found in the durable alert evaluator; readiness is a page banner.
+
+Required next integration: use existing Prepare -> select mode -> Begin
+Preparation to command acknowledged automatic climate regulation, retain the
+five-minute real-sample stability gate, notify Ready to load eggs, confirm 1-38
+eggs and start Day 1 only after owner confirmation. Regulation must continue
+through the preparation-to-incubation handoff. Cancel/Stop must command all
+actuators off while sensing, screens and recording remain active. Do not treat
+the independent 60-minute bench session as completed production integration.
+This entry records the audit and intended workflow; no further actuator commands
+or behavior changes were made during this audit. Browser inspection was unavailable
+because the browser tool returned no connected browser surfaces.
+
+### October 15 — simpler setup Wi-Fi password requested
+
+User requested the setup AP password `egg123`. This is six characters; the ESP32
+password-protected soft AP requires at least eight. Requested value recorded,
+not applied. Proposed simple alternative: `egg12345`, pending the user's choice.
+The existing stored AP password and firmware remain unchanged for now. This
+request concerns setup Wi-Fi, not the home/router Wi-Fi or administrator password.
+
+
+### October 15 — approved short setup Wi-Fi credentials
+
+User approved setup AP name **Eggcelerate-001** and password **egg12345**.
+Applied to the main Eggcelerate firmware: SSID derives its numeric suffix from
+EGG-001; fresh commissioning uses the approved password. Valid existing NVS
+identities migrate their saved AP password on boot with write/read-back
+verification. Validation/restore accept 8-16 printable characters within the
+unchanged 17-byte password field, retaining old valid 16-character records for
+migration. Device ID, pairing code EGG01 and router Wi-Fi settings are preserved.
+Send `setup`, connect to Eggcelerate-001, open http://192.168.4.1; serial `status`
+shows the effective AP credentials. Supersedes the earlier pending password
+request. Requires uploading the rebuilt firmware; no board flashed by the agent.
+
+Short setup credentials firmware compiled successfully for NodeMCU-32S:
+1,116,461 bytes flash (85%), 51,804 bytes RAM (15%). Private upload artifacts
+refreshed. Saved-password migration and AP connection await physical upload.
+
+
+### October 15 — memorable setup IP and captive portal
+
+User requested the setup page open when connecting to the ESP32 AP and changed
+its address to **10.10.10.10**. Main firmware AP IP/gateway now use 10.10.10.10/24;
+all active setup links, redirects, host checks and serial instructions use
+http://10.10.10.10. SSID Eggcelerate-001 and approved password egg12345 remain.
+Added bundled ESP32 DNSServer wildcard resolution, DHCP captive portal hint and
+unknown HTTP probe redirects (Android/Apple/Windows) to the canonical setup page.
+Supported clients may show a sign-in/open-network prompt; automatic browser launch
+is OS dependent and manual HTTP entry remains supported. HTTPS interception is
+not attempted. Credential POSTs still require canonical AP host and CSRF token;
+web listener remains bound to AP address. DNS stops with the existing setup AP
+idle closure. No climate-control or dashboard behavior changes in this update.
+Firmware upload and real phone/laptop captive portal acceptance remain pending.
+
+Captive portal build passed for NodeMCU-32S: 1,123,961 bytes flash (85%),
+51,940 bytes RAM (15%). Private upload artifacts refreshed. No board upload or
+phone/laptop connection test performed by the agent.
+
+
+### October 15 — EGG01 blocked by stale frontend pairing validation
+
+User reported Add Incubator rejected EGG01. Read-only local database lookup
+confirmed EGG-001 is enrolled/enabled for the test farm and EGG01 resolves
+correctly. Root cause: useCreateIncubator still required ten-character legacy
+codes despite the shared onboarding/API schemas supporting five-character EGG01.
+Added a reusable PairingCodeSchema and used it for Add Incubator and onboarding;
+removed the redundant legacy-only onboarding check. Demo repository also recognizes
+short hardware codes and preserves its connected-server requirement rather than
+pretending to pair hardware. Legacy codes remain supported. No farm/device
+assignments or hardware configuration were changed to fix this UI validation bug.
+
+Pairing validation fix: web TypeScript check and local Docker web build passed;
+local web container recreated. Owner can refresh and retry EGG01 (zero, then one).
+End-to-end pairing awaits the user's retry; no chamber was added by the agent.
+
+
+### October 15 — replace separate Start Test with the existing owner lifecycle
+
+User requested the capstone's existing preparation and confirmation flow rather
+than the extra test feature. Removed ClimateTestPanel, test selector/start/stop UI
+and public /climate-test endpoint. Current source uses /climate-control for existing
+Chamber status/recovery; no alternate start path. Old internal table/MQTT field
+names remain transport-compatible, with lifecycle capability metadata distinguishing
+new firmware. Replaced CLIMATE_TEST_ENABLED with CLIMATE_CONTROL_ENABLED locally.
+
+Begin Preparation persists configuration and selected unchanged Chicken/Duck/Quail
+mode plus an expiring, boot-bound Prepare command atomically. The independent
+ESP32 climate task regulates targets and acknowledges only after validating and
+persisting authorization. Real sensor samples must stay within both mode ranges
+for five minutes after controller acceptance, without >45s gaps; fresh running
+controller, matching mode/boot and no fault are required. The evaluator adds one
+durable Ready to load eggs notification per preparation generation. Starting Day 1
+still requires the owner to load 1-38 eggs and confirm, with readiness checked again.
+Incubation confirmation queues a phase handoff that preserves ongoing regulation;
+the former 60-minute bench timer is removed. Cancellation, Stop Cycle, completion
+and reset-to-idle queue all-equipment Stop with their lifecycle transaction.
+
+Existing Live Monitor Chamber status now receives real heater/mist/upper/exhaust
+commands; pending, rejected, stale and unknown command states remain explicit.
+Fault reset and explicit regulation resume use the existing context. No output
+states are inferred from temperature/humidity. Automatic settings cannot silently
+mutate an active mode. Edited/custom presets remain unsupported by this firmware.
+
+Firmware saves checksummed run authorization/phase/mode separately from pairing
+and Wi-Fi. On a normal power restart, all outputs initialize off, then authorized
+preparation/incubation may resume after two fresh valid readings and fan lead.
+Manual Stop remains stopped; saved faults and crash/watchdog restart require
+recovery. Storage failure blocks operation. Server reconciliation retries committed
+intent across connection/boot changes, but suspends restart for faults or a local
+manual Stop. Reset alone does not resume. The laptop-USB/UPS EN-button symptom is
+not diagnosed/fixed, and physical boot/Stop/regulation acceptance is still required.
+Tray relay remains held off: this is climate workflow integration, not commissioned
+tray motion, PWM, calibration, new lockdown profiles or proof of production safety.
+Existing 10-minute continuous-heater and 39°C fault limits remain. No live-server
+deployment or physical actuator command/upload was performed by the agent.
+
+
+Preparation/incubation build handoff: web TypeScript and changed Python lint
+passed; API/worker/web Docker builds passed; migration 0022 applied to the
+existing local database. Latest NodeMCU-32S compile passed at 1,125,465 bytes flash
+(85%) and 51,932 bytes RAM (15%). Private artifacts are in
+output/firmware/preparation-incubation; upload the current main Eggcelerate sketch
+with flash erasure disabled. Local worker connects in hardware-climate-control
+mode. Read-only handoff audit confirms existing device still reports old lifecycle
+capability 0, no committed lifecycle intent and zero queued control packets:
+updated firmware upload is required before Begin Preparation, and no new hardware
+start was issued by the agent. Full API mypy retains the previously known
+platform_admin.py optional-password override error (line 137), with no new errors.
+No behavioral test suite or physical commissioning was run. Actual warm-up,
+five-minute readiness alert, continuous confirmation handoff, all-equipment Stop
+and UPS/boot recovery remain physical acceptance items; no production-safety claim
+or live-server rollout is implied by build/readiness checks.
+
+
+### October 15 — next-phase handoff saved before usage limit
+
+User requested a durable next-phase plan. Saved
+`docs/guide/capstone-next-phases-2026-10-15.md` covering current implemented state,
+build evidence and physical gaps; authoritative pins/presets; the unanswered tray
+motor behavior question; bounded tray motion; real scheduling and verified home
+before lockdown; laptop-USB/UPS EN diagnosis; and later authorized release/deployment.
+It preserves the normal preparation/confirmation flow and explicitly forbids
+reintroducing the rejected Start Test panel or treating simulator dispatch as
+real tray control. Current work remains uncommitted and physical acceptance is
+pending. No additional runtime or hardware behavior changed while writing this plan.

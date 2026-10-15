@@ -68,6 +68,7 @@ export interface OutputStateReport {
   heaterOn: boolean;
   mistOn: boolean;
   fanOn: boolean;
+  exhaustOn?: boolean;
   receivedAt: string;
 }
 

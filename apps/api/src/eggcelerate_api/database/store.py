@@ -4,7 +4,7 @@ Other collections remain in memory during this explicitly selected B3 slice.
 Configuration, alerts, cycles, terminal history and replay records are relational.
 """
 
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
 from copy import copy
 from datetime import UTC, datetime, timedelta
@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete, func, insert, select, text, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from ..errors import AppError
 from ..mode_catalog import MODE_NAMES
@@ -122,7 +122,7 @@ class PostgresStore:
                 text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
             )
             if not require_seeded_farm:
-                return revision == "0020" and extension is not None
+                return revision == "0022" and extension is not None
             farm = await session.scalar(
                 select(farms.c.id).where(farms.c.id == self.farm_id)
             )
@@ -155,7 +155,7 @@ class PostgresStore:
                 runtime_count == chamber_count
                 and alert_seed is not None
                 and preferences is not None
-                and revision == "0020"
+                and revision == "0022"
                 and extension is not None
                 and farm is not None
                 and seeded is not None
@@ -205,6 +205,7 @@ class PostgresStore:
         self,
         memory: MemoryStore,
         replay: tuple[str, str, str, str] | None = None,
+        after_mutation: Callable[[AsyncSession], Awaitable[None]] | None = None,
     ) -> AsyncIterator[MemoryStore]:
         try:
             # Database commit occurs before the memory transaction exits. A
@@ -432,6 +433,8 @@ class PostgresStore:
                                 response=jsonable_encoder(result),
                             )
                         )
+                if after_mutation is not None:
+                    await after_mutation(session)
         except IntegrityError as exc:
             raise AppError(
                 "conflict", "A database constraint rejected the change."

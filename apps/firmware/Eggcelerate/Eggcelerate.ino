@@ -1,4 +1,5 @@
-// EGGCELERATE main firmware sketch.
-// DHT22 GPIO4, setup-aware LCD/OLED displays, fixed pairing code, Wi-Fi and TLS MQTT.
-// Extend this sketch for later phases; phase sketches remain separate fallbacks.
+// EGGCELERATE main firmware: automatic preparation and incubation climate control.
+// Website: Prepare -> Begin Preparation -> stable 5 minutes -> load eggs -> confirm incubation.
+// Sensor/display/Wi-Fi/TLS MQTT stay active when all equipment is explicitly stopped.
+// Tray motion remains uncommissioned; relay stays off.
 #include "EggcelerateFirmware.h"

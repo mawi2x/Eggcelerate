@@ -16,6 +16,7 @@ class Settings:
     api_port: int = 8000
     storage_backend: str = "memory"
     database_url: str = ""
+    climate_control_enabled: bool = False
     public_registration_enabled: bool = False
     auth_rate_limit_key: str = "development-only-rate-limit-key"
     cors_origins: tuple[str, ...] = (
@@ -102,6 +103,7 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
         cors_origins=cors,
         storage_backend=env.get("STORAGE_BACKEND", "memory"),
         database_url=env.get("DATABASE_URL", ""),
+        climate_control_enabled=env.get("CLIMATE_CONTROL_ENABLED", "false").lower() == "true",
         public_registration_enabled=env.get(
             "PUBLIC_REGISTRATION_ENABLED",
             "false",

@@ -1,5 +1,8 @@
 # Local rehearsal with isolated project name and loopback-only ports.
 services:
+  api:
+    environment:
+      CLIMATE_CONTROL_ENABLED: "true"
   web:
     ports: !override
       - "127.0.0.1:18080:80"
@@ -8,7 +11,14 @@ services:
       - "127.0.0.1:18081:80"
       - "127.0.0.1:18443:443"
   hardware-broker:
+    volumes:
+      - ./infrastructure/mqtt-hardware/mosquitto-local.conf:/mosquitto/config/mosquitto.conf:ro
     ports: !override
-      - "127.0.0.1:18883:8883"
+      - "${LOCAL_MQTT_BIND_ADDRESS:-127.0.0.1}:18883:8883"
   db:
     ports: !override []
+  hardware-telemetry:
+    environment:
+      CLIMATE_CONTROL_ENABLED: "true"
+    volumes:
+      - ./infrastructure/mqtt-hardware/private/local-ca.crt:/etc/eggcelerate/ca.crt:ro

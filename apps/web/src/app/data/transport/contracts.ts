@@ -110,6 +110,7 @@ export const IncubatorDTOSchema = z
         heater_on: z.boolean(),
         mist_on: z.boolean(),
         fan_on: z.boolean(),
+        exhaust_on: z.boolean().optional(),
         received_at: UtcTimestampSchema,
       })
       .strict()
@@ -422,6 +423,7 @@ export function incubatorFromDTO(input: unknown): Incubator {
           heaterOn: dto.output_states.heater_on,
           mistOn: dto.output_states.mist_on,
           fanOn: dto.output_states.fan_on,
+          exhaustOn: dto.output_states.exhaust_on,
           receivedAt: dto.output_states.received_at,
         }
       : undefined,

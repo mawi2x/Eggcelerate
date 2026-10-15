@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..config import load_settings
+from ..database.climate_control import command_packets, reconcile
 from ..database.device_registry import (
     registered_device_targets,
     resolve_registered_farm,
@@ -168,7 +169,13 @@ async def run() -> None:
             return
         log.info(
             "MQTT worker connected; mode=%s",
-            "hardware-sensors-only" if hardware else "simulator",
+            (
+                "hardware-climate-control"
+                if settings.climate_control_enabled
+                else "hardware-sensors-only"
+            )
+            if hardware
+            else "simulator",
         )
         if not reason_code.is_failure:
             client.subscribe("eggcelerate/v1/devices/+/telemetry", qos=0)
@@ -244,6 +251,32 @@ async def run() -> None:
                 async with database.sessions.begin() as session:
                     await expire_commands(session, None, datetime.now(UTC))
                 for farm_id, device_ids in targets.items():
+                    if (
+                        hardware
+                        and settings.climate_control_enabled
+                        and client.is_connected()
+                    ):
+                        async with database.sessions.begin() as session:
+                            from ..database.schema import farms
+
+                            await session.scalar(
+                                select(farms.c.id)
+                                .where(farms.c.id == farm_id)
+                                .with_for_update()
+                            )
+                            await reconcile(session, farm_id, datetime.now(UTC))
+                            packets = await command_packets(
+                                session, farm_id, datetime.now(UTC)
+                            )
+                        for device_id, packet in packets:
+                            if device_ids is not None and device_id not in device_ids:
+                                continue
+                            client.publish(
+                                f"eggcelerate/v1/devices/{device_id}/receipt",
+                                packet,
+                                qos=1,
+                                retain=False,
+                            )
                     if not client.is_connected() or not dispatch:
                         continue
                     async with database.sessions.begin() as session:

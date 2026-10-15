@@ -1,5 +1,10 @@
 # Eggcelerate hardware pin map
 
+> **October 15 update:** Earlier mappings/implementation status below include historical proposals.
+> Use the [current capstone handoff](../../docs/guide/capstone-next-phases-2026-10-15.md)
+> for authoritative pins, implemented climate lifecycle and remaining tray/power phases.
+
+
 Recorded 2026-10-12 from the user's schematic:
 `/home/mawi/Documents/CAPSTONE/schematic/2/3/4/not-clean.png`.
 This is a trace of the drawing plus the user's DHT22 correction, not confirmation

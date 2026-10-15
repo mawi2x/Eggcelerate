@@ -9,10 +9,10 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import domain, services
-from ..models import CreateIncubatorRequest, IncubatorDTO, ModeDTO
+from ..models import CreateIncubatorRequest, IncubatorDTO, ModeDTO, OutputStateDTO
 from ..store import MemoryStore
 from .readings import telemetry_freshness
-from .schema import device_telemetry_state, devices, incubators, modes
+from .schema import climate_tests, device_telemetry_state, devices, incubators, modes
 
 
 def device_values(farm_id: UUID, unit: IncubatorDTO) -> dict[str, Any]:
@@ -72,6 +72,8 @@ async def load_incubators(
             incubators.c.auto_turn,
             devices.c.public_id.label("device_public_id"),
             devices.c.paired,
+            climate_tests.c.report.label("control_report"),
+            climate_tests.c.reported_at.label("control_received_at"),
             modes.c.public_id.label("mode_public_id"),
             device_telemetry_state.c.temperature_c.label("telemetry_temperature_c"),
             device_telemetry_state.c.humidity_pct.label("telemetry_humidity_pct"),
@@ -85,6 +87,12 @@ async def load_incubators(
         .select_from(
             incubators.join(devices, incubators.c.device_id == devices.c.id)
             .join(modes, incubators.c.mode_id == modes.c.id)
+            .outerjoin(
+                climate_tests,
+                (climate_tests.c.farm_id == incubators.c.farm_id)
+                & (climate_tests.c.incubator_id == incubators.c.public_id)
+                & (climate_tests.c.device_id == devices.c.id),
+            )
             .outerjoin(
                 device_telemetry_state,
                 (device_telemetry_state.c.farm_id == incubators.c.farm_id)
@@ -117,8 +125,21 @@ async def load_incubators(
             mode,
             datetime.now(UTC),
         )
+        report = row["control_report"]
+        output = (
+            OutputStateDTO(
+                heater_on=report["heater"],
+                mist_on=report["mist"],
+                fan_on=report["upper"],
+                exhaust_on=report["exhaust"],
+                received_at=row["control_received_at"],
+            )
+            if report and row["control_received_at"]
+            else None
+        )
         unit = base.model_copy(
             update={
+                "output_states": output,
                 "name": row["name"],
                 "device_id": row["device_public_id"],
                 "mode_id": mode.id,

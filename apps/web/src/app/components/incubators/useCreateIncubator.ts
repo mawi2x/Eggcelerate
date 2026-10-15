@@ -1,3 +1,4 @@
+import { PairingCodeSchema } from "../../data/onboarding";
 import { currentModes } from "../../domain/mode-catalog";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -28,11 +29,12 @@ export function useCreateIncubator(
       toast.error("Please enter a pairing code and chamber name.");
       return;
     }
-    const id = trimmedDeviceId.toUpperCase().replace(/-/g, "");
-    if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(id)) {
+    const pairing = PairingCodeSchema.safeParse(trimmedDeviceId);
+    if (!pairing.success) {
       setConnectError("invalid");
       return;
     }
+    const id = pairing.data.replace(/-/g, "");
     setConnectError(null);
     setConnecting(true);
     const mode = currentModes(modes)[0] ?? modeOf("broiler");

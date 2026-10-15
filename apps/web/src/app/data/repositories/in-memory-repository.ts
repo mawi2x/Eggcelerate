@@ -23,6 +23,7 @@ import { createHatchRecordFixtures } from "../fixtures/hatch-records";
 import { createIncubatorFixtures } from "../fixtures/incubators";
 import { createModeFixtures } from "../fixtures/modes";
 import { createReadingFixtures } from "../fixtures/readings";
+import { PairingCodeSchema } from "../onboarding";
 import { initialSettings, type SettingsPreferences } from "../settings";
 import type {
   AbortedCycleInput,
@@ -209,11 +210,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
 
   addIncubator(unit: Incubator) {
     return this.execute("addIncubator", () => {
-      if (
-        /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}-?[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}$/.test(
-          unit.deviceId,
-        )
-      ) {
+      if (PairingCodeSchema.safeParse(unit.deviceId).success) {
         return error(
           "offline",
           "Hardware pairing requires the connected Eggcelerate server.",

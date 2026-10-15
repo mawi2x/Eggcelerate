@@ -1,109 +1,89 @@
-# EGGCELERATE main firmware
+# Eggcelerate main firmware
 
-Current reading destination: **the server and Eggcelerate dashboard**, plus
-a newly added 1602 HD44780 I²C LCD service. See [LCD setup](../lcd-1602.md)
-for wiring, the hd44780 library, and upload. LCD physical acceptance is pending;
-a provisional SSD1306 OLED status service is also prepared. Its controller and
-voltage still require confirmation. The LCD always shows temperature/humidity;
-the OLED shows the pairing code and online/offline status in both normal and
-setup operation.
+Open **Eggcelerate.ino** in Arduino IDE with every file in this folder beside it.
+Target: **NodeMCU-32S**, ESP32 core 3.3.11, upload speed 115200, flash erasure
+**disabled**. Libraries: Adafruit DHT sensor library, Adafruit Unified Sensor,
+PubSubClient and hd44780 by Bill Perry; WiFi/WebServer/DNSServer are bundled.
 
-Open **Eggcelerate.ino** in Arduino IDE. Keep **EggcelerateFirmware.h** in this
-same folder; it appears as the implementation tab and is compiled with the sketch.
-This is the main program to extend as subsequent phases are implemented.
+## Normal website flow
 
-For future wiring and code additions, use the recorded
-[hardware pin map](../hardware-pin-map.md) and [phase plan](../phase-plan.md).
-Revised relay board allocation and later control work are documented in the
-[actuator integration guide](../actuator-integration-guide.md).
-The LCD/OLED shared bus is planned on SDA GPIO21 / SCL GPIO23; the light is
-planned on four-channel board B IN2 with GPIO26 proposed. Display/module specifications
-and that light assignment still need confirmation before implementation.
+**Prepare → select mode → Begin Preparation → five minutes of stable readings →
+Ready to load eggs notification → enter 1–38 eggs → confirm Start Incubation.**
 
-Current implementation integrates the local Phases 1–2 baseline and sensor cloud transport: DHT22 on GPIO4, persistent
-device identity/fixed pairing code, protected Wi-Fi setup page, saved-network
-rollback, and Serial setup commands. The integrated main sketch compiled successfully for NodeMCU-32S with ESP32 core
-3.3.11 and PubSubClient 2.8.0 (81% flash, 15% static RAM). Hardware and VPS
-acceptance remain pending.
-See [cloud activation](../cloud-activation.md) for the deployment and enrollment steps.
+The website commands the ESP32, which acknowledges after processing and saving
+run authorization. Day 1 begins at owner confirmation; climate regulation continues
+through the handoff. There is no separate Start Test panel or 60-minute timer.
+See the [preparation guide](../../../docs/guide/incubator-preparation-guide.md)
+for readiness, power recovery and commissioning limits.
 
-**Embedded device ID: `EGG-001`**, set by `kDeviceId` in `EggcelerateFirmware.h`.
-Its setup network is **`Eggcelerate-Setup-EGG-001`**. Give each additional board
-its own embedded ID (`EGG-002`, `EGG-003`, etc.) before commissioning/enrollment.
-Pilot pairing code: **EGG01**, configured by `kPairingCode`. Device ID remains
-**EGG-001**. Set a unique ID/code pair and enroll it for each additional board.
-The website accepts EGG01-style codes and existing ten-character codes.
+Heater IN1 GPIO27 and mist IN3 GPIO14 are active-low. Upper circulation fan GPIO18
+and lower exhaust GPIO19 are active-high. DHT22 is GPIO4. LCD/OLED share SDA21/SCL23.
+Tray IN2 GPIO25 remains off; IN4 is vacant and GPIO26 is not driven.
 
-When this pilot main sketch is uploaded with flash erasure disabled, it safely
-updates EGG-001’s old ten-character saved code to EGG01, retaining Wi-Fi and the
-AP password. The NVS record layout remains unchanged. The operator must rotate
-the corresponding enrolled server code; already paired chambers/history remain.
-Short sequential codes are friendly identifiers, not high-entropy secrets;
-server account/farm provisioning checks remain required.
+| Mode | Temperature | Humidity |
+|---|---|---|
+| Chicken | 37.5–37.8°C | 55–60% RH |
+| Duck | 37.4–37.6°C | 62–68% RH |
+| Quail | 37.5–37.8°C | 55–60% RH |
 
-When updating the already commissioned board from the original MAC-based ID,
-the main sketch migrates that board's saved ID to `EGG-001` and retains its pairing
-code, AP password, and saved Wi-Fi. No flash erasure or new `commission` is needed.
-Reflash with erase disabled and send `status` to inspect the result. This migration
-compiled with the integrated sketch but has not been verified on hardware. Update the private commissioning
-record and use `EGG-001` for future VPS enrollment.
+Modified/custom presets are rejected by the automatic-control API. Normal targets
+remain unchanged throughout this implementation; no new lockdown profile is added.
+The heater stops at the upper bound, with circulation maintained. High humidity
+uses full-speed exhaust pulses (10 seconds on/20 off) once within 0.5°C below the
+lower target; overheating runs both fans. Low humidity uses mist bursts of at most
+three seconds with twenty seconds rest near temperature targets. PWM is not enabled.
 
-Pilot cloud setup will use embedded developer-side VPS/broker settings from
-`CloudConfig.example.h`, copied locally to the Git-ignored `CloudConfig.h`.
-The user will enter home Wi-Fi on the setup page and only the fixed pairing code
-in Eggcelerate. Internal device IDs and broker credentials are not user-entry fields.
-The template records the VPS IP, but the actual MQTT hostname/listener, credentials,
-certificate, and VPS deployment still need to be established. Transport is integrated,
-but stays disabled until private CloudConfig.h contains complete settings. Install
-**PubSubClient** alongside the DHT libraries. Readings publish every 15 seconds by default;
-server receipts confirm committed database ingestion. Invalid/stale sensor values
-are skipped. No offline telemetry queue or actuator commands are implemented.
-For this USB-powered pilot battery_pct=100 and power_source=grid are compatibility
-constants, not measured battery/power data. MQTT/TLS connection calls can pause the
-main loop for their configured timeouts; sensor and portal timing still need hardware checks.
+## Stop and recovery
 
-Use the [Phase 1–2 setup instructions](../wifi-setup/README.md), opening this
-main sketch instead of wifi-setup.ino. Select NodeMCU-32S and Serial Monitor at
-115200 baud. Send `commission` only for first commissioning; an existing saved
-identity is reused automatically. The fallback and main sketch share the original
-NVS record layout. After migration to `EGG-001`, the frozen Wi-Fi fallback will
-reject the new ID; use the main sketch for setup and avoid re-commissioning through
-the fallback. The sensor-only fallback remains usable without touching these records.
+Cancel preparation, Stop Cycle and completion queue an all-equipment Stop.
+Explicit Stop turns off heater, mist, both fans and tray until an explicit new
+preparation/resume. Sensors, LCD/OLED, Wi-Fi and recording keep operating.
 
-## Fallback sketches
+Authorization/phase/mode are saved in a separate checksummed NVS record. Normal
+power recovery waits for two fresh valid sensor readings and fan lead before
+resuming. Manual Stop, saved faults, corrupt storage and crash/watchdog recovery
+prevent automatic heat/mist restart. Fault reset stays stopped; use the website
+recovery action after resolving the cause. Ten minutes continuous commanded heat,
+sensor invalid/stale readings and >=39°C latch faults. No physical feedback can
+detect a welded relay, blocked fan or empty mist reservoir.
 
-| Sketch | Purpose |
-| --- | --- |
-| `../dht22-local/dht22-local.ino` | Sensor-only baseline demonstrated on the board |
-| `../wifi-setup/wifi-setup.ino` | Frozen initial Phases 1–2 implementation; hardware evidence pending |
-| `../test/test.ino` | Earlier MQTT checker requiring broker configuration |
+Serial 115200/Newline: `status`, `setup`, `climate status`, `climate stop`,
+`climate reset`. Start regulation through the existing website preparation flow.
+The reported laptop-USB/UPS EN-button problem requires separate diagnosis; this
+firmware cannot recover until the board actually boots.
 
-Future development goes into this main folder. Preserve each fallback's source,
-and record its actual verification status rather than assuming it has passed.
+## Wi-Fi setup
 
-## October 11 activation checkpoint
+- Network: **Eggcelerate-001**
+- Password: **egg12345**
+- Page: **http://10.10.10.10**
+- Pairing code: **EGG01**; device ID: **EGG-001**
 
-The locally ignored `CloudConfig.h` is now prepared for the deployed pilot broker
-at 4.193.224.4:8883 with this device's credentials and public MQTT CA. The configured
-sketch compiled successfully for NodeMCU-32S (81% flash, 15% static RAM). TCP,
-TLS handshake, and MQTT response timeouts are bounded, but blocking timing still
-needs hardware acceptance. Do not run commission again; the pilot migration updates only the saved code.
+Send `setup` to open setup Wi-Fi. Supported clients offer a captive-portal prompt;
+otherwise open the HTTP address manually. Canonical-host and CSRF checks protect
+credential submission. AP DNS stops with setup; successful connection closes the
+AP after two minutes without a page visit/submission. Saved router Wi-Fi and
+identity remain in NVS; a verified migration applies the approved setup password.
 
-The server is running PostgreSQL, authenticated API access, trusted dashboard
-HTTPS, and sensor-only MQTT ingestion. Public MQTT 8883 is still blocked pending
-Azure networking. Owner account details, existing-code enrollment, and firmware
-upload remain pending; the ESP32 has not been reflashed in this deployment step.
-The physical destination remains the Eggcelerate dashboard; LCD/OLED are later.
+## Local Docker recording
 
+Open **https://127.0.0.1:18443**. The local broker is configured at
+**192.168.1.115:18883** with TLS, per-device credentials and ACLs.
+`LocalCloudConfig.h`, when present, overrides the original private `CloudConfig.h`.
+These files and upload artifacts contain private configuration: keep them private.
+If laptop LAN IP changes, run `python3 apps/firmware/scripts/prepare-local-recorder.py
+--host YOUR_LAN_IP`, recreate the broker/worker and recompile/upload.
 
-### Dashboard reporting interval
+`./hardware-local-compose.sh` manages the isolated persistent local stack. API and
+worker require CLIMATE_CONTROL_ENABLED=true (enabled in the local overlay); normal
+farm sessions/CSRF protect controls. Sensor reporting is saved at 5/10/15/30-second
+cadence; DHT reads independently every 2.5 seconds and research logging stays five
+minutes. The device can regulate while networking is absent, but cannot record to
+an unavailable server. This update does not deploy to the VPS.
 
-Settings → Hardware & Devices → Device preferences offers 5, 10, 15 or 30
-seconds between reading uploads. Save Changes persists the farm preference.
-The hardware worker sends that value after an accepted telemetry upload on the
-existing worker-only receipt channel. Updated main firmware accepts only these
-four values, bound to its current boot ID and latest sequence, and applies the
-interval in RAM. Reboot starts at 15 seconds until the next server update.
-Sensor reads remain every 2.5 seconds. Research records retain their fixed
-five-minute interval. This requires the updated firmware and worker; older
-firmware ignores the setting. It does not add automatic actuator control.
+## Physical acceptance still required
+
+Build success is not physical commissioning. Check real target stability, output
+polarity, all-equipment Stop, reliable boot/UPS behavior, recovery and the complete
+owner flow. Tray motion, PWM, calibration and hardware feedback are not implemented
+here. Earlier bench sketches remain separate fallbacks.

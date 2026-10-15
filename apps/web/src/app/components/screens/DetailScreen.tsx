@@ -319,7 +319,7 @@ export function DetailScreen({
               {isPreparing
                 ? preparationReady
                   ? "Conditions have stayed within range for five minutes. Load eggs, confirm the count, and start Day 1."
-                  : "Adjust equipment manually to reach the selected mode’s targets. The incubation timer has not started."
+                  : "The controller is adjusting equipment to reach the selected mode’s targets. The incubation timer has not started."
                 : "Choose a mode and stabilize conditions before loading eggs."}
             </p>
           </div>
@@ -368,7 +368,7 @@ export function DetailScreen({
                       ? "Checking stability within target ranges"
                       : "Waiting for target conditions"
               }
-              description="Both readings must remain within range for five minutes. A reading outside the targets or a sensor data gap restarts the check. Heating, humidity, and fan control are manual in this phase."
+              description="Both readings must remain within range for five minutes. A reading outside the targets or a sensor data gap restarts the check. The controller regulates heating, humidity and ventilation automatically. Readiness requires device confirmation."
             />
             <Button
               variant="outline"

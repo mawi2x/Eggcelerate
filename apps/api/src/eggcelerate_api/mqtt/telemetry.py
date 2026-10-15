@@ -4,11 +4,20 @@ from datetime import UTC, datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, Field, StrictBool, StrictInt, ValidationError
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    StrictInt,
+    ValidationError,
+)
 from sqlalchemy import and_, delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database.alert_episodes import evaluate_farm
+from ..database.climate_control import ClimateReport, record_report
 from ..database.readings import TelemetrySample, ingest_sample
 from ..database.schema import device_telemetry_state, devices, farms, incubators
 from ..errors import AppError
@@ -16,6 +25,7 @@ from .clock import DEVICE_CLOCK_TOLERANCE
 
 
 class DeviceTelemetry(TelemetrySample):
+    climate_test: ClimateReport | None = None
     schema_v: Literal[1]
     device_id: Annotated[str, Field(min_length=1, pattern=r"^[A-Za-z0-9_-]+$")]
     incubator_id: Annotated[str, Field(min_length=1)] | None = None
@@ -28,6 +38,23 @@ class DeviceTelemetry(TelemetrySample):
     power_source: Literal["grid", "battery"]
     # Legacy storage compatibility only; water is a manual reminder.
     water_ok: StrictBool = True
+
+
+class DeviceClimateStatus(BaseModel):
+    """No fabricated environmental sample when the DHT cannot be read."""
+
+    model_config = ConfigDict(extra="forbid")
+    climate_only: Literal[True]
+    schema_v: Literal[1]
+    device_id: Annotated[str, Field(min_length=1, pattern=r"^[A-Za-z0-9_-]+$")]
+    incubator_id: str | None = None
+    boot_id: Annotated[
+        str, Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9._-]+$")
+    ]
+    booted_at: AwareDatetime
+    observed_at: AwareDatetime
+    seq: Annotated[StrictInt, Field(ge=0, le=2147483647)]
+    climate_test: ClimateReport
 
 
 async def ingest_telemetry(
@@ -46,7 +73,11 @@ async def ingest_telemetry(
     if len(payload) > 16384:
         raise AppError("validation_error", "Telemetry payload exceeds 16 KiB.")
     try:
-        message = DeviceTelemetry.model_validate_json(payload)
+        message: DeviceTelemetry | DeviceClimateStatus
+        try:
+            message = DeviceTelemetry.model_validate_json(payload)
+        except ValidationError:
+            message = DeviceClimateStatus.model_validate_json(payload)
     except ValidationError as exc:
         raise AppError("validation_error", "Invalid telemetry payload.") from exc
     expected = f"eggcelerate/v1/devices/{message.device_id}/telemetry"
@@ -91,6 +122,20 @@ async def ingest_telemetry(
             "not_found", "Telemetry device/chamber is not assigned in this farm."
         )
     device, message.incubator_id = assignment
+    if message.climate_test is not None:
+        await record_report(
+            session,
+            farm_id,
+            message.incubator_id,
+            device,
+            message.boot_id,
+            message.booted_at,
+            message.seq,
+            message.climate_test,
+            received_at,
+        )
+    if isinstance(message, DeviceClimateStatus):
+        return False
     # A chamber has exactly one latest projection. On reassignment, discard its
     # old device projection; if a device itself moved chambers, discard its old
     # chamber projection too. Raw telemetry history remains intact.

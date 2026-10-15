@@ -1,5 +1,10 @@
 # EGGCELERATE ESP32 firmware
 
+**Current build: automatic climate preparation and confirmed incubation.** Use
+[the preparation guide](../../docs/guide/incubator-preparation-guide.md) and
+[main firmware instructions](Eggcelerate/README.md). The separate Start Test panel
+is retired. Physical acceptance and tray commissioning remain pending.
+
 Home for the physical incubator controller firmware. The capstone research
 group owns this application. Target platform: a 38-pin ESP32 development board;
 the exact board/module variant remains to be confirmed.

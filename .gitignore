@@ -59,3 +59,5 @@ docs/*
 /infrastructure/https/private/
 /infrastructure/https/acme/
 /infrastructure/https/letsencrypt/
+
+/apps/firmware/Eggcelerate/LocalCloudConfig.h

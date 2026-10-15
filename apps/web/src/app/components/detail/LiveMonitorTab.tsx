@@ -1,3 +1,4 @@
+import { ClimateControlStatus } from "./ClimateControlStatus";
 import { Fan, Flame, Waves, WifiHigh, WifiSlash } from "@phosphor-icons/react";
 import {
   ArrowUpRight,
@@ -629,9 +630,16 @@ export function LiveMonitorTab({
               />
               <SystemStatusTile
                 icon={<Fan size={18} weight="fill" />}
-                label="Circulation fan"
+                label="Upper circulation fan"
                 value={outputStates.fanOn ? "On" : "Off"}
               />
+              {outputStates.exhaustOn !== undefined && (
+                <SystemStatusTile
+                  icon={<Fan size={18} weight="fill" />}
+                  label="Lower exhaust fan"
+                  value={outputStates.exhaustOn ? "On" : "Off"}
+                />
+              )}
             </>
           )}
           <SystemStatusTile
@@ -660,6 +668,7 @@ export function LiveMonitorTab({
             Waiting for output status.
           </p>
         )}
+        <ClimateControlStatus unit={unit} />
       </SectionCard>
 
       <EnvironmentalSummary

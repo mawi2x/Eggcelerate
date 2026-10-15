@@ -255,7 +255,55 @@ async def get_store(
                 ).encode()
             ).hexdigest()
             replay = (scope, key, fingerprint, kind)
-    async with database.transaction(memory, replay) as state:
+    body = (
+        await request.json()
+        if request.method in ("POST", "PATCH") and await request.body()
+        else {}
+    )
+    lifecycle_enabled = request.app.state.settings.climate_control_enabled
+    cycle_base = f"/api/v1/incubators/{unit_id}"
+    is_config = bool(unit_id and request.method == "PATCH" and route_path == cycle_base)
+    cycle_start = request.method == "POST" and route_path == f"{cycle_base}/cycles"
+    cycle_end = request.method == "POST" and route_path in {
+        f"{cycle_base}/cycles/current/{a}" for a in ("stop", "complete", "reset")
+    }
+    prep_change = is_config and ("preparing" in body or "mode_id" in body)
+
+    async def synchronize_climate(session):
+        if not lifecycle_enabled or not unit_id:
+            return
+        from ...database.climate_control import set_intent
+
+        if cycle_end:
+            await set_intent(session, database.farm_id, unit_id, "stop")
+        elif cycle_start:
+            await set_intent(session, database.farm_id, unit_id, "incubate")
+        elif prep_change:
+            from ...database.schema import incubator_runtime
+
+            started = await session.scalar(
+                select(incubator_runtime.c.preparation_started_at).where(
+                    incubator_runtime.c.farm_id == database.farm_id,
+                    incubator_runtime.c.incubator_id == unit_id,
+                )
+            )
+            await set_intent(
+                session, database.farm_id, unit_id, "prepare" if started else "stop"
+            )
+
+    async with database.transaction(
+        memory, replay, after_mutation=synchronize_climate
+    ) as state:
+        if lifecycle_enabled and request.method in ("POST", "PATCH", "DELETE"):
+            from ...database.climate_control import guard_changes
+
+            if "/modes" in route_path or (
+                is_config
+                and not prep_change
+                and set(body) - {"name", "auto_turn", "turn_interval_min"}
+            ):
+                async with database.sessions() as session:
+                    await guard_changes(session, database.farm_id, unit_id)
         yield state
 
 

@@ -1,5 +1,10 @@
 # Integrated actuators, VPS manual controls and threshold control
 
+> **October 15 update:** Earlier mappings/implementation status below include historical proposals.
+> Use the [current capstone handoff](../../docs/guide/capstone-next-phases-2026-10-15.md)
+> for authoritative pins, implemented climate lifecycle and remaining tray/power phases.
+
+
 Planning checkpoint: October 14, 2026. User reports the separate relay and
 MOSFET benches working. This document plans the next implementation; it enables
 no new hardware outputs, uploads no firmware and changes no deployed service.

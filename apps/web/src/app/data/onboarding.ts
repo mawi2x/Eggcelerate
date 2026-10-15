@@ -63,20 +63,22 @@ export const OnboardingStep2Schema = z.object({
   species: z.array(SpeciesSchema).min(1),
 });
 
+export const PairingCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(
+    /^(?:EGG(?:0[1-9]|[1-9][0-9])|[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}-?[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5})$/,
+    "Enter the pairing code shown on your incubator, for example EGG01.",
+  );
+
 export const OnboardingStep3Schema = z.object({
   chamberName: z
     .string()
     .trim()
     .min(1, "Enter a chamber name.")
     .max(CHAMBER_NAME_MAX),
-  deviceId: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(
-      /^(?:EGG(?:0[1-9]|[1-9][0-9])|[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}-?[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5})$/,
-      "Enter the pairing code shown on your incubator, for example EGG01.",
-    ),
+  deviceId: PairingCodeSchema,
   startingModeId: z.string().min(1),
 });
 

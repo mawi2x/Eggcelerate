@@ -1,57 +1,66 @@
-# Incubator preparation
+# Incubator preparation and confirmed incubation
 
 ## Owner workflow
 
-1. Pair the incubator. It begins idle and unassigned.
-2. Open the chamber and choose **Prepare**, then select a species mode.
-3. Choose **Begin Preparation**. Adjust the heater, humidifier, and fan manually.
-4. Both live readings must remain inside that mode's targets for five minutes.
-5. When **Ready to load eggs** appears, load the eggs and confirm a count from 1–38.
-6. Confirm **Start cycle**. Only this starts Day 1 and the incubation schedule.
+1. Connect the incubator to Wi-Fi and add it to the correct farm using its pairing
+   code (EGG01 for EGG-001). DHT22 readings and LCD/OLED work before website pairing;
+   pairing assigns recorded readings and commands to the farm's chamber.
+2. Open the chamber, select **Prepare**, choose Chicken, Duck or Quail, and choose
+   **Begin Preparation**. This saves preparation state and queues the selected
+   mode's automatic climate command in the same database transaction.
+3. Check **Live Monitor → Chamber status** for device confirmation. The upper fan
+   circulates air, the heater regulates temperature, the mist maker raises low
+   humidity, and lower exhaust removes excess heat/humidity. Tray relay stays off.
+4. After acknowledgement, both actual readings must remain within the selected
+   ranges for five minutes, without sample gaps over 45 seconds. Stale sensor or
+   controller reports, faults, or a changed mode prevent readiness.
+5. The page shows **Ready to load eggs** and a durable **Ready to load eggs**
+   notification is added to Alerts once for this preparation. Notification history
+   is not proof of current readiness: the server checks readiness again at start.
+6. Load eggs and enter the count **1–38**. Confirm **Start Incubation**. Only that
+   confirmation starts Day 1. Regulation continues during the handoff; its mode,
+   fan operation and heater timing are not restarted. There is no bench time limit.
+7. **Stop Cycle** or completion queues all-equipment Stop atomically with the
+   lifecycle record. **Cancel preparation** does the same without creating a hatch
+   record. Heater, mist, both fans and tray stay off after device confirmation;
+   sensors, LCD/OLED, Wi-Fi and database recording continue.
 
-Changing the preparation mode restarts the stability check. Cancelling preparation
-returns the chamber to idle/unassigned. Neither action starts a cycle or creates
-a hatch record. Loading eggs can temporarily change conditions; the start action
-remains available only while the server's readiness check passes.
+An idle/available chamber is not automatically ready for eggs. Changing the
+preparation mode restarts the five-minute check. Current firmware accepts the
+unchanged built-in normal-incubation target ranges; unsupported/edited presets
+are rejected before preparation is committed.
 
-## Preparation panel typography
+## Faults and loss of power
 
-The panel follows the active theme tokens, including the currently approved
-phone scale in `typography-experimental.md`, rather than fixed Tailwind sizes.
+Sensor failure/staleness, overheating (39°C), or ten minutes continuous commanded
+heating stop heater/mist and latch a fault. Both fans ventilate during an active
+fault; explicit Stop overrides ventilation and turns all outputs off. Resolve the
+cause, use **Reset controller fault** in Chamber status, then explicitly resume
+regulation. Reset alone never starts the equipment.
 
-| Role | Desktop default | Phone below 640px | Implementation |
-| --- | --- | --- | --- |
-| Preparation / status heading | 16px | 14px | headingSmall / --type-heading-sm |
-| Target summary and instructions | 14px | 12px | body / --type-body |
-| Cancel preparation action | 14px | 12px | --type-button-label |
+The firmware saves acknowledged preparation/incubation authorization and mode in
+NVS. Following a normal power restart, outputs initialize off; authorized operation
+resumes only after two fresh valid DHT22 readings and the circulation fan lead.
+A saved manual Stop stays stopped. Faults are persisted; crash/watchdog resets
+require recovery rather than an automatic heater restart. Corrupt/unwritable
+run-state storage prevents operation. Server intent and boot-bound commands
+reconcile when networking returns. Device recovery does not depend on the laptop
+website being open, but recording requires the broker/database to be reachable.
 
-Action labels use their mobile tier below 768px; body/headings use their phone
-tier below 640px. Values above assume the default root size; rem tokens preserve
-browser zoom. Heading/status fonts, weights and spacing remain the shared
-SectionCard/StatusCallout styles. See [typography](typography-guidelines.md).
+The reported laptop-USB/UPS issue requiring EN is **not diagnosed or fixed** by
+this workflow. The device must boot reliably before firmware can recover. Physical
+outage/return-of-power acceptance remains required.
 
-## Readiness
+## Scope and acceptance
 
-The preparation start time is persisted in PostgreSQL (migration 0019). The API
-checks real telemetry samples on every chamber read and lifecycle mutation.
-Five minutes of measured coverage is required, with no sample gap over 45 seconds
-and a fresh latest reading. A value outside either range, a stale stream, or a
-delayed sample interrupts the check. Only samples recorded after preparation
-begins count. The server enforces readiness and the selected mode when starting;
-the browser cannot bypass it by enabling a button.
+This update integrates the existing climate preparation/confirmation flow locally.
+It does not commission physical tray turning, RPM/contact/water feedback, PWM fan
+speed, a new lockdown humidity profile, calibration, or the live-server deployment.
+The heater-facing upper fan is GPIO18; lower exhaust GPIO19. Hardware startup
+levels, thermal protection, actual climate regulation, reliable reboot and the
+full owner flow require supervised acceptance on the real incubator before eggs
+are entrusted to it. Commanded output states do not prove physical operation.
 
-The initial five-minute duration is a product setting in
-`database/preparation.py`, not a sensor calibration or a validated stabilization
-duration for every incubator. Preparation uses the same targets as the selected
-mode and the existing 15-second polling cadence. Demo values cannot qualify.
-
-## Current hardware scope
-
-The main ESP32 firmware already publishes temperature and humidity. No reflash
-is required for this dashboard/server feature. Actuator control remains manual;
-the dashboard labels heater, mist maker, and fan states **Not reported** because
-the sensor firmware does not send those states. The incubation schedule does not
-yet drive physical turning in this sensors-only pilot.
-
-Next work: local ESP32 control with safeguards, confirmed actuator telemetry and
-command acknowledgements, followed by sensor calibration against a reference.
+The five-minute stability duration is the current product setting, not a validated
+stabilization duration for every incubator. Readings and target ranges should be
+checked against an independent reference during commissioning.

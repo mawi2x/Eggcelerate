@@ -629,3 +629,24 @@ alert_monitors = Table(
         name="ck_monitors_condition_generation",
     ),
 )
+
+
+# Separate from simulator tray commands. One current request per chamber.
+climate_tests = Table(
+    "climate_tests", metadata,
+    Column("farm_id", Uuid, primary_key=True),
+    Column("incubator_id", Text, primary_key=True),
+    Column("request", JSONB),
+    Column("intent", JSONB),
+    Column("report", JSONB),
+    Column("reported_at", DateTime(timezone=True)),
+    Column("boot_id", Text),
+    Column("booted_at", DateTime(timezone=True)),
+    Column("seq", Integer),
+    Column("device_id", Uuid),
+    ForeignKeyConstraint(
+        ["farm_id", "incubator_id"],
+        ["incubators.farm_id", "incubators.public_id"],
+        ondelete="CASCADE", name="fk_climate_test_incubator",
+    ),
+)
