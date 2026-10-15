@@ -1,4 +1,3 @@
-import { useTemperatureDisplay } from "../providers/temperature-context";
 import {
   Bird,
   CheckFatIcon,
@@ -11,6 +10,7 @@ import { ChevronRight, Droplets, Thermometer } from "lucide-react";
 import { conditionDisplayLabels } from "../domain/cycle";
 import { rangeState } from "../domain/incubator";
 import type { Incubator, Mode, ReadingState } from "../domain/types";
+import { useTemperatureDisplay } from "../providers/temperature-context";
 import {
   ChamberCardFooter,
   ChamberCardHeader,
@@ -18,7 +18,6 @@ import {
 } from "./ChamberCardShell";
 import { FilledCheckIcon as CheckCircle } from "./icons/CheckIcon";
 import { ExclamationIcon } from "./icons/ExclamationIcon";
-import { SegmentedBattery } from "./SegmentedBattery";
 import { StatusIconBadge, statusIconBadgeGlyphSize } from "./StatusIconBadge";
 import { readingStateColors } from "./statusPresentation";
 import { Button } from "./ui/button";
@@ -444,11 +443,6 @@ export function IncubatorCard({
         }}
         trailing={
           <div className="flex shrink-0 flex-col items-end gap-1.5">
-            <SegmentedBattery
-              battery={unit.batteryPct}
-              charging={unit.powerSource !== "battery"}
-              showLabel
-            />
             {unit.conditionSeverity !== "info" ? (
               <span
                 className="inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5"

@@ -42,6 +42,29 @@ function successItems(path: string, itemSchema: z.ZodTypeAny): unknown[] {
 }
 
 describe("wire examples", () => {
+  it("maps explicit output reports while leaving legacy sensor-only devices unreported", () => {
+    const dto = IncubatorDTOSchema.parse(
+      successItems("/api/v1/incubators", IncubatorDTOSchema)[0],
+    );
+    expect(incubatorFromDTO(dto).outputStates).toBeUndefined();
+    expect(
+      incubatorFromDTO({
+        ...dto,
+        output_states: {
+          heater_on: false,
+          mist_on: true,
+          fan_on: false,
+          received_at: "2026-10-15T04:00:00Z",
+        },
+      }).outputStates,
+    ).toEqual({
+      heaterOn: false,
+      mistOn: true,
+      fanOn: false,
+      receivedAt: "2026-10-15T04:00:00Z",
+    });
+  });
+
   it("validates every example request and response against its schema", () => {
     expect(wireExamples.length).toBeGreaterThan(25);
     for (const example of wireExamples) {

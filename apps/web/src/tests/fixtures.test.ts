@@ -10,11 +10,11 @@ import { createModeFixtures, modeFixtures } from "../app/data/fixtures/modes";
 describe("fixture factories", () => {
   it("preserves the current fixture counts", () => {
     const modes = createModeFixtures();
-    expect(modes).toHaveLength(10);
+    expect(modes).toHaveLength(3);
     expect(createIncubatorFixtures(modes, Date.UTC(2026, 8, 3))).toHaveLength(
       12,
     );
-    expect(createAlertFixtures(Date.UTC(2026, 8, 3))).toHaveLength(12);
+    expect(createAlertFixtures(Date.UTC(2026, 8, 3))).toHaveLength(8);
     expect(createHatchRecordFixtures()).toHaveLength(12);
   });
 
@@ -40,9 +40,9 @@ describe("fixture factories", () => {
 
     expect(daysAgo("a1")).toBe(0);
     expect(daysAgo("a5")).toBe(0);
-    expect(daysAgo("a6")).toBe(1);
+    expect(daysAgo("a7")).toBe(1);
     expect(daysAgo("a8")).toBe(1);
-    expect(daysAgo("a9")).toBe(7);
+    expect(daysAgo("a10")).toBe(7);
     expect(daysAgo("a12")).toBe(7);
   });
 

@@ -111,7 +111,7 @@ describe("device controls after the React upgrade", () => {
     },
   );
 
-  it("reports online, connecting, offline, mains and battery devices and changes tabs", async () => {
+  it("reports connectivity without battery/power indicators and changes tabs", async () => {
     const units: Incubator[] = [
       {
         ...base,
@@ -150,8 +150,10 @@ describe("device controls after the React upgrade", () => {
     );
     try {
       expect(mounted.container.textContent).toContain("1 of 3 online");
-      for (const text of ["Online", "Connecting", "Offline", "Mains", "42%"])
+      for (const text of ["Online", "Connecting", "Offline"])
         expect(mounted.container.textContent).toContain(text);
+      expect(mounted.container.textContent).not.toContain("Mains");
+      expect(mounted.container.textContent).not.toContain("42%");
       await act(async () =>
         mounted.container
           .querySelector<HTMLButtonElement>("#hardware-preferences-tab")

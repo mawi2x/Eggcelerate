@@ -445,7 +445,7 @@ export function OverviewScreen({
           <div
             ref={carouselRef}
             onScroll={handleCarouselScroll}
-            className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:pb-0 lg:grid-cols-4"
+            className={`flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:pb-0 ${priorityUnits.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}
           >
             {priorityUnits.map((u) => (
               <div

@@ -1,3 +1,4 @@
+import { currentModes } from "../../domain/mode-catalog";
 import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { Egg as EggIcon } from "@phosphor-icons/react";
 import { IconClipboardText } from "@tabler/icons-react";
@@ -353,8 +354,8 @@ export function DetailScreen({
           <div className="space-y-3">
             <Typography variant="body" className="text-[var(--text-secondary)]">
               For {mode.name}, the target temperature is{" "}
-              {temperature.formatRange(mode.targetTemp)} and the target humidity is{" "}
-              {mode.targetHumidity.min} to {mode.targetHumidity.max}% RH.
+              {temperature.formatRange(mode.targetTemp)} and the target humidity
+              is {mode.targetHumidity.min} to {mode.targetHumidity.max}% RH.
             </Typography>
             <StatusCallout
               tone={preparationReady ? "success" : "info"}
@@ -480,7 +481,7 @@ export function DetailScreen({
                     <SelectValue placeholder="Select an incubation mode" />
                   </SelectTrigger>
                   <SelectContent>
-                    {modes.map((m) => (
+                    {currentModes(modes).map((m) => (
                       <SelectItem key={m.id} value={m.id}>
                         {m.name} ({m.incubationDays} days)
                       </SelectItem>

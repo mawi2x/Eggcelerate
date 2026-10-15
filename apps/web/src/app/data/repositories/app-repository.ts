@@ -11,7 +11,7 @@ const resolved = resolveDataSource({
 export const appRepository: EggcelerateRepository =
   resolved.source === "api" && resolved.apiUrl !== null
     ? new ApiRepository({ baseUrl: resolved.apiUrl })
-    : new InMemoryEggcelerateRepository({ latencyMs: 350 });
+    : new InMemoryEggcelerateRepository({ latencyMs: 350, fixtureSet: "demo" });
 
 export const appAuthApiBaseUrl =
   resolved.source === "api" ? resolved.apiUrl : null;

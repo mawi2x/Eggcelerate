@@ -1,11 +1,39 @@
 # Relay and fan integration — revised hardware
 
+October 14: a separate [local two-fan MOSFET bench](mosfet-bench/README.md)
+now contains a draft sketch and control page. Main pilot firmware still has no
+actuator outputs. Confirm actual GPIO/trigger interfaces before arming the bench;
+upload and physical acceptance are pending.
+
 Recorded 2026-10-12 from the user's purchase screenshots and wiring revision.
 This guide prepares later implementation; the main firmware still does not
 drive relay or MOSFET outputs. Keep the working DHT22, LCD/OLED, setup and cloud
 code as the baseline.
 
-## 1. Confirmed component allocation
+
+## Current decision — October 14 single-board revision
+
+User now selected **one MakerLab 5 V four-channel board** for all four relay
+loads; the two-channel board is spare. This supersedes the October 12 two-board
+allocation below. User-corrected channel order: heater, tray, empty/reserved LED, mist.
+Channel allocation is user-confirmed; GPIO wires remain proposed:
+
+| Input | Load | GPIO | Relation to original schematic |
+| --- | --- | --- | --- |
+| IN1 | Heater | 27 | Originally IN3; retains heater GPIO |
+| IN2 | DC tray motor enable | 25 | Originally IN1/GPIO12; GPIO25 still proposed |
+| IN3 | Empty / reserved 12 V LED light | 26 reserved | Leave disconnected/disabled for now |
+| IN4 | Mist maker | 14 | Originally IN2; retains mist GPIO |
+
+Seller lists 10 A at 250 V AC / 28 V DC contacts and 5 V control for this variant.
+This is per-relay contact information, not an aggregate board-current guarantee.
+The explicit 3.3 V compatibility claim in the supplied text is for the eight-
+channel variant; four-channel trigger compatibility/polarity remain unconfirmed.
+See [the current relay reference](hardware/relay-reference.md) before testing.
+The remaining two-board tables/circuit example below are historical October 12
+planning; follow the current single-board table above for the next bench work.
+
+## 1. Historical October 12 component allocation
 
 | Module | User's selected variant | Loads assigned by user |
 | --- | --- | --- |
@@ -91,6 +119,14 @@ motor driver/relay arrangement before assigning B's remaining channels. Do not
 invent a turn duration or enable unattended motion without a confirmed stop rule.
 
 ### Fan MOSFETs
+
+October 14 identification: user supplied the Wangzm purchase image of the blue
+dual-MOSFET **HW-517** module and its seller description: DC 5 to 36 V supply,
+DC 3.3 to 20 V trigger, PWM input up to 20 kHz, advertised 15 A / 400 W at room
+temperature. Treat these as listing specifications; actual terminal labels,
+HIGH-on polarity, reset behavior and fan compatibility still need bench evidence.
+The [bench guide](mosfet-bench/README.md) records this identification. Supply PWM
+remains disabled pending the fan's model/wire count and supported frequency.
 
 - Confirm the actual module's power input, switched load terminals, trigger
   input and ground labels, and that 3.3 V control is supported.

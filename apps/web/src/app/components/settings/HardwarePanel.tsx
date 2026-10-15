@@ -1,7 +1,7 @@
-import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { WifiSlash } from "@phosphor-icons/react";
-import { BatteryMedium, Info, Minus, Plug, Plus, Wifi } from "lucide-react";
+import { Info, Minus, Plus, Wifi } from "lucide-react";
 import type { Incubator } from "../../domain/types";
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { EmptyState } from "../EmptyState";
 import { Input } from "../ui/input";
 import {
@@ -160,19 +160,6 @@ export function HardwarePanel({
                     </p>
                   </div>
                   <span
-                    className="hidden shrink-0 items-center gap-1.5 xl:flex"
-                    style={{ fontSize: "var(--type-caption)", color: MUTED }}
-                  >
-                    {unit.powerSource === "battery" ? (
-                      <BatteryMedium size={15} />
-                    ) : (
-                      <Plug size={15} />
-                    )}
-                    {unit.powerSource === "battery"
-                      ? `${unit.batteryPct}%`
-                      : "Mains"}
-                  </span>
-                  <span
                     className="shrink-0 rounded-full px-2.5 py-0.5"
                     style={{
                       backgroundColor: online
@@ -197,7 +184,7 @@ export function HardwarePanel({
                 <EmptyState
                   size="compact"
                   title="No devices paired yet"
-                  description="Paired incubators will appear here with their connection and power status."
+                  description="Paired incubators will appear here with their connection status."
                 />
               </div>
             )}
@@ -256,19 +243,6 @@ export function HardwarePanel({
                   >
                     Fixed at 5 minutes
                   </span>
-                }
-              />
-              <SettingRow
-                label="Battery saver mode"
-                hint="Halves the sampling rate when a chamber runs on battery."
-                borderless
-                control={
-                  <Switch
-                    checked={false}
-                    disabled
-                    aria-describedby="hardware-unavailable"
-                    aria-label="Battery saver mode"
-                  />
                 }
               />
             </div>

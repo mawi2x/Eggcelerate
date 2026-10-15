@@ -11,8 +11,6 @@ export function getUnitIssues(unit: Incubator, mode: Mode): string[] {
   else if (unit.temp < mode.targetTemp.min) issues.push("temperature low");
   if (unit.humidity > mode.targetHumidity.max) issues.push("humidity high");
   else if (unit.humidity < mode.targetHumidity.min) issues.push("humidity low");
-  if (unit.powerSource === "battery" && unit.batteryPct <= 25)
-    issues.push("battery low");
   if (new Date(unit.nextTurn).getTime() < Date.now())
     issues.push("turning overdue");
   if (!unit.paired) issues.push("device disconnected");

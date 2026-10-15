@@ -1,11 +1,28 @@
 # EGGCELERATE roadmap and timeline
 
-Last updated: **2026-10-12**. Current working progress and the explicit
-next-session audit reminder are saved in
-[the October 12 checkpoint](docs/current-progress-2026-10-12.md).
+Last updated: **2026-10-14**. Paused at the user's request to continue later.
+Resume from [today's saved handoff](#october-14--session-close-and-resume-handoff).
+The [October 12 checkpoint](docs/current-progress-2026-10-12.md) remains the
+historical sensor/deployment record and broader audit reminder.
 
 **Next review: frontend audit plus backend, firmware/hardware and deployment
 audit. Pending, not completed.** See the checkpoint checklist before resuming.
+
+**Current hardware checkpoint (October 14): manual relay and fan MOSFET controls
+reported working by the user.** See [mosfet-bench](apps/firmware/mosfet-bench/README.md)
+and [relay-bench](apps/firmware/relay-bench/README.md). The complete current pin
+allocation is recorded below. Integration into main firmware, PWM and broader
+physical qualification remain pending.
+
+**Next implementation plan:** [VPS manual controls, local threshold control and
+final tray return before lockdown](apps/firmware/vps-actuator-control-plan.md).
+User agreed to level/home positioning for lockdown. Plan prepared; implementation
+and motor/position-feedback qualification remain pending.
+
+**Current mode scope:** three built-in choices — **Chicken, Duck and Quail** —
+plus user-created custom modes.
+[Catalog details](apps/firmware/mode-catalog-reference.md). Source changes are
+local; VPS rollout remains pending.
 
 Historical saved checkpoint: local tag
 `checkpoint-2026-10-06-papers` on `experiment`, following `493f051`
@@ -17,10 +34,48 @@ This is the current entry point for project plans and progress. “Roadmap” an
 “timeline” both refer to this document. Detailed plans and handoffs remain linked
 as supporting records. Update this roadmap as work is implemented and verified.
 
+## Current ESP32 pin allocation — October 15, 2026
+
+User confirms all three relays and both fan MOSFET controls are working together
+with the combined relay-bench sketch and its local test page on October 15.
+This includes the revised mist IN3/GPIO14, upper fan GPIO18 and lower fan GPIO19
+allocation. Sensor/display/cloud services remain in the separate main firmware.
+
+| ESP32 GPIO | Current connection | Status | Original schematic / change |
+| --- | --- | --- | --- |
+| **4** | DHT22 DATA | Used by main firmware; real readings recorded | Replaces schematic GPIO2 |
+| **14** | Relay IN3 — mist maker | User confirms working in combined bench test | Same GPIO; moved from IN4 to IN3; original relay channel IN2 |
+| **18** | Upper fan MOSFET trigger / upper fan slot | User confirms working in combined bench test | Swapped from the lower-fan slot per latest user instruction |
+| **19** | Lower fan MOSFET trigger / lower fan slot | User confirms working in combined bench test | Swapped from the upper-fan slot per latest user instruction |
+| **21** | Shared I²C SDA — LCD/OLED/time-module bus | Allocated in main firmware; full physical acceptance remains unrecorded | Same SDA pin as schematic |
+| **23** | Shared I²C SCL — LCD/OLED/time-module bus | Allocated in main firmware; full physical acceptance remains unrecorded | Same SCL pin; do not substitute default GPIO22 |
+| **25** | Relay IN2 — DC tray motor enable | User confirms working in combined bench test | Replaces schematic GPIO12 / old IN1 |
+| **27** | Relay IN1 — heater | User confirms working in combined bench test | Same GPIO; original relay channel IN3 |
+| **26** | Unassigned | Former LED allocation removed; no relay output assigned | GPIO26 is vacated |
+
+Former GPIO2 and GPIO12 assignments are superseded. Neither is a qualified
+spare output; confirm any old wire is removed before reusing a pin. Relay
+controls use LOW-on/HIGH-off; fan MOSFET controls use HIGH-on/LOW-off. Supply
+PWM remains disabled. Current relay channel order is heater (IN1), tray (IN2),
+mist (IN3), with IN4 vacant. GPIO26 is unassigned; the LED output was removed.
+The revised mist-maker channel assignment is included in the user's successful
+combined bench confirmation. The unused two-channel relay board is spare.
+
+**Power connections are not GPIO assignments:** ESP32 GND and the confirmed
+PSU DC negative provide the common reference; the relay board requires 5 V and
+the DeepCool fans require 12 V. Peripheral supplies/logic levels must follow
+their specific module wiring records. During USB flashing, external +5 V to
+ESP32 5V/VIN is disconnected while common DC ground remains connected.
+
+Permanent details: [hardware pin map](apps/firmware/hardware-pin-map.md),
+[fan reference](apps/firmware/hardware/fan-reference.md),
+[relay reference](apps/firmware/hardware/relay-reference.md).
+
 **Current pilot:** real DHT22 readings reach the VPS dashboard; Charles Farm has
 EGG-001 paired with short code EGG01. Preparation is implemented with manual
 equipment control. LCD/OLED firmware is prepared and compiled; relay/MOSFET
-control remains unimplemented. Recent UI cleanup is deployed. Current edits are
+manual bench control is user-confirmed, while main-program actuator integration
+remains pending. Recent UI cleanup is deployed. Current edits are
 local/uncommitted and deployed as staging images, not a new published Git release.
 
 **Historical October 6 baseline:** the dashboard and backend foundation are implemented. Release
@@ -166,7 +221,7 @@ contributor and exclude hardware delays and the final pilot soak.
 | M5 — Loading and CI | Lazy Settings/Incubators, corrected vendor matching, local fonts, shared/route asset budgets, recovery checks, and single coverage CI run delivered | Complete locally; current asset budgets pass | October 6 baseline-repair evidence below; GitHub runner evidence remains external |
 | M6 — Maintainability and writes | Trends and Incubators extraction delivered; farm hooks, concurrency measurements, narrow transactions, and collection pagination remain | In progress — frontend first | Original estimate: 5–10 days; after M3–M5 |
 | M7 — Operations | Current HTTPS/auth/provisioning runbook, metrics/diagnostics, source/aggregate login limits, safe retention, scheduled encrypted backups, deployment-like recovery drills | Pending | 4–7 days; preparation after M0, final drills after relevant software changes |
-| M8 — Physical devices | Actual firmware, device credentials/TLS/ACLs, commissioned worker, approved AP/pairing/display/offline-queue plan, hardware safety and restart/outage qualification | Pending; connection/recovery scope approved, implementation and hardware verification pending | Hardware dependent; discovery after M0, operational support from M7 |
+| M8 — Physical devices | Real sensor/TLS delivery implemented; display firmware compiled; local two-fan MOSFET bench drafted; actuator integration, offline queue, hardware safety and restart/outage qualification remain | In progress; sensor pilot works, physical actuator/display qualification pending | October 12 checkpoint and October 14 bench draft; hardware dependent |
 | M9 — Release decision | Current release-candidate checks, operator journeys, mobile/performance validation, restore/outage evidence, pilot soak, rollback and release sign-off | Pending | 1–2 days plus soak; after applicable milestones |
 
 Default software sequence: **M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M9**.
@@ -619,3 +674,627 @@ Web type checking and build passed. Updated local/VPS web to
 preparation-type-20261012; API remains readable-ranges-20261012. No browser
 viewport test or test suite run. Documented the panel's token roles in the
 incubator preparation guide.
+
+### October 14 — local two-fan MOSFET bench drafted
+
+User selected checking both fan MOSFETs and requested a local control page first.
+Prepared [mosfet-bench](apps/firmware/mosfet-bench/README.md), a separate ESP32
+NodeMCU-32S sketch with a responsive, ESP32-hosted Wi-Fi page. Upper/lower control
+uses GPIO19/GPIO18 as the draft pin map. Each fan has Off/Full on and optional
+PWM duty controls; All off disarms both. Boot is disarmed, sessions end after
+120 seconds, and a ten-second browser-heartbeat timeout requests shutdown.
+Timeout checks run in the main loop; exact timing during stalled network calls
+is still unqualified. The page reports applied GPIO duty, not measured fan RPM,
+current, power or confirmed physical switching.
+
+User confirmed the USB flashing power arrangement: external +5 V disconnected
+from ESP32 while keeping the shared PSU DC ground. Actual GPIO connections,
+3.3 V active-HIGH trigger support, module labels and fan ratings remain to be
+confirmed. The sketch gates output initialization/arming on kWiringConfirmed.
+Supply PWM is independently disabled until fan/module compatibility and a usable
+frequency are established; there is no assumed PWM frequency.
+
+The local computer preview is http://127.0.0.1:18719/?preview=1 with controls
+disabled. After upload, real control uses the ESP32's protected local AP and
+http://192.168.4.1. A random AP password is printed over Serial on each boot.
+No Internet service is required. The bench does not access project identity or
+pairing storage; flash erasure must stay disabled. Sensor/cloud/display services
+pause while this separate sketch runs; restore the main sketch after testing.
+
+Recorded checks: local preview HTTP **200**, JavaScript syntax check passed,
+and Git diff whitespace check passed. Browser visual review was unavailable.
+ESP32 compilation/upload and all physical ON/OFF, combined-load, boot/reset,
+heartbeat/session timeout and PWM acceptance remain pending. No board was
+flashed, no outputs were operated, and no VPS changes were made. M8 remains
+in progress; the saved broader frontend/system audit also remains pending.
+
+### October 14 — purchased MOSFET module identified
+
+User supplied the Wangzm purchase image and description for a blue dual-MOSFET
+**HW-517** board: seller-stated DC 5 to 36 V load input, DC 3.3 to 20 V digital
+trigger, and PWM input up to 20 kHz. Advertised 15 A / 400 W capacity remains a
+seller claim, not bench qualification. Recorded the specifications in the
+actuator/bench guides and limited the optional PWM configuration to at most
+20 kHz. No PWM frequency was selected and no outputs were enabled.
+
+The module listing supports a 3.3 V trigger interface; actual terminal labels,
+HIGH-on polarity, boot/reset off behavior, GPIO19/18 wires and fan voltage,
+current, model/wire count remain pending. Fan supply-PWM compatibility must be
+established separately. Next: identify the fan and received-board terminals,
+then compile/upload the isolated ON/OFF bench after wiring confirmation.
+
+### October 14 — recovered existing fan schematic information
+
+Rechecked the saved prototype schematic after the user asked about existing fan
+data. It already labels both fans **12 V DC FAN** and represents each with
+PWR, GND, Tach and PWM terminals. Only the power path is connected through the
+MOSFET; Tach/PWM are unused. Recorded this in the pin map and bench guide.
+Earlier requests for fan voltage/wire count overlooked this available design
+information. The actual purchased fan model/current/wires and supported control
+method still need confirmation; the schematic does not qualify supply PWM.
+
+### October 14 — actual fan model identified
+
+Permanent reference: [DeepCool XFAN 120 fan record](apps/firmware/hardware/fan-reference.md).
+
+User identified the fans as **DeepCool XFAN 120**, P/N **DP-FDC-XF120**, and
+supplied specifications matching the manufacturer's product page: 120 × 120 ×
+25 mm, 12 V DC, operating 10.8 to 13.2 V, starting 7 V, rated 0.07 A ±10% / 0.84 W,
+1300 RPM ±10%, maximum 43.56 CFM, hydro bearing. Two fans total nominally 0.14 A /
+1.68 W; startup/maximum current has not been measured. Updated the pin map,
+bench documentation, configuration comments and local page's fan identification.
+
+Purchase thumbnail appears to show three fan wires plus a peripheral power
+connector; verify received connectors before assigning pins. The schematic's
+four-terminal symbol is not confirmation of a dedicated PWM wire on these fans.
+Start with full 12 V MOSFET ON/OFF switching. Manufacturer specifications do not
+qualify supply PWM or provide a supported frequency/duty range; PWM remains
+disabled. The 7 V starting threshold is not a calculated minimum PWM percentage.
+Any alternate power connector must not bypass the MOSFET. Actual GPIO wiring,
+module polarity/default-off behavior, compile/upload and physical acceptance
+remain pending; no outputs were enabled or operated.
+
+### October 14 — fan trigger connections ready for bench upload
+
+User reports both MOSFET triggers connected to GPIO18 and GPIO19 and is ready
+for testing. Enabled kWiringConfirmed in the separate mosfet-bench sketch for
+manual ON/OFF bring-up. Expected assignment is GPIO19 upper / GPIO18 lower;
+confirm which physical fan each operates. Module HIGH-on/default-off behavior
+remains a bench observation, not an established pass. PWM stays disabled.
+Upload entry point is apps/firmware/mosfet-bench/mosfet-bench.ino; use NodeMCU-32S,
+flash erasure disabled, load power off during upload, and Serial at 115200 for
+the test AP password. No upload or physical test was performed by the agent.
+
+### October 14 — simple fixed bench Wi-Fi password
+
+User requested a simple password using five words/fruits for future bench use.
+Changed only the mosfet-bench AP password to apple-mango-pear-plum-kiwi and
+recorded it in BenchConfig.h and the bench guide. This supersedes the random
+per-boot AP password for this test sketch. The per-boot command token remains
+random. Re-upload the revised bench sketch to apply; the already flashed version
+still uses its Serial-printed password. Main pilot Wi-Fi/cloud credentials are
+unaffected. No upload or new hardware check was performed.
+
+### October 14 — shorter bench password and fan-not-spinning observation
+
+User requested a five-letter password and reported that the MOSFET LED glows
+but the fan does not spin. Protected ESP32 softAP requires at least eight
+characters; shortened the bench password to mango123 (eight characters).
+Re-upload is required; this supersedes the earlier five-fruit password.
+Recorded the reported LED observation only: fan switching has not passed.
+Next check: use Full on (100%), inspect module VIN/OUT polarity and fan power
+wires, and measure the 12 V supply/output if a meter is available. The module LED
+alone does not prove load power delivery. No outputs were operated by the agent.
+
+### October 14 — fan test working and current pin allocation
+
+User reports the MOSFET/fan test is working after flashing the separate bench
+and connecting triggers to GPIO18/19. This records user-reported functional
+success. Individual channel identity, combined-load, boot/reset, timeout and
+module-temperature observations were not separately supplied. PWM remains
+disabled; integration into main firmware remains pending.
+
+| Function | Original schematic | Current pin / allocation | Status |
+| --- | --- | --- | --- |
+| DHT22 DATA | GPIO2 | **GPIO4** | Used by main firmware; user corrected wiring and real readings recorded |
+| Upper fan MOSFET trigger | GPIO19 | **GPIO18** | User updated slot assignment: GPIO18 is upper; fan test reported working |
+| Lower fan MOSFET trigger | GPIO18 | **GPIO19** | User updated slot assignment: GPIO19 is lower; fan test reported working |
+| Shared I²C SDA | GPIO21, time module | **GPIO21** for shared LCD/OLED/time-module bus | Used in main display code; physical display/time-module acceptance remains unrecorded |
+| Shared I²C SCL | GPIO23, time module | **GPIO23** for shared LCD/OLED/time-module bus | Used in main display code; retain GPIO23 rather than default GPIO22 |
+| Heater relay | GPIO27 → old IN3 | **GPIO27 → two-channel A IN1** | Proposed revised channel; physical connection/test pending |
+| Mist maker relay | GPIO14 → old IN2 | **GPIO14 → two-channel A IN2** | Proposed revised channel; physical connection/test pending |
+| DC tray motor relay | GPIO12 → old IN1 | **GPIO25 → four-channel B IN1** | Proposed replacement; physical adoption not confirmed |
+| 12 V LED light relay | No original assignment | **GPIO26 → four-channel B IN2** | Proposed; connection/test pending |
+| Former DHT pin | GPIO2 | No current planned assignment | DHT moved to GPIO4; not a qualified spare output |
+| Former motor pin | GPIO12 | Legacy assignment; avoided in revised plan | Old wire removal not confirmed; preserve boot-strapping context |
+
+GPIO4/21/23 remain reserved for the main sensor/display program, even while the
+fan bench replaces it. Shared PSU DC negative/ESP32 GND is a reference connection,
+not a GPIO assignment. The user-confirmed USB arrangement disconnects external
++5 V from ESP32 while retaining common DC ground. Board B IN3/IN4 are reserved
+without GPIO assignments. Proposed relay pins are not confirmed or tested outputs.
+
+Canonical reference: [hardware pin map](apps/firmware/hardware-pin-map.md).
+Fan data: [fan reference](apps/firmware/hardware/fan-reference.md).
+M8 remains in progress. Automatic environmental control remains unimplemented.
+
+### October 14 — relay testing selected; interface confirmation pending
+
+After the reported MOSFET/fan success, user selected relay testing. Prepared
+[the relay reference and initial bench sequence](apps/firmware/hardware/relay-reference.md)
+with known two-/four-channel MakerLab 5 V board allocation, proposed GPIO27/14
+and GPIO25/26, and a coils/isolated-contacts-first sequence. Requested board
+selection, actual IN-to-GPIO wiring and HIGH/LOW trigger setting. GPIO18/19 remain
+allocated to the fan MOSFETs; GPIO4/21/23 remain reserved for sensor/display work.
+
+Relay polarity, 3.3 V input compatibility, supply/jumper arrangement and actual
+relay wires remain unconfirmed. No relay-specific outputs/sketch were enabled,
+no relay was actuated, and no load test occurred. First acceptance is manual
+channel click/contact checking with all real loads disconnected; real heater,
+mist, tray/light operation remains separate pending work. The MOSFET sketch is
+not a relay tester. M8 remains in progress.
+
+### October 14 — current relay decision: one four-channel board
+
+User selected the purchased **MakerLab 5 V four-channel SPDT board** for all
+relay loads; the purchased two-channel board is spare. This supersedes the
+October 12 two-board allocation and earlier October 14 relay channel tables.
+Saved purchase/specification details in the permanent
+[relay reference](apps/firmware/hardware/relay-reference.md) and updated the
+[current pin map](apps/firmware/hardware-pin-map.md).
+
+| Four-channel input | Intended load | Proposed ESP32 GPIO | Original schematic |
+| --- | --- | --- | --- |
+| IN1 | DC tray motor enable | **25** | Motor IN1 / GPIO12; pin move still proposed |
+| IN2 | Mist maker | **14** | Same channel and pin |
+| IN3 | Heater | **27** | Same channel and pin |
+| IN4 | 12 V LED light | **26** | Previously unused channel; new light |
+
+Channel order is a proposed implementation choice preserving the original
+motor/mist/heater order, not a statement about actual connected wires. This
+supersedes the previous proposed light-at-B-IN2 and heater/mist-on-board-A plan.
+GPIO18/19 remain used for the fan MOSFETs; GPIO4/21/23 remain reserved for the
+sensor/display program. All four relay channels have proposed assignments;
+motor reversal needing extra contacts would require revisiting the driver plan.
+
+Seller's four-channel specifications: four individually controlled SPDT relays,
+optocouplers, LEDs, 5 V control, contact rating 10 A at 250 V AC / 28 V DC.
+The 10 A specification is per relay at the stated conditions, not a qualified
+40 A board rating; real load/inrush, contact model, terminals/wiring and power
+supply still need checking. Seller explicitly claims 3.3 V compatibility only
+for the eight-channel variant, so that claim is not evidence for this board.
+Actual four-channel input polarity, ESP32 interface compatibility and GPIO wires
+remain pending. No relay sketch/output was enabled and no contact/load test ran.
+
+### October 14 — user-corrected relay channel sequence (historical allocation)
+
+User corrected the four-channel order to **heater → tray → empty/reserved LED
+→ mist maker**, interpreted as IN1 through IN4. This supersedes the assistant's
+previous proposed motor/mist/heater/light sequence. Updated the permanent relay
+reference, current pin map and actuator guide.
+
+| Four-channel input | User allocation at this point in the timeline | GPIO plan | Connection status |
+| --- | --- | --- | --- |
+| **IN1** | **Heater** | **GPIO27 proposed** | Channel allocation confirmed; GPIO wire not yet confirmed |
+| **IN2** | **DC tray motor** | **GPIO25 proposed** | Channel allocation confirmed; replacement for old GPIO12 remains proposed |
+| **IN3** | **Empty — reserved for LED light** | **GPIO26 reserved/proposed** | Leave unconnected and disabled until light is added |
+| **IN4** | **Mist maker** | **GPIO14 proposed** | Channel allocation confirmed; GPIO wire not yet confirmed |
+
+At this point in the timeline, GPIO18/19 remained fan MOSFET triggers and
+GPIO4/21/23 remained sensor/shared-I²C allocations. Trigger polarity and safe
+ESP32 input compatibility remained open. No relay code was enabled, wiring
+changed or load operated by the agent. This relay order was later superseded by
+the latest allocation update at the end of this roadmap.
+
+### October 14 — relay connections reported and gated click bench prepared
+
+User reports the relay modules are now connected. Exact IN-to-GPIO confirmation
+and four-channel board trigger polarity/safe 3.3 V interface information remain
+pending; requested those details before enabling outputs.
+Prepared [relay-bench](apps/firmware/relay-bench/README.md) with the user's order:
+IN1 heater/GPIO27, IN2 tray/GPIO25, IN3 empty/reserved LED (GPIO26 not driven),
+IN4 mist/GPIO14. These GPIO wires remain draft values until explicitly confirmed.
+
+Separate ESP32-hosted page on Eggcelerate-Relay-Test, password mango123, provides
+Arm, two-second pulses one unloaded relay at a time, and All off. Software
+bounds: one-second off interval per channel, 120-second session, ten-second
+heartbeat timeout. Timing under stalled WebServer calls remains unqualified.
+GPIO18/19 fan triggers are held LOW; GPIO4/21/23 remain untouched. Contact loads
+must stay disconnected for this initial click/contact test. Main services pause
+while the separate sketch runs; flash erasure remains disabled.
+
+kWiringAndInterfaceConfirmed is false and kRelayActiveLevel is -1: no relay pin
+initialization/arming until confirmed interface/polarity is configured. Reserved
+IN3 has no callable control. Page JavaScript syntax check passed; firmware
+compile/upload and physical contact/boot/timeout checks remain pending.
+No relay output was operated by the agent; M8 stays in progress.
+
+### October 14 — individual relay On/Off controls
+
+User requested individual On/Off options. Replaced relay pulse-only controls
+with separate On and Off buttons for heater IN1/GPIO27, tray IN2/GPIO25 and mist
+IN4/GPIO14. IN3 remains reserved/disabled. Each relay independently cuts off
+nominally after ten seconds, repeated ON cannot extend that limit, and a
+one-second off interval prevents immediate repeated energizing. Individual OFF
+is accepted while disarmed; All off switches all inactive and disarms. Existing
+session/heartbeat bounds and interface/polarity gates remain. Main-loop timing
+under stalled network calls still needs qualification. Revised sketch must be
+uploaded after wiring/interface/polarity confirmation; no hardware was operated.
+
+### October 14 — relay control enabled after user correction
+
+User stated hardware had already been confirmed and requested working controls
+following unsuccessful troubleshooting with the gated sketch. Corrected the
+relay-bench configuration: kWiringAndInterfaceConfirmed=true and
+kRelayActiveLevel=LOW for the pictured board's apparent optocoupler circuit.
+GPIO27/25/14 now initialize HIGH/inactive; ON drives LOW. The web page can arm
+and command heater IN1, tray IN2 and mist IN4 after this version is uploaded.
+IN3/GPIO26 stays disabled. Per-channel ten-second cutoff, All off, heartbeat and
+session timeouts remain. Prior gated firmware cannot operate relays and its
+lack of clicks/LEDs is not evidence of hardware failure.
+
+User confirmation supports enabling this bench; physical channel click/contact,
+reset/off behavior and actual input circuit verification are still unrecorded.
+LOW-trigger is the configured circuit interpretation, not a new measured result.
+No firmware upload or relay actuation was performed by the agent. Re-upload
+relay-bench.ino with flash erase disabled, then verify isolated contacts first.
+
+### October 14 — relays and MOSFETs working (latest user confirmation)
+
+User confirms **all relays and MOSFETs are working** following manual testing
+with the separate bench sketches. Record this as user-reported functional
+success, superseding earlier disabled/pending manual-control status. Updated
+permanent relay/fan references, hardware pin map and both bench READMEs.
+
+| Function | Channel / ESP32 GPIO | Current status |
+| --- | --- | --- |
+| Heater relay | IN1 / **GPIO27** | Working manual bench control; LOW-on/HIGH-off |
+| DC tray relay | IN2 / **GPIO25** | Working manual bench control; LOW-on/HIGH-off |
+| Mist maker relay | IN3 / **GPIO14** | Reassigned from IN4 per latest instruction; previous assignment was working; new mapping not retested |
+| Vacant relay channel | IN4 / no GPIO | Unassigned; LED output removed |
+| Upper fan MOSFET | **GPIO18** | Working manual bench control; HIGH-on/LOW-off |
+| Lower fan MOSFET | **GPIO19** | Working manual bench control; HIGH-on/LOW-off |
+| DHT22 | **GPIO4** | Main-program sensor allocation retained |
+| Shared display/time-module bus | SDA **GPIO21**, SCL **GPIO23** | Main-program allocation retained |
+
+Success is reported by the user, not agent-measured. Separate bench sketches
+have not yet been combined into the main sensor/display/cloud firmware. PWM,
+actual load/contact/current measurements, sustained operation, reset/fault and
+network-timeout qualification remain open. Automatic environmental control and
+bounded tray motion remain future work; M8 stays in progress. Next implementation
+can combine confirmed manual outputs with the main program after defining the
+load-specific safeguards and motor stop behavior. No automatic integration or
+firmware upload was performed in this update.
+
+### October 14 — next plan: VPS manual controls, local thresholds and tray home
+
+User requested manual controls hosted on the existing VPS, automatic threshold
+control, and tray movement to an angle on its first turn and back to base on its
+last turn. Saved [the integrated actuator/VPS plan](apps/firmware/vps-actuator-control-plan.md).
+Actuator UI will live in the existing HTTPS dashboard; the ESP32 retains only
+its Wi-Fi setup/recovery portal. Commands travel through authenticated API,
+durable outbox, commissioned TLS MQTT hardware dispatch, device validation and
+correlated outcomes/state. Current sensor-only worker and receipt-only firmware
+need extension; simulator dispatch flags are not a physical-control shortcut.
+
+Environmental thresholds/hysteresis execute locally on ESP32 using valid mode
+profiles, with bounded manual override leases, independent fault handling and
+continued Auto operation through Internet loss. Existing safety values remain
+provisional. Five-minute real-reading preparation and loaded-cycle start rules
+remain; automatic equipment control is new implementation. Fan supply PWM stays
+disabled. Report applied GPIO state, not fabricated contact/RPM feedback.
+
+Tray plan requires target angle, meaning of last turn, motor/mechanism and actual
+position/limit feedback. One tray relay is power enable only; it does not measure
+angle or guarantee return/reversal. Plan home/tilt/return states with bounded runs
+and feedback-confirmed completion; no guessed motor duration or new GPIOs.
+Requested those missing details while planning independent environmental/VPS work.
+
+Sequence: integrated actuator service → physical command/ACK/worker contract →
+VPS manual controls → threshold Auto/preparation → qualified tray angle/home →
+pilot/release evidence. All stages remain planned; no firmware, VPS or hardware
+was changed/operated by this planning update. M8 remains in progress.
+
+### October 14 — agreed level/home position before lockdown; plan prepared
+
+User accepted the recommendation and requested planning only. Updated
+[the integrated VPS/threshold/tray plan](apps/firmware/vps-actuator-control-plan.md)
+with the agreed final movement: return to **level base/home**, verify actual
+arrival, stop motor and keep turning disabled throughout lockdown. Normal turns
+are inhibited when final return begins; failure does not re-enable them. The
+species profile determines the cutoff (chicken day 18 is guidance, not a shared
+constant for all species). Temperature/humidity phase control continues even
+if a tray position fault prevents confirmed home arrival.
+
+Plan covers position feedback, bounded travel, pending/moving/completed/failed
+VPS states, duplicate/reboot/reconnect behavior, persisted turning inhibition,
+missed-cutoff handling and explicit operator recovery. It includes hardware and
+end-to-end acceptance checks. Target tilt angle, normal turning pattern, motor
+model/linkage/direction, home/angle sensors and measured travel time remain open;
+no new GPIOs or guessed motor duration were assigned. GPIO26/IN3 stays reserved.
+
+Manual controls remain hosted on the VPS; threshold/hysteresis and motor stop
+rules run locally on ESP32. Existing bench and main firmware are unchanged.
+No firmware upload, physical movement, test run or deployment was performed.
+M8 and this integrated implementation remain in progress/planned, respectively.
+
+### October 14 — three built-in Philippine pilot modes
+
+User requested removing other mode choices and keeping three common Philippine
+egg types. Selected **Chicken, Duck and Quail**; recorded source rationale and
+existing profile values in [the mode catalog reference](apps/firmware/mode-catalog-reference.md).
+This is a practical locally relevant selection, not a verified national ranking.
+Chicken retains the internal ID broiler for existing references, with Chicken
+as the current display name. The other retained IDs are duck and quail.
+
+Local web/API defaults now contain three built-in presets; removed the other
+built-in and demo custom presets, and remapped development chamber fixtures to
+the supported set. Onboarding offers only these species. Settings and new mode
+selection use the current catalog; Add/Import/Duplicate custom actions are hidden,
+extra-mode creation is rejected in API/mock repositories, and built-ins cannot
+be deleted. Numeric profile editing and existing layout/export behavior remain.
+Retired modes referenced by existing chambers remain readable for accurate
+current display; new preparation/cycles cannot select them. Historical records
+and persisted physical chamber assignments are not silently rewritten.
+
+Existing profile temperature/humidity/duration/interval values are retained;
+automatic control boundaries, stage-specific settings and physical qualification
+remain pending. No schema migration is required. Web typecheck and Python
+syntax compilation passed; production build result follows. No regression suite,
+browser review or deployed database mutation/rollout occurred. Tests expecting
+ten presets/custom-mode creation need review before a full baseline claim.
+
+Three-mode change final recorded checks: web typecheck **passed**, production
+build **passed**, Python syntax compilation **passed**. Preserved the existing
+Mode Library layout, numeric profile editing, candling summaries and export;
+removed custom creation/import/duplication controls from user reach. Updated
+the actuator plan to use the three-mode scope. No new full regression or live
+VPS verification is claimed.
+
+### October 14 — custom modes retained; three built-ins remain the focus
+
+User clarified that users must still be able to create custom profiles. Restored
+Add/Import/Duplicate actions and API/mock custom creation/editing/deletion, with
+customs selectable during preparation and cycle setup. Built-in defaults remain
+exactly **Chicken, Duck and Quail**. Other supplied built-ins and the two demo
+custom presets remain retired; old referenced rows/history remain readable.
+Built-in names stay fixed; custom names and numeric settings can be edited.
+Reserved/retired preset IDs cannot be used to invent extra built-ins through
+custom creation. Existing in-use deletion protection remains.
+
+Updated the catalog reference and actuator plan; current automatic-control
+qualification focus remains the three built-ins. This supersedes the earlier
+three-built-ins-only custom-creation restriction. Local source change only;
+no VPS rollout or database purge occurred. Current checks are recorded below.
+
+Custom-mode clarification checks: web typecheck **passed**, production build
+**passed**, Python syntax compilation **passed**. No full regression suite,
+browser review or live VPS deployment was performed.
+
+## October 14 — session close and resume handoff
+
+**Paused at the user's request.** This section is the current handoff and
+supersedes intermediate decisions above where they differ. Work is saved in
+local files; no commit/tag, Docker rebuild or VPS rollout was made today.
+
+### Completed today
+
+| Area | Final result | Evidence / limitation |
+| --- | --- | --- |
+| Fan inventory | DeepCool XFAN 120, DP-FDC-XF120; 12 V, nominal 0.07 A / 0.84 W per fan | User listing and manufacturer reference saved in hardware/fan-reference.md; startup current not measured |
+| MOSFET inventory | HW-517 dual-MOSFET module, seller lists 5 to 36 V load input, 3.3 to 20 V trigger, up to 20 kHz | Listing recorded; advertised 15 A / 400 W is not project qualification |
+| Fan bench | Separate ESP32-hosted manual On/Off sketch on GPIO19/18 | User flashed/tested and reports working; PWM disabled |
+| Relay inventory/allocation | MakerLab 5 V four-channel board, actual SONGLE SRD-05VDC-SL-C markings; two-channel board spare | Current requested order: IN1 heater, IN2 tray, IN3 mist, IN4 vacant |
+| Relay bench | Separate On/Off sketch using GPIO27/25/14; LOW-on/HIGH-off, All off and nominal ten-second per-channel cutoff | User reports all relays working after enabled revision; no independent load/fault/timeout measurements |
+| Troubleshooting record | Earlier relay draft had outputs gated, causing unsuccessful control attempts; final config is enabled with LOW trigger | Do not diagnose damage from behavior of the old gated sketch. Continuity belongs to isolated unpowered circuits; COM–NC is closed while coil inactive |
+| Bench access | Fan AP Eggcelerate-Fan-Test; relay AP Eggcelerate-Relay-Test; both use mango123; page http://192.168.4.1 | Applies to revised uploaded sketches; these are temporary bench UIs |
+| Pin/context records | Current-vs-schematic table and permanent fan/relay records saved | GPIO2 DHT and GPIO12 tray assignments superseded; GPIO26 unassigned; revised mist/fan allocation confirmed working in combined bench on October 15 |
+| Next implementation plan | Integrated main firmware, VPS manual commands/ACKs, local threshold/hysteresis, automatic preparation, feedback-based tray motion | apps/firmware/vps-actuator-control-plan.md; planning only |
+| Lockdown decision | Final tray movement returns to level/home, verifies arrival, motor OFF and turning disabled throughout lockdown | Requires position/stop mechanism; never infer home from relay OFF. Species determines cutoff |
+| Mode catalog | Exactly three built-in presets: Chicken, Duck and Quail; custom mode creation/import/duplication/edit/delete remains supported | Local web/API changes; other supplied built-ins/demo customs retired from new selection. Chicken retains ID broiler |
+| History compatibility | Referenced retired profiles remain readable; physical chambers/cycle history were not reassigned or purged | New selections restricted to supported built-ins or eligible user-created customs |
+| Local software checks | Web typecheck, final production build and Python syntax compilation passed | No full regression suite, browser review or live database/VPS verification |
+
+### Current pin allocation to retain
+
+| GPIO | Current function | Status |
+| --- | --- | --- |
+| **4** | DHT22 DATA | Main-program allocation |
+| **14** | Relay IN3 — mist | User confirms working in combined bench test on October 15 |
+| **18** | Upper fan MOSFET trigger / upper fan slot | User-reported working bench control |
+| **19** | Lower fan MOSFET trigger / lower fan slot | User-reported working bench control |
+| **21** | Shared I²C SDA | Main-program LCD/OLED/time-module bus allocation |
+| **23** | Shared I²C SCL | Main-program bus allocation; not GPIO22 |
+| **25** | Relay IN2 — DC tray enable | User-reported working bench control; replaces old GPIO12 assignment |
+| **27** | Relay IN1 — heater | User-reported working bench control |
+| **26** | Unassigned | Former LED allocation removed |
+
+Relay IN4 is vacant. The user confirmed the new IN3 mist-maker allocation and
+both fan controls working with the combined sketch on October 15.
+
+Shared PSU DC negative/ESP32 GND is the reference connection. Relay coil supply
+is 5 V; fan supply is 12 V. User confirmed external +5 V is disconnected from
+ESP32 while USB powers it for flashing, retaining common DC ground.
+
+### State to remember at resume
+
+- The user last reported successfully testing the combined relay/fan bench.
+  Restoration of main Eggcelerate firmware was not reported. Confirm which sketch is running;
+  do not assume sensor/cloud/display services are currently running on the board.
+- Bench relay and fan controls are now combined in relay-bench as of October 15,
+  with user-confirmed functional success. They are not yet available on the VPS.
+  Main pilot firmware remains sensor/display/setup/cloud code; physical worker
+  remains sensors-only.
+- User wants **future manual controls on the existing VPS dashboard**, not an
+  ESP32-hosted actuator page. Keep local Wi-Fi setup/recovery as a separate service.
+- Temperature/humidity control is planned threshold + hysteresis. Retained mode
+  ranges are existing app values, not physically qualified actuator settings.
+  Relay dwell/max-on/fault values and stage-specific targets remain unresolved.
+- Fan supply PWM remains disabled. GPIO26 is unassigned; relay IN4 is vacant.
+  The mist maker on IN3/GPIO14 is user-confirmed working in the combined bench.
+  Do not apply bench ten-second cutoffs as production environmental-control
+  settings.
+- pnpm build generated local production assets only. Docker runs that build
+  inside an image and packages Nginx; no current API/web image was rebuilt,
+  restarted or copied to the VPS for today's mode changes.
+- Existing tests assuming ten supplied presets need review. Full regression,
+  browser, deployment, backup/restore and broader audits remain open.
+
+### Next actual steps
+
+1. Review saved source changes and current running firmware/services; preserve
+   pairing/settings and historical data. Update relevant existing assertions and
+   run suitable verification when authorized; record current results.
+2. Confirm motor model/voltage, direction/linkage, target tilt angle, normal
+   turning pattern, home/angle feedback and measured maximum travel. No guessed
+   run duration or extra feedback/driver GPIO allocation yet.
+3. Define qualified mode control boundaries, hysteresis, relay switching limits,
+   fan policy and sensor/over-temperature/water/motor fault behavior.
+4. Integrate manual actuator service into main firmware while retaining DHT22,
+   LCD/OLED, Wi-Fi recovery, identity and telemetry. Report applied outputs honestly.
+5. Extend physical hardware MQTT command/ACK/worker contracts and add bounded
+   manual overrides in VPS chamber controls. Requests are pending until device
+   outcomes; simulator dispatch flags are not a hardware enable shortcut.
+6. Add local threshold Auto and device-acknowledged preparation, preserving the
+   existing five-minute real-reading stability check and loaded-cycle start.
+7. Add feedback-confirmed tray tilt/final home, lockdown turning inhibition and
+   restart/duplicate/network-loss recovery. Environmental phase control continues
+   even if tray home confirmation fails.
+8. Qualify the integrated hardware, then rebuild API-mode Docker images and use
+   the established local/staging/VPS rollout and rollback workflow. Complete
+   the saved frontend/system audit and release gates; M8/M9 are not complete.
+
+Supporting records: [fan reference](apps/firmware/hardware/fan-reference.md),
+[relay reference](apps/firmware/hardware/relay-reference.md),
+[hardware pin map](apps/firmware/hardware-pin-map.md),
+[fan bench](apps/firmware/mosfet-bench/README.md),
+[relay bench](apps/firmware/relay-bench/README.md),
+[mode catalog](apps/firmware/mode-catalog-reference.md),
+[VPS/threshold/tray plan](apps/firmware/vps-actuator-control-plan.md).
+
+### October 14 — mist maker reassigned to IN3; LED allocation removed
+
+User requested moving the mist maker from relay IN4 to IN3 and removing the
+LED assignment. Current requested relay order is **IN1 heater / GPIO27, IN2
+tray / GPIO25, IN3 mist maker / GPIO14, IN4 vacant**. GPIO26 is unassigned.
+The previous IN4 mist-maker control was reported working; the new IN3 channel
+mapping has not yet been bench-confirmed. This supersedes the earlier relay
+channel tables above.
+
+Updated the relay-bench configuration comments, startup Serial mapping, source
+page and embedded page for the new allocation. The page now offers heater IN1,
+tray IN2 and mist IN3, with IN4 unused and no LED controls. GPIO14 remains the
+mist output: move its relay input wire from IN4 to IN3 before testing. GPIO26
+is not initialized or driven; fan GPIO18/19 stay LOW. LOW-on/HIGH-off, arming,
+All off and the existing timeout limits remain enabled. The bench README has
+the revised wiring and upload instructions. Embedded-page consistency and page
+JavaScript syntax checks passed. Arduino CLI was unavailable; no firmware
+compile, upload or physical relay test was performed by the agent.
+
+### October 15 — combined relay and fan MOSFET bench ready for testing
+
+User reported the IDE issue resolved and requested testing relays and MOSFETs
+together. Extended `apps/firmware/relay-bench/relay-bench.ino` and its embedded
+page to control five outputs independently: heater IN1/GPIO27, tray IN2/GPIO25,
+mist IN3/GPIO14, upper fan GPIO18 and lower fan GPIO19. IN4 is unused and GPIO26
+is unassigned. Relays are LOW-on/HIGH-off; fan MOSFETs are HIGH-on/LOW-off with
+full ON/OFF only. Multiple outputs can run together; no supply PWM was enabled.
+
+All five outputs initialize off. Shared Arm/All off, two-minute session expiry,
+ten-second heartbeat timeout and page-hide stop cover relays and fans. Relays
+retain the ten-second per-channel cutoff and one-second minimum off interval;
+fans remain on until switched off or the session stops. Existing bench Wi-Fi
+remains `Eggcelerate-Relay-Test`, password `mango123`, page `http://192.168.4.1`.
+Updated the bench README and firmware entry point. Main sensor/display/cloud
+firmware integration and VPS actuator control remain pending.
+
+Located Arduino CLI inside the running IDE AppImage and successfully compiled
+the combined sketch for NodeMCU-32S using installed ESP32 core 3.3.11. Software
+GPIO simulation passed for mapping/polarity, authorization/arming, concurrent
+outputs, relay cutoff/minimum-off, All off, heartbeat/session expiry and timer
+rollover. Page checks passed for embedded-source consistency, JavaScript syntax,
+all five controls, relay/fan endpoint routing, states, All off, page-hide stop
+and preview isolation. These are software checks; no firmware upload or physical
+combined-output test was performed by the agent. Upload with flash erasure
+disabled and confirm the new mist/fan slot mapping during the user's bench test.
+
+### October 15 — combined relay and MOSFET test working (user confirmation)
+
+User reports **all outputs working** after testing the combined relay/fan bench
+and asks to save this progress. Record user-confirmed functional success for
+all three relays and both fan MOSFET controls in one sketch and local page:
+
+| Output | Confirmed allocation | Result |
+| --- | --- | --- |
+| Heater relay | IN1 / GPIO27 | User reports working |
+| DC tray motor relay | IN2 / GPIO25 | User reports working |
+| Mist maker relay | IN3 / GPIO14 | User reports working with revised channel allocation |
+| Upper fan MOSFET | GPIO18 | User reports working with revised upper slot allocation |
+| Lower fan MOSFET | GPIO19 | User reports working with revised lower slot allocation |
+
+IN4 remains vacant, GPIO26 is unassigned and the LED allocation is removed.
+This supersedes the pending combined physical-test and mist-channel confirmation
+status recorded earlier. The main firmware has not been reported restored;
+the latest reported running sketch is the combined relay-bench program.
+
+The result is the user's functional bench confirmation. Individual timeout,
+reset/fault, electrical load/current and sustained-operation measurements were
+not supplied. Main sensor/display/cloud integration, VPS manual commands,
+automatic environmental control and feedback-confirmed tray positioning remain
+future work; M8 remains in progress.
+
+### October 15 — smaller connected mock web demo
+
+User requested keeping `pnpm dev:web` on mock data, reducing the demo chambers
+and mode choices, and correcting the Offline indicators on the overview.
+The application's mock repository now selects a dedicated demo fixture set:
+three active paired chambers, one each for the existing Chicken, Duck and Quail
+built-ins. Polling and detail reads renew simulated telemetry receipts so the
+demo remains connected throughout a presentation. Extended fixtures remain
+available for regression scenarios; the shared freshness resolver and API
+adapter continue to require actual device receipt timestamps.
+
+Demo alerts/history are scoped to those three chambers; historical demo Broiler
+labels display as Chicken. The overview fills a three-column desktop row when
+three active chambers are visible. Custom profile support remains available.
+The demo is in memory and resets on reload. No VPS rollout or database mutation
+was performed for this change.
+
+Inspection confirmed chamber renaming is supported by the mock repository and
+the live profile API, but no user-facing rename control currently invokes it.
+Whole-incubator deletion is not implemented in either repository/API or UI.
+Those management actions remain separate work.
+
+Validation: 29 selected demo/repository/freshness/overview/live-monitor tests
+passed, web typecheck passed and production build passed. Updated two existing
+live-monitor assertions from Unavailable to the current Not reported wording
+for unknown actuator states. Browser verification at localhost:5173 showed three
+active cards with progress rings and zero offline chambers, including after
+several polling intervals. Screenshot: `output/playwright/demo-overview.png`.
+
+### October 15 — battery/power monitoring removed; binary equipment status
+
+User removed battery-percentage and power-source monitoring from the project
+scope. Removed the incubator-card battery indicator, monitor Power/Battery tiles,
+device-settings battery gauge, hardware-list power badges, battery-saver option
+and battery/power notification rules. Removed simulated battery/power alerts
+from web and API memory seeds. Legacy power fields remain accepted for existing
+API/firmware compatibility, but no longer affect chamber severity or issue text;
+the existing sensor pilot values are not battery measurements.
+
+The mock demo now supplies explicit simulated heater, mist and circulation-fan
+states, displayed only as On or Off. These states are not inferred from
+temperature/humidity. Added optional output-state report parsing with a receipt
+timestamp. The UI displays binary states only while both telemetry and the
+output report are fresh; stale/missing output reports are hidden and show
+Waiting for output status. Main firmware still does not send actuator state to
+the live dashboard, so live output reporting remains pending. No output controls
+or automatic controller were added by this UI change.
+
+Validation: 84 selected web tests and seven API tests passed; web typecheck and
+production build passed; targeted API Ruff checks passed. Updated related test
+expectations for retired battery/water monitoring and the Chicken display name.
+Browser checks confirmed no battery indicator on chamber cards and a compact
+monitor row showing Off / Off / On plus Live telemetry for the Quail demo.
+Screenshot: `output/playwright/chamber-status-simplified.png`. Changes are local;
+the VPS has not been rebuilt or redeployed for this update.

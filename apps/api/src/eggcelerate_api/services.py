@@ -13,6 +13,7 @@ from typing import Any, TypeVar
 from . import domain
 from .errors import AppError, validated
 from .lifecycle import CycleState
+from .mode_catalog import MODE_IDS, MODE_NAMES, RETIRED_MODE_IDS, selectable_mode
 from .models import (
     AbortedCycleDTO,
     AlertDTO,
@@ -92,7 +93,7 @@ def list_incubators(store: StoreState) -> list[IncubatorDTO]:
 def create_incubator(
     store: StoreState, body: CreateIncubatorRequest, now: datetime
 ) -> IncubatorDTO:
-    mode = require_mode(store, body.mode_id)
+    mode = require_current_mode(store, body.mode_id)
     if any(
         unit.device_id.upper() == body.device_id.upper()
         for unit in store.incubators.values()
@@ -158,7 +159,7 @@ def update_configuration(
             "conflict", "Stop or finish the current cycle before changing its mode."
         )
     if body.mode_id is not None:
-        require_mode(store, body.mode_id)
+        require_current_mode(store, body.mode_id)
         patch["mode_id"] = body.mode_id
     if body.preparing is True:
         if body.mode_id is None:
@@ -198,7 +199,7 @@ def start_cycle(
     store: StoreState, incubator_id: str, body: StartCycleRequest, now: datetime
 ) -> IncubatorDTO:
     unit = require_incubator(store, incubator_id)
-    mode = require_mode(store, body.mode_id)
+    mode = require_current_mode(store, body.mode_id)
     if unit.cycle_phase != "ready":
         raise AppError("conflict", "A cycle has already started in this chamber.")
     if (
@@ -478,12 +479,32 @@ def delete_candling(
 
 
 def list_modes(store: StoreState) -> list[ModeDTO]:
-    return list(store.modes.values())
+    # Referenced retired profiles remain readable for existing chamber displays;
+    # new selections are restricted by require_current_mode and the frontend.
+    referenced = getattr(store, "catalog_referenced_modes", None)
+    if referenced is None:
+        referenced = {unit.mode_id for unit in store.incubators.values()}
+    return [
+        mode.model_copy(update={"name": MODE_NAMES[mode.id], "built_in": True})
+        if mode.id in MODE_IDS
+        else mode
+        for mode in store.modes.values()
+        if selectable_mode(mode.id, mode.built_in) or mode.id in referenced
+    ]
+
+
+def require_current_mode(store: StoreState, mode_id: str) -> ModeDTO:
+    mode = require_mode(store, mode_id)
+    if not selectable_mode(mode.id, mode.built_in):
+        raise AppError("validation_error", "Choose a current built-in or custom mode.")
+    return mode
 
 
 def create_mode(store: StoreState, body: ModeDTO) -> ModeDTO:
     if body.id in store.modes:
         raise AppError("conflict", f"Mode {body.id} already exists.")
+    if body.built_in or body.id in MODE_IDS or body.id in RETIRED_MODE_IDS:
+        raise AppError("validation_error", "Create a custom mode with a new ID.")
     store.modes[body.id] = body
     return body
 
@@ -491,6 +512,7 @@ def create_mode(store: StoreState, body: ModeDTO) -> ModeDTO:
 def update_mode(
     store: StoreState, mode_id: str, patch: ModePatch, now: datetime
 ) -> ModeDTO:
+    require_current_mode(store, mode_id)
     try:
         mode = store.modes[mode_id]
     except KeyError:
@@ -498,6 +520,10 @@ def update_mode(
     updated = mode.model_copy(
         update={k: v for k, v in patch.model_dump().items() if v is not None}
     )
+    if mode_id in MODE_IDS:
+        updated = updated.model_copy(
+            update={"name": MODE_NAMES[mode_id], "built_in": True}
+        )
     store.modes[mode_id] = updated
     for unit in store.incubators.values():
         if unit.mode_id == mode_id:
@@ -506,6 +532,8 @@ def update_mode(
 
 
 def delete_mode(store: StoreState, mode_id: str) -> str:
+    if mode_id in MODE_IDS:
+        raise AppError("conflict", "Built-in modes cannot be deleted.")
     if mode_id not in store.modes:
         raise AppError("not_found", f"Mode {mode_id} was not found.")
     if any(unit.mode_id == mode_id for unit in store.incubators.values()):

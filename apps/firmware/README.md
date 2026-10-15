@@ -8,6 +8,11 @@ the exact board/module variant remains to be confirmed.
 development and later phases. Keep `EggcelerateFirmware.h` beside it. See the
 [main firmware instructions](Eggcelerate/README.md).
 
+For the combined manual relay/MOSFET test, upload
+[relay-bench.ino](relay-bench/relay-bench.ino) and follow the
+[combined bench instructions](relay-bench/README.md). It provides three relay
+and two fan controls on one local page using the current pin allocation.
+
 Start with the [local DHT22 sketch](dht22-local/dht22-local.ino), which prints readings
 without network configuration. The [bring-up guide](bringup-guide.md) covers wiring,
 Arduino setup, and the sequence for AP setup, pairing, and VPS telemetry.

@@ -61,8 +61,6 @@ export function deriveConditionSeverity(
   const humidityCritical =
     params.humidity < params.targetHumidity.min - 5 ||
     params.humidity > params.targetHumidity.max + 5;
-  const batteryCritical =
-    params.powerSource === "battery" && params.batteryPct <= 15;
   const telemetryCritical = params.telemetryStatus === "offline";
   const turningOverdue = new Date(params.nextTurn).getTime() < Date.now();
 
@@ -70,8 +68,7 @@ export function deriveConditionSeverity(
     !params.paired ||
     telemetryCritical ||
     temperatureCritical ||
-    humidityCritical ||
-    batteryCritical
+    humidityCritical
   ) {
     return "critical";
   }
@@ -81,15 +78,12 @@ export function deriveConditionSeverity(
   const humidityWarning =
     params.humidity < params.targetHumidity.min ||
     params.humidity > params.targetHumidity.max;
-  const batteryWarning =
-    params.powerSource === "battery" && params.batteryPct <= 25;
   const telemetryWarning = params.telemetryStatus === "stale";
 
   if (
     telemetryWarning ||
     temperatureWarning ||
     humidityWarning ||
-    batteryWarning ||
     turningOverdue
   )
     return "warning";

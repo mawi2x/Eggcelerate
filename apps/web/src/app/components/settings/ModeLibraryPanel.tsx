@@ -1,3 +1,4 @@
+import { currentModes } from "../../domain/mode-catalog";
 import { useTemperatureDisplay } from "../../providers/temperature-context";
 import {
   CalendarDays,
@@ -50,6 +51,8 @@ import {
   RUST,
   TEXT,
 } from "./tokens";
+
+const allowCustomModes = true;
 
 interface Props {
   modes: Mode[];
@@ -162,8 +165,9 @@ export function ModeLibraryPanel({
 
   const filteredModes = useMemo(() => {
     const q = modeSearch.trim().toLowerCase();
-    if (!q) return modes;
-    return modes.filter((m) => m.name.toLowerCase().includes(q));
+    const supported = currentModes(modes);
+    if (!q) return supported;
+    return supported.filter((m) => m.name.toLowerCase().includes(q));
   }, [modes, modeSearch]);
 
   // Modal state for edit / add.
@@ -253,7 +257,9 @@ export function ModeLibraryPanel({
     const inRange = (v: number, lo: number, hi: number) =>
       Number.isFinite(v) && v >= lo && v <= hi;
     if (!inRange(tempMin, 30, 42) || !inRange(tempMax, 30, 42)) {
-      toast.error(`Temperature must be between ${temperature.format(30)} and ${temperature.format(42)}.`);
+      toast.error(
+        `Temperature must be between ${temperature.format(30)} and ${temperature.format(42)}.`,
+      );
       return;
     }
     if (tempMin > tempMax) {
@@ -313,9 +319,12 @@ export function ModeLibraryPanel({
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify({ modes }, null, 2)], {
-      type: "application/json",
-    });
+    const blob = new Blob(
+      [JSON.stringify({ modes: currentModes(modes) }, null, 2)],
+      {
+        type: "application/json",
+      },
+    );
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -433,17 +442,19 @@ export function ModeLibraryPanel({
         >
           <Pencil size={14} />
         </button>
-        <button
-          type="button"
-          onClick={() => void duplicateMode(m)}
-          disabled={isMutating}
-          className={iconBtn}
-          style={{ borderColor: BORDER, color: TEXT }}
-          title="Duplicate"
-          aria-label={`Duplicate ${m.name}`}
-        >
-          <Copy size={14} />
-        </button>
+        {allowCustomModes && (
+          <button
+            type="button"
+            onClick={() => void duplicateMode(m)}
+            disabled={isMutating}
+            className={iconBtn}
+            style={{ borderColor: BORDER, color: TEXT }}
+            title="Duplicate"
+            aria-label={`Duplicate ${m.name}`}
+          >
+            <Copy size={14} />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => exportSingle(m)}
@@ -536,7 +547,7 @@ export function ModeLibraryPanel({
       <PanelHeader
         id="settings-panel-modes"
         title="Mode Library"
-        description="Customize incubation mode conditions"
+        description="Chicken, Duck and Quail presets, plus your custom profiles"
       />
 
       {/* Toolbar */}
@@ -572,14 +583,16 @@ export function ModeLibraryPanel({
           }}
         />
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            className="h-[var(--control-height-mobile)] rounded-xl px-3 md:h-[var(--control-height-default)]"
-            style={{ borderColor: BORDER, fontSize: 10 }}
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload size={15} /> <span>Import</span>
-          </Button>
+          {allowCustomModes && (
+            <Button
+              variant="outline"
+              className="h-[var(--control-height-mobile)] rounded-xl px-3 md:h-[var(--control-height-default)]"
+              style={{ borderColor: BORDER, fontSize: 10 }}
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload size={15} /> <span>Import</span>
+            </Button>
+          )}
           <Button
             variant="outline"
             className="h-[var(--control-height-mobile)] rounded-xl px-3 md:h-[var(--control-height-default)]"
@@ -588,17 +601,19 @@ export function ModeLibraryPanel({
           >
             <Download size={15} /> <span>Export All</span>
           </Button>
-          <Button
-            className="h-[var(--control-height-mobile)] rounded-xl px-3.5 md:h-[var(--control-height-default)]"
-            style={{
-              backgroundColor: RUST,
-              color: "var(--on-brand)",
-              fontSize: 10,
-            }}
-            onClick={openAdd}
-          >
-            <Plus size={16} /> <span>Add Custom Mode</span>
-          </Button>
+          {allowCustomModes && (
+            <Button
+              className="h-[var(--control-height-mobile)] rounded-xl px-3.5 md:h-[var(--control-height-default)]"
+              style={{
+                backgroundColor: RUST,
+                color: "var(--on-brand)",
+                fontSize: 10,
+              }}
+              onClick={openAdd}
+            >
+              <Plus size={16} /> <span>Add Custom Mode</span>
+            </Button>
+          )}
           <div className="hidden md:block">
             <ViewToggle view={view} onChange={setView} />
           </div>
@@ -608,7 +623,7 @@ export function ModeLibraryPanel({
       {filteredModes.length === 0 ? (
         <EmptyState
           title={`No modes match “${modeSearch}”`}
-          description="Try a different name, clear your search, or add a custom mode."
+          description="Search for a built-in or custom mode, or clear your search."
           action={
             <>
               <Button
@@ -620,14 +635,16 @@ export function ModeLibraryPanel({
               >
                 <span>Clear search</span>
               </Button>
-              <Button
-                type="button"
-                className="rounded-xl"
-                style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
-                onClick={openAdd}
-              >
-                <Plus size={16} /> <span>Add Custom Mode</span>
-              </Button>
+              {allowCustomModes && (
+                <Button
+                  type="button"
+                  className="rounded-xl"
+                  style={{ backgroundColor: RUST, color: "var(--on-brand)" }}
+                  onClick={openAdd}
+                >
+                  <Plus size={16} /> <span>Add Custom Mode</span>
+                </Button>
+              )}
             </>
           }
         />
@@ -914,6 +931,10 @@ export function ModeLibraryPanel({
             <div>
               <Label>Mode name</Label>
               <Input
+                readOnly={
+                  modalKind === "edit" &&
+                  !!modes.find((mode) => mode.id === modalId)?.builtIn
+                }
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                 maxLength={30}
@@ -926,14 +947,24 @@ export function ModeLibraryPanel({
               {draftField(
                 `Temp min ${temperature.unit}`,
                 Number(temperature.number(draft.tempMin)),
-                (n) => setDraft({ ...draft, tempMin: temperature.toCelsius(n) }),
-                { step: 0.1, min: temperature.value(30), max: temperature.value(42) },
+                (n) =>
+                  setDraft({ ...draft, tempMin: temperature.toCelsius(n) }),
+                {
+                  step: 0.1,
+                  min: temperature.value(30),
+                  max: temperature.value(42),
+                },
               )}
               {draftField(
                 `Temp max ${temperature.unit}`,
                 Number(temperature.number(draft.tempMax)),
-                (n) => setDraft({ ...draft, tempMax: temperature.toCelsius(n) }),
-                { step: 0.1, min: temperature.value(30), max: temperature.value(42) },
+                (n) =>
+                  setDraft({ ...draft, tempMax: temperature.toCelsius(n) }),
+                {
+                  step: 0.1,
+                  min: temperature.value(30),
+                  max: temperature.value(42),
+                },
               )}
               {draftField(
                 "Hum min %",

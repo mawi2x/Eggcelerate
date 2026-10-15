@@ -31,15 +31,6 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       acknowledged: false,
     },
     {
-      id: "a4",
-      title: "Running on Battery",
-      severity: "warning",
-      unit: "Chamber Three",
-      message: "Running on battery with 23% remaining. Restore power soon.",
-      timestamp: isoMinutesAgo(65),
-      acknowledged: false,
-    },
-    {
       id: "a5",
       title: "Humidity Out of Range",
       severity: "warning",
@@ -64,15 +55,6 @@ export function createAlertFixtures(now = Date.now()): AlertEntry[] {
       unit: "Chamber One",
       message: "Eggs turned successfully.",
       timestamp: isoDaysAgo(1, 9, 45),
-      acknowledged: true,
-    },
-    {
-      id: "a9",
-      title: "Grid Power Lost",
-      severity: "warning",
-      unit: "Chamber Three",
-      message: "Grid power was lost. The incubator switched to battery backup.",
-      timestamp: isoDaysAgo(7, 16, 40),
       acknowledged: true,
     },
     {

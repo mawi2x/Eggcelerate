@@ -10,14 +10,7 @@ export const PrimaryFocusSchema = z.enum([
   "research",
 ]);
 
-export const SpeciesSchema = z.enum([
-  "chicken",
-  "duck",
-  "quail",
-  "turkey",
-  "goose",
-  "guinea_fowl",
-]);
+export const SpeciesSchema = z.enum(["chicken", "duck", "quail"]);
 
 export interface OnboardingState {
   name: string;

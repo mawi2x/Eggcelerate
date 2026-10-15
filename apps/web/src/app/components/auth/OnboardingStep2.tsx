@@ -19,21 +19,11 @@ const FOCUS_OPTIONS: FocusOption[] = [
   { id: "research", label: "Research / education", icon: FlaskConical },
 ];
 
-const SPECIES_OPTIONS = [
-  "chicken",
-  "duck",
-  "quail",
-  "turkey",
-  "goose",
-  "guinea_fowl",
-] as const;
+const SPECIES_OPTIONS = ["chicken", "duck", "quail"] as const;
 const SPECIES_LABELS: Record<(typeof SPECIES_OPTIONS)[number], string> = {
   chicken: "Chicken",
   duck: "Duck",
   quail: "Quail",
-  turkey: "Turkey",
-  goose: "Goose",
-  guinea_fowl: "Guinea fowl",
 };
 
 export function OnboardingStep2({

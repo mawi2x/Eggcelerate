@@ -54,7 +54,7 @@ export const TurnAcceptedSchema = z
 
 const broilerMode = {
   id: "broiler",
-  name: "Broiler",
+  name: "Chicken",
   built_in: true,
   target_temp_c: { min: 37.5, max: 37.8 },
   target_humidity_pct: { min: 55, max: 60 },
@@ -138,7 +138,7 @@ const hatchHistory = {
   incubator_id: "chamber-1",
   chamber_name: "Chamber One",
   mode_id: "broiler",
-  mode_name: "Broiler",
+  mode_name: "Chicken",
   started_on: "2026-08-13",
   ended_on: "2026-09-03",
   total_eggs: 24,

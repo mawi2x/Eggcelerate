@@ -5,6 +5,7 @@ import {
 import { localDateString } from "../../domain/date";
 import { validateHarvestCounts } from "../../domain/fertility";
 import { resetChamberToReady } from "../../domain/incubator";
+import { isCurrentMode, MODE_NAMES } from "../../domain/mode-catalog";
 import type { Result, ResultErrorCode } from "../../domain/result";
 import type {
   AbortedCycleRecord,
@@ -43,6 +44,7 @@ import type {
 } from "./repository";
 
 export interface InMemoryRepositoryOptions {
+  fixtureSet?: "demo" | "extended";
   now?: () => Date;
   latencyMs?: number;
   failOperations?: readonly RepositoryOperation[];
@@ -89,8 +91,10 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     Record<RepositoryOperation, RepositoryFailureMode>
   >;
   private readonly historyAnchorMs: number;
+  private readonly demo: boolean;
 
   constructor(options: InMemoryRepositoryOptions = {}) {
+    this.demo = options.fixtureSet === "demo";
     this.now = options.now ?? (() => new Date());
     this.latencyMs = Math.max(0, options.latencyMs ?? 0);
     this.failOperations = new Set(options.failOperations ?? []);
@@ -98,9 +102,23 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     const seededAt = this.now().getTime();
     this.historyAnchorMs = seededAt;
     this.modes = createModeFixtures();
-    this.incubators = createIncubatorFixtures(this.modes, seededAt);
+    this.incubators = createIncubatorFixtures(
+      this.modes,
+      seededAt,
+      options.fixtureSet,
+    );
     this.alerts = createAlertFixtures(seededAt);
     this.hatchRecords = createHatchRecordFixtures();
+    if (this.demo) {
+      const chamberNames = new Set(this.incubators.map((unit) => unit.name));
+      this.alerts = this.alerts.filter((alert) => chamberNames.has(alert.unit));
+      this.hatchRecords = this.hatchRecords
+        .filter((record) => chamberNames.has(record.chamber))
+        .map((record) => ({
+          ...record,
+          modeName: record.modeName === "Broiler" ? "Chicken" : record.modeName,
+        }));
+    }
     this.settings = clone(initialSettings);
   }
 
@@ -152,12 +170,32 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     return `${prefix}-${this.now().getTime()}-${this.sequence}`;
   }
 
+  private refreshDemoTelemetry() {
+    if (!this.demo) return;
+    const receivedAt = this.now().toISOString();
+    for (const unit of this.incubators) {
+      if (!unit.paired) continue;
+      // Simulated receipts belong only to the mock demo. API freshness remains
+      // based on actual device ingestion timestamps.
+      unit.telemetryStatus = "fresh";
+      unit.telemetryObservedAt = receivedAt;
+      unit.telemetryReceivedAt = receivedAt;
+      unit.telemetryLastSeenAt = receivedAt;
+      if (unit.outputStates) unit.outputStates.receivedAt = receivedAt;
+      unit.connectionState = "connected";
+    }
+  }
+
   listIncubators() {
-    return this.execute("listIncubators", () => ok(this.incubators));
+    return this.execute("listIncubators", () => {
+      this.refreshDemoTelemetry();
+      return ok(this.incubators);
+    });
   }
 
   getIncubator(id: string) {
     return this.execute("getIncubator", () => {
+      this.refreshDemoTelemetry();
       const unit = this.incubators.find((candidate) => candidate.id === id);
       return unit
         ? ok(unit)
@@ -181,7 +219,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         return error("conflict", `Incubator ${unit.id} already exists.`);
       }
       const mode = this.modes.find((candidate) => candidate.id === unit.modeId);
-      if (!mode) {
+      if (!mode || !isCurrentMode(mode)) {
         return error(
           "validation_error",
           `Mode ${unit.modeId} is not available for this incubator.`,
@@ -357,7 +395,10 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       }
       if (
         input.modeId !== undefined &&
-        !this.modes.some((candidate) => candidate.id === input.modeId)
+        !this.modes.some(
+          (candidate) =>
+            candidate.id === input.modeId && isCurrentMode(candidate),
+        )
       ) {
         return error(
           "validation_error",
@@ -407,7 +448,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       const mode = this.modes.find(
         (candidate) => candidate.id === input.modeId,
       );
-      if (!mode) {
+      if (!mode || !isCurrentMode(mode)) {
         return error(
           "validation_error",
           `Mode ${input.modeId} is not available for this incubator.`,
@@ -771,9 +812,14 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
 
   addMode(mode: Mode) {
     return this.execute("addMode", () => {
-      if (this.modes.some((candidate) => candidate.id === mode.id)) {
+      if (this.modes.some((candidate) => candidate.id === mode.id))
         return error("conflict", `Mode ${mode.id} already exists.`);
-      }
+      if (
+        mode.builtIn ||
+        Object.prototype.hasOwnProperty.call(MODE_NAMES, mode.id) ||
+        !isCurrentMode(mode)
+      )
+        return error("validation_error", "Create a custom mode with a new ID.");
       this.modes.push(clone(mode));
       return ok(mode);
     });
@@ -783,7 +829,18 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     return this.execute("updateMode", () => {
       const index = this.modes.findIndex((candidate) => candidate.id === id);
       if (index < 0) return error("not_found", `Mode ${id} was not found.`);
-      const updated = { ...this.modes[index], ...clone(patch), id };
+      if (!isCurrentMode(this.modes[index]))
+        return error(
+          "validation_error",
+          "Choose a current built-in or custom mode.",
+        );
+      const updated = {
+        ...this.modes[index],
+        ...clone(patch),
+        id,
+        name: MODE_NAMES[id] ?? patch.name ?? this.modes[index].name,
+        builtIn: Object.prototype.hasOwnProperty.call(MODE_NAMES, id),
+      };
       this.modes[index] = updated;
       this.incubators = this.incubators.map((unit) =>
         unit.modeId !== id
@@ -810,6 +867,8 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
 
   deleteMode(id: string) {
     return this.execute("deleteMode", () => {
+      if (Object.prototype.hasOwnProperty.call(MODE_NAMES, id))
+        return error("conflict", "Built-in modes cannot be deleted.");
       if (!this.modes.some((candidate) => candidate.id === id)) {
         return error("not_found", `Mode ${id} was not found.`);
       }

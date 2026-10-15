@@ -58,31 +58,13 @@ const triggerGroups: TriggerGroup[] = [
   },
   {
     id: "hardware",
-    title: "Hardware & Power",
+    title: "Device Connection",
     triggers: [
       {
         id: "offline",
         label: "Device connection lost",
         hint: "No advancing telemetry received for more than 3 minutes.",
         toastLabel: "Offline device alerts",
-      },
-      {
-        id: "batteryLow",
-        label: "Battery low (< 20%)",
-        hint: "",
-        toastLabel: "Low battery alerts",
-      },
-      {
-        id: "batteryFull",
-        label: "Battery fully charged",
-        hint: "",
-        toastLabel: "Full charge alerts",
-      },
-      {
-        id: "power",
-        label: "Power source switched",
-        hint: "Mains ↔ battery transitions.",
-        toastLabel: "Power source alerts",
       },
     ],
   },

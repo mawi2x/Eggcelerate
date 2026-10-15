@@ -32,18 +32,10 @@ from .models import (
 )
 
 FARM_MODES = [
-    ("broiler", "Broiler", True, 37.5, 37.8, 55, 60, 21, 240),
+    ("broiler", "Chicken", True, 37.5, 37.8, 55, 60, 21, 240),
     ("duck", "Duck", True, 37.4, 37.6, 62, 68, 28, 360),
     ("quail", "Quail", True, 37.5, 37.8, 55, 60, 18, 240),
-    ("goose", "Goose", True, 37.3, 37.6, 60, 65, 30, 360),
-    ("turkey", "Turkey", True, 37.5, 37.8, 55, 60, 28, 240),
-    ("pheasant", "Pheasant", True, 37.5, 37.8, 55, 60, 24, 360),
-    ("peafowl", "Peafowl", True, 37.2, 37.5, 60, 65, 28, 360),
-    ("swan", "Swan", True, 37.2, 37.5, 65, 72, 36, 480),
-    ("broiler-hh", "Broiler High-Humidity", False, 37.5, 37.8, 62, 68, 21, 240),
-    ("rapid-quail", "Rapid Quail Experimental", False, 37.8, 38.2, 50, 55, 17, 180),
 ]
-
 # id, name, device, mode, day, eggs, fertile, temp, hum, water, ttrend, htrend,
 # power, battery, last-ago-min, next-in-min, interval-h, auto, paired
 FARM_CHAMBERS = [
@@ -114,7 +106,7 @@ FARM_CHAMBERS = [
         "chamber-4",
         "Chamber Four",
         "EGG-1006",
-        "goose",
+        "duck",
         22,
         24,
         None,
@@ -135,7 +127,7 @@ FARM_CHAMBERS = [
         "chamber-5",
         "Chamber Five",
         "EGG-1007",
-        "turkey",
+        "broiler",
         5,
         30,
         None,
@@ -156,7 +148,7 @@ FARM_CHAMBERS = [
         "chamber-6",
         "Chamber Six",
         "EGG-1008",
-        "pheasant",
+        "broiler",
         11,
         38,
         None,
@@ -198,7 +190,7 @@ FARM_CHAMBERS = [
         "chamber-8",
         "Chamber Eight",
         "EGG-1010",
-        "peafowl",
+        "broiler",
         18,
         24,
         None,
@@ -261,7 +253,7 @@ FARM_CHAMBERS = [
         "chamber-11",
         "Chamber Eleven",
         "EGG-1013",
-        "swan",
+        "duck",
         29,
         16,
         None,
@@ -282,7 +274,7 @@ FARM_CHAMBERS = [
         "chamber-12",
         "Chamber Twelve",
         "EGG-1014",
-        "broiler-hh",
+        "broiler",
         22,
         37,
         31,
@@ -324,16 +316,6 @@ FARM_ALERTS = [
         False,
     ),
     (
-        "a4",
-        "warning",
-        "on-battery",
-        "chamber-3",
-        "Running on Battery",
-        "Running on battery with 23% remaining. Restore power soon.",
-        65,
-        False,
-    ),
-    (
         "a5",
         "warning",
         "humidity-out-of-range",
@@ -361,16 +343,6 @@ FARM_ALERTS = [
         "Eggs Turned",
         "Eggs turned successfully.",
         1605,
-        True,
-    ),
-    (
-        "a9",
-        "warning",
-        "grid-lost",
-        "chamber-3",
-        "Grid Power Lost",
-        "Grid power was lost. The incubator switched to battery backup.",
-        10240,
         True,
     ),
     (
@@ -415,6 +387,7 @@ UNIT_NAMES = {
 class MemoryStore:
     def __init__(self, now: datetime | None = None):
         boot = now or datetime.now(UTC)
+        self.catalog_referenced_modes: set[str] | None = None
         self.modes: dict[str, ModeDTO] = {}
         for entry in FARM_MODES:
             (mid, name, built_in, tmin, tmax, hmin, hmax, days, turn_min) = entry
@@ -639,9 +612,8 @@ class MemoryStore:
             return
         for unit in self.incubators.values():
             if (
-                unit.cycle_phase not in {
-                    "incubating", "lockdown", "hatching", "awaiting_finish"
-                }
+                unit.cycle_phase
+                not in {"incubating", "lockdown", "hatching", "awaiting_finish"}
                 or unit.id in self._water_reminder_units
             ):
                 continue

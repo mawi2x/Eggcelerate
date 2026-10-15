@@ -130,9 +130,9 @@ describe("deriveConditionSeverity", () => {
     });
     expect(s).toBe("warning");
   });
-  it("critical when waterOk false", () => {
+  it("does not infer a sensor alarm from the retired waterOk field", () => {
     const s = deriveConditionSeverity({ ...base, waterOk: false });
-    expect(s).toBe("critical");
+    expect(s).toBe("info");
   });
   it("critical when not paired", () => {
     const s = deriveConditionSeverity({ ...base, paired: false });
@@ -178,38 +178,18 @@ describe("deriveConditionSeverity", () => {
     });
     expect(s).toBe("warning");
   });
-  it("critical when batteryCritical <=15 on battery", () => {
-    const s = deriveConditionSeverity({
-      ...base,
-      powerSource: "battery",
-      batteryPct: 15,
-    });
-    expect(s).toBe("critical");
-  });
-  it("critical when batteryPct 5 on battery", () => {
-    const s = deriveConditionSeverity({
-      ...base,
-      powerSource: "battery",
-      batteryPct: 5,
-    });
-    expect(s).toBe("critical");
-  });
-  it("warning when batteryWarning <=25 on battery (20%)", () => {
-    const s = deriveConditionSeverity({
-      ...base,
-      powerSource: "battery",
-      batteryPct: 20,
-    });
-    expect(s).toBe("warning");
-  });
-  it("warning when batteryPct 25 on battery (boundary)", () => {
-    const s = deriveConditionSeverity({
-      ...base,
-      powerSource: "battery",
-      batteryPct: 25,
-    });
-    expect(s).toBe("warning");
-  });
+  it.each([5, 15, 20, 25])(
+    "ignores unsupported battery readings (%s%%)",
+    (batteryPct) => {
+      expect(
+        deriveConditionSeverity({
+          ...base,
+          powerSource: "battery",
+          batteryPct,
+        }),
+      ).toBe("info");
+    },
+  );
   it("info when battery low but on grid (should not trigger battery check)", () => {
     const s = deriveConditionSeverity({
       ...base,

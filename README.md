@@ -41,6 +41,11 @@ Start the web development server:
 pnpm --filter eggcelerate-ui dev
 ```
 
+`pnpm dev:web` is the root shortcut for the same server. Its default mock demo
+starts with three connected chambers, one each for Chicken, Duck and Quail.
+The in-memory demo refreshes simulated telemetry on polling and resets on page
+reload. API mode continues to use the configured server and real device receipts.
+
 ## Web container
 
 Create the local Docker Compose configuration from the checked-in template:

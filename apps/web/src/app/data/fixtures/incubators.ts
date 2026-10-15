@@ -15,6 +15,7 @@ type IncubatorFixture = Omit<
 export function createIncubatorFixtures(
   modes: readonly Mode[],
   now = Date.now(),
+  fixtureSet: "demo" | "extended" = "extended",
 ): Incubator[] {
   const iso = (minutesAgo: number) =>
     new Date(now - minutesAgo * 60_000).toISOString();
@@ -221,7 +222,7 @@ export function createIncubatorFixtures(
       id: "chamber-4",
       name: "Chamber Four",
       deviceId: "EGG-1006",
-      modeId: "goose",
+      modeId: "duck",
       dayOfIncubation: 22,
       totalEggsLoaded: 24,
       temp: 37.4,
@@ -244,7 +245,7 @@ export function createIncubatorFixtures(
       id: "chamber-5",
       name: "Chamber Five",
       deviceId: "EGG-1007",
-      modeId: "turkey",
+      modeId: "broiler",
       dayOfIncubation: 5,
       totalEggsLoaded: 30,
       temp: 37.7,
@@ -267,7 +268,7 @@ export function createIncubatorFixtures(
       id: "chamber-6",
       name: "Chamber Six",
       deviceId: "EGG-1008",
-      modeId: "pheasant",
+      modeId: "broiler",
       dayOfIncubation: 11,
       totalEggsLoaded: 38,
       temp: 38.1,
@@ -313,7 +314,7 @@ export function createIncubatorFixtures(
       id: "chamber-8",
       name: "Chamber Eight",
       deviceId: "EGG-1010",
-      modeId: "peafowl",
+      modeId: "broiler",
       dayOfIncubation: 18,
       totalEggsLoaded: 24,
       temp: 39.8,
@@ -382,7 +383,7 @@ export function createIncubatorFixtures(
       id: "chamber-11",
       name: "Chamber Eleven",
       deviceId: "EGG-1013",
-      modeId: "swan",
+      modeId: "duck",
       dayOfIncubation: 29,
       totalEggsLoaded: 16,
       temp: 36.9,
@@ -405,7 +406,7 @@ export function createIncubatorFixtures(
       id: "chamber-12",
       name: "Chamber Twelve",
       deviceId: "EGG-1014",
-      modeId: "broiler-hh",
+      modeId: "broiler",
       dayOfIncubation: 22,
       totalEggsLoaded: 37,
       fertileEggs: 31,
@@ -427,7 +428,28 @@ export function createIncubatorFixtures(
     },
   ];
 
-  return fixtures.map((unit) => {
+  // The interactive demo shows one connected chamber per built-in species.
+  // Keep the extended scenarios available for lifecycle/offline regression checks.
+  const selectedFixtures =
+    fixtureSet === "demo"
+      ? fixtures.slice(0, 3).map((unit) => ({
+          ...unit,
+          paired: true,
+          telemetryStatus: "fresh" as const,
+          telemetryObservedAt: new Date(now).toISOString(),
+          telemetryReceivedAt: new Date(now).toISOString(),
+          telemetryLastSeenAt: new Date(now).toISOString(),
+          // Scripted demo output reports; never infer real hardware state from readings.
+          outputStates: {
+            heaterOn: unit.id === "chamber-1",
+            mistOn: unit.id === "chamber-2",
+            fanOn: true,
+            receivedAt: new Date(now).toISOString(),
+          },
+        }))
+      : fixtures;
+
+  return selectedFixtures.map((unit) => {
     const mode = modes.find((candidate) => candidate.id === unit.modeId);
     const lockdownDay = mode
       ? (computeCandling(mode.incubationDays)[2]?.day ?? mode.incubationDays)

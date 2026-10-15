@@ -31,6 +31,18 @@ async def read_state(
         if await session.scalar(select(farms.c.id).where(farms.c.id == farm)) is None:
             raise AppError("offline", "Development farm is not seeded.")
         if resource in ("modes", "incubators"):
+            if resource == "modes":
+                state.catalog_referenced_modes = set(
+                    await session.scalars(
+                        select(modes.c.public_id)
+                        .join(
+                            incubators,
+                            (incubators.c.mode_id == modes.c.id)
+                            & (incubators.c.farm_id == modes.c.farm_id),
+                        )
+                        .where(modes.c.farm_id == farm)
+                    )
+                )
             query = (
                 select(modes)
                 .where(modes.c.farm_id == farm)

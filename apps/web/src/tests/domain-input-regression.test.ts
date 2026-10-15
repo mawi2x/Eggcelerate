@@ -61,7 +61,7 @@ describe("validated farm inputs", () => {
     }));
     expect(
       selectFilteredIncubators(units, modes, {
-        search: "Broiler",
+        search: "Chicken",
         status: "all",
         modeId: "all",
       }),
@@ -118,7 +118,7 @@ describe("validated farm inputs", () => {
       }),
     ).toMatchObject({ ok: false, error: { message: "Validation failed" } });
   });
-  it("identifies low and high readings, power, overdue turns and disconnected devices", () => {
+  it("identifies readings, overdue turns and disconnected devices without battery monitoring", () => {
     const base = createIncubatorFixtures(modeFixtures)[0];
     const mode = modeFixtures[0];
     expect(
@@ -138,8 +138,6 @@ describe("validated farm inputs", () => {
     ).toEqual([
       "temperature high",
       "humidity high",
-      "water reservoir low",
-      "battery low",
       "turning overdue",
       "device disconnected",
     ]);

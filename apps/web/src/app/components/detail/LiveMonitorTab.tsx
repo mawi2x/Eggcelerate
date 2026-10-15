@@ -1,13 +1,4 @@
-import { useTemperatureDisplay } from "../../providers/temperature-context";
-import {
-  BatteryPlus,
-  Fan,
-  Flame,
-  Lightning,
-  Waves,
-  WifiHigh,
-  WifiSlash,
-} from "@phosphor-icons/react";
+import { Fan, Flame, Waves, WifiHigh, WifiSlash } from "@phosphor-icons/react";
 import {
   ArrowUpRight,
   ChevronDown,
@@ -24,9 +15,11 @@ import type {
   Reading,
 } from "../../domain/types";
 import {
+  reportedOutputStates,
   resolvedTelemetryStatus,
   telemetryReceiptTimestamp,
 } from "../../features/farm/telemetry";
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { GaugeDial } from "../GaugeDial";
 import { Button } from "../ui/button";
 import { useIsMobile } from "../ui/use-mobile";
@@ -552,6 +545,7 @@ export function LiveMonitorTab({
     unit.cyclePhase !== "ready" || !!unit.preparationStartedAt;
   const telemetryStatus = resolvedTelemetryStatus(unit);
   const telemetryVerified = telemetryStatus === "fresh";
+  const outputStates = reportedOutputStates(unit);
   const receiptTimestamp = telemetryReceiptTimestamp(unit);
 
   return (
@@ -615,34 +609,31 @@ export function LiveMonitorTab({
 
       <SectionCard
         title="Chamber status"
-        subtitle="Live systems, power, and connectivity"
+        subtitle="Equipment status and connectivity"
         titleId="chamber-status-title"
         section
         divider
       >
-        <div className="grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-3">
-          <SystemStatusTile
-            icon={<Flame size={18} weight="fill" />}
-            label="Heating element"
-            value="Not reported"
-          />
-          <SystemStatusTile
-            icon={<Waves size={20} weight="bold" />}
-            label="Mist maker"
-            value="Not reported"
-          />
-          <SystemStatusTile
-            icon={<Fan size={18} weight="fill" />}
-            label="Circulation fan"
-            value="Not reported"
-          />
-          <SystemStatusTile
-            icon={<Lightning size={18} weight="fill" />}
-            label="Power"
-            value={
-              unit.powerSource === "battery" ? "Battery power" : "Grid power"
-            }
-          />
+        <div className="grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-4">
+          {outputStates && (
+            <>
+              <SystemStatusTile
+                icon={<Flame size={18} weight="fill" />}
+                label="Heating element"
+                value={outputStates.heaterOn ? "On" : "Off"}
+              />
+              <SystemStatusTile
+                icon={<Waves size={20} weight="bold" />}
+                label="Mist maker"
+                value={outputStates.mistOn ? "On" : "Off"}
+              />
+              <SystemStatusTile
+                icon={<Fan size={18} weight="fill" />}
+                label="Circulation fan"
+                value={outputStates.fanOn ? "On" : "Off"}
+              />
+            </>
+          )}
           <SystemStatusTile
             icon={
               telemetryStatus === "fresh" ? (
@@ -660,16 +651,15 @@ export function LiveMonitorTab({
                   : "Offline"
             }
           />
-          <SystemStatusTile
-            icon={<BatteryPlus size={18} weight="fill" />}
-            label="Battery"
-            value={
-              unit.batteryPct <= 25
-                ? `${unit.batteryPct}% (Low)`
-                : `${unit.batteryPct}%`
-            }
-          />
         </div>
+        {!outputStates && (
+          <p
+            className="mt-3 text-(length:--type-caption) text-[var(--text-muted)]"
+            role="status"
+          >
+            Waiting for output status.
+          </p>
+        )}
       </SectionCard>
 
       <EnvironmentalSummary

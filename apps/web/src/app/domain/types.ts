@@ -64,6 +64,13 @@ export interface CandlingLogEntry {
   stoppedDeveloping?: number;
 }
 
+export interface OutputStateReport {
+  heaterOn: boolean;
+  mistOn: boolean;
+  fanOn: boolean;
+  receivedAt: string;
+}
+
 export interface Incubator {
   id: IncubatorId;
   name: string;
@@ -97,6 +104,7 @@ export interface Incubator {
   telemetryObservedAt?: string | null;
   telemetryReceivedAt?: string | null;
   telemetryLastSeenAt?: string | null;
+  outputStates?: OutputStateReport;
   candled: Record<number, boolean>;
   candlingLog: CandlingLogEntry[];
 }

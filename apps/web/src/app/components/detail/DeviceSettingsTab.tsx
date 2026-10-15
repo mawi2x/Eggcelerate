@@ -1,8 +1,8 @@
-import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { Egg, WifiSlash } from "@phosphor-icons/react";
 import { RotateCw, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { currentModes } from "../../domain/mode-catalog";
 import type {
   CandlingCheckpoint,
   Incubator,
@@ -10,10 +10,10 @@ import type {
   TurnCommandStatus,
 } from "../../domain/types";
 import type { IncubatorUpdateIntent } from "../../features/farm/use-farm-data";
+import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { IncubatorDeviceIcon } from "../icons";
 import { getConnectionPresentation } from "../statusPresentation";
 import { Button } from "../ui/button";
-import { Progress } from "../ui/progress";
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -305,7 +305,7 @@ export function DeviceSettingsTab({
                         <SelectValue placeholder="Select a mode to prepare" />
                       </SelectTrigger>
                       <SelectContent>
-                        {modes.map((m) => (
+                        {currentModes(modes).map((m) => (
                           <SelectItem key={m.id} value={m.id}>
                             {m.name}
                           </SelectItem>
@@ -604,8 +604,7 @@ export function DeviceSettingsTab({
                   color: "var(--text-farm)",
                 }}
               >
-                Manage chamber hardware pairing, connectivity status, and power
-                telemetry.
+                Manage chamber hardware pairing and connectivity status.
               </p>
             </div>
             <div className="pt-5 space-y-4">
@@ -644,39 +643,6 @@ export function DeviceSettingsTab({
                   </span>
                 }
               />
-              <div
-                className="rounded-xl p-3.5"
-                style={{
-                  backgroundColor: "var(--surface-card)",
-                  border: `var(--border-width-hairline) solid var(--border-default)`,
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <p
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-caption)",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    Battery
-                  </p>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: "var(--type-body-sm)",
-                      fontWeight: "var(--weight-bold)",
-                      color:
-                        unit.batteryPct <= 25
-                          ? "var(--status-danger-fg)"
-                          : "var(--text-primary)",
-                    }}
-                  >
-                    {unit.batteryPct}%
-                  </span>
-                </div>
-                <Progress value={unit.batteryPct} className="mt-1.5 h-2" />
-              </div>
               <div
                 className="rounded-xl px-4 py-3"
                 style={{

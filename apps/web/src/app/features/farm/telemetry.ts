@@ -37,6 +37,16 @@ export function telemetryReceiptTimestamp(
   return unit.telemetryReceivedAt ?? unit.telemetryLastSeenAt;
 }
 
+/** Only display explicit output reports while both sensor and output data are fresh. */
+export function reportedOutputStates(unit: Incubator, now = Date.now()) {
+  const states = unit.outputStates;
+  if (!unit.paired || !states || resolvedTelemetryStatus(unit, now) !== "fresh")
+    return null;
+  const receivedAt = Date.parse(states.receivedAt);
+  if (!Number.isFinite(receivedAt) || now - receivedAt > 45_000) return null;
+  return states;
+}
+
 export function telemetryAgeLabel(
   lastSeenAt: string | null | undefined,
   now = Date.now(),

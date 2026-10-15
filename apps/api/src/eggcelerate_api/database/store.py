@@ -20,6 +20,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from ..errors import AppError
+from ..mode_catalog import MODE_NAMES
 from ..models import (
     AbortedCycleDTO,
     HatchHistoryDTO,
@@ -77,7 +78,7 @@ def mode_values(farm_id: UUID, mode: ModeDTO, position: int) -> dict[str, Any]:
 def mode_from_row(row: Mapping[str, Any]) -> ModeDTO:
     return ModeDTO(
         id=row["public_id"],
-        name=row["name"],
+        name=MODE_NAMES.get(row["public_id"], row["name"]),
         built_in=row["built_in"],
         target_temp_c=RangeModel(min=row["temp_min"], max=row["temp_max"]),
         target_humidity_pct=RangeModel(

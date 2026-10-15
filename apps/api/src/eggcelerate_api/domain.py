@@ -51,7 +51,6 @@ def condition_severity(
 ) -> str:
     temp_critical = temp < temp_min - 0.5 or temp > temp_max + 0.5
     humidity_critical = humidity < humidity_min - 5 or humidity > humidity_max + 5
-    battery_critical = power_source == "battery" and battery_pct <= 15
     telemetry_critical = telemetry_status == "offline"
     turning_overdue = next_turn < now
     if (
@@ -59,18 +58,15 @@ def condition_severity(
         or telemetry_critical
         or temp_critical
         or humidity_critical
-        or battery_critical
     ):
         return "critical"
     temp_warning = temp < temp_min or temp > temp_max
     humidity_warning = humidity < humidity_min or humidity > humidity_max
-    battery_warning = power_source == "battery" and battery_pct <= 25
     telemetry_warning = telemetry_status == "stale"
     if (
         telemetry_warning
         or temp_warning
         or humidity_warning
-        or battery_warning
         or turning_overdue
     ):
         return "warning"

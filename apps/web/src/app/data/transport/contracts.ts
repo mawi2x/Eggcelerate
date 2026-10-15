@@ -105,6 +105,16 @@ export const IncubatorDTOSchema = z
     telemetry_observed_at: UtcTimestampSchema.nullable().optional(),
     telemetry_received_at: UtcTimestampSchema.nullable().optional(),
     telemetry_last_seen_at: UtcTimestampSchema.nullable().optional(),
+    output_states: z
+      .object({
+        heater_on: z.boolean(),
+        mist_on: z.boolean(),
+        fan_on: z.boolean(),
+        received_at: UtcTimestampSchema,
+      })
+      .strict()
+      .nullable()
+      .optional(),
     candled_days: z.array(z.number().int().positive()),
     candling_entries: z.array(CandlingEntryDTOSchema),
   })
@@ -404,6 +414,14 @@ export function incubatorFromDTO(input: unknown): Incubator {
     telemetryObservedAt: dto.telemetry_observed_at ?? null,
     telemetryReceivedAt: dto.telemetry_received_at ?? null,
     telemetryLastSeenAt: dto.telemetry_last_seen_at ?? null,
+    outputStates: dto.output_states
+      ? {
+          heaterOn: dto.output_states.heater_on,
+          mistOn: dto.output_states.mist_on,
+          fanOn: dto.output_states.fan_on,
+          receivedAt: dto.output_states.received_at,
+        }
+      : undefined,
     candled: Object.fromEntries(dto.candled_days.map((day) => [day, true])),
     candlingLog: dto.candling_entries.map((entry) =>
       candlingEntryFromDTO(entry),
@@ -419,7 +437,10 @@ export function alertFromDTO(input: unknown): AlertEntry {
     title: dto.title,
     unit: dto.unit_name ?? dto.incubator_id ?? "",
     // Older stored alerts can contain dash ranges; normalize only their display copy.
-    message: dto.message.replace(/(-?\d+(?:\.\d+)?)\s*–\s*(-?\d+(?:\.\d+)?)/g, "$1 to $2"),
+    message: dto.message.replace(
+      /(-?\d+(?:\.\d+)?)\s*–\s*(-?\d+(?:\.\d+)?)/g,
+      "$1 to $2",
+    ),
     timestamp: dto.occurred_at,
     acknowledged: dto.acknowledged_at !== null,
     conditionState: dto.condition_state ?? undefined,

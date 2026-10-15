@@ -1,3 +1,4 @@
+import { currentModes } from "../../domain/mode-catalog";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Incubator, Mode } from "../../domain/types";
@@ -34,7 +35,7 @@ export function useCreateIncubator(
     }
     setConnectError(null);
     setConnecting(true);
-    const mode = modes[0] ?? modeOf("broiler");
+    const mode = currentModes(modes)[0] ?? modeOf("broiler");
     const nowIso = new Date().toISOString();
     const connected = await onAddIncubator({
       id: `chamber-${Date.now()}`,
