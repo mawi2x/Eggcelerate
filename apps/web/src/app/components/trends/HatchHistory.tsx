@@ -13,10 +13,12 @@ export function HatchHistory({
   model,
   historyStatus,
   isMobile,
+  hasIncubators = true,
 }: {
   model: ReturnType<typeof useHatchHistory>;
   historyStatus?: FeatureQueryState;
   isMobile: boolean;
+  hasIncubators?: boolean;
 }) {
   const {
     setHatchSearch,
@@ -41,12 +43,15 @@ export function HatchHistory({
       )}
       {(!historyStatus || historyStatus.hasData) && (
         <>
-          <HatchSummaryPanel
-            summary={summary}
-            speciesSummaries={speciesSummaries}
-          />
-
-          <HatchHistoryControls model={model} />
+          {summary.cycles > 0 && (
+            <>
+              <HatchSummaryPanel
+                summary={summary}
+                speciesSummaries={speciesSummaries}
+              />
+              <HatchHistoryControls model={model} />
+            </>
+          )}
 
           <div className="mt-3 space-y-3 md:mt-4">
             {pagedHatch.length > 0 ? (
@@ -100,7 +105,7 @@ export function HatchHistory({
               </ul>
             ) : (
               <EmptyState
-                size="compact"
+                size="page"
                 title={
                   summary.cycles === 0
                     ? "No completed cycles yet"
@@ -108,7 +113,9 @@ export function HatchHistory({
                 }
                 description={
                   summary.cycles === 0
-                    ? "Completed cycle records will appear here after a hatch is recorded."
+                    ? hasIncubators
+                      ? "Completed cycle records will appear here after a hatch is recorded."
+                      : "Add your first incubator to begin a cycle. Completed hatch records will appear here."
                     : "Try a different chamber or species, or clear the selected filters."
                 }
                 action={
@@ -128,6 +135,10 @@ export function HatchHistory({
                       }}
                     >
                       <span>Clear filters</span>
+                    </Button>
+                  ) : !hasIncubators ? (
+                    <Button asChild className="rounded-xl">
+                      <a href="/incubators">Add your first incubator</a>
                     </Button>
                   ) : undefined
                 }

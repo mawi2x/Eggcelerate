@@ -454,6 +454,7 @@ export function JournalEntryCard({
               )}
 
               <PhotoActionMenu
+                onCapture={(photo) => onAddPhotos(entry.day, [photo])}
                 onUpload={() => photoRef.current?.click()}
                 trigger={
                   <button
@@ -735,9 +736,17 @@ function LogModalBody({
   const hasEvidence = form.note.trim().length > 0 || form.photos.length > 0;
 
   const submit = async () => {
+    if (isSaving) return;
     setIsSaving(true);
-    await onSubmit(form);
-    setIsSaving(false);
+    try {
+      await onSubmit(form);
+    } catch {
+      toast.error(
+        "Inspection could not be saved. Your entries are still here; please try again.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSave = () => {
@@ -1010,6 +1019,7 @@ function LogModalBody({
                 </div>
               ) : (
                 <Select
+                  size="filter"
                   value={selectedOption}
                   onValueChange={(val) => {
                     setSelectedOption(val);
@@ -1390,6 +1400,13 @@ function LogModalBody({
                   Photos
                 </Label>
                 <PhotoActionMenu
+                  onCapture={async (photo) => {
+                    setForm((current) => ({
+                      ...current,
+                      photos: [...current.photos, photo],
+                    }));
+                    return true;
+                  }}
                   onUpload={() => photoRef.current?.click()}
                   trigger={
                     <button
@@ -1450,7 +1467,7 @@ function LogModalBody({
                       >
                         {isUploadingPhotos
                           ? "Please wait while images are prepared"
-                          : "Choose Upload photo or drag & drop"}
+                          : "Open camera, upload a photo, or drag & drop"}
                       </span>
                     </button>
                   }

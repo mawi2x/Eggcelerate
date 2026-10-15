@@ -161,6 +161,7 @@ export function TrendsScreen({
         ) : <EnvironmentalTrends model={environmental} units={units} />
       ) : (
         <HatchHistory
+          hasIncubators={units.length > 0}
           model={historyModel}
           historyStatus={historyStatus}
           isMobile={environmental.isMobile}

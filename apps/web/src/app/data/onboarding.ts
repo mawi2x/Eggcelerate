@@ -29,19 +29,27 @@ export const SignInSchema = z.object({
   rememberMe: z.boolean().optional().default(false),
 });
 
-export const CreateAccountSchema = z
-  .object({
-    email: z.string().trim().email(),
-    password: z.string().min(12).max(128),
-    confirmPassword: z.string(),
-    displayName: z.string().trim().min(1).max(ACCOUNT_HOLDER_MAX),
-    farmName: z.string().trim().min(1).max(FARM_NAME_MAX),
-  })
-  .refine((value) => value.password === value.confirmPassword, {
+const AccountFields = z.object({
+  email: z.string().trim().email(),
+  password: z.string().min(12).max(128),
+  confirmPassword: z.string(),
+  displayName: z.string().trim().min(1).max(ACCOUNT_HOLDER_MAX),
+  farmName: z.string().trim().min(1).max(FARM_NAME_MAX),
+});
+
+export const CreateAccountSchema = AccountFields.refine(
+  (value) => value.password === value.confirmPassword,
+  {
     path: ["confirmPassword"],
     message: "Passwords do not match.",
-  });
-
+  },
+);
+export const EditAccountSchema = AccountFields.extend({
+  password: z.union([z.literal(""), z.string().min(12).max(128)]),
+}).refine((value) => value.password === value.confirmPassword, {
+  path: ["confirmPassword"],
+  message: "Passwords do not match.",
+});
 export const ONBOARDING_NAME_MAX = 32;
 
 export const OnboardingStep1Schema = z.object({

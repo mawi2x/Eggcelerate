@@ -6,6 +6,8 @@ import {
   Lock,
   LogOut,
   Mail,
+  Pencil,
+  Trash2,
   ShieldCheck,
   User,
   UserPlus,
@@ -13,14 +15,27 @@ import {
 } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 import logoApp from "../../../imports/logo-app.webp";
-import { adminClient } from "../../data/auth/admin-client";
-import { CreateAccountSchema } from "../../data/onboarding";
+import {
+  demoAdminClient,
+  DEMO_ADMIN_EMAIL,
+  DEMO_ADMIN_PASSWORD,
+  savedDemoSession,
+} from "../../data/auth/demo-accounts";
+import { adminClient, type AdminUser } from "../../data/auth/admin-client";
+import { CreateAccountSchema, EditAccountSchema } from "../../data/onboarding";
 import { useAuth } from "../../providers/auth-context";
 import { AuthCard } from "../auth/AuthCard";
 import { FormInput } from "../auth/FormInput";
 import { SignInScreen } from "../auth/SignInScreen";
 import { SuspenseFallback } from "../SuspenseFallback";
 import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
 import { Typography } from "../ui/typography";
 
 function message(error: unknown) {
@@ -31,11 +46,12 @@ function message(error: unknown) {
 
 export function AdminPage() {
   const auth = useAuth();
+  const client = auth.mode === "mock" ? demoAdminClient : adminClient;
   const [signOutError, setSignOutError] = useState("");
   const access = useQuery({
-    queryKey: ["platform-admin-access", auth.user?.id],
-    queryFn: adminClient.session,
-    enabled: auth.mode === "api" && auth.isAuthenticated,
+    queryKey: ["platform-admin-access", auth.mode, auth.user?.id],
+    queryFn: client.session,
+    enabled: auth.isAuthenticated,
     retry: false,
   });
   const signOut = async () => {
@@ -46,28 +62,38 @@ export function AdminPage() {
       setSignOutError(message(error));
     }
   };
-  if (auth.mode !== "api")
-    return (
-      <AuthCard>
-        <Typography as="h1" variant="pageTitle">
-          Connect the account server
-        </Typography>
-        <p className="mt-3 text-[var(--text-secondary)]">
-          Open the local API-backed website to manage real users.
-        </p>
-      </AuthCard>
-    );
   if (auth.isLoading)
     return <SuspenseFallback label="Checking administrator session…" />;
-  if (!auth.isAuthenticated)
+  if (
+    !auth.isAuthenticated ||
+    (auth.mode === "mock" && auth.user?.id !== "demo-admin")
+  )
     return (
-      <SignInScreen
-        heading="Administrator sign in"
-        onSignIn={auth.signIn}
-        onSetup={() => {}}
-        canRegister={false}
-        authError={auth.error}
-      />
+      <>
+        <SignInScreen
+          heading="Administrator sign in"
+          emailPlaceholder="Email"
+          accountHelp=""
+          onSignIn={async (email, password, rememberMe) => {
+            await auth.signIn(email, password, rememberMe);
+            if (auth.mode === "mock" && !savedDemoSession()?.administrator)
+              throw new Error(
+                "Use the demo administrator account to open this page.",
+              );
+            if (auth.mode === "mock") window.location.replace("/admin");
+          }}
+          onSetup={() => {}}
+          canRegister={false}
+          authError={auth.error}
+        />
+        {auth.mode === "mock" && (
+          <p className="mx-auto max-w-lg px-5 pb-6 text-center text-sm text-[var(--text-secondary)]">
+            Demo admin: <strong>{DEMO_ADMIN_EMAIL}</strong>
+            <br />
+            Password: <strong>{DEMO_ADMIN_PASSWORD}</strong>
+          </p>
+        )}
+      </>
     );
   if (access.isPending)
     return <SuspenseFallback label="Checking administrator access…" />;
@@ -179,18 +205,24 @@ export function AdminPage() {
             Create an account so a farm owner can sign in to Eggcelerate.
           </Typography>
         </header>
-        <UserManagement />
+        <UserManagement client={client} demo={auth.mode === "mock"} />
       </main>
     </div>
   );
 }
 
-function UserManagement() {
+function UserManagement({
+  client,
+  demo,
+}: {
+  client: typeof adminClient;
+  demo: boolean;
+}) {
   const queryClient = useQueryClient();
   const [offset, setOffset] = useState(0);
   const list = useQuery({
-    queryKey: ["platform-admin-users", offset],
-    queryFn: () => adminClient.users(offset),
+    queryKey: ["platform-admin-users", demo, offset],
+    queryFn: () => client.users(offset),
     retry: false,
   });
   const emptyForm = {
@@ -201,6 +233,29 @@ function UserManagement() {
     confirmPassword: "",
   };
   const [form, setForm] = useState(emptyForm);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<AdminUser | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const openForm = (user: AdminUser | null = null) => {
+    setEditing(user);
+    setForm(
+      user
+        ? {
+            ...emptyForm,
+            email: user.email,
+            displayName: user.display_name,
+            farmName: user.farm_name,
+          }
+        : emptyForm,
+    );
+    setVisible(false);
+    setError("");
+    setSuccess("");
+    setFieldErrors({});
+    setFormOpen(true);
+  };
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -216,7 +271,9 @@ function UserManagement() {
     if (busy) return;
     setSuccess("");
     setError("");
-    const parsed = CreateAccountSchema.safeParse(form);
+    const parsed = (
+      editing ? EditAccountSchema : CreateAccountSchema
+    ).safeParse(form);
     if (!parsed.success) {
       const errors: Record<string, string> = {};
       for (const issue of parsed.error.issues)
@@ -231,12 +288,20 @@ function UserManagement() {
     setFieldErrors({});
     setBusy(true);
     try {
-      const created = await adminClient.createUser(parsed.data);
+      const created = editing
+        ? await client.updateUser(editing.id, {
+            ...parsed.data,
+            password: parsed.data.password || undefined,
+          })
+        : await client.createUser(parsed.data);
       setForm(emptyForm);
       setVisible(false);
       setSuccess(
-        `Account created for ${created.email}. The owner can now sign in.`,
+        editing
+          ? `Account updated for ${created.email}.`
+          : `Account created for ${created.email}. The owner can now sign in.`,
       );
+      setFormOpen(false);
       setOffset(0);
       void queryClient.invalidateQueries({
         queryKey: ["platform-admin-users"],
@@ -247,8 +312,35 @@ function UserManagement() {
       setBusy(false);
     }
   };
+  const removeUser = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await client.deleteUser(deleteTarget.id);
+      setSuccess(`Account deleted for ${deleteTarget.email}.`);
+      setDeleteTarget(null);
+      if (list.data?.users.length === 1 && offset > 0)
+        setOffset(Math.max(0, offset - 20));
+      await queryClient.invalidateQueries({
+        queryKey: ["platform-admin-users"],
+      });
+    } catch (cause) {
+      setDeleteError(message(cause));
+    } finally {
+      setDeleting(false);
+    }
+  };
   return (
-    <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="min-w-0 space-y-4">
+      {success && (
+        <p
+          role="status"
+          className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4"
+        >
+          {success}
+        </p>
+      )}
       <section
         aria-labelledby="user-list-heading"
         className="min-w-0 rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[var(--surface-card)]"
@@ -264,14 +356,20 @@ function UserManagement() {
                 : "Registered accounts and their farms"}
             </p>
           </div>
-          <Button
-            variant="outline"
-            className="rounded-xl text-(length:--type-button-label) font-semibold"
-            disabled={list.isFetching}
-            onClick={() => void list.refetch()}
-          >
-            {list.isFetching ? "Loading…" : "Refresh"}
-          </Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button className="rounded-xl" onClick={() => openForm()}>
+              <UserPlus size={18} aria-hidden="true" />
+              Create user
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-xl text-(length:--type-button-label) font-semibold"
+              disabled={list.isFetching}
+              onClick={() => void list.refetch()}
+            >
+              {list.isFetching ? "Loading…" : "Refresh"}
+            </Button>
+          </div>
         </div>
         {list.isPending && (
           <p role="status" className="p-6 text-[var(--text-secondary)]">
@@ -305,6 +403,12 @@ function UserManagement() {
                   <th scope="col" className="px-4 py-4 font-semibold">
                     Access
                   </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-4 font-semibold text-right"
+                  >
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -328,6 +432,33 @@ function UserManagement() {
                             ? "Administrator"
                             : "Farm owner"}
                       </span>
+                    </td>
+                    <td className="px-4 py-5">
+                      {!user.administrator && (
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            className="rounded-xl"
+                            onClick={() => openForm(user)}
+                            aria-label={`Edit ${user.display_name}`}
+                          >
+                            <Pencil size={16} aria-hidden="true" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="rounded-xl text-[var(--status-danger-fg)]"
+                            onClick={() => {
+                              setDeleteError("");
+                              setDeleteTarget(user);
+                            }}
+                            aria-label={`Delete ${user.display_name}`}
+                          >
+                            <Trash2 size={16} aria-hidden="true" />
+                            Delete
+                          </Button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -364,134 +495,187 @@ function UserManagement() {
           </div>
         )}
       </section>
-      <section
-        aria-labelledby="create-user-heading"
-        className="min-w-0 rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[var(--surface-card)] p-6"
+      <Dialog
+        open={formOpen}
+        onOpenChange={(open) => {
+          if (!busy) setFormOpen(open);
+        }}
       >
-        <div className="mb-5 flex items-start gap-3">
-          <div className="rounded-xl bg-[var(--surface-subtle)] p-2 text-[var(--brand-primary)]">
-            <UserPlus size={20} aria-hidden="true" />
-          </div>
-          <div>
-            <Typography
-              as="h2"
-              id="create-user-heading"
-              variant="headingMedium"
-            >
-              Create user
-            </Typography>
-            <p className="mt-1 text-(length:--type-body) text-[var(--text-secondary)]">
-              Each owner starts with an empty farm.
-            </p>
-          </div>
-        </div>
-        <form
-          ref={formRef}
-          onSubmit={(event) => void submit(event)}
-          noValidate
-          className="space-y-4"
-        >
-          <fieldset disabled={busy} className="min-w-0 space-y-4">
-            <FormInput
-              id="admin-displayName"
-              label="Full name"
-              icon={User}
-              autoComplete="name"
-              maxLength={35}
-              value={form.displayName}
-              onChange={(event) => setField("displayName", event.target.value)}
-              error={fieldErrors.displayName}
-            />
-            <FormInput
-              id="admin-farmName"
-              label="Farm name"
-              icon={Feather}
-              autoComplete="organization"
-              maxLength={30}
-              value={form.farmName}
-              onChange={(event) => setField("farmName", event.target.value)}
-              error={fieldErrors.farmName}
-            />
-            <FormInput
-              id="admin-email"
-              label="Email"
-              icon={Mail}
-              type="email"
-              autoComplete="off"
-              maxLength={254}
-              value={form.email}
-              onChange={(event) => setField("email", event.target.value)}
-              error={fieldErrors.email}
-            />
-            <FormInput
-              id="admin-password"
-              label="Password"
-              icon={Lock}
-              type={visible ? "text" : "password"}
-              autoComplete="new-password"
-              minLength={12}
-              maxLength={128}
-              value={form.password}
-              onChange={(event) => setField("password", event.target.value)}
-              error={fieldErrors.password}
-              trailing={
-                <button
-                  type="button"
-                  aria-label={visible ? "Hide password" : "Show password"}
-                  aria-pressed={visible}
-                  onClick={() => setVisible((value) => !value)}
-                  className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                >
-                  {visible ? (
-                    <EyeOff size={18} aria-hidden="true" />
-                  ) : (
-                    <Eye size={18} aria-hidden="true" />
-                  )}
-                </button>
-              }
-            />
-            <p className="text-(length:--type-caption) text-[var(--text-secondary)]">
-              Use 12 to 128 characters. Share the password with the owner.
-            </p>
-            <FormInput
-              id="admin-confirmPassword"
-              label="Confirm password"
-              icon={Lock}
-              type={visible ? "text" : "password"}
-              autoComplete="new-password"
-              maxLength={128}
-              value={form.confirmPassword}
-              onChange={(event) =>
-                setField("confirmPassword", event.target.value)
-              }
-              error={fieldErrors.confirmPassword}
-            />
-          </fieldset>
-          {error && (
-            <p role="alert" className="text-sm text-[var(--status-danger-fg)]">
-              {error}
-            </p>
-          )}
-          {Object.keys(fieldErrors).length > 0 && (
-            <p role="alert" className="text-sm text-[var(--status-danger-fg)]">
-              Check the highlighted fields.
-            </p>
-          )}
-          {success && (
-            <p role="status" className="text-sm text-[var(--text-primary)]">
-              {success}
-            </p>
-          )}
-          <Button
-            type="submit"
-            className="w-full rounded-xl text-(length:--type-button-label) font-semibold"
-            disabled={busy}
+        <DialogContent hideClose={busy}>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit user" : "Create user"}</DialogTitle>
+            <DialogDescription>
+              {editing
+                ? "Update this owner's account and farm details."
+                : "Each owner starts with an empty farm."}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            ref={formRef}
+            onSubmit={(event) => void submit(event)}
+            noValidate
+            className="space-y-4"
           >
-            <UserPlus size={18} aria-hidden="true" />
-            {busy ? "Creating user…" : "Create user"}
-          </Button>
-        </form>
-      </section>
+            <fieldset disabled={busy} className="min-w-0 space-y-4">
+              <FormInput
+                id="admin-displayName"
+                label="Full name"
+                icon={User}
+                autoComplete="name"
+                maxLength={35}
+                value={form.displayName}
+                onChange={(event) =>
+                  setField("displayName", event.target.value)
+                }
+                error={fieldErrors.displayName}
+              />
+              <FormInput
+                id="admin-farmName"
+                label="Farm name"
+                icon={Feather}
+                autoComplete="organization"
+                maxLength={30}
+                value={form.farmName}
+                onChange={(event) => setField("farmName", event.target.value)}
+                error={fieldErrors.farmName}
+              />
+              <FormInput
+                id="admin-email"
+                label="Email"
+                icon={Mail}
+                type="email"
+                autoComplete="off"
+                maxLength={254}
+                value={form.email}
+                onChange={(event) => setField("email", event.target.value)}
+                error={fieldErrors.email}
+              />
+              <FormInput
+                id="admin-password"
+                label={editing ? "New password (optional)" : "Password"}
+                icon={Lock}
+                type={visible ? "text" : "password"}
+                autoComplete="new-password"
+                minLength={editing ? undefined : 12}
+                maxLength={128}
+                value={form.password}
+                characterCount={form.password.length}
+                onChange={(event) => setField("password", event.target.value)}
+                error={fieldErrors.password}
+                trailing={
+                  <button
+                    type="button"
+                    aria-label={visible ? "Hide password" : "Show password"}
+                    aria-pressed={visible}
+                    onClick={() => setVisible((value) => !value)}
+                    className="flex h-[var(--control-size-icon)] w-[var(--control-size-icon)] items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  >
+                    {visible ? (
+                      <EyeOff size={18} aria-hidden="true" />
+                    ) : (
+                      <Eye size={18} aria-hidden="true" />
+                    )}
+                  </button>
+                }
+              />
+              <FormInput
+                id="admin-confirmPassword"
+                label="Confirm password"
+                icon={Lock}
+                type={visible ? "text" : "password"}
+                autoComplete="new-password"
+                maxLength={128}
+                value={form.confirmPassword}
+                onChange={(event) =>
+                  setField("confirmPassword", event.target.value)
+                }
+                error={fieldErrors.confirmPassword}
+              />
+            </fieldset>
+            {error && (
+              <p
+                role="alert"
+                className="text-sm text-[var(--status-danger-fg)]"
+              >
+                {error}
+              </p>
+            )}
+            {Object.keys(fieldErrors).length > 0 && (
+              <p
+                role="alert"
+                className="text-sm text-[var(--status-danger-fg)]"
+              >
+                Check the highlighted fields.
+              </p>
+            )}
+            {success && (
+              <p role="status" className="text-sm text-[var(--text-primary)]">
+                {success}
+              </p>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={() => setFormOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="rounded-xl text-(length:--type-button-label) font-semibold"
+                disabled={busy}
+              >
+                {editing ? (
+                  <Pencil size={18} aria-hidden="true" />
+                ) : (
+                  <UserPlus size={18} aria-hidden="true" />
+                )}
+                {busy ? "Saving…" : editing ? "Save changes" : "Create user"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent hideClose={deleting}>
+          <DialogHeader>
+            <DialogTitle>Delete user?</DialogTitle>
+            <DialogDescription>
+              Delete the account for {deleteTarget?.display_name} (
+              {deleteTarget?.email})? They will no longer be able to sign in.
+              This cannot be undone. Existing farm records are retained.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteError && (
+            <p role="alert" className="text-sm text-[var(--status-danger-fg)]">
+              {deleteError}
+            </p>
+          )}
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              disabled={deleting}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={() => void removeUser()}
+            >
+              {deleting ? "Deleting…" : "Delete user"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

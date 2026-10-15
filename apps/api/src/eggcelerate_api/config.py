@@ -16,7 +16,7 @@ class Settings:
     api_port: int = 8000
     storage_backend: str = "memory"
     database_url: str = ""
-    public_registration_enabled: bool = True
+    public_registration_enabled: bool = False
     auth_rate_limit_key: str = "development-only-rate-limit-key"
     cors_origins: tuple[str, ...] = (
         "http://localhost:5173",
@@ -104,7 +104,7 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
         database_url=env.get("DATABASE_URL", ""),
         public_registration_enabled=env.get(
             "PUBLIC_REGISTRATION_ENABLED",
-            "false" if app_env == "production" else "true",
+            "false",
         )
         .strip()
         .lower()

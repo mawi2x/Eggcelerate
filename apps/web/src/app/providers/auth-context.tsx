@@ -13,6 +13,12 @@ import {
   type ApiAuthIdentity,
   type RegisterAccountInput,
 } from "../data/auth/api-auth-client";
+import {
+  clearDemoSession,
+  savedDemoSession,
+  signInDemo,
+  type DemoIdentity,
+} from "../data/auth/demo-accounts";
 import { setCsrfToken } from "../data/transport/session";
 
 export interface AuthUser {
@@ -63,6 +69,16 @@ function userFromApi(identity: ApiAuthIdentity): AuthUser {
   };
 }
 
+function userFromDemo(identity: DemoIdentity): AuthUser {
+  return {
+    id: identity.id,
+    email: identity.email,
+    displayName: identity.display_name,
+    farmName: identity.farm_name,
+    role: "owner",
+  };
+}
+
 export function MockAuthProvider({
   children,
   initiallyAuthenticated = true,
@@ -72,34 +88,36 @@ export function MockAuthProvider({
   initiallyAuthenticated?: boolean;
   queryClient?: QueryClient;
 }) {
-  const [user, setUser] = useState<AuthUser | null>(
-    initiallyAuthenticated ? mockUser : null,
-  );
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const saved = savedDemoSession();
+    return saved
+      ? userFromDemo(saved)
+      : saved === null
+        ? null
+        : initiallyAuthenticated
+          ? mockUser
+          : null;
+  });
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       mode: "mock",
-      registrationEnabled: true,
+      registrationEnabled: false,
       status: user ? "authenticated" : "unauthenticated",
       isLoading: false,
       isAuthenticated: user !== null,
       error: null,
-      signIn: async (email) => {
+      signIn: async (email, password) => {
+        const identity = await signInDemo(email, password);
         queryClient?.clear();
-        setUser({ ...mockUser, email, role: "farmer" });
+        setUser(userFromDemo(identity));
       },
-      register: async (input) => {
-        queryClient?.clear();
-        setUser({
-          id: "mock-farmer",
-          email: input.email,
-          displayName: input.displayName,
-          farmName: input.farmName,
-          role: "farmer",
-        });
+      register: async () => {
+        throw new Error("Accounts are provided by your administrator.");
       },
       completeOnboarding: () => setUser(mockUser),
       signOut: async () => {
+        clearDemoSession();
         queryClient?.clear();
         setUser(null);
       },
@@ -122,7 +140,6 @@ export function ApiAuthProvider({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [error, setError] = useState<string | null>(null);
-  const [registrationEnabled, setRegistrationEnabled] = useState(false);
 
   useEffect(() => {
     const sessionCheck = new AbortController();
@@ -140,10 +157,9 @@ export function ApiAuthProvider({
     window.addEventListener("eggcelerate:session-expired", expireSession);
     void client
       .session(sessionCheck.signal)
-      .then(({ identity, registrationEnabled: canRegister }) => {
+      .then(({ identity }) => {
         if (!active || expired) return;
         setUser(identity ? userFromApi(identity) : null);
-        setRegistrationEnabled(canRegister);
         setStatus(identity ? "authenticated" : "unauthenticated");
         setError(null);
       })
@@ -169,7 +185,7 @@ export function ApiAuthProvider({
     () => ({
       user,
       mode: "api",
-      registrationEnabled,
+      registrationEnabled: false,
       status,
       isLoading: status === "loading",
       isAuthenticated: status === "authenticated" && user !== null,
@@ -181,12 +197,8 @@ export function ApiAuthProvider({
         setStatus("authenticated");
         setError(null);
       },
-      register: async (input) => {
-        const identity = await client.register(input);
-        queryClient.clear();
-        setUser(userFromApi(identity));
-        setStatus("authenticated");
-        setError(null);
+      register: async () => {
+        throw new Error("Accounts are provided by your administrator.");
       },
       completeOnboarding: () => undefined,
       signOut: async () => {
@@ -197,7 +209,7 @@ export function ApiAuthProvider({
         setError(null);
       },
     }),
-    [client, error, queryClient, registrationEnabled, status, user],
+    [client, error, queryClient, status, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

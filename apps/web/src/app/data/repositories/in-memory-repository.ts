@@ -45,6 +45,8 @@ import type {
 
 export interface InMemoryRepositoryOptions {
   fixtureSet?: "demo" | "extended";
+  emptyFarm?: boolean;
+  account?: SettingsPreferences["account"];
   now?: () => Date;
   latencyMs?: number;
   failOperations?: readonly RepositoryOperation[];
@@ -107,6 +109,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       seededAt,
       options.fixtureSet,
     );
+    if (options.emptyFarm) this.incubators = [];
     this.alerts = createAlertFixtures(seededAt);
     this.hatchRecords = createHatchRecordFixtures();
     if (this.demo) {
@@ -120,6 +123,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         }));
     }
     this.settings = clone(initialSettings);
+    if (options.account) this.settings.account = clone(options.account);
   }
 
   private async execute<T>(

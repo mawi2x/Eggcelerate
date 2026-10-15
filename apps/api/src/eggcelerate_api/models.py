@@ -300,6 +300,7 @@ class PreferencesDTO(BaseModel):
         | None
     ) = None
     notifications: NotificationsModel
+    sampling_interval_seconds: Literal[5, 10, 15, 30] = 15
     temperature_unit: TemperatureUnit
     time_zone: TimeZone
 

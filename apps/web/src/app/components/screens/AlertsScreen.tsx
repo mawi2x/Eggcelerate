@@ -62,6 +62,7 @@ const severityRank: Record<AlertSeverity, number> = {
 
 interface Props {
   alerts: AlertEntry[];
+  hasIncubators?: boolean;
   dataStatus?: FeatureQueryState;
   onAcknowledge: (id: string) => Promise<boolean>;
   onDismiss: (id: string) => Promise<boolean>;
@@ -77,6 +78,7 @@ interface Props {
 
 export function AlertsScreen({
   alerts,
+  hasIncubators = true,
   dataStatus,
   onAcknowledge,
   onDismiss,
@@ -264,20 +266,31 @@ export function AlertsScreen({
         dataStatus &&
         !dataStatus.hasData ? null : list.length === 0 ? (
           <EmptyState
-            size="regular"
+            size="page"
             title={
-              filter === "all"
-                ? "All clear here!"
-                : filter === "unread"
-                  ? "You're all caught up!"
-                  : "No important notifications"
+              !hasIncubators
+                ? "No incubators yet"
+                : filter === "all"
+                  ? "All clear here!"
+                  : filter === "unread"
+                    ? "You're all caught up!"
+                    : "No important notifications"
             }
             description={
-              filter === "all"
-                ? "There are no notifications to show right now."
-                : filter === "unread"
-                  ? "There are no unread notifications. Choose All to review your notification history."
-                  : "There are no important notifications to show right now."
+              !hasIncubators
+                ? "Add your first incubator to start receiving monitoring alerts."
+                : filter === "all"
+                  ? "There are no notifications to show right now."
+                  : filter === "unread"
+                    ? "There are no unread notifications. Choose All to review your notification history."
+                    : "There are no important notifications to show right now."
+            }
+            action={
+              !hasIncubators ? (
+                <Button asChild className="rounded-xl">
+                  <a href="/incubators">Add your first incubator</a>
+                </Button>
+              ) : undefined
             }
           />
         ) : (

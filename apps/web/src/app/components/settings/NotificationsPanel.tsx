@@ -250,7 +250,6 @@ export function NotificationsPanel({
                       if (phoneErr) setPhoneErr(null);
                     }}
                     onBlur={commitPhone}
-                    placeholder="+1 555 000 1234"
                     className={inputClass}
                     style={{
                       ...inputStyle,
@@ -317,7 +316,6 @@ export function NotificationsPanel({
                       if (emailErr) setEmailErr(null);
                     }}
                     onBlur={commitEmail}
-                    placeholder="you@farm.com"
                     className={inputClass}
                     style={{
                       ...inputStyle,
@@ -355,11 +353,6 @@ export function NotificationsPanel({
           aria-labelledby="notification-rules-tab"
           className="pt-5"
         >
-          <p className="mb-4 text-sm text-[var(--text-muted)]">
-            Disabling a rule prevents new alerts. Existing conditions remain
-            active until they recover or monitoring ends. Reading or dismissing
-            a notification does not resolve the condition.
-          </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {triggerGroups.map((group) => (
               <section

@@ -55,7 +55,7 @@ in Eggcelerate. Internal device IDs and broker credentials are not user-entry fi
 The template records the VPS IP, but the actual MQTT hostname/listener, credentials,
 certificate, and VPS deployment still need to be established. Transport is integrated,
 but stays disabled until private CloudConfig.h contains complete settings. Install
-**PubSubClient** alongside the DHT libraries. Readings publish every 15 seconds;
+**PubSubClient** alongside the DHT libraries. Readings publish every 15 seconds by default;
 server receipts confirm committed database ingestion. Invalid/stale sensor values
 are skipped. No offline telemetry queue or actuator commands are implemented.
 For this USB-powered pilot battery_pct=100 and power_source=grid are compatibility
@@ -94,3 +94,16 @@ HTTPS, and sensor-only MQTT ingestion. Public MQTT 8883 is still blocked pending
 Azure networking. Owner account details, existing-code enrollment, and firmware
 upload remain pending; the ESP32 has not been reflashed in this deployment step.
 The physical destination remains the Eggcelerate dashboard; LCD/OLED are later.
+
+
+### Dashboard reporting interval
+
+Settings → Hardware & Devices → Device preferences offers 5, 10, 15 or 30
+seconds between reading uploads. Save Changes persists the farm preference.
+The hardware worker sends that value after an accepted telemetry upload on the
+existing worker-only receipt channel. Updated main firmware accepts only these
+four values, bound to its current boot ID and latest sequence, and applies the
+interval in RAM. Reboot starts at 15 seconds until the next server update.
+Sensor reads remain every 2.5 seconds. Research records retain their fixed
+five-minute interval. This requires the updated firmware and worker; older
+firmware ignores the setting. It does not add automatic actuator control.

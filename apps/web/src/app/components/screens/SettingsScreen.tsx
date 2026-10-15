@@ -191,6 +191,13 @@ export function SettingsScreen({
             <section aria-labelledby="settings-panel-hardware">
               <HardwarePanel
                 units={units}
+                samplingIntervalSeconds={draft.samplingIntervalSeconds ?? 15}
+                onSamplingIntervalChange={(samplingIntervalSeconds) =>
+                  setDraft((current) => ({
+                    ...current,
+                    samplingIntervalSeconds,
+                  }))
+                }
                 view={hardwareView}
                 onViewChange={setHardwareView}
                 onOpenUnit={onOpenUnit}

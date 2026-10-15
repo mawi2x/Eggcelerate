@@ -247,6 +247,9 @@ export const PreferencesDTOSchema = z
         email_address: z.string(),
       })
       .strict(),
+    sampling_interval_seconds: z
+      .union([z.literal(5), z.literal(10), z.literal(15), z.literal(30)])
+      .optional(),
     temperature_unit: z.enum(["c", "f"]),
     time_zone: z.enum(["gmt8", "gmt0", "est", "pst"]),
   })
@@ -494,6 +497,7 @@ export function preferencesFromDTO(input: unknown): SettingsPreferences {
       phone: dto.notifications.phone,
       emailAddress: dto.notifications.email_address,
     },
+    samplingIntervalSeconds: dto.sampling_interval_seconds ?? 15,
     temperatureUnit: dto.temperature_unit,
     timeZone: dto.time_zone,
   };
@@ -514,6 +518,7 @@ export function preferencesToDTO(input: SettingsPreferences): PreferencesDTO {
       phone: input.notifications.phone,
       email_address: input.notifications.emailAddress,
     },
+    sampling_interval_seconds: input.samplingIntervalSeconds ?? 15,
     temperature_unit: input.temperatureUnit,
     time_zone: input.timeZone,
   });

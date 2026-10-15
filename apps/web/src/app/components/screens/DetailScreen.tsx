@@ -601,7 +601,7 @@ export function DetailScreen({
                       },
                       {
                         label: "Egg turning",
-                        value: `Every ${setupMode.defaultTurnInterval}h`,
+                        value: `Every ${setupMode.defaultTurnInterval} ${setupMode.defaultTurnInterval === 1 ? "hour" : "hours"}`,
                         icon: RefreshCw,
                       },
                     ].map((item) => {

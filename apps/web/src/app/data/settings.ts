@@ -11,6 +11,7 @@ export type NotificationPreferences = {
 export type SettingsPreferences = {
   account: Account;
   notifications: NotificationPreferences;
+  samplingIntervalSeconds?: 5 | 10 | 15 | 30;
   temperatureUnit: "c" | "f";
   timeZone: "gmt8" | "gmt0" | "est" | "pst";
 };
@@ -35,6 +36,7 @@ export const initialSettings: SettingsPreferences = {
     phone: "",
     emailAddress: "",
   },
+  samplingIntervalSeconds: 15,
   temperatureUnit: "c",
   timeZone: "gmt8",
 };

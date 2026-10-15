@@ -4,6 +4,11 @@ import { appAuthApiBaseUrl } from "../repositories/app-repository";
 import { getCsrfToken, notifySessionExpired } from "../transport/session";
 import type { RegisterAccountInput } from "./api-auth-client";
 
+export type AdminUser = z.infer<typeof UserListSchema>["users"][number];
+export type UpdateUserInput = Omit<RegisterAccountInput, "password"> & {
+  password?: string;
+};
+
 const UserListSchema = z.object({
   users: z.array(
     z.object({
@@ -21,7 +26,11 @@ const UserListSchema = z.object({
   limit: z.number(),
 });
 
-async function request(path: string, body?: Record<string, unknown>) {
+async function request(
+  path: string,
+  body?: Record<string, unknown>,
+  method = body ? "POST" : "GET",
+) {
   if (!appAuthApiBaseUrl)
     throw new Error("Administration requires the connected account server.");
   let response: Response;
@@ -29,12 +38,12 @@ async function request(path: string, body?: Record<string, unknown>) {
     response = await fetch(
       `${normalizeBaseUrl(appAuthApiBaseUrl)}/api/v1/admin${path}`,
       {
-        method: body ? "POST" : "GET",
+        method,
         credentials: "include",
         cache: "no-store",
         headers: {
           "Content-Type": "application/json",
-          ...(body ? { "X-CSRF-Token": getCsrfToken() ?? "" } : {}),
+          ...(method !== "GET" ? { "X-CSRF-Token": getCsrfToken() ?? "" } : {}),
         },
         ...(body ? { body: JSON.stringify(body) } : {}),
       },
@@ -53,6 +62,25 @@ async function request(path: string, body?: Record<string, unknown>) {
 }
 
 export const adminClient = {
+  updateUser: async (id: string, input: UpdateUserInput) =>
+    z.object({ id: z.string(), email: z.string() }).parse(
+      await request(
+        `/users/${encodeURIComponent(id)}`,
+        {
+          email: input.email,
+          display_name: input.displayName,
+          farm_name: input.farmName,
+          ...(input.password ? { password: input.password } : {}),
+        },
+        "PATCH",
+      ),
+    ),
+  deleteUser: async (id: string) =>
+    z
+      .object({ id: z.string() })
+      .parse(
+        await request(`/users/${encodeURIComponent(id)}`, undefined, "DELETE"),
+      ),
   session: async () =>
     z
       .object({ administrator: z.literal(true) })

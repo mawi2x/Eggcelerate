@@ -720,7 +720,7 @@ export function ModeLibraryPanel({
                     >
                       <RotateCw size={14} /> Turn every
                     </span>
-                    {m.defaultTurnInterval}h
+                    {m.defaultTurnInterval} {m.defaultTurnInterval === 1 ? "hour" : "hours"}
                   </span>
                 </div>
                 <p
@@ -840,7 +840,7 @@ export function ModeLibraryPanel({
                         color: TEXT,
                       }}
                     >
-                      Every {m.defaultTurnInterval}h
+                      Every {m.defaultTurnInterval} {m.defaultTurnInterval === 1 ? "hour" : "hours"}
                     </TableCell>
                     <TableCell
                       style={{
@@ -985,7 +985,7 @@ export function ModeLibraryPanel({
                 { min: 7, max: 45 },
               )}
               {draftField(
-                "Turn every (h)",
+                "Turn every (hours)",
                 draft.defaultTurnInterval,
                 (n) => setDraft({ ...draft, defaultTurnInterval: n }),
                 { min: 1, max: 24 },

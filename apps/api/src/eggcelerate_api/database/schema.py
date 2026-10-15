@@ -226,6 +226,11 @@ farm_preferences = Table(
     Column("display_name", Text, nullable=False),
     Column("temperature_unit", Text, nullable=False),
     Column("time_zone", Text, nullable=False),
+    Column("sampling_interval_seconds", Integer, nullable=False, server_default="15"),
+    CheckConstraint(
+        "sampling_interval_seconds IN (5, 10, 15, 30)",
+        name="ck_preferences_sampling_interval",
+    ),
     Column("notification_enabled", JSONB, nullable=False),
     Column("notification_sms", Boolean, nullable=False),
     Column("notification_email", Boolean, nullable=False),

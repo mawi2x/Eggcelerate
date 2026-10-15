@@ -94,3 +94,24 @@ curl -fsS http://127.0.0.1/api/v1/alerts | grep -q '"ok":true'
 
 The overlay forces `VITE_DATA_SOURCE=api`, `VITE_API_URL=/api`, and `STORAGE_BACKEND=postgres_incubators`; it also removes the API and database host ports. The web image's build-time check catches literal `http(s)://localhost` or `http(s)://127.0.0.1` strings followed by `:` or `/` when API mode is selected; it does not validate other loopback spellings or prove API reachability. Its healthcheck probes the Nginx `/api` proxy. Run those commands from the repository checkout on the VPS. Do not run `docker compose down -v`; the named database volume contains the alert dismissal tombstones. The API currently has authentication disabled pending B6, so keep this preview behind a VPN, firewall, or an authenticated outer proxy rather than publishing it as a public service.
 The overlay uses the Compose `!override` tag; use Docker Compose v2.24 or newer.
+
+
+### Local demo administration
+
+With `pnpm dev:web` running, open `http://localhost:5173/admin`.
+No Docker or API is needed in mock mode.
+
+- Demo administrator: `admin@eggcelerate.demo` / `eggcelerate_admin`
+- Original three-incubator sample: `farmer@example.test` / `DemoFarmer123!`
+
+The admin's Create user button opens a modal for a demo owner account with a farm name.
+User rows also offer Edit and Delete. Editing supports names, email and an
+optional password reset; deleting requires confirmation. Administrator accounts
+are protected from these actions.
+Sign in at `/login` with the created email/password to open that owner's empty
+farm. Use the same browser and origin (do not switch between localhost and
+127.0.0.1). Created accounts persist in local browser storage with salted
+password hashes; the session persists in the current tab. Farm changes remain
+in memory and reset on page reload. Clearing site storage removes demo accounts.
+These credentials and accounts are only for the mock demo; API mode continues
+to use the server's administrator account and database.

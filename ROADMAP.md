@@ -45,8 +45,8 @@ allocation. Sensor/display/cloud services remain in the separate main firmware.
 | --- | --- | --- | --- |
 | **4** | DHT22 DATA | Used by main firmware; real readings recorded | Replaces schematic GPIO2 |
 | **14** | Relay IN3 — mist maker | User confirms working in combined bench test | Same GPIO; moved from IN4 to IN3; original relay channel IN2 |
-| **18** | Upper fan MOSFET trigger / upper fan slot | User confirms working in combined bench test | Swapped from the lower-fan slot per latest user instruction |
-| **19** | Lower fan MOSFET trigger / lower fan slot | User confirms working in combined bench test | Swapped from the upper-fan slot per latest user instruction |
+| **18** | Upper heat-distribution fan MOSFET trigger | User confirms working in combined bench test | Swapped from the lower-fan slot per latest user instruction |
+| **19** | Lower exhaust fan MOSFET trigger | User confirms working in combined bench test | Swapped from the upper-fan slot per latest user instruction |
 | **21** | Shared I²C SDA — LCD/OLED/time-module bus | Allocated in main firmware; full physical acceptance remains unrecorded | Same SDA pin as schematic |
 | **23** | Shared I²C SCL — LCD/OLED/time-module bus | Allocated in main firmware; full physical acceptance remains unrecorded | Same SCL pin; do not substitute default GPIO22 |
 | **25** | Relay IN2 — DC tray motor enable | User confirms working in combined bench test | Replaces schematic GPIO12 / old IN1 |
@@ -1298,3 +1298,179 @@ Browser checks confirmed no battery indicator on chamber cards and a compact
 monitor row showing Off / Off / On plus Live telemetry for the Quail demo.
 Screenshot: `output/playwright/chamber-status-simplified.png`. Changes are local;
 the VPS has not been rebuilt or redeployed for this update.
+
+### October 15 — local Candling Journal camera capture
+
+Replaced the Open camera placeholder with a browser camera dialog shared by
+new inspections and existing journal entries. Added rear-camera preference,
+egg framing guide, JPEG capture, preview, retake and Use photo. Captures feed
+into the existing photo attachment/save flow; this does not classify eggs.
+Camera tracks stop on close, including when permission resolves after closing.
+Permission/device/start failures show actionable messages and retain upload as
+an alternative. Camera access requires localhost or HTTPS. Inspection submission
+now releases its loading state and retains the form when submission throws.
+
+Local source changes only. Camera behavior has not yet been tested on a physical
+device; no tests were run for this update. No VPS deployment performed.
+
+### October 15 — admin-provided accounts in demo and API UI
+
+Removed the remaining self-service farm setup entry point from sign-in. Legacy
+/register and /onboarding URLs redirect to sign-in or the dashboard according
+to the current session. Both auth providers disable public registration; the
+sign-in screen explains that the administrator provides accounts and farm
+access. API configuration now defaults public registration off in development
+as well as production. Administrator account provisioning remains available.
+Local changes only; no tests run or live deployment performed for this update.
+
+### October 15 — mock admin account management
+
+Enabled /admin in the pnpm mock demo with the existing Users interface.
+Seed demo administrator: admin@eggcelerate.demo / DemoAdmin123!.
+Owners created there can sign in at /login with their assigned credentials.
+Created demo accounts persist in localStorage using salted PBKDF2 hashes;
+per-tab sessions use sessionStorage. Duplicate emails are rejected and mock
+admin operations require the demo administrator session. Public registration
+remains disabled. Original sample login: farmer@example.test / DemoFarmer123!.
+
+Each created owner gets a separate empty in-memory farm and their own farm
+name/profile. The original sample retains its three connected chambers.
+Accounts survive reload; demo farm changes reset on reload, as documented in
+the interface and README. API mode still uses the existing server admin client.
+No Docker is required for this demo. Changes are local only; tests were not run
+and no VPS deployment was performed.
+
+### October 15 — demo admin sign-in copy and password
+
+Updated the local demo admin password to eggcelerate_admin (superseding the
+initial demo password above). Admin sign-in now previews the admin email and
+uses administrator-specific help text. The live server password is unchanged.
+
+### October 15 — admin user modals, edit and delete
+
+Replaced the permanent Create user sidebar form with a modal opened from the
+user list. Added per-owner Edit and Delete actions. Edit supports full name,
+farm name, email and an optional new password; blank password fields retain the
+existing password. Retained the password character count. Delete confirms the
+selected name/email and explains that existing farm records remain. Submission
+errors retain the modal/form and successful actions refresh the list.
+
+Implemented mock persistence for updates/deletes, including the seeded sample
+farmer, while protecting administrator accounts. Added corresponding local API
+PATCH/DELETE user routes under the existing administrator/CSRF guards. API edits
+revoke user sessions; deletion cascades memberships/sessions while retaining the
+farm and its records. Administrator accounts cannot be edited or deleted here.
+Web typecheck and targeted API Ruff checks passed. No behavioral tests run;
+all changes remain local with no live deployment.
+
+### October 15 — consolidated local progress and latest UI cleanup
+
+Current local demo entry points:
+- Run `pnpm dev:web`; farmer sign-in is `/login`, administrator sign-in is `/admin`.
+- Current demo admin: `admin@eggcelerate.demo` / `eggcelerate_admin`.
+- Admin email starts empty with `Email` as its placeholder. Removed the helper
+  text below Sign in and the informational banner above the user list.
+- Sign-in supports Enter, reads submitted field values (including browser
+  autofill), trims the email, and displays validation beside the correct field.
+  Successful mock admin sign-in reloads `/admin` using its saved tab session.
+  The user subsequently reached the Users page, as shown in their screenshot.
+- Create user opens a modal. User rows offer Edit and confirmed Delete;
+  administrator accounts remain protected. Password guidance was replaced by
+  a live character count; editing with a blank password retains the old one.
+- Public farm setup/registration remains removed from both UI modes. Admins
+  provide accounts. New demo owners start with separate empty farms; the
+  original sample account retains the three-chamber demo.
+- Demo accounts persist in this browser/origin. Farm changes remain in memory
+  and reset on reload; these limitations remain documented in README.
+- Candling camera capture, preview, retake and attachment are implemented;
+  physical-camera acceptance is still pending. Checkpoint dropdown trigger and
+  menu now share the same font size and weight.
+
+Web typecheck and targeted API Ruff checks passed for the latest account
+management implementation. Behavioral tests for the new camera/admin flows
+have not been run. Earlier battery-removal test results apply only to that
+previous update. All current changes are saved locally, uncommitted, and have
+not been deployed to the live server. Deployment remains deferred until the
+user explicitly requests it.
+
+### October 15 — fan functions confirmed for climate regulation
+
+User confirms the lower fan is the exhaust fan (GPIO19). The upper fan faces
+the heater to distribute heat through the chamber (GPIO18). Heater relay is
+IN1/GPIO27 and mist maker is IN3/GPIO14. These are distinct circulation and
+exhaust functions, not interchangeable fan roles.
+
+Automatic temperature/humidity regulation is the next requested task. The main
+firmware still only monitors/publishes sensor readings. Controller design must
+command the upper fan whenever the heater is energized, and treat the lower
+fan as ventilation/exhaust. Whether any fan failure feedback is available has
+not been established; commanding a fan on does not prove airflow. Target
+setpoints and whether the first test is in an empty chamber remain unconfirmed.
+No automatic actuator behavior has been added or energized by this note.
+
+### October 15 — local Docker recorder rebuilt for empty-chamber testing
+
+User confirmed the first climate test is in an empty incubator and requested
+using the current modes plus Docker to record temperature/humidity. Confirmed
+selectable built-ins from web fixtures and API presets:
+- Chicken (stable ID broiler): 37.5–37.8 C, 55–60% RH, 21 days, turns every 4 h.
+- Duck: 37.4–37.6 C, 62–68% RH, 28 days, turns every 6 h.
+- Quail: 37.5–37.8 C, 55–60% RH, 18 days, turns every 4 h.
+These are the application's current preset ranges, not new biological guidance.
+Legacy built-ins remain stored for history and are not current selectable modes.
+
+Restored the existing egg-hardware-local database container without deleting or
+reseeding its volume. Rebuilt api, web and hardware-telemetry images, ran Alembic
+upgrade head (database at 0019), and recreated the local services. API/web/db
+health checks pass; HTTPS /readyz reports ready with PostgreSQL up. MQTT worker
+logs confirm hardware-sensors-only mode connected. Added hardware-local-compose.sh
+so subsequent builds no longer depend on the missing temporary Compose overlay.
+Local hardware dashboard: https://127.0.0.1:18443; pnpm mock demo remains separate.
+
+Recording is NOT yet underway: this local database contains no paired device or
+incubator. Main firmware CloudConfig still targets the VPS MQTT endpoint. The
+local broker currently binds loopback (127.0.0.1:18883), and its existing TLS
+certificate does not cover the laptop LAN address. Connecting ESP32 to this local
+recorder requires a LAN-accessible, certificate-matching broker endpoint and local
+EGG-001 enrollment/pairing. Automatic actuator control is also still unimplemented
+in main firmware. No firmware was flashed, no outputs energized, no synthetic
+readings inserted, and no VPS changes/deployment were made by this Docker build.
+
+### October 15 — selectable sensor reporting interval
+
+Enabled farm-wide Sensor Reporting Interval choices of 5, 10, 15 and 30 seconds
+under Hardware & Devices → Device preferences. Selection participates in Save
+Changes/Discard. Added compatible web/API preference fields with a 15-second
+default, matching the firmware's previous upload cadence; migration 0020 stores
+and constrains the preference. Longer intervals were not offered because the
+current dashboard freshness threshold is 45 seconds. DHT22 reads remain at
+2.5 seconds and research logging remains fixed at five minutes.
+
+The hardware worker sends a non-retained reporting configuration message on the
+existing worker-only receipt topic after telemetry commits. Updated main firmware
+accepts only supported values bound to its current boot ID/latest sequence;
+older/stale messages cannot change its interval. It resets to 15 seconds at boot
+until the next server update. Existing database receipt acknowledgements remain
+unchanged. This configures upload timing only, not actuators.
+
+Web typecheck and targeted API Ruff checks passed. Main NodeMCU-32S firmware
+compiled successfully (1,108,769 bytes flash, 51,620 bytes RAM). Firmware has not
+been flashed or physically verified. Rebuilt local Docker web/API/worker and
+migrated the existing local database to 0020 without reseeding or deleting data.
+Also corrected missing empty-panel sizing hook references found during typecheck.
+No behavioral tests run; no VPS changes. Device enrollment, local broker LAN/TLS
+connection and automatic heater/mist/fan regulation remain pending.
+
+Post-rebuild verification: updated database readiness checks to migration 0020;
+local HTTPS /readyz returns ready=true/database=up, and the rebuilt MQTT worker
+reports connected. The ESP32 still uses its existing uploaded firmware until the
+new main sketch is manually flashed; no physical interval application claimed.
+
+### October 15 — dedicated branded error pages
+
+Added a shared full-height ErrorPage with the Eggcelerate mascot, a 4–mascot–4
+illustration and "Eggs not found" for unknown routes. Screen/app recovery uses
+the same design with "This egg didn’t hatch" and retry/reload/dashboard actions.
+Download/chunk failures prompt a reload; runtime failures retain retry behavior.
+Actual missing-page 404s and loading failures keep distinct copy. Rebuilt and
+recreated the local Docker web; web typecheck passed. No live deployment.

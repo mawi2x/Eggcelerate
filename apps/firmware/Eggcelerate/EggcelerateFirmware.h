@@ -89,6 +89,7 @@ uint32_t cloudAttemptAt = 0;
 uint32_t cloudPublishedAt = 0;
 uint32_t cloudReceiptAt = 0;
 uint32_t cloudLastSent = 0;
+uint32_t cloudReportingMs = 15000;
 bool cloudEnabled = false;
 bool cloudClockStarted = false;
 bool cloudAttempted = false;
@@ -111,6 +112,22 @@ bool cloudUtc(time_t epoch, char *output, size_t capacity) {
 
 void receiveCloudReceipt(char *topic, byte *body, unsigned int length) {
   if (strcmp(topic, receiptTopic) != 0 || !cloudLastSent) return;
+  char configPrefix[112];
+  snprintf(configPrefix, sizeof(configPrefix), "interval:%s:%lu:", cloudBootId, static_cast<unsigned long>(cloudLastSent));
+  const size_t prefixLength = strlen(configPrefix);
+  if (length > prefixLength && length <= prefixLength + 2 && memcmp(body, configPrefix, prefixLength) == 0) {
+    unsigned int seconds = 0;
+    for (size_t i = prefixLength; i < length; ++i) {
+      if (body[i] < '0' || body[i] > '9') return;
+      seconds = seconds * 10 + (body[i] - '0');
+    }
+    if (seconds == 5 || seconds == 10 || seconds == 15 || seconds == 30) {
+      const uint32_t nextMs = seconds * 1000UL;
+      if (cloudReportingMs != nextMs) Serial.printf("Cloud: reporting interval updated to %u seconds. Sensor reads remain every 2.5 seconds.\n", seconds);
+      cloudReportingMs = nextMs;
+    }
+    return;
+  }
   char expected[96];
   snprintf(expected, sizeof(expected), "%s:%lu", cloudBootId, static_cast<unsigned long>(cloudLastSent));
   if (length == strlen(expected) && memcmp(body, expected, length) == 0) {
@@ -168,7 +185,7 @@ void serviceCloud(uint32_t now) {
   }
   cloudMqtt.loop();
   now = millis();
-  if (!sensorValid || now - sensorAt > 5000 || (cloudHasPublished && now - cloudPublishedAt < 15000)) return;
+  if (!sensorValid || now - sensorAt > 5000 || (cloudHasPublished && now - cloudPublishedAt < cloudReportingMs)) return;
   // Send only a fresh sample. No chamber/farm IDs, codes, or passwords in telemetry.
   if (cloudSequence >= 2147483647UL) { Serial.println("Cloud sequence exhausted; restart required."); return; }
   char observedAt[25];

@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 import paho.mqtt.client as mqtt
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..config import load_settings
@@ -19,6 +20,7 @@ from ..database.device_registry import (
     registered_device_targets,
     resolve_registered_farm,
 )
+from ..database.schema import farm_preferences
 from ..database.store import PostgresStore
 from ..errors import AppError
 from .commands import apply_ack, claim_commands, expire_commands
@@ -285,6 +287,16 @@ async def run() -> None:
                                     "not_found", "MQTT device is not provisioned."
                                 )
                             farm_id = registered_farm
+                        reporting_interval = 15
+                        if hardware and not inbound.is_ack:
+                            reporting_interval = (
+                                await session.scalar(
+                                    select(
+                                        farm_preferences.c.sampling_interval_seconds
+                                    ).where(farm_preferences.c.farm_id == farm_id)
+                                )
+                                or 15
+                            )
                         if inbound.is_ack:
                             await apply_ack(
                                 session,
@@ -323,6 +335,14 @@ async def run() -> None:
                         client.publish(
                             f"eggcelerate/v1/devices/{body['device_id']}/receipt",
                             f"{body['boot_id']}:{body['seq']}",
+                            qos=1,
+                            retain=False,
+                        )
+                        # Non-actuator setting on the existing worker-only receipt
+                        # channel; boot/sequence bound so stale delivery is ignored.
+                        client.publish(
+                            f"eggcelerate/v1/devices/{body['device_id']}/receipt",
+                            f"interval:{body['boot_id']}:{body['seq']}:{reporting_interval}",
                             qos=1,
                             retain=False,
                         )

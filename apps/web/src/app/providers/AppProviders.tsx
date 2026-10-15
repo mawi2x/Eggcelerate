@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 import type { EggcelerateRepository } from "../data/repositories/repository";
-import { ApiAuthProvider, MockAuthProvider } from "./auth-context";
+import { InMemoryEggcelerateRepository } from "../data/repositories/in-memory-repository";
+import { ApiAuthProvider, MockAuthProvider, useAuth } from "./auth-context";
 import { RepositoryProvider } from "./repository-context";
 
 export function createAppQueryClient(): QueryClient {
@@ -44,10 +45,42 @@ export function AppProviders({
             initiallyAuthenticated={initiallyAuthenticated}
             queryClient={queryClient}
           >
-            {children}
+            <DemoFarmScope fallback={repository}>{children}</DemoFarmScope>
           </MockAuthProvider>
         )}
       </QueryClientProvider>
     </RepositoryProvider>
+  );
+}
+
+function DemoFarmScope({
+  fallback,
+  children,
+}: {
+  fallback: EggcelerateRepository;
+  children: ReactNode;
+}) {
+  const { user } = useAuth();
+  const farms = useRef(new Map<string, EggcelerateRepository>());
+  const repository = useMemo(() => {
+    if (!user?.id.startsWith("demo-owner-")) return fallback;
+    let farm = farms.current.get(user.id);
+    if (!farm) {
+      farm = new InMemoryEggcelerateRepository({
+        fixtureSet: "demo",
+        emptyFarm: true,
+        latencyMs: 350,
+        account: {
+          farmName: user.farmName,
+          accountHolder: user.displayName,
+          displayName: user.displayName,
+        },
+      });
+      farms.current.set(user.id, farm);
+    }
+    return farm;
+  }, [fallback, user]);
+  return (
+    <RepositoryProvider repository={repository}>{children}</RepositoryProvider>
   );
 }

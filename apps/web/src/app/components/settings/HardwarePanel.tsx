@@ -1,9 +1,8 @@
 import { WifiSlash } from "@phosphor-icons/react";
-import { Info, Minus, Plus, Wifi } from "lucide-react";
+import { Wifi } from "lucide-react";
+import type { SettingsPreferences } from "../../data/settings";
 import type { Incubator } from "../../domain/types";
-import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { EmptyState } from "../EmptyState";
-import { Input } from "../ui/input";
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -15,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Switch } from "../ui/switch";
 import {
   BORDER,
   GroupLabel,
@@ -26,12 +24,15 @@ import {
   RUST,
   SETTINGS_SEGMENT_LABEL_STYLE,
   SettingRow,
-  SURFACE,
   TEXT,
 } from "./tokens";
 
 interface Props {
   units: Incubator[];
+  samplingIntervalSeconds?: SettingsPreferences["samplingIntervalSeconds"];
+  onSamplingIntervalChange?: (
+    value: NonNullable<SettingsPreferences["samplingIntervalSeconds"]>,
+  ) => void;
   view: HardwarePanelView;
   onViewChange: (view: HardwarePanelView) => void;
   onOpenUnit: (id: string) => void;
@@ -41,17 +42,18 @@ export type HardwarePanelView = "devices" | "preferences";
 
 export function HardwarePanel({
   units,
+  samplingIntervalSeconds = 15,
+  onSamplingIntervalChange,
   view,
   onViewChange,
   onOpenUnit,
 }: Props) {
-  const temperature = useTemperatureDisplay();
   return (
     <div>
       <PanelHeader
         id="settings-panel-hardware"
         title="Hardware & Devices"
-        description="Pairing, sensor checks, and calibration for all incubators."
+        description="Pairing and sensor reporting for all incubators."
       />
 
       <SegmentedControl
@@ -207,24 +209,33 @@ export function HardwarePanel({
             </GroupLabel>
             <div className="mt-1">
               <SettingRow
-                label="Sensor Sampling Interval"
-                hint="How often each controller reports temperature and humidity."
+                label="Sensor Reporting Interval"
+                hint="Choose how often controllers upload readings. Applies after their next upload with updated firmware."
                 layout="stacked"
                 control={
-                  <Select value="30" disabled>
+                  <Select
+                    value={String(samplingIntervalSeconds)}
+                    onValueChange={(value) =>
+                      onSamplingIntervalChange?.(
+                        Number(value) as NonNullable<
+                          SettingsPreferences["samplingIntervalSeconds"]
+                        >,
+                      )
+                    }
+                    disabled={!onSamplingIntervalChange}
+                  >
                     <SelectTrigger
-                      aria-label="Sensor Sampling Interval"
-                      aria-describedby="hardware-unavailable"
+                      aria-label="Sensor Reporting Interval"
                       className={`${inputClass} w-full sm:w-[180px]`}
                       style={inputStyle}
                     >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="5">Every 5 seconds</SelectItem>
                       <SelectItem value="10">Every 10 seconds</SelectItem>
+                      <SelectItem value="15">Every 15 seconds</SelectItem>
                       <SelectItem value="30">Every 30 seconds</SelectItem>
-                      <SelectItem value="60">Every minute</SelectItem>
-                      <SelectItem value="300">Every 5 minutes</SelectItem>
                     </SelectContent>
                   </Select>
                 }
@@ -247,147 +258,6 @@ export function HardwarePanel({
               />
             </div>
           </section>
-
-          <section
-            aria-labelledby="hardware-group-calibration"
-            className="rounded-[var(--radius-dialog)] p-4"
-            style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
-          >
-            <GroupLabel id="hardware-group-calibration">
-              Advanced and Calibration
-            </GroupLabel>
-            <div
-              className="mt-2.5 flex items-start gap-2.5 rounded-xl p-3"
-              style={{
-                backgroundColor: "var(--surface-tile)",
-                border: `var(--border-width-hairline) solid ${BORDER}`,
-              }}
-            >
-              <Info
-                size={16}
-                className="mt-0.5 shrink-0"
-                style={{ color: "var(--status-info-fg)" }}
-                aria-hidden="true"
-              />
-              <p
-                style={{
-                  color: MUTED,
-                  fontSize: "var(--type-caption)",
-                  lineHeight: "var(--leading-snug)",
-                }}
-              >
-                Calibration is unavailable until device configuration is
-                supported. No offset is being applied by this control.
-              </p>
-            </div>
-            <div className="mt-2">
-              <SettingRow
-                label="Temperature Calibration Offset"
-                hint={`Preview offset in ${temperature.unit}. Changes cannot be saved or applied yet.`}
-                htmlFor="calibration"
-                layout="stacked"
-                borderless
-                control={
-                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-                    <div
-                      className="flex items-center rounded-xl border"
-                      style={{
-                        borderColor: "var(--input-border)",
-                        backgroundColor: SURFACE,
-                      }}
-                    >
-                      <button
-                        type="button"
-                        disabled
-                        aria-label="Decrease offset by 0.1"
-                        className="flex h-10 w-9 items-center justify-center text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <Input
-                        id="calibration"
-                        type="number"
-                        step={0.1}
-                        min={-10}
-                        max={10}
-                        value="0"
-                        disabled
-                        aria-describedby="hardware-unavailable"
-                        className="h-10 w-16 border-0 bg-transparent px-1 text-center font-semibold focus-visible:ring-0"
-                        style={{
-                          color: TEXT,
-                          fontSize: "var(--type-control-value)",
-                        }}
-                      />
-                      <span
-                        className="pr-2 text-xs"
-                        style={{ color: MUTED }}
-                        aria-hidden="true"
-                      >
-                        {temperature.unit}
-                      </span>
-                      <button
-                        type="button"
-                        disabled
-                        aria-label="Increase offset by 0.1"
-                        className="flex h-10 w-9 items-center justify-center text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      disabled
-                      aria-describedby="hardware-unavailable"
-                      className="min-h-10 min-w-16 cursor-not-allowed rounded-xl px-3 py-1.5 opacity-60"
-                      style={{
-                        backgroundColor: "var(--surface-tile)",
-                        color: MUTED,
-                        fontSize: "var(--type-caption)",
-                        fontWeight: "var(--weight-bold)",
-                        border: `var(--border-width-hairline) solid ${BORDER}`,
-                      }}
-                    >
-                      <span>Unavailable</span>
-                    </button>
-                  </div>
-                }
-              />
-            </div>
-          </section>
-
-          <section
-            aria-labelledby="hardware-group-display"
-            className="rounded-[var(--radius-dialog)] p-4"
-            style={{ border: `var(--border-width-hairline) solid ${BORDER}` }}
-          >
-            <GroupLabel id="hardware-group-display">
-              Hardware Display
-            </GroupLabel>
-            <div className="mt-1">
-              <SettingRow
-                label="Status LED indicators"
-                hint="Physical light ring on the controller housing."
-                borderless
-                control={
-                  <Switch
-                    checked={true}
-                    disabled
-                    aria-describedby="hardware-unavailable"
-                    aria-label="Status LED indicators"
-                  />
-                }
-              />
-            </div>
-          </section>
-          <p
-            id="hardware-unavailable"
-            className="text-sm"
-            style={{ color: MUTED }}
-          >
-            Hardware preferences are not available yet. The values above are
-            previews, not confirmed device settings.
-          </p>
         </div>
       )}
     </div>

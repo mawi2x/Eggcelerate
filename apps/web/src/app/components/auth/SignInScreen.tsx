@@ -1,5 +1,5 @@
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { SignInSchema } from "../../data/onboarding";
 import { AuthCard } from "./AuthCard";
 import { FormInput } from "./FormInput";
@@ -8,39 +8,57 @@ export function SignInScreen({
   onSignIn,
   onSetup,
   onSetupLabel = "Set up your farm",
-  canRegister = true,
+  canRegister = false,
   authError,
   heading = "WELCOME BACK",
+  initialEmail = "",
+  emailPlaceholder = "you@brightwoodfarm.com",
+  accountHelp = "",
 }: {
   onSignIn: (
     email: string,
     password: string,
     rememberMe: boolean,
   ) => Promise<void> | void;
-  onSetup: () => void;
+  onSetup?: () => void;
   onSetupLabel?: string;
   canRegister?: boolean;
   authError?: string | null;
   heading?: string;
+  initialEmail?: string;
+  emailPlaceholder?: string;
+  accountHelp?: string;
 }) {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [pw, setPw] = useState("");
   const [show, setShow] = useState(false);
-  const [err, setErr] = useState<string | undefined>();
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
 
-  const submit = async () => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (busy) return;
+    const fields = new FormData(event.currentTarget);
     const r = SignInSchema.safeParse({
-      email,
-      password: pw,
+      email: String(fields.get("email") ?? email).trim(),
+      password: String(fields.get("password") ?? pw),
       rememberMe: false,
     });
     if (!r.success) {
-      setErr(r.error.issues[0].message);
+      const errors: Record<string, string> = {};
+      for (const issue of r.error.issues) {
+        const field = String(issue.path[0]);
+        errors[field] ??=
+          field === "email"
+            ? "Enter a valid email address."
+            : "Enter your password (at least 8 characters).";
+      }
+      setFieldErrors(errors);
+      setSubmitError(undefined);
       return;
     }
-    setErr(undefined);
+    setFieldErrors({});
     setSubmitError(undefined);
     setBusy(true);
     try {
@@ -72,52 +90,66 @@ export function SignInScreen({
           {heading}
         </h1>
       </div>
-      <div className="mt-4 flex flex-col gap-4">
-        <FormInput
-          label="Email"
-          id="signin-email"
-          icon={Mail}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@brightwoodfarm.com"
-          type="email"
-          error={err}
-        />
-        <FormInput
-          label="Password"
-          id="signin-pw"
-          icon={Lock}
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
-          placeholder="••••••••"
-          type={show ? "text" : "password"}
-          trailing={
-            <button
-              type="button"
-              onClick={() => setShow(!show)}
-              aria-label={show ? "Hide password" : "Show password"}
-              className="flex h-[var(--control-height-default)] w-[var(--control-height-default)] cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {show ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          }
-        />
-      </div>
-      {(submitError ?? authError) && (
-        <p className="mt-2 text-sm text-[var(--status-danger-fg)]" role="alert">
-          {submitError ?? authError}
+      <form noValidate onSubmit={(event) => void submit(event)}>
+        <div className="mt-4 flex flex-col gap-4">
+          <FormInput
+            label="Email"
+            id="signin-email"
+            name="email"
+            icon={Mail}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={emailPlaceholder}
+            type="email"
+            autoComplete="username"
+            error={fieldErrors.email}
+          />
+          <FormInput
+            label="Password"
+            id="signin-pw"
+            name="password"
+            error={fieldErrors.password}
+            icon={Lock}
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            placeholder="••••••••"
+            type={show ? "text" : "password"}
+            autoComplete="current-password"
+            trailing={
+              <button
+                type="button"
+                onClick={() => setShow(!show)}
+                aria-label={show ? "Hide password" : "Show password"}
+                className="flex h-[var(--control-height-default)] w-[var(--control-height-default)] cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {show ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
+          />
+        </div>
+        {(submitError ?? authError) && (
+          <p
+            className="mt-2 text-sm text-[var(--status-danger-fg)]"
+            role="alert"
+          >
+            {submitError ?? authError}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={busy}
+          className="mt-6 flex h-[var(--control-height-default)] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+        >
+          <span>{busy ? "Signing in…" : "Sign in"}</span>
+        </button>
+      </form>
+      {!canRegister && accountHelp && (
+        <p className="mt-4 text-center text-sm text-[var(--text-muted)]">
+          {accountHelp}
         </p>
       )}
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => void submit()}
-        className="mt-6 flex h-[var(--control-height-default)] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] font-semibold text-[var(--on-brand)] hover:bg-[var(--brand-primary-hover)] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
-      >
-        <span>{busy ? "Signing in…" : "Sign in"}</span>
-      </button>
-      {canRegister && (
+      {canRegister && onSetup && (
         <>
           <div className="my-4 flex items-center gap-3">
             <div className="h-px flex-1 bg-[var(--border-default)]" />

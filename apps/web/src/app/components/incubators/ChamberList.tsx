@@ -56,6 +56,7 @@ export function ChamberList({
     <section aria-label="Chamber list">
       {sorted.length === 0 ? (
         <EmptyState
+          size="page"
           title={
             totalUnits === 0
               ? "No incubators yet"
@@ -78,7 +79,7 @@ export function ChamberList({
                 }}
                 onClick={onAdd}
               >
-                <span>Add incubator</span>
+                <span>Add your first incubator</span>
               </Button>
             ) : search || filter !== "all" || modeFilter !== "all" ? (
               <Button

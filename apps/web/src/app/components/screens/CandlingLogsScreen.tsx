@@ -637,18 +637,25 @@ export function CandlingLogsScreen({
       <section aria-label="Candling journal list">
         {rows.length === 0 ? (
           <EmptyState
+            size="page"
             title={
               search || filter !== "all" || modeFilter !== "all"
                 ? "No candling logs match these filters"
                 : "No candling logs yet"
             }
             description={
-              search || filter !== "all" || modeFilter !== "all"
-                ? "Try a different chamber or mode, or clear the selected filters."
-                : "Inspection notes and egg checks will appear here as they are recorded."
+              units.length === 0
+                ? "Add your first incubator to start keeping candling journals."
+                : search || filter !== "all" || modeFilter !== "all"
+                  ? "Try a different chamber or mode, or clear the selected filters."
+                  : "Inspection notes and egg checks will appear here as they are recorded."
             }
             action={
-              search || filter !== "all" || modeFilter !== "all" ? (
+              units.length === 0 ? (
+                <Button asChild className="rounded-xl">
+                  <a href="/incubators">Add your first incubator</a>
+                </Button>
+              ) : search || filter !== "all" || modeFilter !== "all" ? (
                 <Button
                   type="button"
                   variant="outline"
