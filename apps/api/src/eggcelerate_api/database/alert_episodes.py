@@ -60,6 +60,9 @@ async def evaluate_farm(
     from .preparation import notify_ready
 
     await notify_ready(session, farm_id, now)
+    from .controller_notifications import evaluate as notify_controller_warnings
+
+    await notify_controller_warnings(session, farm_id, now)
     preferences = await session.scalar(
         select(farm_preferences.c.notification_enabled).where(
             farm_preferences.c.farm_id == farm_id

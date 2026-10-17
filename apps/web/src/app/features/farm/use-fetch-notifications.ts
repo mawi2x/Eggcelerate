@@ -17,6 +17,8 @@ const labels: Record<string, string> = {
   readings: "readings",
   settings: "settings",
   "turn-command": "turn status",
+  "climate-control": "equipment status",
+  "tray-control": "tray status",
 };
 
 type LocalNotification = AlertEntry & { hidden?: boolean };
@@ -96,7 +98,7 @@ export function useFetchNotifications() {
       const label =
         query.queryKey[0] === "farm"
           ? labels[String(query.queryKey[1])]
-          : undefined;
+          : labels[String(query.queryKey[0])];
       if (!label) return;
       if (query.state.status === "success") {
         if (failures.delete(query.queryHash)) synchronize();
@@ -124,9 +126,48 @@ export function useFetchNotifications() {
       )
         inspect(event.query);
     });
+    const seenMutations = new Set<number>();
+    const unsubscribeMutations = client
+      .getMutationCache()
+      .subscribe((event) => {
+        if (event.type !== "updated" || event.action.type !== "error") return;
+        const mutation = event.mutation;
+        const kind = String(mutation.options.mutationKey?.[0] ?? "");
+        if (
+          !["climate-control", "tray-control"].includes(kind) ||
+          seenMutations.has(mutation.mutationId)
+        )
+          return;
+        seenMutations.add(mutation.mutationId);
+        const id = `${PREFIX}control-${mutation.mutationId}`;
+        const unit = mutation.options.meta?.unitName;
+        const message =
+          mutation.state.error instanceof Error
+            ? mutation.state.error.message
+            : "The device control request was not confirmed. Check the chamber before continuing.";
+        records.current = [
+          {
+            id,
+            title: "Equipment action needs attention",
+            severity: "warning" as const,
+            unit: typeof unit === "string" ? unit : "Chamber",
+            message,
+            timestamp: new Date().toISOString(),
+            acknowledged: false,
+          },
+          ...records.current,
+        ].slice(0, 20);
+        toast.warning("Equipment action needs attention", {
+          id,
+          description: "Check Notifications for details.",
+        });
+        publish();
+      });
     client.getQueryCache().getAll().forEach(inspect);
     return () => {
       unsubscribe();
+      unsubscribeMutations();
+      for (const id of seenMutations) toast.dismiss(`${PREFIX}control-${id}`);
       toast.dismiss(TOAST_ID);
     };
   }, [client, owner]);

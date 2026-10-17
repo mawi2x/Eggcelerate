@@ -2014,3 +2014,93 @@ Wildcard DNS, DHCP captive-portal hint and HTTP connectivity-probe redirects are
 already implemented. Automatic prompt appearance depends on the client device;
 manual URL remains available. Source change only; no board upload performed.
 Phase work remains paused under the user's prior request.
+
+### October 16 — continuous-heating timeout increased to 30 minutes
+
+User explicitly requested increasing the latched continuous-heating timeout
+from 10 to **30 minutes** after observing timeout during preparation warm-up.
+Updated kHeaterLimitMs and the firmware fault text, plus current guides. The
+39°C overheat and sensor-fault safeguards, fault latching and explicit reset/resume
+behavior remain unchanged. Firmware upload is required to apply the new limit;
+no existing fault was cleared and no equipment command was issued by the agent.
+
+### October 16 — equipment warnings moved to Notifications
+
+Controller faults now appear in the existing Notifications/Alerts feed with
+guidance to stop the cycle or cancel preparation and inspect the chamber before
+resetting and resuming. Delayed equipment reports, unsupported controller firmware,
+unconfirmed commands, unexpected heater/mist operation and tray movement/level
+warnings use the same feed. Active episodes suppress duplicate notifications;
+recovery resolves them. Dashboard fetch/action failures also use notifications.
+Removed inline warning prose while preserving reset, resume and stop controls.
+
+API, hardware worker and web images rebuilt and installed locally; web typecheck,
+targeted Python lint and image builds passed. No schema migration or firmware
+upload is needed for this notification change. No fault reset, equipment command
+or VPS deployment was performed. Phase work remains paused.
+
+### October 16 — equipment action buttons rounded
+
+Matched Reset controller fault, Resume regulation, Stop equipment, Return toward
+level, Stop tray / pause turning and Save current position to the fully rounded
+button style. Web build/typecheck passed; local dashboard updated. Equipment
+behavior is unchanged.
+
+### October 16 — daily progress checkpoint
+
+- Dashboard refinements completed locally: mode selector placeholder shortened to
+  **Mode**, healthy preparation regulation sentence removed, Cancel preparation
+  moved to the right and fully rounded, and equipment/tray action buttons matched
+  to the same rounded style.
+- Equipment faults and related warnings now use Notifications/Alerts with
+  stop/cancel-and-inspect guidance. Recovery controls remain available; active
+  warning episodes suppress duplicates. API, MQTT worker and dashboard rebuilt
+  and installed locally; HTTPS proxy reloaded. Startup logs show successful API
+  requests and MQTT connection with no observed evaluator error. The current
+  report had fault 0, so no live fault notification was triggered during review.
+- Preparation notice sizing reviewed against current theme tokens: desktop title
+  16px/body 14px/button label 14px; phone title 14px/body 12px/button label 12px.
+  Cancel preparation uses the shared 36px default button height on both. Source
+  conforms to these roles; mobile rendering was not visually verified today.
+- Continuous-heating latch changed in firmware source from 10 to **30 minutes**;
+  compile passed. This requires uploading the updated main sketch. The agent did
+  not upload firmware or verify which revision is currently on the board.
+- Web typecheck/build, targeted Python lint and diff whitespace checks passed.
+  No additional physical motor timing tests, fault reset, equipment command or
+  VPS deployment was performed.
+
+**Resume state:** Phase 4 implementation is installed locally. Phase work remains
+paused at the user's request; Phase 5 power/EN restart diagnosis is still open.
+The reported inability to open **http://10.10.10.10** while connected to the AP
+also remains unresolved pending device/network evidence. AP source
+configuration is **Eggcelerate-001**, password **eggcelerate**, with captive-portal
+support. Firmware still targets one MQTT broker at a time; simultaneous local and
+VPS publishing is not implemented.
+
+### October 16 — Delete incubator option
+
+Added **Device Settings → Device & Connection → Delete incubator** for the
+connected dashboard. A confirmation dialog requires the current incubator name
+and explains that deletion permanently removes associated cycle history, candling
+logs, readings and notifications. Successful deletion returns to the incubator
+list and refreshes cached farm data. Buttons use fully rounded styling and shared
+responsive typography.
+
+The authenticated, CSRF-protected DELETE endpoint scopes removal to the current
+farm and runs relational cleanup in one transaction under the farm lock. It
+rejects active cycles/preparation, pending equipment or turn commands, active
+control intent, and current-firmware equipment without a fresh all-off report.
+Hardware provisioning remains available for pairing the same device again.
+This feature does not send motor/heater commands or reset firmware credentials.
+
+Six isolated PostgreSQL integration cases passed: confirmation, farm isolation,
+deletion/re-pairing, preparation/active-cycle guards and fresh/off equipment
+requirements. No existing user incubator was deleted. Phase work remains paused;
+this is the separately requested dashboard addition.
+
+Targeted frontend checks also passed (7 mobile-operation cases), along with web
+typecheck, Python lint and API/web image builds. Removal testing included a stopped
+cycle with history and candling/photo references, using a disposable database
+that was removed afterward. No firmware upload or schema migration is required.
+API/web installed locally, API healthy, HTTPS proxy reloaded and dashboard
+responding successfully.

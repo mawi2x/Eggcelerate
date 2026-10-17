@@ -50,7 +50,7 @@ Authorization/phase/mode are saved in a separate checksummed NVS record. Normal
 power recovery waits for two fresh valid sensor readings and fan lead before
 resuming. Manual Stop, saved faults, corrupt storage and crash/watchdog recovery
 prevent automatic heat/mist restart. Fault reset stays stopped; use the website
-recovery action after resolving the cause. Ten minutes continuous commanded heat,
+recovery action after resolving the cause. Thirty minutes continuous commanded heat,
 sensor invalid/stale readings and >=39°C latch faults. No physical feedback can
 detect a welded relay, blocked fan or empty mist reservoir.
 

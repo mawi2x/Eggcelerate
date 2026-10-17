@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Header, Request
 from fastapi.concurrency import contextmanager_in_threadpool
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -125,6 +125,41 @@ def get_incubator(incubator_id: str, store: Store) -> dict:
     return ok_envelope(
         services.require_incubator(store, incubator_id).model_dump(mode="json")
     )
+
+
+class DeleteIncubatorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    confirmation: str = Field(min_length=1, max_length=200)
+    force: StrictBool = False
+
+
+@router.delete("/{incubator_id}")
+async def delete_incubator(
+    incubator_id: str,
+    body: DeleteIncubatorRequest,
+    request: Request,
+    context: RequestContext = Depends(get_request_context),
+) -> dict:
+    from ...database.delete_incubator import remove
+
+    database = request.app.state.database
+    if database is None:
+        raise AppError("offline", "Incubator deletion requires the connected server.")
+    database = database.for_farm(context.farm_id)
+    try:
+        async with database.sessions.begin() as session:
+            await remove(
+                session,
+                database.farm_id,
+                incubator_id,
+                body.confirmation,
+                force=body.force,
+            )
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError(
+            "offline", "Deletion failed. Refresh the incubator list before retrying."
+        ) from exc
+    return ok_envelope({"deleted": True})
 
 
 @router.patch("/{incubator_id}")

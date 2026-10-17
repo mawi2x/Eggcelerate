@@ -27,6 +27,7 @@ import {
 } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { KeyValue, StatusCallout } from "./primitives";
+import { DeleteIncubator } from "./DeleteIncubator";
 import { StopCycleModal } from "./StopCycleModal";
 import { relTime } from "./types";
 
@@ -42,6 +43,7 @@ interface DeviceSettingsTabProps {
   turnCommandStatus?: TurnCommandStatus;
   onUpdate: (intent: IncubatorUpdateIntent) => Promise<boolean>;
   onStopCycle: () => Promise<boolean>;
+  onDeleted: () => void;
   onTurnClick: () => Promise<boolean>;
 }
 
@@ -57,6 +59,7 @@ export function DeviceSettingsTab({
   turnCommandStatus,
   onUpdate,
   onStopCycle,
+  onDeleted,
   onTurnClick,
 }: DeviceSettingsTabProps) {
   const temperature = useTemperatureDisplay();
@@ -692,6 +695,7 @@ export function DeviceSettingsTab({
                   <span>Stop Cycle</span>
                 </Button>
               </div>
+              <DeleteIncubator unit={unit} onDeleted={onDeleted} />
             </div>
           </div>
         )}

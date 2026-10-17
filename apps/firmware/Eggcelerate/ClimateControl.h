@@ -22,7 +22,7 @@ constexpr uint32_t kMistRestMs = 20000;
 constexpr uint32_t kVentPulseMs = 10000;
 constexpr uint32_t kVentRestMs = 20000;
 constexpr uint32_t kCooldownMs = 60000;
-constexpr uint32_t kHeaterLimitMs = 10UL * 60UL * 1000UL;
+constexpr uint32_t kHeaterLimitMs = 30UL * 60UL * 1000UL;
 constexpr float kOverheatC = 39.0f;
 enum class Fault : uint8_t { None, Sensor, Stale, Overheat, HeaterTimeout, Storage, ControllerReset };
 enum class Action : uint8_t { None, Start, Stop, Reset, SetMode, Prepare, Incubate };
@@ -49,7 +49,7 @@ inline const char *faultName(Fault fault) {
     case Fault::Sensor: return "Sensor failure";
     case Fault::Stale: return "Stale sensor";
     case Fault::Overheat: return "Overheat >=39.0 C";
-    case Fault::HeaterTimeout: return "Heater on for 10 minutes";
+    case Fault::HeaterTimeout: return "Heater on for 30 minutes";
     case Fault::Storage: return "Run-state storage failure";
     case Fault::ControllerReset: return "Controller reset after a crash";
     default: return "None";

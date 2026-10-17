@@ -32,7 +32,7 @@ are rejected before preparation is committed.
 
 ## Faults and loss of power
 
-Sensor failure/staleness, overheating (39°C), or ten minutes continuous commanded
+Sensor failure/staleness, overheating (39°C), or thirty minutes continuous commanded
 heating stop heater/mist and latch a fault. Both fans ventilate during an active
 fault; explicit Stop overrides ventilation and turns all outputs off. Resolve the
 cause, use **Reset controller fault** in Chamber status, then explicitly resume

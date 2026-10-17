@@ -111,7 +111,7 @@ Edited/custom presets are rejected before preparation is committed. No new
 lockdown climate profile or PWM exhaust speed has been implemented. Current mist
 pulse is 3 seconds on / 20 off; humidity exhaust is 10 on / 20 off once temperature
 is within 0.5°C below its lower target. High temperature runs both fans. Heater
-stops at the upper bound; continuous commanded heat for 10 minutes or >=39°C
+stops at the upper bound; continuous commanded heat for 30 minutes or >=39°C
 latches a fault. Observe actual warm-up/overshoot before changing safeguards.
 
 ## Phase 1 — accept the integrated climate owner flow

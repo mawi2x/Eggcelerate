@@ -69,6 +69,8 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
     retry: 1,
   });
   const mutation = useMutation({
+    mutationKey: ["tray-control", unit.id],
+    meta: { unitName: unit.name },
     mutationFn: (action: string) => control(unit.id, action),
     onSuccess: (data) => {
       client.setQueryData(key, data);
@@ -90,12 +92,9 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
   const busy = mutation.isPending || pending || !!report?.tray_running;
   const positions = ["Unknown", "+45°", "−45°", "Level"];
   let message = "Waiting for tray status.";
-  if (report && !report.tray_capability)
-    message = "Upload the updated main firmware for tray control.";
-  else if (query.isError || !fresh)
-    message = "Tray status is unavailable or stale. Position is unconfirmed.";
-  else if (!report?.tray_capability)
-    message = "Upload the updated main firmware for tray control.";
+  if (report && !report.tray_capability) message = "";
+  else if (query.isError || !fresh) message = "";
+  else if (!report?.tray_capability) message = "";
   else if (report.tray_running)
     message =
       "Timed movement running. The device will switch the motor off automatically.";
@@ -103,9 +102,7 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
     message = "Waiting for the device to acknowledge the tray command.";
   else if (state?.home_confirmed)
     message = "Level position confirmed by you. Turning is stopped.";
-  else if (state?.home_status)
-    message =
-      "Turning is stopped for lockdown. Check the tray is level, then save Level as its current position.";
+  else if (state?.home_status) message = "Turning is paused for lockdown.";
   else if (state?.suspended ?? true)
     message =
       "Turning is paused. Save the tray’s current side after visually checking it to resume.";
@@ -118,7 +115,7 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
       style={{ borderColor: "var(--border-default)" }}
     >
       <h3 className="font-semibold">Tray turning</h3>
-      <p role="status">{message}</p>
+      {message && <p role="status">{message}</p>}
       {report?.tray_capability && (
         <>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
@@ -129,18 +126,22 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
               : ""}
             .
           </p>
-          {state?.request && (
-            <p className="text-sm">
-              Latest command: {state.request.action.replace(/_/g, " ")} —{" "}
-              {state.request.status === "completed"
-                ? "timed command completed"
-                : state.request.status}
-              .
-            </p>
-          )}
+          {state?.request &&
+            !["rejected", "interrupted", "timed_out"].includes(
+              state.request.status,
+            ) && (
+              <p className="text-sm">
+                Latest command: {state.request.action.replace(/_/g, " ")} —{" "}
+                {state.request.status === "completed"
+                  ? "timed command completed"
+                  : state.request.status}
+                .
+              </p>
+            )}
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
+              className="rounded-full"
               disabled={
                 !fresh || busy || ![1, 2].includes(report.tray_position ?? 0)
               }
@@ -150,6 +151,7 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
             </Button>
             <Button
               variant="outline"
+              className="rounded-full"
               disabled={mutation.isPending}
               onClick={() => mutation.mutate("stop")}
             >
@@ -188,6 +190,7 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
               </select>
               <Button
                 variant="outline"
+                className="rounded-full"
                 disabled={!fresh || busy || !position}
                 onClick={() => mutation.mutate(position)}
               >
@@ -202,7 +205,6 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
           </p>
         </>
       )}
-      {mutation.error && <p role="alert">{mutation.error.message}</p>}
     </div>
   );
 }

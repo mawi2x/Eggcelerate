@@ -33,6 +33,7 @@ describe("connection presentation", () => {
           isUpdating={false}
           isRequestingTurn={false}
           onUpdate={async () => true}
+          onDeleted={() => {}}
           onStopCycle={async () => true}
           onTurnClick={async () => true}
         />,

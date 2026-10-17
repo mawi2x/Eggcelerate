@@ -125,6 +125,7 @@ export function DetailScreen({
   isUpdating,
   isRequestingTurn,
   onOpenTrends,
+  onDeleted,
   onTabChange,
 }: {
   unit: Incubator;
@@ -135,6 +136,7 @@ export function DetailScreen({
   isUpdating: boolean;
   isRequestingTurn: boolean;
   onOpenTrends: () => void;
+  onDeleted: () => void;
   onTabChange?: (tab: DetailTab) => void;
 }) {
   const temperature = useTemperatureDisplay();
@@ -373,7 +375,7 @@ export function DetailScreen({
             <div className="flex justify-end">
               <Button
                 variant="outline"
-                className="text-(length:--type-button-label)"
+                className="rounded-full text-(length:--type-button-label)"
                 disabled={isUpdating}
                 onClick={() =>
                   void onUpdate({
@@ -949,6 +951,7 @@ export function DetailScreen({
           isRequestingTurn={isRequestingTurn}
           turnCommandStatus={turnCommand?.status ?? unit.turnCommandStatus}
           onUpdate={onUpdate}
+          onDeleted={onDeleted}
           onStopCycle={stopCycle}
           onTurnClick={async () => {
             if (unit.cyclePhase !== "incubating") {

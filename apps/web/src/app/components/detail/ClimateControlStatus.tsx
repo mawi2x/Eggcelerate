@@ -43,15 +43,6 @@ async function control(id: string, action?: string) {
     throw new Error(body?.error?.message ?? "Equipment status is unavailable.");
   return schema.parse(body.data);
 }
-const faults = [
-  "None",
-  "Sensor failure",
-  "Stale sensor readings",
-  "Overheating",
-  "Continuous heating safety timeout",
-  "Settings storage failure",
-  "Controller reset after a crash",
-];
 export function ClimateControlStatus({ unit }: { unit: Incubator }) {
   const client = useQueryClient();
   const key = ["climate-control", unit.id];
@@ -63,6 +54,8 @@ export function ClimateControlStatus({ unit }: { unit: Incubator }) {
     retry: 1,
   });
   const mutation = useMutation({
+    mutationKey: ["climate-control", unit.id],
+    meta: { unitName: unit.name },
     mutationFn: (action: string) => control(unit.id, action),
     onSuccess: (data) => {
       client.setQueryData(key, data);
@@ -79,34 +72,37 @@ export function ClimateControlStatus({ unit }: { unit: Incubator }) {
     ["incubating", "lockdown", "hatching", "awaiting_finish"].includes(
       unit.cyclePhase,
     );
-  let message = "Waiting for equipment status.";
-  if (query.isError)
-    message = "Equipment status is unknown. Check the connection.";
-  else if (report && !fresh)
-    message =
-      "Equipment status is stale. A stop or start is not confirmed until the device responds.";
-  else if (report && report.lifecycle !== 1)
-    message =
-      "Upload the preparation/incubation firmware to enable automatic regulation.";
-  else if (report?.fault)
-    message = `Regulation stopped: ${faults[report.fault] ?? "controller fault"}. Resolve the cause before resetting.`;
-  else if (pending)
-    message = `Waiting for device confirmation: ${{ prepare: "begin preparation", incubate: "continue regulation for incubation", stop: "turn all equipment off", reset: "reset fault" }[data?.request?.action ?? ""] ?? "command"}.`;
-  else if (data?.request?.status === "timed_out")
-    message =
-      "The device did not confirm the command. Equipment state may have changed; check the connection.";
-  else if (data?.request?.status === "rejected")
-    message =
-      "The device declined the command or restarted. Check readings and equipment status before continuing.";
-  else if (report?.running)
-    message =
-      report.phase === 1
-        ? ""
-        : "Automatically maintaining incubation temperature and humidity.";
-  else if (report)
-    message =
-      "Equipment is off. Sensor readings, displays and recording remain active.";
-  if (!message && authorized && !mutation.error) return null;
+  // Warnings are delivered through Notifications; retain actionable controls.
+  let message = "";
+  if (fresh && report?.lifecycle === 1 && !report.fault) {
+    if (pending) message = "Waiting for device confirmation.";
+    else if (
+      !["timed_out", "rejected", "expired"].includes(
+        data?.request?.status ?? "",
+      )
+    ) {
+      if (report.running && report.phase !== 1)
+        message =
+          "Automatically maintaining incubation temperature and humidity.";
+      else if (!report.running)
+        message =
+          "Equipment is off. Sensor readings, displays and recording remain active.";
+    }
+  }
+  const recovery =
+    fresh &&
+    report?.lifecycle === 1 &&
+    !report.running &&
+    (!!report.fault || authorized);
+  const unexpectedOutput =
+    !!report &&
+    !authorized &&
+    (report.running ||
+      unit.outputStates?.heaterOn ||
+      unit.outputStates?.mistOn ||
+      unit.outputStates?.fanOn ||
+      unit.outputStates?.exhaustOn);
+  if (!message && !recovery && !unexpectedOutput) return null;
   return (
     <div
       className="mt-4 space-y-3 border-t pt-4"
@@ -122,6 +118,7 @@ export function ClimateControlStatus({ unit }: { unit: Incubator }) {
           {!!report.fault && (
             <Button
               variant="outline"
+              className="rounded-full"
               disabled={mutation.isPending || pending}
               onClick={() => mutation.mutate("reset")}
             >
@@ -131,6 +128,7 @@ export function ClimateControlStatus({ unit }: { unit: Incubator }) {
           {!report.fault && authorized && (
             <Button
               variant="outline"
+              className="rounded-full"
               disabled={mutation.isPending || pending}
               onClick={() => mutation.mutate("resume")}
             >
@@ -148,13 +146,13 @@ export function ClimateControlStatus({ unit }: { unit: Incubator }) {
           unit.outputStates?.exhaustOn) && (
           <Button
             variant="outline"
+            className="rounded-full"
             disabled={mutation.isPending || pending}
             onClick={() => mutation.mutate("stop")}
           >
             Stop equipment
           </Button>
         )}
-      {mutation.error && <p role="alert">{mutation.error.message}</p>}
     </div>
   );
 }

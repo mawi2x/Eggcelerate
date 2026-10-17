@@ -585,6 +585,7 @@ function AppContent() {
                       unit={activeUnit}
                       modes={modes}
                       initialTab={detailTab}
+                      onDeleted={() => navigate("incubators")}
                       onOpenTrends={() => openTrendsForUnit(activeUnit.id)}
                       onTabChange={(tab) =>
                         openIncubator(activeUnit.id, tab, true)
