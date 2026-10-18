@@ -7,6 +7,7 @@ COPY apps/api/src/ ./src/
 RUN pip install --no-cache-dir .
 COPY apps/api/alembic.ini ./
 COPY apps/api/migrations/ ./migrations/
+RUN chmod a+r ./alembic.ini && chmod -R a+rX ./migrations
 USER 10001:10001
 EXPOSE 8000
 CMD ["uvicorn", "eggcelerate_api.main:app", "--host", "0.0.0.0", "--port", "8000"]

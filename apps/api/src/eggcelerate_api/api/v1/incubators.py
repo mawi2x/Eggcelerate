@@ -46,13 +46,19 @@ async def resolve_incubator_code(
     if database is None:
         raise AppError("offline", "Hardware pairing requires the connected server.")
     try:
-        async with database.sessions() as session:
-            device_id = await resolve_pairing_code(
-                session, uuid.UUID(context.farm_id), body.pairing_code
+        async with database.sessions.begin() as session:
+            device_id, farm_changed = await resolve_pairing_code(
+                session,
+                uuid.UUID(context.farm_id),
+                body.pairing_code,
+                user_id=(
+                    uuid.UUID(context.actor_id) if context.authenticated else None
+                ),
+                session_hash=context.session_hash,
             )
     except (SQLAlchemyError, OSError, TimeoutError) as exc:
         raise AppError("offline", "Pairing service is unavailable.") from exc
-    return ok_envelope({"device_id": device_id})
+    return ok_envelope({"device_id": device_id, "farm_changed": farm_changed})
 
 
 @router.get("/{incubator_id}/commands/{command_id}")

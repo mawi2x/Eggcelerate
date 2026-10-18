@@ -69,6 +69,11 @@ export interface OutputStateReport {
   mistOn: boolean;
   fanOn: boolean;
   exhaustOn?: boolean;
+  fanDutyPct?: number;
+  exhaustDutyPct?: number;
+  exhaustRequestedDutyPct?: number;
+  exhaustReason?: string;
+  pwmReady?: boolean;
   receivedAt: string;
 }
 
@@ -119,6 +124,8 @@ export interface TurnCommand {
 }
 
 export interface Reading {
+  receivedAt?: string;
+  backfilledCount?: number;
   ts: number;
   time: string;
   temp: number;
@@ -164,4 +171,20 @@ export interface AbortedCycleRecord {
   dayStopped: number;
   totalEggs: number;
   fertileEggs: number | null;
+}
+
+export interface IncubationRun {
+  id: string;
+  incubatorId: string;
+  chamberName: string;
+  mode: Mode;
+  cycleId: string | null;
+  status: "preparing" | "incubating" | "completed" | "stopped" | "cancelled";
+  startedAt: string;
+  preparedAt: string | null;
+  incubationAt: string | null;
+  endedAt: string | null;
+  totalEggs: number | null;
+  approximate: boolean;
+  endReason: string | null;
 }

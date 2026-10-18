@@ -43,6 +43,8 @@ import type {
   EggcelerateRepository,
   MutationOptions,
   RawReadingPreview,
+  RunHistoryPage,
+  RunHistoryQuery,
   RawReadingScope,
   ReadingQuery,
   StopCycleInput,
@@ -233,12 +235,35 @@ export class ApiRepository implements EggcelerateRepository {
     options?: MutationOptions,
   ): Promise<Result<Incubator>> {
     // Resolve the private fixed code to the embedded hardware ID on the server.
-    const pairing = await this.request<{ device_id: string }>(
+    const pairing = await this.request<{
+      device_id: string;
+      farm_changed: boolean;
+    }>(
       "/api/v1/incubators/resolve-pairing-code",
-      z.object({ device_id: z.string().min(1) }),
+      z.object({
+        device_id: z.string().min(1),
+        farm_changed: z.boolean(),
+      }),
       { method: "POST", body: { pairing_code: unit.deviceId } },
     );
     if (!pairing.ok) return pairing;
+    const refreshFarmContext = () => {
+      if (pairing.data.farm_changed && typeof window !== "undefined") {
+        window.dispatchEvent(new Event("eggcelerate:farm-context-changed"));
+      }
+    };
+    const existingIncubators = await this.listIncubators();
+    if (!existingIncubators.ok) {
+      refreshFarmContext();
+      return existingIncubators;
+    }
+    const alreadyAdded = existingIncubators.data.find(
+      (incubator) => incubator.deviceId === pairing.data.device_id,
+    );
+    if (alreadyAdded) {
+      refreshFarmContext();
+      return { ok: true, data: alreadyAdded };
+    }
     const result = await this.request<unknown>(
       "/api/v1/incubators",
       IncubatorDTOSchema,
@@ -253,7 +278,11 @@ export class ApiRepository implements EggcelerateRepository {
         idempotencyKey: options?.idempotencyKey,
       },
     );
-    if (!result.ok) return result;
+    if (!result.ok) {
+      refreshFarmContext();
+      return result;
+    }
+    refreshFarmContext();
     return { ok: true, data: incubatorFromDTO(result.data) };
   }
 
@@ -600,9 +629,40 @@ export class ApiRepository implements EggcelerateRepository {
     return latest;
   }
 
+  async listIncubationRuns(query: RunHistoryQuery): Promise<Result<RunHistoryPage>> {
+    const params = new URLSearchParams();
+    if (query.before) params.set("before", query.before);
+    if (query.incubatorId) params.set("incubator_id", query.incubatorId);
+    if (query.modeId) params.set("mode_id", query.modeId);
+    if (query.status) params.set("status", query.status);
+    if (query.runId) params.set("run_id", query.runId);
+    const schema = z.object({
+      runs: z.array(z.object({
+        id: z.string().uuid(), incubator_id: z.string(), chamber_name: z.string(), mode: ModeDTOSchema,
+        cycle_id: z.string().nullable(), status: z.enum(["preparing", "incubating", "completed", "stopped", "cancelled"]),
+        started_at: z.string().datetime({ offset: true }), prepared_at: z.string().nullable(), incubation_at: z.string().nullable(), ended_at: z.string().nullable(),
+        total_eggs: z.number().nullable(), approximate: z.boolean(), end_reason: z.string().nullable(),
+      })).max(100), has_more: z.boolean(), next_cursor: z.string().nullable().optional(),
+    });
+    const result = await this.request<z.infer<typeof schema>>(`/api/v1/runs?${params}`, schema);
+    if (!result.ok) return result;
+    return { ok: true, data: { runs: result.data.runs.map((run) => ({
+      id: run.id, incubatorId: run.incubator_id, chamberName: run.chamber_name, mode: modeFromDTO(run.mode),
+      cycleId: run.cycle_id, status: run.status, startedAt: run.started_at, preparedAt: run.prepared_at,
+      incubationAt: run.incubation_at, endedAt: run.ended_at, totalEggs: run.total_eggs,
+      approximate: run.approximate, endReason: run.end_reason,
+    })), hasMore: result.data.has_more, nextCursor: result.data.next_cursor ?? null } };
+  }
+
   async listReadings(query: ReadingQuery): Promise<Result<Reading[]>> {
+    const params = new URLSearchParams({ window: query.window });
+    if (query.runId) params.set("run_id", query.runId);
+    if (query.bounds) {
+      params.set("start", query.bounds.start);
+      params.set("end", query.bounds.end);
+    }
     const result = await this.request<unknown[]>(
-      `/api/v1/incubators/${encodeURIComponent(query.incubatorId)}/readings${query.resolution === "chart" ? "/chart" : ""}?window=${query.window}`,
+      `/api/v1/incubators/${encodeURIComponent(query.incubatorId)}/readings${query.resolution === "chart" ? "/chart" : ""}?${params}`,
       query.resolution === "chart"
         ? z.array(ChartReadingDTOSchema).max(600)
         : z.array(ReadingDTOSchema),
@@ -625,6 +685,8 @@ export class ApiRepository implements EggcelerateRepository {
       window: query.window,
       end: query.end,
     });
+    if (query.start) params.set("start", query.start);
+    if (query.runId) params.set("run_id", query.runId);
     for (const id of query.incubatorIds) params.append("ids", id);
     const result = await this.request<
       z.infer<typeof RawReadingPreviewDTOSchema>

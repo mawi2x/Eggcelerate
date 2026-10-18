@@ -2648,7 +2648,12 @@ export function CandlingJournalTab({
                   size="sm"
                   tone="warning"
                   title="No inspection recorded yet"
-                  description="Check the eggs, then click “+ Log” above to record your count. Notes and photos are optional."
+                  description={
+                    <span className="block text-pretty">
+                      Check the eggs, then click “+ Log” above to record your count.
+                      Notes and photos are optional.
+                    </span>
+                  }
                 />
               </div>
             )}

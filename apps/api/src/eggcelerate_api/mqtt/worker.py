@@ -26,6 +26,7 @@ from ..database.schema import farm_preferences
 from ..database.store import PostgresStore
 from ..errors import AppError
 from .commands import apply_ack, claim_commands, expire_commands
+from .offline import assignment, ingest_batch
 from .telemetry import ingest_telemetry
 
 log = logging.getLogger(__name__)
@@ -40,6 +41,14 @@ class InboundMqttMessage:
     received_at: datetime | None = None
 
     @property
+    def is_backlog(self) -> bool:
+        try:
+            body = json.loads(self.payload)
+            return isinstance(body, dict) and body.get("kind") == "offline_batch"
+        except ValueError, UnicodeError:
+            return False
+
+    @property
     def is_ack(self) -> bool:
         return self.topic.endswith("/ack")
 
@@ -52,6 +61,7 @@ class MqttInputQueues:
         self.telemetry: asyncio.Queue[InboundMqttMessage] = asyncio.Queue(
             maxsize=telemetry_capacity
         )
+        self.backlog: asyncio.Queue[InboundMqttMessage] = asyncio.Queue(maxsize=100)
         self.available = asyncio.Event()
         self.dropped_ack_count = 0
         self.dropped_telemetry_count = 0
@@ -59,6 +69,11 @@ class MqttInputQueues:
     def enqueue(self, message: InboundMqttMessage) -> bool:
         if message.is_ack:
             self.acknowledgements.put_nowait(message)
+        elif message.is_backlog:
+            if self.backlog.full():
+                self.dropped_telemetry_count += 1
+                return False
+            self.backlog.put_nowait(message)
         elif self.telemetry.full():
             self.dropped_telemetry_count += 1
             if (
@@ -95,8 +110,16 @@ class MqttInputQueues:
                 return self.telemetry.get_nowait()
             except asyncio.QueueEmpty:
                 pass
+            try:
+                return self.backlog.get_nowait()
+            except asyncio.QueueEmpty:
+                pass
             self.available.clear()
-            if not self.acknowledgements.empty() or not self.telemetry.empty():
+            if (
+                not self.acknowledgements.empty()
+                or not self.telemetry.empty()
+                or not self.backlog.empty()
+            ):
                 continue
             await self.available.wait()
 
@@ -308,6 +331,16 @@ async def run() -> None:
                 except TimeoutError:
                     continue
                 try:
+                    backlog_receipt = None
+                    assignment_receipt = None
+                    try:
+                        payload_body = json.loads(inbound.payload)
+                    except (ValueError, UnicodeError) as exc:
+                        raise AppError(
+                            "validation_error", "Invalid MQTT JSON."
+                        ) from exc
+                    if not isinstance(payload_body, dict):
+                        raise AppError("validation_error", "Invalid MQTT object.")
                     async with database.sessions.begin() as session:
                         farm_id = database.farm_id
                         if settings.auth_mode == "sessions":
@@ -338,7 +371,24 @@ async def run() -> None:
                                 )
                                 or 15
                             )
-                        if inbound.is_ack:
+                        if (
+                            not inbound.is_ack
+                            and payload_body.get("kind") == "offline_batch"
+                        ):
+                            if (
+                                os.environ.get("OFFLINE_REPLAY_ENABLED", "true")
+                                != "true"
+                            ):
+                                raise AppError(
+                                    "rejected", "Historical replay is disabled."
+                                )
+                            backlog_receipt = await ingest_batch(
+                                session,
+                                farm_id,
+                                inbound.topic,
+                                inbound.payload,
+                            )
+                        elif inbound.is_ack:
                             await apply_ack(
                                 session,
                                 farm_id,
@@ -353,6 +403,11 @@ async def run() -> None:
                                 inbound.topic,
                                 inbound.payload,
                             )
+                            if payload_body.get("storage") is not None:
+                                scope = await assignment(
+                                    session, farm_id, payload_body["device_id"]
+                                )
+                                assignment_receipt = f"storage|{payload_body['boot_id']}|{payload_body['seq']}|{scope['generation'].hex}"
                 except AppError as exc:
                     key = exc.code
                     now = time.monotonic()
@@ -371,7 +426,15 @@ async def run() -> None:
                         )
                 else:
                     # Transaction has committed. A socket send alone is not a DB receipt.
-                    if hardware and not inbound.is_ack:
+                    if backlog_receipt is not None:
+                        device_id, receipt = backlog_receipt
+                        client.publish(
+                            f"eggcelerate/v1/devices/{device_id}/receipt",
+                            receipt,
+                            qos=1,
+                            retain=False,
+                        )
+                    elif hardware and not inbound.is_ack:
                         body = json.loads(inbound.payload)
                         client.publish(
                             f"eggcelerate/v1/devices/{body['device_id']}/receipt",
@@ -379,6 +442,13 @@ async def run() -> None:
                             qos=1,
                             retain=False,
                         )
+                        if assignment_receipt is not None:
+                            client.publish(
+                                f"eggcelerate/v1/devices/{body['device_id']}/receipt",
+                                assignment_receipt,
+                                qos=1,
+                                retain=False,
+                            )
                         # Non-actuator setting on the existing worker-only receipt
                         # channel; boot/sequence bound so stale delivery is ignored.
                         client.publish(

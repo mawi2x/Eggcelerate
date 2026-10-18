@@ -1,15 +1,48 @@
 # EGGCELERATE roadmap and timeline
 
-Last updated: **2026-10-15**. Current work: integrated automatic preparation →
+Last updated: **2026-10-18**. Current work: integrated automatic preparation →
 confirmed incubation climate control and timed tray scheduling with local Docker recording. See the
 [preparation guide](docs/guide/incubator-preparation-guide.md).
 **Resume/next phases:** [October 15 capstone handoff](docs/guide/capstone-next-phases-2026-10-15.md).
 The October 14 handoff remains historical.
+**Start locally:** [local startup guide](docs/guide/local-startup-guide.md) covers
+the existing Docker dashboard, hardware connection and optional mock UI.
+**Preferred moving-incubator workflow:** [VPS-connected local development](docs/guide/vps-connected-local-development.md).
+Edit the frontend with `pnpm dev:vps` at **https://127.0.0.1:5174** using VPS
+accounts/data. VPS API/worker/dashboard rollout and schema 0024 are installed;
+VPS-targeted firmware is compiled but upload remains pending. Home computer no longer needs to travel with the
+incubator under this planned connection arrangement.
 The [October 12 checkpoint](docs/current-progress-2026-10-12.md) remains the
 historical sensor/deployment record and broader audit reminder.
 
 **Next review: frontend audit plus backend, firmware/hardware and deployment
 audit. Pending, not completed.** See the checkpoint checklist before resuming.
+
+**October 17 incubation-control audit completed (read-only):** production fans
+use ON/OFF GPIO commands; variable PWM is absent from the main control path and
+disabled in the standalone bench. Hardware speed-control qualification and fixes
+remain pending. See the October 17 findings at the end of this roadmap. The wider
+project audit above remains open.
+
+**October 18 improvement plan:** [Incubation-control plan](docs/guide/incubation-control-improvement-plan-2026-10-18.md).
+Sequence: durable control evidence → hardware/sensor/airflow qualification →
+production PWM and fault policy → coordinated climate tuning → stage profiles
+and dashboard/history → integrated acceptance. Initial local source implementation
+has begun; see the October 18 PWM implementation entry and guide below.
+Latest instruction supersedes physical validation gates in that sequence:
+complete planning without validation or code edits. Use the confirmed arrangement;
+prior proposed qualification/soak runs are deferred, not completed.
+User confirms the installed wiring is already verified and pin allocation is
+unchanged. Accept the current pins; remaining fan qualification concerns speed,
+startup and airflow rather than repeating wiring verification.
+Latest clarification: user previously tested adjusting fan power successfully.
+Accept adjustable operation as established by that test; the remaining production
+gap is firmware integration. Recover working settings and characterize only
+missing startup/run limits rather than repeating basic compatibility checks.
+Fan roles are now explicitly user-confirmed: upper GPIO18 faces the heater and
+circulates heat internally; lower GPIO19 exhausts chamber air. Chicken temperature
+reference is CPU's 37.5–37.8°C, used for both internal control and display in the
+current plan. The earlier 37–38°C display proposal is withdrawn.
 
 **Current hardware checkpoint (October 15): manual relay and fan MOSFET controls
 reported working by the user.** See [mosfet-bench](apps/firmware/mosfet-bench/README.md)
@@ -2104,3 +2137,690 @@ cycle with history and candling/photo references, using a disposable database
 that was removed afterward. No firmware upload or schema migration is required.
 API/web installed locally, API healthy, HTTPS proxy reloaded and dashboard
 responding successfully.
+
+### October 17 — incubation-control audit: chicken targets, humidity and fans
+
+Completed a read-only audit of the ESP32/DHT22 climate path, hardware records,
+dashboard output reporting, the supplied October 16 graph, downloaded CSV and
+local database records. No control-code changes, firmware upload, actuator
+commands or physical qualification were performed. This audit does not resume
+the separately paused implementation phases or establish the deployed firmware
+revision.
+
+**Conclusion: fan-speed control is not currently implemented in production.**
+The ESP32 and selected MOSFET arrangement offer a possible route to adjustable
+speed, but the installed fan/module combination has not been qualified for it.
+Do not treat the fans as inherently ON/OFF-only or assume supply PWM will work.
+
+#### Confirmed control path and configuration
+
+- DHT22 GPIO4 is sampled every 2.5 seconds. Raw readings pass finite/range checks
+  directly into the regulator; no smoothing or calibration correction is applied.
+  The control task applies outputs approximately every 50 ms independently of
+  cloud connectivity. See `apps/firmware/Eggcelerate/ClimateRuntime.h:206` and
+  `ClimateControl.h:62`.
+- Main outputs are Boolean (`ClimateControl.h:33`). `ClimateRuntime.h:28` writes
+  heater GPIO27 and mist GPIO14 active-low, upper circulation fan GPIO18 and lower
+  exhaust GPIO19 active-high. Production has no PWM attachment, frequency,
+  resolution or intermediate duty; `applyOutputs()` uses `digitalWrite()`.
+- Upper circulation stays commanded full on during regulation. Temperature
+  cooling requests full exhaust. Humidity drying pulses exhaust 10 seconds on /
+  20 off. Mist is limited to 3 seconds on / 20 off and inhibited during exhaust,
+  drying demand and temperature cooling (`ClimateControl.h:147–176`).
+- Chicken firmware targets are 37.5–37.8°C / 55–60% RH. Heat demand starts at
+  <=37.5°C and clears at >=37.8°C; temperature cooling starts above 37.8°C and
+  clears at <=37.65°C. Mist demand starts below 55% and clears at >=57.5%; drying
+  starts above 60% and clears at <=57.5%. Humidity actuation requires at least
+  37.0°C. Preparation and incubation use the same targets; no lockdown climate
+  profile is implemented (`ClimateControl.h:11,109,148–173`).
+
+#### Findings and pending remedies
+
+| Severity | Finding / evidence | Practical impact and recommended next action |
+| --- | --- | --- |
+| High | Missing production duty calculation and PWM output: `ClimateControl.h:33,147–176`; `ClimateRuntime.h:28–40` | Only off/full-on commands exist. After hardware qualification, add numeric requested/applied duties, temperature/humidity arbitration and one PWM output owner with explicit fault overrides. |
+| High | Hardware supply PWM unqualified; standalone bench has `kSupplyPwmConfirmed=false`, frequency 0, draft 8-bit resolution (`mosfet-bench/BenchConfig.h:14–20`) | Establish actual connector functions, MOSFET terminals/topology, common ground, polarity and reset behavior. Measure frequency compatibility, start/run duty, RPM, current and airflow. The recorded 7 V DC start rating is not a PWM minimum. |
+| High | Old standalone MOSFET bench labels GPIO19 upper / GPIO18 lower, reversing current production (`mosfet-bench/BenchConfig.h:7`; `ClimateRuntime.h:12`) | Physically trace both channels and reconcile obsolete bench/document labels before qualification. Current authoritative mapping is upper GPIO18, lower GPIO19. |
+| High | Full-power threshold heating/cooling lacks thermal-inertia compensation (`ClimateControl.h:150–169`) | Can contribute to overshoot and cycling. Measure thermal response and tune heater cutoff/exhaust demand together; the graph alone does not prove actuator causation. |
+| High | No independently specified fresh-air minimum; humidity exhaust may run alongside heat (`ClimateControl.h:158–173`) | Qualify passive ventilation and loaded-chamber exchange. Define ventilation separately from temperature/RH correction and coordinate drying with heating. |
+| High | One invalid reading latches a fault; running faults command both fans on indefinitely, without rotation feedback (`ClimateControl.h:62–76,129–145`) | Heat/mist shut down, but sensor-loss exhaust can sustain cooling. Define separate sensor-loss/overheat ventilation policies, verify circulation and independent heater protection. Explicit Stop intentionally overrides all fans off. |
+| High | No stage-dependent climate targets; graph mode provenance incomplete (`ClimateControl.h:11,109`; API `database/climate_control.py:47`) | Preserve effective mode/targets/stage with each sample and implement an approved chicken stage profile before claiming full-cycle climate control. Stored dashboard hysteresis fields do not drive the compiled regulator. |
+| Medium | Raw DHT22 control, no calibration/filtering; fixed fan lead proves elapsed time, not airflow (`ClimateControl.h:62,166`) | Verify egg-level temperature against a calibrated reference, spatial uniformity and sensor placement. Any filtering must preserve prompt raw overheat protection. |
+| Medium | Dashboard reports Boolean commands, not measured fan operation (`database/incubators.py:128`; web `LiveMonitorTab.tsx:632`) | Existing freshness suppression is useful, but 15-second reporting/polling can miss short pulses. Add command timestamps, applied duty and feedback availability; distinguish command from observed operation. |
+| High for diagnosis | Climate reports/requests overwrite latest state; historical samples/CSV lack actuator history (`database/climate_control.py:384`; `database/schema.py:495`; web `features/trends/raw-export.ts:9`) | Persist output transitions, control decisions, commands and boot/fault events to reconstruct causes. Current records cannot establish every heater/mist/fan action in the graph. |
+
+#### October 16 graph: confirmed observations and limits
+
+Evidence inspected: `/home/mawi/Downloads/raw-readings-7d.csv` (679 total rows of
+readings) and local PostgreSQL telemetry, alerts and latest climate state. All
+times below are Asia/Manila (UTC+8). The displayed 15:28–17:26 selection contains
+383 readings beginning at 15:40:30. Temperature ranges from 35.2°C to 38.2°C;
+289/383 samples are outside current chicken temperature targets and 102/383
+outside chicken RH targets. These counts are not duration-weighted exposure.
+
+- Sensor-failure alert recorded at 15:44:01; historical output transitions were
+  not retained. The first temperature maximum of 38.2°C is at 15:50:02 (CSV line 320).
+- A 191-second reading gap spans 16:24:17–16:27:28 (CSV lines 457–458), with
+  stale/offline alerts. Latest reported boot time is 16:27:21; unexpected-operation
+  and command-confirmation alerts followed. A restart is supported near this gap,
+  but its cause and full output sequence are not established.
+- From 16:27:28 to 16:42:30, temperature falls 36.7→35.2°C while RH rises
+  57.0→61.4%. Rising relative humidity during cooling does not prove misting.
+- A 236-second gap spans 16:42:30–16:46:26; readings change 35.2→38.0°C
+  (CSV lines 514–515). The intervening trajectory is missing.
+- Cooling begins around 17:00 and reaches about 35.6°C near 17:05. Heater loss,
+  exhaust, door opening and other disturbances remain hypotheses without output
+  history. The retained Stop was requested at 17:15:22 and acknowledged around
+  17:15:27, so it cannot explain the earlier start of cooling.
+- User identifies the graph as chicken mode, but screenshot targets are
+  37.4–37.6°C / 55–60% RH, matching neither current complete preset. The last
+  stored chamber assignment/report is Duck (mode 1), stopped with all outputs off
+  and fault 0 at 17:27:41. This establishes only the final reported state; it does
+  not prove which mode controlled the earlier graph. Log historical effective
+  targets/mode before attributing the trace to chicken firmware behavior.
+
+#### Required evidence and verification before implementing speed control
+
+1. Confirm physical channel identity, circulation/exhaust direction, fan connector
+   functions, switched supply wiring, MOSFET topology and default-off behavior.
+   Measure GPIO and load waveforms, stable RPM/airflow across candidate duties,
+   minimum reliable start/run duties and any required startup boost. Use a
+   frequency supported by the measured fan/module combination; do not infer it
+   from a generic fan symbol or the module's seller-stated 20 kHz ceiling.
+2. Persist every 2.5-second sample and every output/command/fault transition:
+   UTC sample/receipt time, monotonic time, boot/reset identity, firmware hash,
+   sequence, raw/filtered T/RH, validity/sample age, mode/day/stage/effective
+   targets, demand flags, inhibition reasons and timers, relay commands/on-time,
+   requested/applied fan duty, GPIO/frequency/resolution/clamps/boost and available
+   RPM/current/airflow feedback. Retain issued/accepted/rejected/expired/applied
+   commands, ambient T/RH, door openings and power/manual interventions.
+3. In supervised qualification, compare physical outputs with synchronized logs
+   and dashboard status. Check startup/stall, temperature overshoot/cycling,
+   humidity recovery, continuous circulation/fresh-air exchange, invalid/stale
+   samples, faults, explicit Stop and power/crash restart behavior. Acceptance
+   must use representative loading and egg-level reference measurements.
+
+These are pending recommendations, not completed tests or authorization to flash,
+energize equipment or deploy changes. The next climate implementation decision
+should follow this evidence; the separate power/EN investigation remains open.
+
+### October 18 — incubation-control improvement plan recorded
+
+Created the [phased improvement plan](docs/guide/incubation-control-improvement-plan-2026-10-18.md)
+from the October 17 audit, including implementation boundaries, dependencies,
+fault/output priorities and measurable acceptance evidence. First slice is
+firmware/configuration identity, effective targets and durable sample/output/
+command history so the next graph can explain control behavior.
+
+Fan qualification must establish the actual frequency, minimum start/run duties,
+boost and airflow before automatic PWM is enabled, accounting for any existing
+results supplied by the user. Wiring and unchanged pin allocation are already
+user-confirmed verified; correct obsolete bench labels against that allocation.
+Production changes then introduce one PWM output owner, coordinated
+temperature/humidity/fresh-air demands and local stage profiles. Baseline required
+ventilation must remain compatible with safe misting; circulation and exhaust
+have distinct roles. Dashboard duty represents an electrical command unless
+rotation/airflow feedback is actually present.
+
+The plan includes representative loading, reference-sensor measurements,
+fault/Stop/restart/offline checks, an initial 24-hour stability qualification and
+rollback preparation. Exact tuning, PWM and stage parameters require measured
+or approved evidence; full-cycle performance is not established by that soak.
+Documentation only: no implementation, tests, firmware upload, actuator command
+or deployment performed. Separate power/EN diagnosis remains open.
+
+### October 18 — wiring verification accepted; fan questions narrowed
+
+User confirms wiring is already verified and pin allocation has not changed.
+The improvement plan now accepts this as established rather than requesting
+repeat continuity or pin checks. Current mapping remains DHT22 GPIO4, heater
+GPIO27/IN1, mist GPIO14/IN3, upper fan GPIO18 and lower fan GPIO19.
+
+Asked about prior intermediate-speed results, actual circulation/exhaust roles,
+installed fan/MOSFET models and any RPM feedback. Await those answers before
+assuming PWM is untried, selecting speed parameters or finalizing the airflow
+policy. Existing wiring confirmation alone does not establish those properties.
+
+Follow-up: user believes current fan operation is ON/OFF only, consistent with
+the production source audit. Intermediate-speed operation has not been
+established. Keep PWM frequency, minimum reliable start/run duties and boost
+undetermined; this does not establish an inherent ON/OFF hardware limitation.
+Airflow roles, installed component identity and RPM feedback remain unanswered.
+
+### October 18 — prior adjustable fan operation confirmed
+
+User clarifies that adjusting fan power was previously tested and worked. This
+supersedes the earlier uncertainty about basic adjustable operation. Accept the
+installed arrangement's successful adjustment and verified unchanged wiring as
+the starting point; no repeat basic compatibility test is required by the plan.
+
+The production source still commands only ON/OFF. Focus the improvement on
+integrating the working control method into production, recovering prior settings
+where available, recording missing start/run limits and coordinating temperature,
+humidity and airflow. Exact prior frequency/duty settings and feedback capability
+have not been supplied. No hardware replacement is assumed or planned as a
+prerequisite. Documentation updated; no control-code change or equipment action.
+
+### October 18 — fan roles confirmed; chicken temperature references reviewed
+
+User explicitly confirms upper fan GPIO18 faces the heater and circulates heat
+inside the chamber; lower fan GPIO19 is the exhaust. Treat both roles as
+established for the improvement plan. User also confirms the earlier successful
+adjustment used an ESP32 PWM slider through the MOSFET. Current saved bench
+settings do not retain that working frequency/duty configuration; this does not
+negate the user's test result.
+
+Researched the proposed chicken range 37–38°C around 37.5°C. This is ±0.5°C,
+not ±5°C. It is not established as a universally advisable normal operating band.
+[Brinsea's Mini Eco manual, section 5.6](https://www.brinsea.com/manuals/miniecous.pdf)
+lists hens at 37.4–37.6°C.
+[Mississippi State Extension](https://accessibility.extension.msstate.edu/agriculture/livestock/poultry/important-incubation-factors)
+uses a different nominal value and states fluctuation guidance in Fahrenheit;
+half a Fahrenheit degree converts to about 0.28°C. Do not misread that as 0.5°C.
+
+The [improvement plan](docs/guide/incubation-control-improvement-plan-2026-10-18.md#chicken-temperature-reference-review--october-18)
+proposes nominal 37.5°C with a reference regulation aim of 37.4–37.6°C, pending
+calibrated egg-level performance and a later profile decision. Keep the desired
+temperature, switching hysteresis, sensor accuracy, allowable excursions and
+alarm/cutoff thresholds separate. Current chicken source remains 37.5–37.8°C
+(midpoint 37.65°C). Documentation only; no control-code or target changes.
+
+### October 18 — CPU chicken reference and display preference
+
+User supplied [CPU Research Center for Philippine Native Chicken — Hatchery
+Management](https://www.phlnativechicken.com/Hatchery-Management/) as their reference.
+Its forced-draft temperature is 37.5–37.8°C, matching existing chicken firmware.
+Use that source as the working reference in the plan rather than assuming the
+earlier proposed 37.4–37.6°C alternative has been adopted.
+
+Historical preference, superseded by the correction below: user wanted tight
+actual control while displaying **37–38°C**. Record this as a
+display preference; it does not authorize widening the regulator band or changing
+readiness/alarms. Clarification remains whether this broader band is a simplified
+label only or should also determine dashboard in-range status/colors. Preserve
+precise effective targets in details/logs and decimal live readings. CPU does not
+state the displayed 37–38°C band; do not attribute it to that source.
+
+Updated planning documentation only. No firmware, dashboard code, target values,
+mist settings, tray schedule or hardware outputs changed.
+
+### October 18 — proceed with planning without validation
+
+User explicitly requests proceeding without validation, retaining the earlier
+planning-only/no-code-edits scope. The improvement plan now accepts the confirmed
+setup without repeat wiring/PWM tests, reference-thermometer comparison, airflow
+measurements or soak runs. Earlier validation checklists are deferred reference
+material, not current prerequisites or claims that performance was measured.
+
+Accepted setup: unchanged verified pins; upper fan faces the heater and circulates
+heat; lower fan exhausts air; ESP32 PWM slider adjustment has worked. DHT22 is
+above the egg tray near the rear intake side of the upper fan. User reports
+food-delivery-bag-style insulation foam and similar upper/lower warmth by touch;
+this is an observation, not a recorded thermometer comparison.
+
+Initial future implementation slice: basic decision/output history, one PWM
+output owner, full upper circulation and gradual lower-exhaust duty, startup
+settings and existing Stop/fault priority. Keep internal chicken range
+37.5–37.8°C based on CPU guidance and the latest correction uses the same range
+on the display, in details and for status/readiness. Follow with
+coordinated heater/mist/exhaust tuning and stage profiles. Sustained graph drops
+near 35°C remain unexplained; PWM is not a proven cure.
+
+No code changes, tests, validation runs, uploads, deployments or equipment actions
+performed. Working PWM frequency/start/run settings remain parameters to recover
+or select during implementation, not reasons to reopen basic compatibility or
+block completion of the plan.
+
+### October 18 — chicken display range correction
+
+User withdraws the 37–38°C display proposal. The plan now uses **37.5–37.8°C
+for both displayed chicken targets and internal control**, consistent with the
+CPU reference. Updated active planning instructions and marked the earlier
+display preference as historical. Planning-only scope and deferred validation
+remain in effect. No firmware or dashboard code changed.
+
+### October 18 — initial local climate PWM and control-history implementation
+
+User requests starting optimization locally, superseding the planning-only scope.
+Implemented the first source slice described in the
+[local implementation guide](docs/guide/climate-pwm-local-implementation.md).
+Prior instruction to proceed without validation remains in effect.
+
+- Upper circulation GPIO18 remains full command; lower exhaust GPIO19 now has
+  one LEDC output owner. Chicken requests variable duty from temperature or RH
+  demand within the existing interlocks/pulse envelope. Duck/Quail retain their
+  full-command policy. Explicit Stop/released demand bypass ramping to zero;
+  faults/cooldown request full command. Heater/mist thresholds, chicken range
+  37.5–37.8°C, mist pulse/rest and tray behavior are unchanged in this slice.
+- Initial settings live in `FanConfig.h`: 1 kHz / 8-bit, 50% nonzero floor,
+  100% startup for 1 second, 5%-point steps each 500 ms. These are explicit
+  engineering defaults, not measured/recovered values from the successful slider.
+  LEDC setup/write failure latches fault 7 and inhibits heat/mist. A failed PWM
+  path falls back to digital full/off for fault/Stop handling; reset requires a
+  successful restart if PWM remains unavailable.
+- Reports include effective targets, build marker, sample age, control sequence,
+  requested/applied duty, reason and PWM configuration. Serial logs sample/output
+  changes; MQTT prioritizes changed snapshots at no more than 1 Hz. There is no
+  durable offline event queue; intermediate states may be coalesced.
+- API/worker accept the optional fields and fault 7. Migration **0024** adds
+  durable received-report history with environmental context and a farm-scoped,
+  bounded history endpoint. Readiness now expects 0024. Live Monitor shows
+  commanded duty with legacy Boolean fallback and existing freshness handling.
+
+Source changes only: no tests, firmware compile/upload, database migration,
+container build/restart, hardware commands or VPS action performed. Existing
+unrelated notification/auth UI edits were preserved. Current services and board
+therefore still run their earlier revisions. Rollout must migrate/update API and
+worker before the new firmware; the old strict report parser rejects new fields.
+History retention cleanup, full event queue/export/UI, heater-inertia tuning,
+stage profiles and the separate power/EN/LAN issues remain open. PWM alone is not
+a confirmed explanation or fix for the sustained graph cooling.
+
+### October 18 — local optimization builds completed
+
+User requested building the initial PWM/control-history implementation. Local
+Docker builds succeeded for API, hardware telemetry worker and web using the
+existing `hardware-local-compose.sh` configuration. Dashboard TypeScript
+compilation passed. Firmware compiled successfully with NodeMCU-32S and installed
+ESP32 core 3.3.11: **1,141,204 bytes flash (87%), 52,236 bytes RAM (15%)**.
+Used the Arduino CLI bundled in the installed IDE, extracted to a temporary
+build-tools directory; no global toolchain installation was needed.
+
+Private firmware output: `output/firmware/climate-pwm/`. Do not publish embedded
+connection configuration. No tests, physical validation, firmware upload,
+database migration, container restart or hardware command performed. Existing
+running services still use their earlier images; schema 0024 and updated
+API/worker installation remain necessary before activating new report fields.
+No VPS changes. Build success does not establish fan/thermal performance.
+
+### October 18 — pre-migration local database backup saved
+
+User requested backing up the existing PostgreSQL database before local
+installation. Saved a full custom-format dump from `egg-hardware-local-db-1`
+to private `output/backups/pre-climate-0024-20261018-181426/eggcelerate.dump`
+(94,338 bytes, owner-only permissions). Schema remains **0023**; recorded raw
+telemetry count is 679. Persistent volume is
+`egg-hardware-local_eggcelerate-db` and was preserved.
+
+Archive listing parsed successfully with the container's `pg_restore --list`;
+checksum, dump log and manifest are beside the dump. `pg_dump` recorded a
+TimescaleDB `continuous_agg` circular-dependency warning; no restore rehearsal
+was performed, so restoration is not claimed verified. No migrations, service
+restart, hardware commands or VPS action performed.
+
+PostgreSQL access uses the existing wrapper:
+`sh ./hardware-local-compose.sh exec db psql -U eggcelerate -d eggcelerate`.
+The DB currently exposes no host port; container access works without changing
+the network configuration or printing credentials.
+
+### October 18 — migration 0024 and local API/dashboard installed
+
+User authorized installing the built local changes after the database backup.
+Applied Alembic migration **0023 → 0024** using the built API image. Confirmed
+`climate_report_history` exists. Recreated API/web from built images without
+starting dependencies, then reloaded the existing HTTPS proxy.
+
+API/web are healthy; **https://127.0.0.1:18443** returns HTTP 200 and proxied
+readiness reports database up. Existing raw telemetry remains **679 readings**;
+control history has zero records because no new hardware reports are being
+received. The named database volume and pre-migration dump remain preserved.
+
+Broker and telemetry worker remain stopped/Created with their earlier container
+configuration, pending the known MQTT address/certificate/firmware endpoint
+mismatch. No new equipment commands, worker activation, firmware upload,
+physical validation, test suite or VPS changes performed. Next hardware step is
+reconciling the local MQTT endpoint and installing the new worker before the new
+firmware can publish its additional report fields.
+
+### October 18 — VPS destination and local frontend preview prepared
+
+User selects the existing VPS as the incubator's stable server because the home
+computer will not move. The AP configures router Wi-Fi only; a hardcoded local
+broker IP previously prevented connectivity after moving to school. Treat that
+network destination issue separately from climate-control performance.
+
+Implemented **pnpm dev:vps**, running Vite HTTPS on **127.0.0.1:5174** with hot
+frontend updates and `/api` proxying to **https://4.193.224.4**. Uses the existing
+private local TLS certificate, verifies upstream TLS and preserves session/CSRF
+authentication. Checks local request Origin before forwarding the permitted VPS
+Origin. A separate `egg_vps_dev_session` cookie avoids overwriting or forwarding
+the existing local Docker session. This preview uses real VPS farm data/actions;
+local Docker accounts/history remain separate.
+
+Main firmware now selects private `CloudConfig.h` (VPS **4.193.224.4:8883**) by
+default. Private `LocalCloudConfig.h` is used only with explicit
+`EGG_USE_LOCAL_RECORDER`; its presence no longer silently redirects the board to
+a LAN IP. Existing credentials, Wi-Fi NVS and device identity were preserved.
+VPS-targeted NodeMCU-32S/core 3.3.11 compile passed: **1,141,172 bytes flash (87%),
+52,236 bytes RAM (15%)**. Private output: `output/firmware/climate-pwm-vps/`.
+
+Local preview returns HTTP 200; proxied readiness and unauthenticated session
+reads succeeded. Dashboard TypeScript compilation passed. VPS MQTT port 8883
+completed a TLS handshake with certificate/IP verification using the project CA.
+Full user login and physical behavior were not exercised; no test suite, farm
+mutation, hardware command, VPS deployment or firmware upload performed.
+
+Remote API/worker revision and migration still need review/update before this
+new PWM firmware is uploaded, because of added report fields/fault 7. Asked for
+the VPS SSH username; saved project key is available, username is not recorded.
+Prepare VPS source/database rollback backup before remote migration/deployment.
+Do not mistake the local schema-0024 installation or live frontend proxy for a
+VPS backend upgrade. See the linked guide for start/login/activation details.
+
+### October 18 — VPS backup, migration and matching application release installed
+
+User supplied SSH username **eggcelerate**, completing access needed for the
+approved VPS connection workflow. Inspected the live snapshot at
+`/opt/eggcelerate/hardware-pilot-20261011`: schema 0019, 561 readings, one stopped
+cycle, no active preparation, and October 12 application images. No device run
+was started to obtain deployment evidence.
+
+Saved private pre-update database/source backups in
+`/opt/eggcelerate/rollback-climate-pwm-20261018-FgXdgv/`: full custom DB dump
+(85,532 bytes), source/configuration archive (4,228,999 bytes), container metadata,
+archive listing, checksums and schema/readings record. Dump listing parsed;
+TimescaleDB reported a `continuous_agg` circular-dependency warning. No restore
+rehearsal or restored-data guarantee is claimed. Original image tags are retained.
+
+Transferred checksummed source and matching locally built images tagged
+`eggcelerate-api:climate-pwm-20261018` and
+`eggcelerate-web:climate-pwm-20261018`. Preserved private environment, broker,
+certificates, enrollment, database volume and existing HTTPS/ACME stage routing.
+Added a release overlay and updated the existing wrapper to include it. Stopped
+the old worker during schema migration, applied **0019 → 0024**, installed API/web,
+reloaded HTTPS, then installed/started the new worker. Climate control is enabled
+consistently on API/worker; tray control remains disabled.
+
+API/web are healthy and **https://4.193.224.4** returns HTTP 200 with database-ready
+status. Worker logs confirm MQTT connection in `hardware-climate-control` mode.
+Existing readings remain **561**, the cycle remains stopped, control history is
+empty and pending climate requests are **zero**. The local VPS frontend proxy
+also reaches the updated readiness endpoint. Existing accounts were not copied,
+reset or recreated, and the local 679-reading database remains separate.
+
+No test suite, physical validation, user-login exercise, firmware upload or new
+equipment command was performed. Next step: upload the compiled VPS-targeted
+ESP32 firmware locally with flash erasure disabled. Server now accepts its new
+duty/history fields and fault 7. Old API images require schema 0019; image-only
+rollback is not sufficient after this migration, so preserve new data and use
+the recorded schema/source backup plan if reverting.
+
+### October 18 — persistent ESP32 offline recording plan prepared
+
+User requested a plan for saving readings while disconnected and uploading them
+when connectivity returns. Saved the
+[offline storage and recovery plan](docs/guide/esp32-offline-storage-plan-2026-10-18.md)
+and linked it from the guide index. This remains proposed work, not an installed
+fallback. Existing firmware continues local regulation but has no durable
+temperature/humidity upload queue.
+
+Proposed first release: capture every 15 seconds into bounded flash storage,
+target 48 hours within a 1 MiB queue budget subject to actual partition/record
+size, and flush every 60 seconds or four records. Only committed flash records
+are intended to survive power loss; recent RAM records may be lost. Preserve
+credentials/run state and existing application partitions; never auto-format on
+storage failure. Detailed actuator transition recording follows separately.
+
+Plan phases cover stable record IDs and honest clock quality, assignment-safe
+ownership, bounded journal recovery, dedicated historical ingestion, database
+commit receipts, deduplicated background replay, and visible queue/loss status.
+Current raw storage already permits late readings; replay still needs a separate
+handler so old data cannot affect live freshness, preparation or control.
+Server support precedes opt-in firmware and dashboard rollout. Acceptance checks
+are documented for future implementation; physical validation remains deferred.
+
+Planning/documentation only: no firmware/API/UI code edits, tests, firmware
+upload, equipment command, local service change or VPS deployment in this step.
+
+### October 18 — offline environmental history implementation and server rollout
+
+Implemented the [offline storage plan](docs/guide/esp32-offline-storage-plan-2026-10-18.md)
+in source. The [activation/recovery guide](docs/guide/esp32-offline-storage-implementation.md)
+records the wire contract and limitations. Firmware adds a separate storage task,
+64-byte CRC records every 15 seconds, four-record/60-second flush, alternating
+metadata, reserved sequence IDs, clock anchors and bounded committed-receipt
+replay. Capacity is 96 × 124 records (49 h 36 min at normal cadence before
+partially filled segments and storage constraints). A full queue cancels an
+obsolete in-flight batch before eviction; stale receipts cannot delete newer data.
+Storage readiness does not gate live sensor timestamps or local regulation.
+
+Server migration **0025** adds assignment generations, a replay journal,
+quarantine/conflicts and recording status. Historical ingestion bypasses live
+freshness, preparation/control, and current alert evaluation. Valid record IDs
+with malformed measurement fields are retained individually for review. The
+Monitor tab reports recording/queue/loss status; charts label historical uploads.
+Existing user changes were preserved. Release builds used the previously deployed
+public source plus an explicit 17-file offline-change overlay, so unrelated local
+notification/authentication work was not included in this server rollout.
+
+VPS backup: `/opt/eggcelerate/rollback-offline-storage-20261018-wUelsG/`, including
+an 89,972-byte custom database dump and source/configuration archive. The archive
+also contains older release files, making it larger than the previous backup.
+Dump listing parsed; restore rehearsal is not claimed. Migrated **0024 → 0025**;
+API/worker use `eggcelerate-api:offline-storage-20261018-r2`, web uses
+`eggcelerate-web:offline-storage-20261018`. Existing 561 readings and stopped cycle
+were preserved. Verified TLS readiness and HTTP 401 for the protected recording
+endpoint; MQTT worker connected. `OFFLINE_REPLAY_ENABLED=false` is the worker
+kill switch for replay without disabling live telemetry.
+
+Software evidence: 25 selected PostgreSQL/MQTT/readings tests and 18 selected
+frontend/transport/trend tests passed. Host C++ storage harness passed with
+address/undefined-behavior sanitizers, covering restart, interrupted append and
+metadata, committed ACK, overflow and stale receipts. An actual C++-serialized
+packet passed Python SHA256/schema validation. Broader frontend readings-scale
+checks exposed an existing CSV-header expectation for `Water OK`; current and
+Git HEAD export code both omit that column. That unrelated assertion was not
+changed. TypeScript, targeted Ruff and offline-module mypy checks passed.
+
+User confirmed the incubator is **empty and stopped** for installation. Detected
+ESP32-D0WD-V3, revision 3.1, 4 MiB flash on `/dev/ttyUSB0`. Initial long flash reads
+were interrupted by serial errors; no firmware was overwritten. Switched to
+resumable chunk reads with blank-region checks and a final full-chip comparison.
+Read the actual partition table: it matches default NodeMCU-32S, including NVS,
+two 1,310,720-byte application slots, and the 1,441,792-byte data region. Device
+backup completion, safe filesystem initialization, firmware upload and actual
+recording/receipt confirmation remain pending at this checkpoint. No actuator
+command or physical acceptance test was performed.
+
+### October 18 — offline storage installed and real reconnect replay confirmed
+
+Completed the first offline environmental-history release. The ESP32 full
+**4,194,304-byte flash backup passed a comparison against the chip** before upload.
+The extracted 1,441,792-byte data region was an existing empty LittleFS filesystem
+(confirmed with the listing tool); initialization created the queue without
+formatting. Compiled and actual partition tables match. Uploaded at 115200 baud
+with flash erasure disabled; esptool verified the written data. Final firmware:
+**1,212,204 bytes flash (92%), 61,412 bytes static RAM (18%)**. Private binary and
+source/artifact hashes: `output/firmware/offline-storage-vps/`.
+
+Device initially remained offline and reported invalid DHT22 samples; it saved
+explicit invalid/untimed records instead of fabricated values. DHT22 subsequently
+returned valid readings. Observed committed queue recovery across Serial resets,
+with zero reported drops/corruption. User configured home Wi-Fi through the setup
+portal. The device then connected via verified TLS, obtained its assignment,
+received PostgreSQL receipts, and drained the saved queue **23 → 8 → 0**. New
+assigned historical captures imported successfully alongside live readings.
+
+VPS evidence: all **561 original readings** remain; replay IDs are unique; marker
+`climate-pwm-offline-v1` is reported; recording is `ready`, pending climate
+requests zero, the cycle stopped and all actuator outputs off. **26 initial
+records** captured before the first confirmed assignment were durably retained in
+assignment quarantine, not silently attached to the current farm/chart. No
+incubation or actuator activation was requested.
+
+Final code verification remains 25 selected backend tests, 18 selected frontend
+checks and the sanitizer-backed C++ recovery harness, plus cross-language packet
+validation. Actual reconnect/committed-receipt behavior is now observed, not only
+simulated. Power-cut/endurance, calibration and physical actuator acceptance
+remain deferred as requested. Detailed actuator-event persistence remains the
+subsequent release identified in the plan.
+
+Full private VPS backup mirror completed and checksums matched:
+`output/backups/vps-pre-offline-0025-20261018/`. Remote source/configuration backup
+is 791,629,607 bytes (includes earlier release archives); DB dump 89,972 bytes.
+ESP32 backup/logs are in `output/backups/pre-offline-storage-20261018-esp32/`.
+The Serial observer was stopped before handoff; no future timed Serial close was
+left running. Current activation and limitations are documented in the linked
+implementation guide.
+
+
+### 2026-10-18 — Settings password change and shared pairing rollout
+
+- User clarified password scope: authenticated Settings → Farm & Account →
+  Change password, requiring current/new/confirmation fields. No Forgot password
+  or email recovery feature is requested.
+- Implemented atomic password update and revocation of all sessions, current
+  password verification, separate account/source request limits, CSRF/origin
+  checks, and login/password-change concurrency locking.
+- Included the existing interim same-code shared incubator pairing flow in the
+  VPS release: farm-wide owner membership, no approval, reuse existing incubator,
+  and most recently joined farm selected at sign-in.
+- VPS database/config/source backup mirrored locally with matching hashes.
+- Production builds and static checks passed; functional acceptance checks are
+  not yet run. API and web are deployed and healthy on the VPS; public HTTPS
+  readiness and deployed image/source identities were checked. MQTT worker and
+  ESP32 were unchanged. See
+  [last-minute changes](docs/guide/last-minute-change.md) for release details.
+
+### 2026-10-18 — Live Monitor display cleanup
+
+- Removed the equipment pause/resume panel and local-recording diagnostic panel
+  from Chamber status at the user's request. Status tiles remain visible.
+- This changes only the displayed panels; firmware regulation, local recording,
+  and backend endpoints are unchanged.
+- Web release: `eggcelerate-web:monitor-cleanup-20261018`. TypeScript and the
+  production build passed; no functional tests were run.
+
+### 2026-10-18 — Fan status wording
+
+- Live Monitor upper circulation and lower exhaust fan tiles display only On or
+  Off from reported output states, at the user's request. Duty percentages and
+  “commanded” wording were removed from these tiles; PWM control is unchanged.
+- Web release: `eggcelerate-web:fan-status-labels-20261018`. Production build and
+  TypeScript check passed. No functional tests were run.
+
+### 2026-10-18 — Inspection notice wrapping
+
+- Added `text-wrap: pretty` to the empty inspection notice description to reduce
+  isolated final words while preserving natural responsive wrapping and copy.
+- Web release: `eggcelerate-web:inspection-wrap-20261018`. Production build and
+  TypeScript check passed; no functional or visual tests were run. Browsers
+  without support retain normal wrapping.
+
+### 2026-10-18 — Rename chamber
+
+- Added Chamber name and Save name in chamber Settings → Device & connection.
+- Reuses the authenticated profile update endpoint and existing shared farm
+  record. Names are trimmed, required, and limited to 30 characters; saving,
+  error feedback, and a character counter are shown.
+- Web release: `eggcelerate-web:chamber-rename-20261018`. Production build and
+  TypeScript check passed.
+  No functional tests were run for this change.
+
+### 2026-10-18 — Combined preparation banner
+
+- Merged the separate Preparation card into the top chamber preparation banner.
+- Banner shows current waiting/stability/readiness state and species targets;
+  Change mode, Cancel preparation, and Load eggs (when ready) stay available.
+- Moved the one-minute stability, sensor-gap, automatic regulation and device
+  confirmation explanation into expandable How readiness is checked details.
+- Readiness rules and controller behavior are unchanged. Web release:
+  `eggcelerate-web:preparation-banner-20261018`. No functional or visual tests
+  were run for this layout change.
+
+### 2026-10-18 — Custom From/To environmental trends
+
+- Added From/To date-time controls with Apply beside the existing presets.
+- Uses browser-local time with an explicit time-zone label, UTC transport,
+  inclusive From/exclusive To, and validation of ordering and future dates.
+- Added server-side bounded chart and raw-preview filtering; chamber comparison
+  and raw CSV use the same selected dates. Historical exports include offline
+  readings already uploaded by preview time with a fixed receipt cutoff.
+- Existing presets, farm authorization, chart point limit and readiness logic
+  are preserved. No schema migration or ESP32 update is required.
+- VPS API and web deployed and healthy; public HTTPS readiness and image/source
+  identities checked. Database/config/source backup mirrored locally. Production
+  builds and static checks passed; functional/visual checks were not run.
+  See [custom trend dates](docs/guide/custom-trends-date-range.md).
+
+### 2026-10-18 — Date controls and banner typography alignment
+
+- Removed local 44px minimum-height overrides from custom trend inputs and Apply.
+  The secondary date controls now use the shared compact role (32px desktop,
+  matching the shared small action's 36px mobile tier) and an outline Apply
+  utility action. Existing preset chips retain their shared FilterBar sizing.
+- Bounded custom-control width, matched white toolbar surfaces and 13px semantic
+  control typography, and added a Quick range label to align group labels.
+- Corrected chamber banner hierarchy: 16px bold heading, 12px caption, 13px
+  semibold targets, 13px disclosure with 12px detail text. All use semantic tokens
+  and the configured responsive scale. Shared banner styles also apply to the
+  completion-state banners. Preparation actions use the 40px toolbar role.
+- Release: `eggcelerate-web:control-polish-20261018`. Production build and
+  TypeScript check passed. Functional and visual browser tests were not run.
+  Filtering, readiness and controller behavior are unchanged.
+
+### 2026-10-18 — Date-range helper cleanup
+
+- Removed the persistent timezone/range helper sentence beneath From/To and
+  its input description references at the user's request. Automatic browser
+  timezone conversion, date validation, and Apply behavior are unchanged.
+- Web release: `eggcelerate-web:date-helper-cleanup-20261018`.
+
+### 2026-10-18 — Trends range row alignment
+
+- Vertically centered the preset range group with the From/To control group.
+- Web release: `eggcelerate-web:range-alignment-20261018`; filtering behavior is
+  unchanged. No functional or visual browser tests were run.
+
+### 2026-10-18 — Trends range palette
+
+- Applied approved semantic colors to the range controls: soft rust selected
+  preset and Apply action, darker rust text, quiet warm group surface, white
+  date fields, warm input borders, and brown secondary labels.
+- Added an opt-in brand tone to the shared FilterBar and enabled it only on the
+  environmental time-horizon presets. Default filter styling is unchanged.
+- Web release: `eggcelerate-web:range-palette-20261018`; sizes and filtering
+  behavior are unchanged. No functional or visual browser tests were run.
+
+### 2026-10-18 — Date field palette
+
+- Applied the existing cream surface-muted background and brown text-secondary
+  to From/To fields, with warm input-border and rust focus border/ring tokens.
+- Compact sizing and native date/time behavior are unchanged. Web release:
+  `eggcelerate-web:date-field-palette-20261018`. No functional or visual browser
+  tests were run for this styling change.
+
+### 2026-10-18 — Farmer-friendly preparation wording
+
+- Changed the waiting banner to “Preparing the incubator for target conditions”.
+- Removed middle-dot separators from preparation headings. Other states use
+  “Waiting for new sensor readings” and “Checking that the conditions stay
+  within range”. Use plain sentences for farmer-facing status messages.
+- Web release: `eggcelerate-web:farmer-preparation-copy-20261018`. Local TypeScript
+  check passed; production image built on the VPS to avoid the full local disk.
+  No functional or visual browser tests were run. Readiness logic is unchanged.
+
+### 2026-10-18 — Environmental chart footer cleanup
+
+- Removed the chart-reading explanation below the environmental trend chart at
+  the user's request, and removed its dangling accessibility description ID.
+- Web release: `eggcelerate-web:chart-note-cleanup-20261018`. TypeScript check
+  passed. No functional or visual browser tests were run; chart data is unchanged.
+
+### 2026-10-18 — Automatic incubation run history
+
+- Added Trends → Incubation History with chamber, mode, and status filters,
+  ongoing/preparation-only runs, pagination, and View trends for a specific run.
+- Preparation creates a durable run automatically; starting incubation extends
+  that same run. Cancellation, mode replacement, stopping and completion retain
+  the record with saved mode/target values and timestamps.
+- Run-scoped temperature/humidity charts and raw CSV use server-validated farm,
+  device and observation bounds, including preparation and late offline uploads.
+- Additive schema 0026; one-time import labels legacy time/target precision as
+  approximate. Cancelled preparation before this feature cannot be recovered.
+- VPS schema 0026 and API/web release are active and healthy. Current preparation
+  and an earlier stopped cycle were captured; sensor uploads remained active.
+  Database/config/source backup and a compatible prior-application rollback image
+  are saved. ESP32 and MQTT worker remain unchanged. Production builds and static
+  checks passed; functional/browser tests were not run.
+- See [incubation run history](docs/guide/incubation-run-history.md).

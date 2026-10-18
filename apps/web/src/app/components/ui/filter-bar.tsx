@@ -20,6 +20,7 @@ interface FilterBarProps {
   ariaLabel?: string;
   className?: string;
   variant?: "chips" | "segmented";
+  tone?: "neutral" | "brand";
   equalWidthOnMobile?: boolean;
   fitToScreenOnMobile?: boolean;
   textTransform?: "none" | "uppercase";
@@ -87,6 +88,7 @@ export function FilterBar({
   ariaLabel = "Filter",
   className,
   variant = "chips",
+  tone = "neutral",
   equalWidthOnMobile = false,
   fitToScreenOnMobile = false,
   textTransform = "uppercase",
@@ -156,6 +158,11 @@ export function FilterBar({
           onClick={() => onChange(option.key)}
           className={cn(equalTrackClass, fitsMobile && "px-2 md:px-4")}
           style={{
+            ...(tone === "brand" ? {
+              backgroundColor: active ? "var(--brand-primary-soft)" : "transparent",
+              color: active ? "var(--brand-primary-hover)" : "var(--text-secondary)",
+              boxShadow: active ? "inset 0 0 0 1px var(--brand-primary-soft)" : "none",
+            } : {}),
             fontFamily: "var(--font-body)",
             fontSize: "var(--type-filter-label)",
             fontWeight: "var(--weight-bold)",
@@ -244,6 +251,7 @@ export function FilterBar({
           <SegmentedControl
             role="presentation"
             flush
+            style={tone === "brand" ? { backgroundColor: "var(--surface-subtle)" } : undefined}
             className={cn(
               "w-max shrink-0",
               fitToScreenOnMobile && "w-full min-w-0 md:w-max md:min-w-max",

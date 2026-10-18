@@ -62,6 +62,7 @@ export function ChartTooltip({
   const info: TooltipMeta | undefined =
     typeof reading.dataKey === "string" ? meta?.[reading.dataKey] : undefined;
   const timestamp = reading.payload?.ts;
+  const backfilled = Number(reading.payload?.[`${reading.dataKey}_backfilled`] ?? 0);
   const extrema = reading.payload?.[`${reading.dataKey}_range`];
   const extremaText = Array.isArray(extrema)
     ? `${formatMeasurement(Number(extrema[0]), unit)} to ${formatMeasurement(Number(extrema[1]), unit)}`
@@ -88,6 +89,7 @@ export function ChartTooltip({
         >
           {formatMeasurement(reading.value, unit)}
         </span>
+        {backfilled > 0 && <span className="w-full text-xs">Includes {backfilled} historical uploads</span>}
         {extremaText && (
           <span className="w-full text-xs">Range {extremaText}</span>
         )}
@@ -100,7 +102,7 @@ export function ChartTooltip({
               color: "var(--text-on-dark-muted)",
             }}
           >
-            {formatXTick(timestamp, range)}
+            {range === "custom" || range === "run" ? formatTooltipTime(timestamp) : formatXTick(timestamp, range)}
           </span>
         )}
       </div>
@@ -139,6 +141,7 @@ export function ChartTooltip({
           {formatTooltipTime(timestamp)}
         </p>
       )}
+      {backfilled > 0 && <p className="mt-2 text-xs">Includes {backfilled} historical uploads, shown at their original reading time.</p>}
       <div
         className="mt-3 space-y-1.5 border-t pt-2.5"
         style={{ borderColor: BORDER }}

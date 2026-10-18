@@ -5,11 +5,18 @@ import re
 from collections import defaultdict
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..errors import AppError
-from .schema import device_registry, devices, farms
+from .schema import (
+    auth_sessions,
+    device_registry,
+    devices,
+    farm_memberships,
+    farms,
+)
 
 DEVICE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
 
@@ -178,17 +185,65 @@ async def replace_pairing_code(
     )
 
 
-async def resolve_pairing_code(session: AsyncSession, farm_id: UUID, code: str) -> str:
-    public_id = await session.scalar(
-        select(device_registry.c.public_id).where(
-            device_registry.c.farm_id == farm_id,
-            device_registry.c.disabled_at.is_(None),
-            device_registry.c.pairing_code_hash == pairing_code_hash(code),
+async def resolve_pairing_code(
+    session: AsyncSession,
+    farm_id: UUID,
+    code: str,
+    *,
+    user_id: UUID | None = None,
+    session_hash: str | None = None,
+) -> tuple[str, bool]:
+    row = (
+        (
+            await session.execute(
+                select(device_registry.c.public_id, device_registry.c.farm_id)
+                .where(
+                    device_registry.c.disabled_at.is_(None),
+                    device_registry.c.pairing_code_hash == pairing_code_hash(code),
+                )
+                .with_for_update()
+            )
         )
+        .mappings()
+        .first()
     )
-    if public_id is None:
+    if row is None:
         raise AppError(
             "not_found",
-            "Pairing code is not enrolled for your farm. Check the code or contact the installer.",
+            "Pairing code was not found. Check the code or contact the installer.",
         )
-    return public_id
+
+    target_farm_id = row["farm_id"]
+    if target_farm_id == farm_id:
+        return row["public_id"], False
+
+    if user_id is None or session_hash is None:
+        raise AppError(
+            "not_found",
+            "Pairing code was not found. Check the code or contact the installer.",
+        )
+
+    # A valid pairing code immediately grants this account owner access to the
+    # farm that owns the device. The newest membership becomes its default farm
+    # when the account next signs in.
+    await session.execute(
+        pg_insert(farm_memberships)
+        .values(farm_id=target_farm_id, user_id=user_id, role="owner")
+        .on_conflict_do_update(
+            index_elements=[farm_memberships.c.farm_id, farm_memberships.c.user_id],
+            set_={"created_at": func.now()},
+        )
+    )
+    switched = await session.execute(
+        update(auth_sessions)
+        .where(
+            auth_sessions.c.session_hash == session_hash,
+            auth_sessions.c.user_id == user_id,
+            auth_sessions.c.farm_id == farm_id,
+            auth_sessions.c.revoked_at.is_(None),
+        )
+        .values(farm_id=target_farm_id)
+    )
+    if switched.rowcount != 1:
+        raise AppError("unauthorized", "Sign in again before pairing this incubator.")
+    return row["public_id"], True

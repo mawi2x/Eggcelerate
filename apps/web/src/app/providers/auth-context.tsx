@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Redirect } from "wouter";
@@ -47,6 +48,7 @@ interface AuthContextValue {
   register: (input: RegisterAccountInput) => Promise<void>;
   completeOnboarding: () => void;
   signOut: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -116,6 +118,9 @@ export function MockAuthProvider({
         throw new Error("Accounts are provided by your administrator.");
       },
       completeOnboarding: () => setUser(mockUser),
+      changePassword: async () => {
+        throw new Error("Password changes are available for connected API accounts.");
+      },
       signOut: async () => {
         clearDemoSession();
         queryClient?.clear();
@@ -140,12 +145,16 @@ export function ApiAuthProvider({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [error, setError] = useState<string | null>(null);
+  const sessionRevision = useRef(0);
+  const farmRefresh = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const sessionCheck = new AbortController();
     let active = true;
     let expired = false;
     const expireSession = () => {
+      sessionRevision.current += 1;
+      farmRefresh.current?.abort();
       expired = true;
       sessionCheck.abort();
       setCsrfToken(null);
@@ -181,6 +190,40 @@ export function ApiAuthProvider({
     };
   }, [client, queryClient]);
 
+  useEffect(() => {
+    let active = true;
+    const refreshFarmContext = () => {
+      const revision = sessionRevision.current;
+      farmRefresh.current?.abort();
+      const controller = new AbortController();
+      farmRefresh.current = controller;
+      void client
+        .session(controller.signal)
+        .then(async ({ identity }) => {
+          if (!active || controller.signal.aborted || revision !== sessionRevision.current) return;
+          await queryClient.cancelQueries();
+          if (!active || controller.signal.aborted || revision !== sessionRevision.current) return;
+          queryClient.clear();
+          setUser(identity ? userFromApi(identity) : null);
+          setStatus(identity ? "authenticated" : "unauthenticated");
+          setError(null);
+        })
+        .catch(() => undefined);
+    };
+    window.addEventListener(
+      "eggcelerate:farm-context-changed",
+      refreshFarmContext,
+    );
+    return () => {
+      active = false;
+      farmRefresh.current?.abort();
+      window.removeEventListener(
+        "eggcelerate:farm-context-changed",
+        refreshFarmContext,
+      );
+    };
+  }, [client, queryClient]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -191,6 +234,8 @@ export function ApiAuthProvider({
       isAuthenticated: status === "authenticated" && user !== null,
       error,
       signIn: async (email, password, rememberMe = false) => {
+        sessionRevision.current += 1;
+        farmRefresh.current?.abort();
         const identity = await client.signIn(email, password, rememberMe);
         queryClient.clear();
         setUser(userFromApi(identity));
@@ -203,6 +248,19 @@ export function ApiAuthProvider({
       completeOnboarding: () => undefined,
       signOut: async () => {
         await client.signOut();
+        sessionRevision.current += 1;
+        farmRefresh.current?.abort();
+        queryClient.clear();
+        setUser(null);
+        setStatus("unauthenticated");
+        setError(null);
+      },
+      changePassword: async (currentPassword, newPassword) => {
+        await client.changePassword(currentPassword, newPassword);
+        sessionRevision.current += 1;
+        farmRefresh.current?.abort();
+        setCsrfToken(null);
+        await queryClient.cancelQueries();
         queryClient.clear();
         setUser(null);
         setStatus("unauthenticated");

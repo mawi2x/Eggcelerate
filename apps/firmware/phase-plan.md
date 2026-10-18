@@ -189,6 +189,13 @@ failed replacement Wi-Fi preserves the old configuration; reboot preserves pairi
 
 ## Phase 7 — displays and persistent offline readings
 
+October 18 update: the environmental flash queue, committed historical replay,
+recording-status dashboard and OLED queue indicator are installed. See the
+[implementation guide](../../docs/guide/esp32-offline-storage-implementation.md)
+for current scope, activation evidence and limits. RTC qualification, full
+actuator event persistence and physical acceptance remain deferred. The text
+below records the earlier Phase 7 baseline.
+
 Deferred: current temperature/humidity work targets the server dashboard only.
 The main loop contains a future display hook; follow
 [display integration](display-integration.md) when hardware details are available.

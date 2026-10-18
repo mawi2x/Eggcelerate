@@ -1,6 +1,6 @@
 import { Egg, WifiSlash } from "@phosphor-icons/react";
 import { RotateCw, Zap } from "lucide-react";
-import { useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { currentModes } from "../../domain/mode-catalog";
 import type {
@@ -14,6 +14,8 @@ import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { IncubatorDeviceIcon } from "../icons";
 import { getConnectionPresentation } from "../statusPresentation";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -611,6 +613,7 @@ export function DeviceSettingsTab({
               </p>
             </div>
             <div className="pt-5 space-y-4">
+              <ChamberNameForm unit={unit} isUpdating={isUpdating} onUpdate={onUpdate} />
               <KeyValue label="Device ID" value={unit.deviceId} />
               <KeyValue
                 label="Connection Status"
@@ -708,5 +711,69 @@ export function DeviceSettingsTab({
         onConfirm={onStopCycle}
       />
     </>
+  );
+}
+
+function ChamberNameForm({ unit, isUpdating, onUpdate }: {
+  unit: Incubator;
+  isUpdating: boolean;
+  onUpdate: (intent: IncubatorUpdateIntent) => Promise<boolean>;
+}) {
+  const [name, setName] = useState(unit.name);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const submitting = useRef(false);
+  const input = useRef<HTMLInputElement>(null);
+  const errorSummary = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    setName(unit.name);
+    setError(null);
+  }, [unit.id, unit.name]);
+  useEffect(() => { if (error) errorSummary.current?.focus(); }, [error]);
+  const trimmed = name.trim();
+  const changed = trimmed !== unit.name;
+
+  const save = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting.current || isUpdating) return;
+    if (!trimmed || trimmed.length > 30) {
+      setError("Enter a chamber name between 1 and 30 characters.");
+      input.current?.focus();
+      return;
+    }
+    if (!changed) return;
+    submitting.current = true;
+    setSaving(true);
+    setError(null);
+    try {
+      if (await onUpdate({ type: "profile", input: { name: trimmed } })) {
+        setName(trimmed);
+        toast.success("Chamber renamed");
+      } else {
+        setError("The chamber name could not be saved. Try again.");
+      }
+    } catch {
+      setError("The chamber name could not be saved. Try again.");
+    } finally {
+      submitting.current = false;
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={(event) => void save(event)} className="space-y-2 rounded-xl border p-4" style={{ borderColor: "var(--border-default)" }} aria-busy={saving}>
+      <Label htmlFor="chamber-name">Chamber name</Label>
+      <p id="chamber-name-help" className="text-pretty text-sm text-[var(--text-secondary)]">
+        Choose a name to identify this chamber. Everyone with farm access will see it.
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Input ref={input} id="chamber-name" name="chamber-name" value={name} onChange={(event) => { setName(event.target.value); setError(null); }} maxLength={30} required disabled={saving || isUpdating} aria-invalid={!!error} aria-describedby={`chamber-name-help chamber-name-count${error ? " chamber-name-error" : ""}`} className="min-h-11 min-w-0 flex-1 rounded-xl" />
+        <Button type="submit" disabled={!changed || !trimmed || saving || isUpdating} className="min-h-11 shrink-0 rounded-xl">
+          {saving ? "Saving…" : "Save name"}
+        </Button>
+      </div>
+      <p id="chamber-name-count" className="text-right text-xs text-[var(--text-muted)]">{name.length}/30 characters</p>
+      {error && <p ref={errorSummary} id="chamber-name-error" role="alert" tabIndex={-1} className="text-sm text-[var(--status-danger-fg)]">{error}</p>}
+    </form>
   );
 }

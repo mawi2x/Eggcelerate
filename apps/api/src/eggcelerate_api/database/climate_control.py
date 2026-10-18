@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import insert
 from ..errors import AppError
 from .schema import (
     climate_tests,
+    climate_report_history,
     devices,
     incubator_runtime,
     incubators,
@@ -31,9 +32,27 @@ class ClimateReport(BaseModel):
     mist: StrictBool
     upper: StrictBool
     exhaust: StrictBool
-    fault: int = Field(ge=0, le=6)
+    fault: int = Field(ge=0, le=7)
     command_id: str = Field(max_length=36, pattern=r"^([0-9a-f-]{36})?$")
     accepted: StrictBool
+    # Optional for older firmware. Never infer measured rotation from these commands.
+    firmware: str | None = Field(default=None, max_length=64)
+    control_seq: int | None = Field(default=None, ge=0, le=4294967295)
+    uptime_ms: int | None = Field(default=None, ge=0, le=4294967295)
+    sample_age_ms: int | None = Field(default=None, ge=0, le=4294967295)
+    temp_min: float | None = Field(default=None, ge=0, le=60)
+    temp_max: float | None = Field(default=None, ge=0, le=60)
+    humidity_min: float | None = Field(default=None, ge=1, le=100)
+    humidity_max: float | None = Field(default=None, ge=1, le=100)
+    upper_duty: int | None = Field(default=None, ge=0, le=100)
+    exhaust_requested_duty: int | None = Field(default=None, ge=0, le=100)
+    exhaust_duty: int | None = Field(default=None, ge=0, le=100)
+    exhaust_reason: str | None = Field(default=None, max_length=32)
+    pwm_ready: StrictBool | None = None
+    pwm_hz: int | None = Field(default=None, ge=1, le=20000)
+    pwm_bits: int | None = Field(default=None, ge=1, le=16)
+    fan_min_duty: int | None = Field(default=None, ge=1, le=100)
+    fan_boost_ms: int | None = Field(default=None, ge=0, le=10000)
     tray_capability: StrictBool = False
     tray_running: StrictBool = False
     tray_position: int = Field(default=0, ge=0, le=3)
@@ -321,16 +340,45 @@ async def reconcile(session, farm_id, now):
 
 
 async def record_report(
-    session, farm_id, unit_id, device_id, boot_id, booted_at, seq, report, now
+    session,
+    farm_id,
+    unit_id,
+    device_id,
+    boot_id,
+    booted_at,
+    seq,
+    report,
+    now,
+    *,
+    observed_at=None,
+    temperature_c=None,
+    humidity_pct=None,
 ):
     # Own ordering also covers status-only reports during sensor failure.
     row = await row_for(session, farm_id, unit_id)
     if row and row["device_id"] == device_id:
         if boot_id == row["boot_id"]:
             if booted_at != row["booted_at"] or seq <= row["seq"]:
-                return
+                return False
         elif booted_at <= row["booted_at"]:
-            return
+            return False
+    await session.execute(
+        insert(climate_report_history)
+        .values(
+            farm_id=farm_id,
+            incubator_id=unit_id,
+            device_id=device_id,
+            boot_id=boot_id,
+            booted_at=booted_at,
+            seq=seq,
+            observed_at=observed_at or now,
+            received_at=now,
+            temperature_c=temperature_c,
+            humidity_pct=humidity_pct,
+            report=report.model_dump(exclude_none=True),
+        )
+        .on_conflict_do_nothing()
+    )
     req = dict(row["request"]) if row and row["request"] else None
     if req and req["status"] == "pending":
         if req["boot_id"] != boot_id:
@@ -403,6 +451,32 @@ async def record_report(
             },
         )
     )
+    return True
+
+
+async def history(session, farm_id, unit_id, limit=200, before=None):
+    exists = await session.scalar(
+        select(incubators.c.id).where(
+            incubators.c.farm_id == farm_id, incubators.c.public_id == unit_id
+        )
+    )
+    if not exists:
+        raise AppError("not_found", "Incubator was not found.")
+    query = select(climate_report_history).where(
+        climate_report_history.c.farm_id == farm_id,
+        climate_report_history.c.incubator_id == unit_id,
+    )
+    if before is not None:
+        query = query.where(climate_report_history.c.received_at < before)
+    rows = (
+        await session.execute(
+            query.order_by(
+                climate_report_history.c.received_at.desc(),
+                climate_report_history.c.seq.desc(),
+            ).limit(limit)
+        )
+    ).mappings()
+    return [dict(row) for row in rows]
 
 
 async def command_packets(session, farm_id, now):

@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev:web": "pnpm --filter eggcelerate-ui dev",
+    "dev:vps": "pnpm --filter eggcelerate-ui dev:vps",
     "build:web": "pnpm --filter eggcelerate-ui build",
     "typecheck:web": "pnpm --filter eggcelerate-ui typecheck",
     "test:web": "pnpm --filter eggcelerate-ui test",

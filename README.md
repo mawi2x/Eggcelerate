@@ -4,6 +4,9 @@ EGGCELERATE is organized as a pnpm monorepo for independently deployable applica
 
 See the [project roadmap and timeline](ROADMAP.md) for completed work, current
 verification results, remaining milestones, and the next implementation batch.
+For symptom-based checks, start with the
+[troubleshooting guide](docs/guide/troubleshooting.md); for local Docker setup,
+see the [local startup guide](docs/guide/local-startup-guide.md).
 
 ## Repository structure
 
@@ -45,6 +48,12 @@ pnpm --filter eggcelerate-ui dev
 starts with three connected chambers, one each for Chicken, Duck and Quail.
 The in-memory demo refreshes simulated telemetry on polling and resets on page
 reload. API mode continues to use the configured server and real device receipts.
+
+For local frontend edits using the existing VPS API and accounts, run
+`pnpm dev:vps` and open **https://127.0.0.1:5174**. See the
+[VPS-connected local development guide](docs/guide/vps-connected-local-development.md)
+for HTTPS, login/session separation and ESP32 destination settings. This mode
+uses live VPS data; the existing local Docker database stays separate.
 
 ## Web container
 

@@ -14,6 +14,7 @@ FAULTS = {
     4: "Continuous heating safety timeout",
     5: "Controller settings storage failure",
     6: "Controller restarted after a crash",
+    7: "Fan PWM output failure",
 }
 
 

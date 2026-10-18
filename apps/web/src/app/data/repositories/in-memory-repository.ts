@@ -719,21 +719,24 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       const hours =
         query.window === "24h" ? 24 : query.window === "7d" ? 24 * 7 : null;
       const cutoff =
-        hours === null ? 0 : this.historyAnchorMs - hours * 3_600_000;
+        query.bounds ? Date.parse(query.bounds.start) : hours === null ? 0 : this.historyAnchorMs - hours * 3_600_000;
+      const end = query.bounds ? Date.parse(query.bounds.end) : this.historyAnchorMs;
+      if (!Number.isFinite(cutoff) || !Number.isFinite(end) || cutoff >= end)
+        return error("validation_error", "Choose valid date bounds with From before To.");
       const raw = createReadingFixtures(
         unit,
         mode,
         this.historyAnchorMs,
-      ).filter((reading) => reading.ts >= cutoff);
+      ).filter((reading) => reading.ts >= cutoff && (!query.bounds || reading.ts < end));
       if (query.resolution !== "chart") return ok(raw);
-      if (query.window === "full" && unit.dayOfIncubation < 1) return ok([]);
+      if (!query.bounds && query.window === "full" && unit.dayOfIncubation < 1) return ok([]);
       const start =
-        query.window === "full"
+        query.bounds ? cutoff : query.window === "full"
           ? new Date(
               this.historyAnchorMs - unit.dayOfIncubation * 86400000,
             ).setUTCHours(0, 0, 0, 0)
           : cutoff;
-      return ok(aggregateReadings(raw, start, this.historyAnchorMs));
+      return ok(aggregateReadings(raw, start, end));
     });
   }
 
@@ -745,6 +748,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       query.incubatorIds.length > 100 ||
       new Set(query.incubatorIds).size !== query.incubatorIds.length ||
       !Number.isFinite(Date.parse(query.end))
+      || (query.start !== undefined && (!Number.isFinite(Date.parse(query.start)) || Date.parse(query.start) >= Date.parse(query.end)))
     )
       return error(
         "validation_error",
@@ -756,13 +760,14 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       const result = await this.listReadings({
         incubatorId: id,
         window: query.window,
+        ...(query.start ? { bounds: { start: query.start, end: query.end } } : {}),
       });
       if (!result.ok) return result;
       const unit = this.incubators.find((p) => p.id === id);
-      if (!unit || (query.window === "full" && unit.dayOfIncubation < 1))
+      if (!unit || (!query.start && query.window === "full" && unit.dayOfIncubation < 1))
         continue;
       const start =
-        query.window === "24h"
+        query.start ? Date.parse(query.start) : query.window === "24h"
           ? end - 86400000
           : query.window === "7d"
             ? end - 7 * 86400000
@@ -773,7 +778,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
         if (
           reading.ts >= start &&
           reading.ts < end &&
-          this.historyAnchorMs <= end
+          (query.start !== undefined || this.historyAnchorMs <= end)
         )
           rows.push({
             incubatorId: id,

@@ -31,6 +31,7 @@ import {
 } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { ChartTooltip } from "./ChartTooltip";
+import { CustomDateRangeControls } from "./CustomDateRangeControls";
 import {
   BORDER,
   CARD,
@@ -99,6 +100,16 @@ export function EnvironmentalTrends({
 
   return (
     <>
+      {model.selectedRun && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--brand-primary-soft)] bg-[var(--brand-primary-soft)] p-4">
+          <div className="min-w-0">
+            <p className="text-pretty text-(length:--type-body-sm) font-semibold text-[var(--brand-primary-hover)]">Showing this run only: {model.selectedRun.chamberName}, {model.selectedRun.mode.name}</p>
+            <p className="text-pretty text-(length:--type-caption) text-[var(--text-secondary)]">{new Date(model.selectedRun.startedAt).toLocaleString()} to {model.selectedRun.endedAt ? new Date(model.selectedRun.endedAt).toLocaleString() : "now"}. Targets are saved with this run.</p>
+            {model.selectedRun.approximate && <p className="text-(length:--type-caption) text-[var(--text-secondary)]">Earlier record. Times or saved targets may be approximate.</p>}
+          </div>
+          <Button size="sm" variant="outline" onClick={model.clearRun}>Show all recent readings</Button>
+        </div>
+      )}
       {/* Unified 2-row toolbar: chamber + metric controls, then time horizon. */}
       <div
         className="rounded-2xl border p-4"
@@ -251,19 +262,24 @@ export function EnvironmentalTrends({
         </div>
 
         <div
-          className="mt-4 flex flex-wrap items-center gap-2 pt-4"
+          className="mt-4 flex flex-wrap items-center gap-4 pt-4"
           style={{
             borderTop: `var(--border-width-hairline) solid ${BORDER}`,
           }}
         >
-          <FilterBar
-            ariaLabel="Time horizon"
-            variant="segmented"
-            fitToScreenOnMobile
-            value={range}
-            onChange={(key) => setRange(key as RangeKey)}
-            options={ranges.map((r) => ({ key: r.key, label: r.label }))}
-          />
+          <div className="min-w-0 w-full space-y-1 md:w-auto">
+            <p style={CONTROL_FONT} className="text-[var(--text-secondary)]">Quick range</p>
+            <FilterBar
+              ariaLabel="Time horizon"
+              variant="segmented"
+              tone="brand"
+              fitToScreenOnMobile
+              value={range}
+              onChange={(key) => setRange(key as RangeKey)}
+              options={ranges.map((r) => ({ key: r.key, label: r.label }))}
+            />
+          </div>
+          <CustomDateRangeControls active={range === "custom"} bounds={model.customBounds} onApply={model.applyCustomRange} />
         </div>
       </div>
 
@@ -422,7 +438,7 @@ export function EnvironmentalTrends({
             style={{ borderColor: BORDER }}
             role="img"
             aria-labelledby="environmental-chart-title"
-            aria-describedby="environmental-chart-desc environmental-chart-note"
+            aria-describedby="environmental-chart-desc"
           >
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
@@ -680,16 +696,6 @@ export function EnvironmentalTrends({
           </div>
         </CardContent>
       </Card>
-      <p
-        id="environmental-chart-note"
-        className="text-(length:--type-caption) text-[var(--text-muted)]"
-        data-screen-note="chart-reading-guide"
-      >
-        Solid lines and points are recorded bucket averages. Dashed links and
-        soft shading show the trend across gaps, not measured values. Range
-        shading preserves recorded minimum and maximum values. Use raw CSV for
-        individual samples.
-      </p>
     </>
   );
 }

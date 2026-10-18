@@ -2,6 +2,7 @@ import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+import { vpsDevelopment } from "./vite.vps-proxy.ts";
 
 function moduleSizes(): Plugin {
   return {
@@ -41,7 +42,9 @@ function figmaAssetResolver() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const remote = mode === "vps" ? vpsDevelopment() : undefined;
+  return {
   plugins: [
     figmaAssetResolver(),
     // The React and Tailwind plugins are both required for Make, even if
@@ -49,6 +52,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     moduleSizes(),
+    ...(remote ? [remote.plugin] : []),
   ],
   resolve: {
     alias: {
@@ -61,6 +65,7 @@ export default defineConfig({
   assetsInclude: ["**/*.svg", "**/*.csv"],
   server: {
     allowedHosts: [".trycloudflare.com"],
+    ...remote?.server,
   },
   build: {
     // Preserve Vite 6's JavaScript target during the bundler migration.
@@ -81,4 +86,5 @@ export default defineConfig({
       },
     },
   },
+  };
 });

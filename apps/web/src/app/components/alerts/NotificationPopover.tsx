@@ -1,5 +1,6 @@
 import { ArrowRight, Bell, X } from "lucide-react";
 import { useState } from "react";
+import logoApp from "../../../imports/logo-app.webp";
 import type { AlertEntry } from "../../domain/types";
 import type { FeatureQueryState } from "../../features/farm/query-state";
 import { FeatureDataStatus } from "../FeatureDataStatus";
@@ -150,14 +151,21 @@ export function NotificationPopover({
               You're all caught up
             </p>
             <p
-              className="mt-1"
+              className="mt-1 flex items-center justify-center gap-1"
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "var(--type-caption)",
                 color: MUTED,
               }}
             >
-              No notifications right now. 🐣
+              <span>No notifications right now.</span>
+              <img
+                src={logoApp}
+                alt=""
+                width={20}
+                height={20}
+                className="h-5 w-5 shrink-0 object-contain"
+              />
             </p>
           </div>
         ) : (

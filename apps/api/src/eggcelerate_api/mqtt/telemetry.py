@@ -22,9 +22,11 @@ from ..database.readings import TelemetrySample, ingest_sample
 from ..database.schema import device_telemetry_state, devices, farms, incubators
 from ..errors import AppError
 from .clock import DEVICE_CLOCK_TOLERANCE
+from .offline import StorageStatus, record_status
 
 
 class DeviceTelemetry(TelemetrySample):
+    storage: StorageStatus | None = None
     climate_test: ClimateReport | None = None
     schema_v: Literal[1]
     device_id: Annotated[str, Field(min_length=1, pattern=r"^[A-Za-z0-9_-]+$")]
@@ -45,6 +47,7 @@ class DeviceClimateStatus(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     climate_only: Literal[True]
+    storage: StorageStatus | None = None
     schema_v: Literal[1]
     device_id: Annotated[str, Field(min_length=1, pattern=r"^[A-Za-z0-9_-]+$")]
     incubator_id: str | None = None
@@ -122,8 +125,9 @@ async def ingest_telemetry(
             "not_found", "Telemetry device/chamber is not assigned in this farm."
         )
     device, message.incubator_id = assignment
+    report_advanced = False
     if message.climate_test is not None:
-        await record_report(
+        report_advanced = await record_report(
             session,
             farm_id,
             message.incubator_id,
@@ -133,8 +137,13 @@ async def ingest_telemetry(
             message.seq,
             message.climate_test,
             received_at,
+            observed_at=message.observed_at,
+            temperature_c=getattr(message, "temperature_c", None),
+            humidity_pct=getattr(message, "humidity_pct", None),
         )
     if isinstance(message, DeviceClimateStatus):
+        if report_advanced and message.storage is not None:
+            await record_status(session, farm_id, device, message.storage)
         return False
     # A chamber has exactly one latest projection. On reassignment, discard its
     # old device projection; if a device itself moved chambers, discard its old
@@ -243,5 +252,7 @@ async def ingest_telemetry(
             .values(**projection)
         )
     if newer:
+        if message.storage is not None:
+            await record_status(session, farm_id, device, message.storage)
         await evaluate_farm(session, farm_id, now=received_at, farm_locked=True)
     return inserted

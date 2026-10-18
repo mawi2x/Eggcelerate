@@ -37,6 +37,7 @@ export function aggregateReadings(
       ),
       bucketSeconds: seconds,
       sampleCount: group.length,
+      backfilledCount: group.reduce((sum, p) => sum + (p.backfilledCount ?? 0), 0),
     }));
 }
 
@@ -68,6 +69,7 @@ export function mergeChartReadings(
       const p = points[index];
       const next = points[index + 1];
       const row = rowAt(p.ts, p.time);
+      row[`${id}_backfilled`] = p.backfilledCount ?? 0;
       row[id] = metric === "temp" ? p.temp : p.humidity;
       row[`${id}_range`] =
         metric === "temp"

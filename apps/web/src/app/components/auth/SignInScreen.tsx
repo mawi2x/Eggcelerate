@@ -12,7 +12,7 @@ export function SignInScreen({
   authError,
   heading = "WELCOME BACK",
   initialEmail = "",
-  emailPlaceholder = "you@brightwoodfarm.com",
+  emailPlaceholder = "name@domain.com",
   accountHelp = "",
 }: {
   onSignIn: (

@@ -38,7 +38,7 @@ export const COMPARE_FONT: React.CSSProperties = {
   fontSize: "var(--type-filter-value)",
 };
 
-export type RangeKey = ReadingWindow;
+export type RangeKey = ReadingWindow | "custom" | "run";
 export const ranges: { key: RangeKey; label: string; hours: number | null }[] =
   [
     { key: "24h", label: "LAST 24H", hours: 24 },
@@ -46,7 +46,7 @@ export const ranges: { key: RangeKey; label: string; hours: number | null }[] =
     { key: "full", label: "FULL CYCLE", hours: null },
   ];
 
-export type TrendView = "environmental" | "hatch";
+export type TrendView = "environmental" | "hatch" | "runs";
 export type Metric = "temp" | "humidity";
 
 // Chamber-identity series resolve from --chart-series-1..12 (theme.css chart

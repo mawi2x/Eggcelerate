@@ -30,6 +30,17 @@ def checked_end(end: datetime | None) -> datetime:
     return end or now
 
 
+def checked_bounds(start: datetime | None, end: datetime | None) -> datetime:
+    if start is not None and end is None:
+        raise AppError(
+            "validation_error", "Provide both start and end for a custom range."
+        )
+    upper = checked_end(end)
+    if start is not None and start >= upper:
+        raise AppError("validation_error", "start must be before end.")
+    return upper
+
+
 def sign_scope(payload: dict[str, Any], key: str) -> str:
     data = base64.urlsafe_b64encode(
         json.dumps(payload, default=str, separators=(",", ":")).encode()
@@ -55,6 +66,10 @@ def read_scope(token: str, farm: str, key: str) -> dict[str, Any]:
         ):
             raise ValueError("scope")
         payload["end"] = datetime.fromisoformat(payload["end"])
+        if "receipt_cutoff" in payload:
+            payload["receipt_cutoff"] = datetime.fromisoformat(
+                payload["receipt_cutoff"]
+            )
         for s in payload.get("scope", []):
             s["device_id"] = UUID(s["device_id"])
             s["start"] = datetime.fromisoformat(s["start"])
@@ -67,28 +82,39 @@ def read_scope(token: str, farm: str, key: str) -> dict[str, Any]:
 
 
 def demo_rows(
-    request: Request, ids: list[str], window: str, end: datetime
+    request: Request,
+    ids: list[str],
+    window: str,
+    end: datetime,
+    start: datetime | None = None,
 ) -> list[dict[str, Any]]:
     if not ids or len(ids) > 100 or len(set(ids)) != len(ids):
         raise AppError("validation_error", "Select 1 to 100 distinct chambers.")
+    if window not in {"24h", "7d", "full"}:
+        raise AppError("validation_error", "window must be 24h, 7d or full.")
     store = request.app.state.store
     rows: list[dict[str, Any]] = []
     for chamber_id in ids:
         unit = services.require_incubator(store, chamber_id)
-        if window == "full" and unit.day_of_incubation < 1:
+        if start is None and window == "full" and unit.day_of_incubation < 1:
             continue
         rows.extend(
             {"incubator_id": chamber_id, "chamber": unit.name, **p.model_dump()}
-            for p in services.readings(store, chamber_id, window, end)
-            if p.observed_at < end
+            for p in services.readings(
+                store, chamber_id, "full" if start else window, end
+            )
+            if p.observed_at < end and (start is None or p.observed_at >= start)
         )
     return sorted(rows, key=lambda r: (r["observed_at"], r["incubator_id"]))
 
 
 def aggregate_demo(
-    rows: list[dict[str, Any]], window: str, end: datetime
+    rows: list[dict[str, Any]],
+    window: str,
+    end: datetime,
+    start: datetime | None = None,
 ) -> list[dict[str, Any]]:
-    start = (
+    start = start or (
         end - timedelta(days=1 if window == "24h" else 7)
         if window != "full"
         else min((r["observed_at"] for r in rows), default=end)
@@ -123,9 +149,12 @@ async def chart(
     incubator_id: str,
     request: Request,
     window: str = "24h",
+    start: AwareDatetime | None = None,
+    end: AwareDatetime | None = None,
+    run_id: UUID | None = None,
     context: RequestContext = Depends(get_request_context),
 ) -> dict:
-    end = services.utcnow()
+    end = checked_bounds(start, end)
     database = request.app.state.database
     try:
         if database is not None:
@@ -133,11 +162,22 @@ async def chart(
             async with database.sessions() as session:
                 return ok_envelope(
                     await storage.chart(
-                        session, database.farm_id, incubator_id, window, end
+                        session,
+                        database.farm_id,
+                        incubator_id,
+                        window,
+                        end,
+                        start,
+                        run_id,
                     )
                 )
         return ok_envelope(
-            aggregate_demo(demo_rows(request, [incubator_id], window, end), window, end)
+            aggregate_demo(
+                demo_rows(request, [incubator_id], window, end, start),
+                window,
+                end,
+                start,
+            )
         )
     except (SQLAlchemyError, OSError, TimeoutError) as exc:
         raise AppError("offline", "Reading storage is unavailable.") from exc
@@ -149,30 +189,54 @@ async def raw_preview(
     ids: Annotated[list[str], Query()],
     window: str = "24h",
     end: AwareDatetime | None = None,
+    start: AwareDatetime | None = None,
+    run_id: UUID | None = None,
     context: RequestContext = Depends(get_request_context),
 ) -> dict:
-    end = checked_end(end)
+    end = checked_bounds(start, end)
+    # Historical observation bounds must still include late offline uploads
+    # already present when the user opens this immutable preview/export scope.
+    receipt_cutoff = (
+        services.utcnow() if start is not None or run_id is not None else end
+    )
     database = request.app.state.database
     payload: dict[str, Any] = {
         "farm": str(context.farm_id),
         "end": end,
+        "receipt_cutoff": receipt_cutoff,
         "expires": services.utcnow() + timedelta(hours=1),
     }
     try:
         if database is not None:
             database = database.for_farm(context.farm_id)
             async with database.sessions() as session, session.begin():
-                scope = await storage.scopes(
-                    session, database.farm_id, ids, window, end
-                )
+                if run_id:
+                    from ...database.run_history import selected_scope
+
+                    selected = await selected_scope(
+                        session, database.farm_id, run_id, end=end, start=start
+                    )
+                    if ids != [selected["public_id"]]:
+                        raise AppError(
+                            "validation_error", "Select only the chamber for this run."
+                        )
+                    end = selected["end"]
+                    payload["end"] = end
+                    scope = [selected] if selected["start"] < end else []
+                else:
+                    scope = await storage.scopes(
+                        session, database.farm_id, ids, window, end, start
+                    )
                 # Keep only immutable export scope fields in the signed snapshot.
                 payload["scope"] = [
                     {k: s[k] for k in ("device_id", "public_id", "name", "start")}
                     for s in scope
                 ]
-                data = await storage.preview(session, database.farm_id, scope, end)
+                data = await storage.preview(
+                    session, database.farm_id, scope, end, receipt_cutoff
+                )
         else:
-            rows = demo_rows(request, ids, window, end)
+            rows = demo_rows(request, ids, window, end, start)
             payload["demo_rows"] = rows
             data = {
                 "rows": rows[: storage.PREVIEW_ROWS],
@@ -205,7 +269,9 @@ async def export_raw(
     database = request.app.state.database
     if database is not None:
         database = database.for_farm(context.farm_id)
-        content = storage.stream_csv(database, payload["scope"], payload["end"])
+        content = storage.stream_csv(
+            database, payload["scope"], payload["end"], payload.get("receipt_cutoff")
+        )
     else:
         rows = payload["demo_rows"]
         for r in rows:

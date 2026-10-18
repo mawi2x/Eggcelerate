@@ -2,6 +2,7 @@ import { queryOptions, useQueries, useQuery } from "@tanstack/react-query";
 import type {
   EggcelerateRepository,
   ReadingWindow,
+  ReadingBounds,
 } from "../../data/repositories/repository";
 import type { Reading } from "../../domain/types";
 import { useAuth } from "../../providers/auth-context";
@@ -14,16 +15,20 @@ export function readingQueryOptions(
   repository: EggcelerateRepository,
   incubatorId: string,
   window: ReadingWindow,
+  bounds?: ReadingBounds,
+  runId?: string,
 ) {
-  const interval = window === "24h" ? 30_000 : 300_000;
+  const interval = runId || window === "24h" ? 30_000 : 300_000;
   return queryOptions({
-    queryKey: farmQueryKeys.readingWindow(incubatorId, window),
+    queryKey: [...farmQueryKeys.readingWindow(incubatorId, window), ...(bounds ? [bounds.start, bounds.end] : []), ...(runId ? ["run", runId] : [])],
     queryFn: async () =>
       requireResultData(
         await repository.listReadings({
           incubatorId,
           window,
           resolution: "chart",
+          ...(bounds ? { bounds } : {}),
+          ...(runId ? { runId } : {}),
         }),
       ),
     staleTime: interval,
@@ -49,6 +54,8 @@ export function useIncubatorReadings(
 export function useIncubatorReadingMap(
   incubatorIds: readonly string[],
   window: ReadingWindow,
+  bounds?: ReadingBounds,
+  runId?: string,
 ) {
   const repository = useRepository();
   const { isAuthenticated } = useAuth();
@@ -59,7 +66,7 @@ export function useIncubatorReadingMap(
 
   return useQueries({
     queries: uniqueIds.map((incubatorId) => ({
-      ...readingQueryOptions(repository, incubatorId, window),
+      ...readingQueryOptions(repository, incubatorId, window, bounds, runId),
       enabled: isAuthenticated,
     })),
     combine: (results) => ({

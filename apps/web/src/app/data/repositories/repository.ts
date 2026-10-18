@@ -5,6 +5,7 @@ import type {
   DevelopmentCheck,
   HatchRecord,
   Incubator,
+  IncubationRun,
   Mode,
   Reading,
   TurnCommand,
@@ -97,18 +98,26 @@ export type CandlingEntryInput = {
 export type UpdateCandlingEntryInput = Partial<Omit<CandlingEntryInput, "day">>;
 
 export type ReadingWindow = "24h" | "7d" | "full";
+export type ReadingBounds = { start: string; end: string };
 
 export type ReadingQuery = {
   incubatorId: string;
   window: ReadingWindow;
   resolution?: "chart";
+  bounds?: ReadingBounds;
+  runId?: string;
 };
 
 export type RawReadingScope = {
   incubatorIds: string[];
   window: ReadingWindow;
   end: string;
+  start?: string;
+  runId?: string;
 };
+
+export type RunHistoryQuery = { before?: string; incubatorId?: string; modeId?: string; status?: string; runId?: string };
+export type RunHistoryPage = { runs: IncubationRun[]; hasMore: boolean; nextCursor: string | null };
 export type ScopedRawReading = {
   incubatorId: string;
   chamber: string;
@@ -182,6 +191,7 @@ export interface EggcelerateRepository {
     options?: MutationOptions,
   ): Promise<Result<Incubator>>;
   listReadings(query: ReadingQuery): Promise<Result<Reading[]>>;
+  listIncubationRuns?(query: RunHistoryQuery): Promise<Result<RunHistoryPage>>;
   previewRawReadings(
     query: RawReadingScope,
   ): Promise<Result<RawReadingPreview>>;

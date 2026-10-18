@@ -24,20 +24,51 @@ struct TrayRequest { TrayAction action; uint32_t id; uint32_t expires=0; uint8_t
 QueueHandle_t trayCommands = nullptr;
 bool trayStopPending = false;
 bool trayStorageReady = false;
+bool fanPwmReady = false;
+uint8_t lastExhaustDuty = 0;
 
-void applyOutputs(const Outputs &out, bool trayOn = false) {
+bool writeExhaust(uint8_t duty) {
+  if (!fanPwmReady) {
+    // A failed PWM peripheral may only fall back to explicit full on/off.
+    digitalWrite(kExhaustPin, duty ? HIGH : LOW);
+    return duty == 0 || duty == 100;
+  }
+  if (duty == lastExhaustDuty) return true;
+  if (!ledcWrite(kExhaustPin, (uint32_t(duty) * 255U + 50U) / 100U)) {
+    ledcDetach(kExhaustPin);
+    pinMode(kExhaustPin, OUTPUT);
+    digitalWrite(kExhaustPin, duty ? HIGH : LOW);
+    fanPwmReady = false;
+    return false;
+  }
+  lastExhaustDuty = duty;
+  return true;
+}
+
+bool applyOutputs(const Outputs &out, bool trayOn = false) {
   // Remove heat/mist first; establish circulation before energizing heat.
   if (!out.heater) digitalWrite(kHeaterPin, HIGH);
   if (!out.mist) digitalWrite(kMistPin, HIGH);
   digitalWrite(kUpperPin, out.upper ? HIGH : LOW);
-  digitalWrite(kExhaustPin, out.exhaust ? HIGH : LOW);
+  if (!writeExhaust(out.exhaustDuty)) {
+    digitalWrite(kHeaterPin, HIGH);
+    digitalWrite(kMistPin, HIGH);
+    digitalWrite(kTrayPin, HIGH);
+    return false;
+  }
   if (out.heater && out.upper) digitalWrite(kHeaterPin, LOW);
   if (out.mist) digitalWrite(kMistPin, LOW);
   digitalWrite(kTrayPin, trayOn ? LOW : HIGH);
+  return true;
 }
 void beginOutputs() {
   for (uint8_t pin : {kHeaterPin, kMistPin, kTrayPin}) { digitalWrite(pin, HIGH); pinMode(pin, OUTPUT); }
   for (uint8_t pin : {kUpperPin, kExhaustPin}) { digitalWrite(pin, LOW); pinMode(pin, OUTPUT); }
+  fanPwmReady = ledcAttach(kExhaustPin, kExhaustPwmHz, kExhaustPwmBits);
+  if (fanPwmReady && !ledcWrite(kExhaustPin, 0)) {
+    ledcDetach(kExhaustPin); pinMode(kExhaustPin, OUTPUT);
+    digitalWrite(kExhaustPin, LOW); fanPwmReady = false;
+  }
   applyOutputs(Outputs{});
 }
 State snapshot() {
@@ -128,7 +159,7 @@ bool loadRun(RunRecord &record, bool &exists) {
   if (!prefs.begin("egg-run",false)) return false;
   const size_t size = prefs.getBytesLength("state"); exists = size != 0;
   bool ok = !exists || (size==sizeof(record) && prefs.getBytes("state",&record,sizeof(record))==sizeof(record)
-    && record.magic==0x45475232 && record.phase<=2 && record.mode<3 && record.fault<=6 && record.checksum==runChecksum(record));
+    && record.magic==0x45475232 && record.phase<=2 && record.mode<3 && record.fault<=7 && record.checksum==runChecksum(record));
   prefs.end(); return ok;
 }
 void storageFault(Controller &controller) {
@@ -178,7 +209,7 @@ void task(void *) {
   bool savedExists = false;
   bool resume = loadRun(saved,savedExists) && savedExists && saved.phase>0 && !saved.fault;
   if (!savedExists) { if (!saveRun(controller.state)) storageFault(controller); }
-  else if (saved.magic!=0x45475232 || saved.checksum!=runChecksum(saved) || saved.mode>=3 || saved.phase>2 || saved.fault>6) {
+  else if (saved.magic!=0x45475232 || saved.checksum!=runChecksum(saved) || saved.mode>=3 || saved.phase>2 || saved.fault>7) {
     storageFault(controller); resume = false;
   } else {
     controller.state.mode = saved.mode;
@@ -188,6 +219,10 @@ void task(void *) {
       controller.state.fault = Fault::ControllerReset; resume = false;
       saveRun(controller.state);
     }
+  }
+  if (!fanPwmReady) {
+    resume = false; controller.fanOutputFailed();
+    if (!saveRun(controller.state)) storageFault(controller);
   }
   controlDht.begin();
   // Only the replay high-water mark is persistent. Position and motion NEVER
@@ -258,7 +293,28 @@ void task(void *) {
       executeTray(req, trayAllowed);
     tray.tick(millis());
     if (!trayStorageReady) tray.state.status = egg_tray::Status::StorageFault;
-    applyOutputs(controller.state.out, tray.state.running);
+    if (!applyOutputs(controller.state.out, tray.state.running)) {
+      tray.stop(millis());
+      resume = false;
+      controller.fanOutputFailed();
+      controller.tick(millis());
+      if (!saveRun(controller.state)) storageFault(controller);
+      applyOutputs(controller.state.out);
+    }
+    controller.state.pwmReady = fanPwmReady;
+    // Local event log is independent of MQTT cadence. Not a persistent queue.
+    static uint32_t loggedSample = 0, loggedControl = 0;
+    static Fault loggedFault = Fault::None;
+    if (controller.state.sampleNumber != loggedSample ||
+        controller.state.controlSequence != loggedControl || controller.state.fault != loggedFault) {
+      const auto &s = controller.state;
+      Serial.printf("CONTROL ms=%lu sample=%lu change=%lu mode=%u phase=%u T=%.2f RH=%.2f valid=%u running=%u heater=%u mist=%u upper=%u exhaust_request=%u exhaust_duty=%u reason=%s fault=%u pwm=%u\n",
+        (unsigned long)millis(), (unsigned long)s.sampleNumber, (unsigned long)s.controlSequence,
+        s.mode, s.phase, s.temperature, s.humidity, s.valid, s.running, s.out.heater,
+        s.out.mist, s.out.upper, s.out.exhaustRequestedDuty, s.out.exhaustDuty,
+        s.exhaustReason, unsigned(s.fault), fanPwmReady);
+      loggedSample = s.sampleNumber; loggedControl = s.controlSequence; loggedFault = s.fault;
+    }
     portENTER_CRITICAL(&stateMux);
     published = controller.state;
     trayPublished = tray.state;
@@ -279,8 +335,10 @@ void printState() {
   Serial.printf("Climate: %s | Mode: %s %.1f-%.1f C / %.0f-%.0f %% RH | T=%.1f RH=%.1f | Fault: %s\n",
     state.running ? "RUNNING" : "STOPPED", mode.name, mode.tempMin, mode.tempMax, mode.humidityMin, mode.humidityMax,
     state.temperature, state.humidity, faultName(state.fault));
-  Serial.printf("Heater:%s Mist:%s Upper:%s Exhaust:%s | %s\n",
-    state.out.heater ? "ON" : "OFF", state.out.mist ? "ON" : "OFF", state.out.upper ? "ON" : "OFF", state.out.exhaust ? "ON" : "OFF", state.message);
+  Serial.printf("Heater:%s Mist:%s Upper:%s Exhaust:%u%% (request %u%%, %s) PWM:%s | %s\n",
+    state.out.heater ? "ON" : "OFF", state.out.mist ? "ON" : "OFF", state.out.upper ? "ON" : "OFF",
+    state.out.exhaustDuty, state.out.exhaustRequestedDuty, state.exhaustReason,
+    state.pwmReady ? "ready" : "unavailable", state.message);
 }
 bool serialCommand(String command) {
   if (command.startsWith("tray")) {

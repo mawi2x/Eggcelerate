@@ -1,6 +1,9 @@
 import { useTemperatureDisplay } from "../../providers/temperature-context";
 import { useCallback, useMemo, useState } from "react";
-import type { Incubator, Mode } from "../../domain/types";
+import type { Incubator, Mode, IncubationRun } from "../../domain/types";
+import { useQuery } from "@tanstack/react-query";
+import { useRepository } from "../../providers/repository-context";
+import { requireResultData } from "../../features/farm/repository-query";
 import { resolvedTelemetryStatus } from "../../features/farm/telemetry";
 import { useIncubatorReadingMap } from "../../features/farm/use-incubator-readings";
 import { mergeChartReadings } from "../../features/trends/chart-data";
@@ -10,6 +13,7 @@ import {
   pickTimeTicks,
 } from "../../features/trends/chart-ticks";
 import { useIsMobile } from "../ui/use-mobile";
+import type { ReadingBounds, ReadingWindow } from "../../data/repositories/repository";
 
 import {
   CHAMBER_COLORS,
@@ -26,8 +30,26 @@ export function useEnvironmentalTrends(
   initialUnitId?: string,
 ) {
   const temperature = useTemperatureDisplay();
-  const [unitId, setUnitId] = useState(initialUnitId ?? units[0]?.id ?? "");
-  const [range, setRange] = useState<RangeKey>("24h");
+  const [unitId, updateUnitId] = useState(initialUnitId ?? units[0]?.id ?? "");
+  const [range, updateRange] = useState<RangeKey>("24h");
+  const [chosenRun, chooseRun] = useState<IncubationRun | null>(null);
+  const repository = useRepository();
+  const runQuery = useQuery({
+    queryKey: ["farm", "run", chosenRun?.id],
+    queryFn: async () => repository.listIncubationRuns ? requireResultData(await repository.listIncubationRuns({ runId: chosenRun!.id })) : null,
+    enabled: !!chosenRun && !!repository.listIncubationRuns,
+    refetchInterval: 30_000,
+  });
+  const selectedRun = runQuery.data?.runs[0] ?? chosenRun;
+  const setRange = (next: RangeKey) => { chooseRun(null); updateRange(next); };
+  const setUnitId = (id: string) => { chooseRun(null); updateUnitId(id); if (range === "run") updateRange("24h"); };
+  const [customBounds, setCustomBounds] = useState<ReadingBounds | null>(null);
+  const readingWindow: ReadingWindow = range === "custom" || range === "run" ? "full" : range;
+  const appliedBounds = range === "custom" ? customBounds ?? undefined : undefined;
+  const applyCustomRange = (bounds: ReadingBounds) => {
+    setCustomBounds(bounds);
+    setRange("custom");
+  };
   const [readingsOpen, setReadingsOpen] = useState(false);
   // Narrow-viewport chart treatment (tick density, y gutter, tooltip pill).
   const isMobile = useIsMobile();
@@ -44,8 +66,8 @@ export function useEnvironmentalTrends(
 
   const unit = units.find((u) => u.id === unitId) ?? units[0];
   const modeOf = useCallback(
-    (u: Incubator) => modes.find((m) => m.id === u.modeId) ?? modes[0],
-    [modes],
+    (u: Incubator) => selectedRun && selectedRun.incubatorId === u.id ? selectedRun.mode : modes.find((m) => m.id === u.modeId) ?? modes[0],
+    [modes, selectedRun],
   );
 
   // The active set of chambers to chart (single selection, or the compare set).
@@ -75,7 +97,7 @@ export function useEnvironmentalTrends(
     isLoading: readingsLoading,
     error: readingsError,
     retry: retryReadings,
-  } = useIncubatorReadingMap(readingUnitIds, range);
+  } = useIncubatorReadingMap(readingUnitIds, readingWindow, appliedBounds, selectedRun?.id);
   const activeReadingCount = activeUnits.reduce(
     (total, activeUnit) =>
       total + (readingsByIncubator[activeUnit.id]?.length ?? 0),
@@ -177,8 +199,9 @@ export function useEnvironmentalTrends(
     [chartData],
   );
   const xTickLabels = useMemo(
-    () => dedupeTickLabels(xTickValues.map((ts) => formatXTick(ts, range))),
-    [xTickValues, range],
+    () => dedupeTickLabels(xTickValues.map((ts) => formatXTick(ts,
+      appliedBounds ? Date.parse(appliedBounds.end) - Date.parse(appliedBounds.start) <= 86400000 ? "24h" : "7d" : selectedRun && Date.parse(selectedRun.endedAt ?? new Date().toISOString()) - Date.parse(selectedRun.startedAt) <= 86400000 ? "24h" : readingWindow))),
+    [xTickValues, appliedBounds, readingWindow, selectedRun],
   );
   const ySpan = domain[1] - domain[0];
 
@@ -222,10 +245,18 @@ export function useEnvironmentalTrends(
 
   // Turning compare on always starts from a valid two-chamber selection.
   const handleCompareChange = (on: boolean) => {
+    if (on && selectedRun) { chooseRun(null); updateRange("24h"); }
     if (on && compareIds.length < 2) {
       setCompareIds(units.slice(0, 2).map((u) => u.id));
     }
     setCompare(on);
+  };
+
+  const selectRun = (run: IncubationRun) => {
+    chooseRun(run);
+    updateUnitId(run.incubatorId);
+    setCompare(false);
+    updateRange("run");
   };
 
   return {
@@ -234,6 +265,12 @@ export function useEnvironmentalTrends(
     setUnitId,
     range,
     setRange,
+    readingWindow,
+    customBounds,
+    selectedRun,
+    selectRun,
+    clearRun: () => { chooseRun(null); updateRange("24h"); },
+    applyCustomRange,
     readingsOpen,
     setReadingsOpen,
     isMobile,

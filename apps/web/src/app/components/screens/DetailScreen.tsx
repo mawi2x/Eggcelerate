@@ -28,7 +28,6 @@ import { CandlingJournalTab } from "../detail/CandlingJournalTab";
 import { DeviceSettingsTab } from "../detail/DeviceSettingsTab";
 import { LiveMonitorTab } from "../detail/LiveMonitorTab";
 import { SectionCard, StatusCallout } from "../detail/primitives";
-import { Typography } from "../ui/typography";
 import type { DetailTab } from "../detail/types";
 import { HarvestModal } from "../HarvestModal";
 import { statusIconBadgeGlyphSize } from "../StatusIconBadge";
@@ -63,15 +62,16 @@ import {
 
 const DETAIL_BANNER_TITLE_STYLE: CSSProperties = {
   fontFamily: "var(--font-display)",
-  fontSize: "var(--type-body-sm)",
-  fontWeight: "var(--weight-extrabold)",
+  fontSize: "var(--type-heading-sm)",
+  fontWeight: "var(--weight-bold)",
   lineHeight: "var(--leading-snug)",
 };
 
 const DETAIL_BANNER_DESCRIPTION_STYLE: CSSProperties = {
   fontFamily: "var(--font-body)",
-  fontSize: "var(--type-filter-label)",
-  lineHeight: 1.45,
+  fontSize: "var(--type-caption)",
+  fontWeight: "var(--weight-regular)",
+  lineHeight: "var(--leading-normal)",
   marginTop: 2,
 };
 
@@ -284,11 +284,10 @@ export function DetailScreen({
       className="space-y-2 md:space-y-5"
       style={{ color: "var(--text-primary)" }}
     >
-      {/* Ready Incubator — compact setup prompt */}
+      {/* Preparation status, targets and actions share one compact banner. */}
       {isReady && (
         <div
-          role="status"
-          className="flex min-h-20 flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm"
+          className="flex gap-4 rounded-2xl p-4 shadow-sm"
           style={{
             backgroundColor: "var(--surface-subtle)",
             border: `var(--border-width-hairline) solid var(--border-default)`,
@@ -297,98 +296,84 @@ export function DetailScreen({
           <span
             aria-hidden="true"
             className="w-1.5 shrink-0 self-stretch rounded-full"
-            style={{ backgroundColor: "var(--brand-primary)" }}
+            style={{ backgroundColor: preparationReady ? "var(--status-success-fg)" : "var(--brand-primary)" }}
           />
-          <div className="min-w-0 flex-1">
-            <p
-              style={{
-                ...DETAIL_BANNER_TITLE_STYLE,
-                color: "var(--brand-primary-hover)",
-              }}
-            >
-              {isPreparing
-                ? preparationReady
-                  ? "Ready to load eggs"
-                  : "Preparing incubator"
-                : "Prepare a New Cycle"}
-            </p>
-            <p
-              style={{
-                ...DETAIL_BANNER_DESCRIPTION_STYLE,
-                color: "var(--text-secondary)",
-              }}
-            >
-              {isPreparing
-                ? preparationReady
-                  ? "Conditions have stayed within range for one minute. Load eggs, confirm the count, and start Day 1."
-                  : "The controller is adjusting equipment to reach the selected mode’s targets. The incubation timer has not started."
-                : "Choose a mode and stabilize conditions before loading eggs."}
-            </p>
-          </div>
-          <Button
-            size="toolbar"
-            onClick={() => setSetupOpen(true)}
-            className="shrink-0 rounded-xl px-5 font-bold"
-            style={{
-              backgroundColor: "var(--brand-primary-hover)",
-              color: "var(--on-brand)",
-              height: "var(--control-height-mobile)",
-            }}
-          >
-            <span>
-              {isPreparing
-                ? preparationReady
-                  ? "Load Eggs"
-                  : "Change Mode"
-                : "Prepare"}
-            </span>
-          </Button>
-        </div>
-      )}
-
-      {isPreparing && (
-        <SectionCard
-          title="Preparation"
-          titleVariant="headingSmall"
-          density="compact"
-          divider
-        >
-          <div className="space-y-3">
-            <Typography variant="body" className="text-[var(--text-secondary)]">
-              For {mode.name}, the target temperature is{" "}
-              {temperature.formatRange(mode.targetTemp)} and the target humidity
-              is {mode.targetHumidity.min} to {mode.targetHumidity.max}% RH.
-            </Typography>
-            <StatusCallout
-              tone={preparationReady ? "success" : "info"}
-              title={
-                preparationReady
-                  ? "Conditions are stable and ready to load"
-                  : unit.telemetryStatus !== "fresh"
-                    ? "Waiting for fresh sensor readings"
-                    : unit.preparationStableSince
-                      ? "Checking stability within target ranges"
-                      : "Waiting for target conditions"
-              }
-              description="Both readings must remain within range for one minute. A reading outside the targets or a sensor data gap restarts the check. The controller regulates heating, humidity and ventilation automatically. Readiness requires device confirmation."
-            />
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                className="rounded-full text-(length:--type-button-label)"
-                disabled={isUpdating}
-                onClick={() =>
-                  void onUpdate({
-                    type: "configuration",
-                    input: { preparing: false },
-                  })
-                }
-              >
-                Cancel preparation
-              </Button>
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <p
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="text-pretty"
+                  style={{
+                    ...DETAIL_BANNER_TITLE_STYLE,
+                    color: preparationReady ? "var(--status-success-fg)" : "var(--brand-primary-hover)",
+                  }}
+                >
+                  {isPreparing
+                    ? preparationReady
+                      ? "Ready to load eggs"
+                      : unit.telemetryStatus !== "fresh"
+                        ? "Waiting for new sensor readings"
+                        : unit.preparationStableSince
+                          ? "Checking that the conditions stay within range"
+                          : "Preparing the incubator for target conditions"
+                    : "Prepare a New Cycle"}
+                </p>
+                <p className="text-pretty" style={{ ...DETAIL_BANNER_DESCRIPTION_STYLE, color: "var(--text-secondary)" }}>
+                  {isPreparing
+                    ? preparationReady
+                      ? "Conditions have stayed within range for one minute. Load eggs, confirm the count, and start Day 1."
+                      : "The incubation timer has not started."
+                    : "Choose a mode and stabilize conditions before loading eggs."}
+                </p>
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+                {isPreparing && (
+                  <Button
+                    variant="outline"
+                    size="toolbar"
+                    className="min-h-11 w-full rounded-full text-(length:--type-button-label) sm:w-auto"
+                    disabled={isUpdating}
+                    onClick={() => void onUpdate({ type: "configuration", input: { preparing: false } })}
+                  >
+                    Cancel preparation
+                  </Button>
+                )}
+                {preparationReady && (
+                  <Button variant="outline" size="toolbar" className="min-h-11 w-full rounded-full text-(length:--type-button-label) sm:w-auto" disabled={isUpdating} onClick={() => setSetupOpen(true)}>
+                    Change mode
+                  </Button>
+                )}
+                <Button
+                  size="toolbar"
+                  disabled={isUpdating}
+                  onClick={() => setSetupOpen(true)}
+                  className="min-h-11 w-full rounded-full px-5 font-bold text-(length:--type-button-label) sm:w-auto"
+                  style={{ backgroundColor: "var(--brand-primary-hover)", color: "var(--on-brand)" }}
+                >
+                  {isPreparing ? preparationReady ? "Load eggs" : "Change mode" : "Prepare"}
+                </Button>
+              </div>
             </div>
+            {isPreparing && (
+              <>
+                <p className="text-pretty text-[var(--text-secondary)]" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", fontWeight: "var(--weight-semibold)", lineHeight: "var(--leading-normal)" }}>
+                  {mode.name} targets: {temperature.formatRange(mode.targetTemp)} and {mode.targetHumidity.min} to {mode.targetHumidity.max}% RH.
+                </p>
+                <details className="group border-t pt-2" style={{ borderColor: "var(--border-default)", fontFamily: "var(--font-body)", fontSize: "var(--type-body-sm)", lineHeight: "var(--leading-normal)" }}>
+                  <summary className="w-fit max-w-full cursor-pointer rounded-lg py-2 pr-2 text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+                    How readiness is checked
+                  </summary>
+                  <p className="mt-1 max-w-prose text-pretty text-[var(--text-secondary)]" style={{ fontSize: "var(--type-caption)", lineHeight: "var(--leading-normal)" }}>
+                    Both readings must remain within range for one minute. A reading outside the targets or a sensor data gap restarts the check. The controller regulates heating, humidity and ventilation automatically. Readiness requires device confirmation.
+                  </p>
+                </details>
+              </>
+            )}
           </div>
-        </SectionCard>
+        </div>
       )}
 
       <Dialog

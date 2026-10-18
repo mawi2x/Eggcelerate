@@ -72,7 +72,6 @@ export function AdminPage() {
       <>
         <SignInScreen
           heading="Administrator sign in"
-          emailPlaceholder="Email"
           accountHelp=""
           onSignIn={async (email, password, rememberMe) => {
             await auth.signIn(email, password, rememberMe);

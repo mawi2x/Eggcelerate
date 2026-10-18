@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { SettingsPreferences } from "../../data/settings";
 import type { Incubator, Mode } from "../../domain/types";
 import { FarmAccountPanel } from "../settings/FarmAccountPanel";
+import { ChangePasswordPanel } from "../settings/ChangePasswordPanel";
 import {
   HardwarePanel,
   type HardwarePanelView,
@@ -30,6 +31,7 @@ interface Props {
   onOpenUnit: (id: string) => void;
   /** Shell page header rendered inside the sticky toolbar (settings route). */
   header?: ReactNode;
+  onChangePassword?: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 type CategoryId = "modes" | "notifications" | "account" | "hardware";
@@ -72,6 +74,7 @@ export function SettingsScreen({
   units,
   onOpenUnit,
   header,
+  onChangePassword,
 }: Props) {
   const [category, setCategory] = useState<CategoryId>("modes");
   const [notificationView, setNotificationView] =
@@ -185,6 +188,9 @@ export function SettingsScreen({
                   setDraft((current) => ({ ...current, timeZone }))
                 }
               />
+              {onChangePassword && (
+                <ChangePasswordPanel onChangePassword={onChangePassword} />
+              )}
             </section>
           )}
           {category === "hardware" && (

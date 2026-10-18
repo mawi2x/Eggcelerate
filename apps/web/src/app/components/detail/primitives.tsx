@@ -269,6 +269,7 @@ export function StatusCallout({
       )}
       <div className="min-w-0 flex-1">
         <p
+          className="break-words text-balance"
           style={{
             color: toneMap.fg,
             fontFamily: "var(--font-display)",
@@ -289,7 +290,7 @@ export function StatusCallout({
         </p>
         {description && (
           <p
-            className={size === "sm" ? "mt-0.5" : "mt-1"}
+            className={`break-words ${size === "sm" ? "mt-0.5" : "mt-1"}`}
             style={{
               color: "var(--text-secondary)",
               fontFamily: "var(--font-body)",

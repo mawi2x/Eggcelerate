@@ -110,6 +110,17 @@ export class ApiAuthClient {
     setCsrfToken(null);
   }
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const data = await this.request(
+      "/change-password",
+      { current_password: currentPassword, new_password: newPassword },
+      getCsrfToken(),
+    );
+    z.object({ password_changed: z.literal(true), authenticated: z.literal(false) })
+      .strict().parse(data);
+    setCsrfToken(null);
+  }
+
   private async request(
     path: string,
     body?: Record<string, unknown>,

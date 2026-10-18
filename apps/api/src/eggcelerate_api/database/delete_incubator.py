@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, select
+from sqlalchemy import case, delete, select, update
 
 from ..errors import AppError
 from .schema import (
@@ -17,6 +17,7 @@ from .schema import (
     device_telemetry_state,
     devices,
     farms,
+    incubation_runs,
     incubator_runtime,
     incubators,
     telemetry_samples,
@@ -128,6 +129,21 @@ async def remove(session, farm_id, incubator_id, confirmation, *, force=False):
                 "Wait for the pending turn command to finish before deleting.",
             )
 
+    await session.execute(
+        update(incubation_runs)
+        .where(
+            incubation_runs.c.farm_id == farm_id,
+            incubation_runs.c.incubator_id == incubator_id,
+            incubation_runs.c.ended_at.is_(None),
+        )
+        .values(
+            ended_at=datetime.now(UTC),
+            status=case(
+                (incubation_runs.c.status == "preparing", "cancelled"), else_="stopped"
+            ),
+            end_reason="Chamber removed",
+        )
+    )
     cycle_ids = select(cycles.c.id).where(
         cycles.c.farm_id == farm_id, cycles.c.incubator_id == incubator_id
     )

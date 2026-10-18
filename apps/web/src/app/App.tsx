@@ -18,6 +18,7 @@ import { initialAccount, resolveDisplayName } from "./data/account";
 import { repositoryErrorMessage } from "./features/farm/repository-query";
 import { useFarmActions, useFarmData } from "./features/farm/use-farm-data";
 import { useFetchNotifications } from "./features/farm/use-fetch-notifications";
+import { useNotificationSounds } from "./features/farm/use-notification-sounds";
 import { RequireAuth, useAuth } from "./providers/auth-context";
 import {
   AlertsScreen,
@@ -86,6 +87,12 @@ function AppContent() {
     actionState,
   } = useFarmActions();
   const fetchNotifications = useFetchNotifications();
+  useNotificationSounds(
+    auth.isAuthenticated ? `${auth.user?.id}:${auth.user?.email}` : null,
+    farmAlerts,
+    features.alerts.hasData,
+    fetchNotifications.notifications,
+  );
   const alerts = [...fetchNotifications.notifications, ...farmAlerts].sort(
     (a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp),
   );
@@ -660,6 +667,7 @@ function AppContent() {
                         }
                       >
                         <SettingsScreen
+                          onChangePassword={auth.mode === "api" ? auth.changePassword : undefined}
                           modes={modes}
                           onUpdateMode={updateMode}
                           onAddMode={addMode}

@@ -3,8 +3,8 @@
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel, ConfigDict
+from fastapi import APIRouter, Depends, Query, Request
+from pydantic import AwareDatetime, BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -15,6 +15,24 @@ from ...errors import AppError, ok_envelope
 from .dependencies import get_request_context
 
 router = APIRouter(prefix="/incubators", tags=["climate-control"])
+
+
+@router.get("/{incubator_id}/offline-storage")
+async def read_offline_storage(
+    incubator_id: str, request: Request,
+    context: RequestContext = Depends(get_request_context),
+):
+    from ...mqtt.offline import status
+
+    database = request.app.state.database
+    if not context.authenticated or database is None:
+        raise AppError("unauthorized", "Sign in to view local recording status.")
+    try:
+        async with database.sessions.begin() as session:
+            result = await status(session, UUID(context.farm_id), incubator_id)
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "Local recording status is unavailable.") from exc
+    return ok_envelope(result)
 
 
 class ClimateAction(BaseModel):
@@ -79,3 +97,24 @@ async def change_test(
     context: RequestContext = Depends(get_request_context),
 ):
     return await perform(request, context, incubator_id, body.action)
+
+
+@router.get("/{incubator_id}/climate-control/history")
+async def read_control_history(
+    incubator_id: str,
+    request: Request,
+    limit: int = Query(default=200, ge=1, le=2000),
+    before: AwareDatetime | None = None,
+    context: RequestContext = Depends(get_request_context),
+):
+    database = request.app.state.database
+    if not context.authenticated or database is None:
+        raise AppError("unauthorized", "Sign in to the local hardware dashboard.")
+    try:
+        async with database.sessions.begin() as session:
+            rows = await climate_control.history(
+                session, UUID(context.farm_id), incubator_id, limit, before
+            )
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "Control history is unavailable.") from exc
+    return ok_envelope({"reports": rows, "order": "received_at_desc"})

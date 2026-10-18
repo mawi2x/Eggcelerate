@@ -164,7 +164,7 @@ export function CreateAccountScreen({
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="you@brightwoodfarm.com"
+          placeholder="name@domain.com"
           error={fieldErrors.email}
         />
         <FormInput

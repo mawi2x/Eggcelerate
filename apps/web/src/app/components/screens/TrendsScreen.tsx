@@ -15,6 +15,7 @@ import { HatchHistory } from "../trends/HatchHistory";
 import { BORDER, type TrendView, WARN, WARN_BG } from "../trends/presentation";
 import { useEnvironmentalTrends } from "../trends/useEnvironmentalTrends";
 import { useHatchHistory } from "../trends/useHatchHistory";
+import { IncubationRunHistory, useRunHistory } from "../trends/IncubationRunHistory";
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -42,19 +43,25 @@ export function TrendsScreen({
   // Keep both models mounted so tab switches preserve selections and queries.
   const environmental = useEnvironmentalTrends(units, modes, initialUnitId);
   const historyModel = useHatchHistory(history);
+  const runHistory = useRunHistory();
   const {
     staleTelemetryUnits,
     readingsOpen,
     setReadingsOpen,
     range,
+    readingWindow,
+    customBounds,
+    selectedRun,
     readingGroups,
   } = environmental;
   const viewOptions: {
     key: TrendView;
     label: string;
+    mobileLabel: string;
   }[] = [
-    { key: "environmental", label: "Environmental Trends" },
-    { key: "hatch", label: "Hatch History" },
+    { key: "environmental", label: "Environmental Trends", mobileLabel: "Environment" },
+    { key: "runs", label: "Incubation History", mobileLabel: "Cycles" },
+    { key: "hatch", label: "Hatch History", mobileLabel: "Hatches" },
   ];
   return (
     <div className="space-y-2 md:space-y-6">
@@ -123,7 +130,7 @@ export function TrendsScreen({
             aria-label="Trend view"
             className="w-full md:w-auto"
           >
-            {viewOptions.map(({ key, label }) => {
+            {viewOptions.map(({ key, label, mobileLabel }) => {
               const active = trendView === key;
               return (
                 <SegmentedControlItem
@@ -132,6 +139,7 @@ export function TrendsScreen({
                   active={active}
                   className="min-w-0 flex-1 px-3 md:flex-none md:px-4"
                   aria-pressed={active}
+                  aria-label={label}
                   onClick={() => setTrendView(key)}
                   style={{
                     fontFamily: "var(--font-body)",
@@ -142,7 +150,8 @@ export function TrendsScreen({
                     textTransform: "uppercase",
                   }}
                 >
-                  {label}
+                  <span className="md:hidden">{mobileLabel}</span>
+                  <span className="hidden md:inline">{label}</span>
                 </SegmentedControlItem>
               );
             })}
@@ -159,6 +168,8 @@ export function TrendsScreen({
             action={<Button asChild className="rounded-xl"><a href="/incubators">Add your first incubator</a></Button>}
           />
         ) : <EnvironmentalTrends model={environmental} units={units} />
+      ) : trendView === "runs" ? (
+        <IncubationRunHistory model={runHistory} units={units} modes={modes} onView={(run) => { environmental.selectRun(run); setTrendView("environmental"); }} />
       ) : (
         <HatchHistory
           hasIncubators={units.length > 0}
@@ -170,9 +181,11 @@ export function TrendsScreen({
 
       {readingsOpen && readingGroups.length > 0 && (
         <RawReadingsDialog
-          key={`${range}:${readingGroups.map((u) => u.id).join(",")}`}
+          key={`${selectedRun?.id}:${range}:${customBounds?.start}:${customBounds?.end}:${readingGroups.map((u) => u.id).join(",")}`}
           ids={readingGroups.map((u) => u.id)}
-          window={range}
+          window={readingWindow}
+          bounds={range === "custom" ? customBounds ?? undefined : undefined}
+          runId={selectedRun?.id}
           onClose={() => setReadingsOpen(false)}
         />
       )}

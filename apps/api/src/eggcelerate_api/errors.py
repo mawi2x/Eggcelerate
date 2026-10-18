@@ -102,6 +102,13 @@ def register_error_handlers(app: FastAPI) -> None:
             details = exc.errors()
         except TypeError:
             details = str(exc)
+        if _request.url.path.startswith("/api/v1/auth/"):
+            # Validation errors otherwise echo submitted credentials via input
+            # and validator context, including an entire malformed body.
+            details = [
+                {key: item[key] for key in ("loc", "msg", "type") if key in item}
+                for item in exc.errors()
+            ]
         return JSONResponse(
             status_code=422,
             content=error_envelope(

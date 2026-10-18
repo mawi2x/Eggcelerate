@@ -178,6 +178,11 @@ class OutputStateDTO(BaseModel):
     mist_on: bool
     fan_on: bool
     exhaust_on: bool
+    fan_duty_pct: Annotated[int, Field(ge=0, le=100)] | None = None
+    exhaust_duty_pct: Annotated[int, Field(ge=0, le=100)] | None = None
+    exhaust_requested_duty_pct: Annotated[int, Field(ge=0, le=100)] | None = None
+    exhaust_reason: str | None = None
+    pwm_ready: bool | None = None
     received_at: datetime
 
 
@@ -229,6 +234,7 @@ class ReadingDTO(BaseModel):
     received_at: datetime
     temperature_c: float
     humidity_pct: Annotated[float, Field(ge=0, le=100)]
+    backfilled: bool = False
     water_ok: bool
 
 

@@ -122,7 +122,7 @@ class PostgresStore:
                 text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
             )
             if not require_seeded_farm:
-                return revision == "0023" and extension is not None
+                return revision == "0026" and extension is not None
             farm = await session.scalar(
                 select(farms.c.id).where(farms.c.id == self.farm_id)
             )
@@ -155,7 +155,7 @@ class PostgresStore:
                 runtime_count == chamber_count
                 and alert_seed is not None
                 and preferences is not None
-                and revision == "0023"
+                and revision == "0026"
                 and extension is not None
                 and farm is not None
                 and seeded is not None
@@ -393,6 +393,9 @@ class PostgresStore:
                     before_runtime,
                     before_history,
                 )
+                from .run_history import synchronize
+
+                await synchronize(session, self.farm_id, state, before_runtime)
                 await save_candling(session, self.farm_id, state, before_journals)
                 await save_alerts(session, self.farm_id, state, before_alerts)
                 if state.preferences != before_preferences:

@@ -12,7 +12,7 @@ from sqlalchemy import and_, case, false, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..errors import AppError
-from .readings import query_readings
+from .readings import backfilled_sample, query_readings
 from .schema import cycles, incubator_runtime, incubators
 from .schema import telemetry_samples as samples
 
@@ -21,12 +21,25 @@ PREVIEW_ROWS = 200
 
 
 async def scopes(
-    session: AsyncSession, farm: UUID, ids: list[str], window: str, end: datetime
+    session: AsyncSession,
+    farm: UUID,
+    ids: list[str],
+    window: str,
+    end: datetime,
+    start: datetime | None = None,
 ) -> list[dict[str, Any]]:
     if window not in {"24h", "7d", "full"}:
         raise AppError("validation_error", "window must be 24h, 7d or full.")
     if not ids or len(ids) > 100 or len(set(ids)) != len(ids):
-        raise AppError("validation_error", "Select 1 to 100 distinct chamber identifiers.")
+        raise AppError(
+            "validation_error", "Select 1 to 100 distinct chamber identifiers."
+        )
+    if start is not None and (
+        start.tzinfo is None or start.utcoffset() is None or start >= end
+    ):
+        raise AppError(
+            "validation_error", "start must be before end and include a timezone."
+        )
     rows = (
         (
             await session.execute(
@@ -62,20 +75,35 @@ async def scopes(
         raise AppError("not_found", "An incubator was not found in this farm.")
     result = []
     for row in rows:
-        start = end - timedelta(days=1 if window == "24h" else 7)
-        if window == "full":
+        lower = start or end - timedelta(days=1 if window == "24h" else 7)
+        if start is None and window == "full":
             if not row["started_on"] or not row["day_of_incubation"]:
                 continue
-            start = datetime.fromisoformat(row["started_on"]).replace(tzinfo=UTC)
-        if start < end:
-            result.append({**dict(row), "start": start, "end": end})
+            lower = datetime.fromisoformat(row["started_on"]).replace(tzinfo=UTC)
+        if lower < end:
+            result.append({**dict(row), "start": lower, "end": end})
     return result
 
 
 async def chart(
-    session: AsyncSession, farm: UUID, incubator_id: str, window: str, end: datetime
+    session: AsyncSession,
+    farm: UUID,
+    incubator_id: str,
+    window: str,
+    end: datetime,
+    start: datetime | None = None,
+    run_id: UUID | None = None,
 ) -> list[dict[str, Any]]:
-    scope = await scopes(session, farm, [incubator_id], window, end)
+    if run_id:
+        from .run_history import selected_scope
+
+        source = await selected_scope(session, farm, run_id, end=end, start=start)
+        if source["public_id"] != incubator_id:
+            raise AppError("not_found", "Run does not belong to this chamber.")
+        scope = [source] if source["start"] < source["end"] else []
+        end = source["end"]
+    else:
+        scope = await scopes(session, farm, [incubator_id], window, end, start)
     if not scope:
         return []
     source = scope[0]
@@ -101,6 +129,7 @@ async def chart(
             "humidity_min": r["humidity_pct_min"],
             "humidity_max": r["humidity_pct_max"],
             "sample_count": r["count"],
+            "backfilled_count": r["backfilled_count"],
             "bucket_seconds": seconds,
             "water_not_ok_count": r["water_not_ok_count"],
         }
@@ -108,7 +137,12 @@ async def chart(
     ]
 
 
-def raw_statement(farm: UUID, scope: list[dict[str, Any]], end: datetime):
+def raw_statement(
+    farm: UUID,
+    scope: list[dict[str, Any]],
+    end: datetime,
+    receipt_cutoff: datetime | None = None,
+):
     # Receipt cutoff freezes membership across preview/export requests, including
     # late samples. Raw rows are immutable and receipt time is server-assigned.
     bounds = [
@@ -138,10 +172,11 @@ def raw_statement(farm: UUID, scope: list[dict[str, Any]], end: datetime):
             samples.c.temperature_c,
             samples.c.humidity_pct,
             samples.c.water_ok,
+            backfilled_sample().label("backfilled"),
         )
         .where(
             samples.c.farm_id == farm,
-            samples.c.received_at <= end,
+            samples.c.received_at <= (receipt_cutoff or end),
             or_(*bounds) if bounds else false(),
         )
         .order_by(samples.c.observed_at, chamber_id)
@@ -149,9 +184,13 @@ def raw_statement(farm: UUID, scope: list[dict[str, Any]], end: datetime):
 
 
 async def preview(
-    session: AsyncSession, farm: UUID, scope: list[dict[str, Any]], end: datetime
+    session: AsyncSession,
+    farm: UUID,
+    scope: list[dict[str, Any]],
+    end: datetime,
+    receipt_cutoff: datetime | None = None,
 ) -> dict[str, Any]:
-    statement = raw_statement(farm, scope, end)
+    statement = raw_statement(farm, scope, end, receipt_cutoff)
     total = await session.scalar(
         select(func.count()).select_from(statement.order_by(None).subquery())
     )
@@ -195,13 +234,16 @@ def csv_chunk(rows: list[dict[str, Any]], *, header: bool = False) -> str:
 
 
 async def stream_csv(
-    database: Any, scope: list[dict[str, Any]], end: datetime
+    database: Any,
+    scope: list[dict[str, Any]],
+    end: datetime,
+    receipt_cutoff: datetime | None = None,
 ) -> AsyncIterator[str]:
     async with database.sessions() as session, session.begin():
         result = await session.stream(
-            raw_statement(database.farm_id, scope, end).execution_options(
-                yield_per=1000
-            )
+            raw_statement(
+                database.farm_id, scope, end, receipt_cutoff
+            ).execution_options(yield_per=1000)
         )
         yield csv_chunk([], header=True)
         async for batch in result.mappings().partitions(1000):

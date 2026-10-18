@@ -35,10 +35,14 @@ the current scheduled/manual tray flow. Earlier Phase 3 notes below are historic
 
 Modified/custom presets are rejected by the automatic-control API. Normal targets
 remain unchanged throughout this implementation; no new lockdown profile is added.
-The heater stops at the upper bound, with circulation maintained. High humidity
-uses full-speed exhaust pulses (10 seconds on/20 off) once within 0.5°C below the
-lower target; overheating runs both fans. Low humidity uses mist bursts of at most
-three seconds with twenty seconds rest near temperature targets. PWM is not enabled.
+The heater stops at the upper bound, with circulation maintained at full command.
+Chicken uses variable supply PWM for lower exhaust; humidity drying retains its
+10-second on / 20-second off envelope near temperature targets. Duck and Quail
+retain full-command exhaust behavior. Fault/cooldown ventilation uses full command.
+Low humidity uses mist bursts of at most three seconds with twenty seconds rest.
+See [local PWM implementation](../../../docs/guide/climate-pwm-local-implementation.md)
+for initial settings, logging, deployment order and limitations. This is source
+implementation, not confirmation that this revision is flashed on the ESP32.
 
 ## Stop and recovery
 
@@ -74,9 +78,16 @@ identity remain in NVS; a verified migration applies the approved setup password
 
 ## Local Docker recording
 
+**October 18: VPS is now the default destination.** `CloudConfig.h` supplies the
+stable VPS broker so moving the incubator requires router Wi-Fi setup rather than
+reflashing a home-computer IP. See the
+[VPS/local development guide](../../../docs/guide/vps-connected-local-development.md).
+The local recording option below requires an explicit build flag.
+
 Open **https://127.0.0.1:18443**. The local broker is configured at
 **192.168.1.115:18883** with TLS, per-device credentials and ACLs.
-`LocalCloudConfig.h`, when present, overrides the original private `CloudConfig.h`.
+`LocalCloudConfig.h` overrides private `CloudConfig.h` only when the build defines
+`EGG_USE_LOCAL_RECORDER`. Its mere presence no longer changes the destination.
 These files and upload artifacts contain private configuration: keep them private.
 If laptop LAN IP changes, run `python3 apps/firmware/scripts/prepare-local-recorder.py
 --host YOUR_LAN_IP`, recreate the broker/worker and recompile/upload.
@@ -151,3 +162,15 @@ run resumes on reboot. No further timing tests are required by this update.
 New firmware upload is still necessary; no upload or motor operation was performed.
 Latest NodeMCU-32S build: 1,130,405 bytes flash (86%), 52,020 bytes static RAM (15%).
 See the linked guide for the full lifecycle, assumptions and server requirements.
+
+## October 18 — persistent environmental history
+
+The offline-storage implementation adds a separate flash writer and bounded,
+receipt-confirmed replay. Use `storage status` at 115200 baud to distinguish
+active recording from an uninitialized/unavailable filesystem. Initial setup is
+explicit; never enable flash erasure as an upload shortcut. See the
+[activation and recovery guide](../../../docs/guide/esp32-offline-storage-implementation.md)
+for the partition backup, initialization command, timestamp/ownership rules,
+retention limits, verification evidence and installation status. This supersedes
+older descriptions of Serial-only environmental logging. Actuator-event
+persistence and physical qualification remain separate follow-up work.

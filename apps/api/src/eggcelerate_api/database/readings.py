@@ -15,6 +15,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..errors import AppError
+from .schema import offline_records
 from .schema import telemetry_samples as samples
 
 
@@ -90,6 +91,20 @@ async def ingest_sample(
     return False
 
 
+def backfilled_sample():
+    return (
+        select(offline_records.c.sequence)
+        .where(
+            offline_records.c.farm_id == samples.c.farm_id,
+            offline_records.c.device_id == samples.c.device_id,
+            offline_records.c.observed_at == samples.c.observed_at,
+            offline_records.c.outcome == "imported",
+        )
+        .correlate(samples)
+        .exists()
+    )
+
+
 async def query_readings(
     session: AsyncSession,
     farm_id: UUID,
@@ -117,7 +132,11 @@ async def query_readings(
         bucket = func.time_bucket(
             timedelta(seconds=bucket_seconds), samples.c.observed_at
         ).label("bucket_start")
-        columns = [bucket, func.count().label("count")]
+        columns = [
+            bucket,
+            func.count().label("count"),
+            func.count().filter(backfilled_sample()).label("backfilled_count"),
+        ]
         for name in ("temperature_c", "humidity_pct"):
             column = samples.c[name]
             columns.extend(
@@ -137,6 +156,7 @@ async def query_readings(
             samples.c.temperature_c,
             samples.c.humidity_pct,
             samples.c.water_ok,
+            backfilled_sample().label("backfilled"),
         ).order_by(samples.c.observed_at)
     query = query.where(
         samples.c.farm_id == farm_id,

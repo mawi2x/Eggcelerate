@@ -132,6 +132,11 @@ async def load_incubators(
                 mist_on=report["mist"],
                 fan_on=report["upper"],
                 exhaust_on=report["exhaust"],
+                fan_duty_pct=report.get("upper_duty"),
+                exhaust_duty_pct=report.get("exhaust_duty"),
+                exhaust_requested_duty_pct=report.get("exhaust_requested_duty"),
+                exhaust_reason=report.get("exhaust_reason"),
+                pwm_ready=report.get("pwm_ready"),
                 received_at=row["control_received_at"],
             )
             if report and row["control_received_at"]

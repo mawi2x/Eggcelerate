@@ -7,7 +7,7 @@ import hmac
 import re
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Request, Response
 from fastapi.concurrency import run_in_threadpool
@@ -45,21 +45,28 @@ LOGIN_WINDOW_SECONDS = 15 * 60
 LOGIN_ATTEMPT_LIMIT = 5
 
 
-def login_bucket_hash(settings, email: str) -> str:
+def login_bucket_hash(settings, email: str, *, scope: str = "login") -> str:
     digest = hmac.new(
         settings.auth_rate_limit_key.encode("utf-8"),
-        f"login\0{email}".encode("utf-8"),
+        f"{scope}\0{email}".encode("utf-8"),
         hashlib.sha256,
     )
     return digest.hexdigest()
 
 
-async def _reserve_login_attempt(database: PostgresStore, email: str, settings) -> str:
+async def _reserve_login_attempt(
+    database: PostgresStore,
+    email: str,
+    settings,
+    *,
+    scope: str = "login",
+    attempt_limit: int = LOGIN_ATTEMPT_LIMIT,
+) -> str:
     now = datetime.now(UTC)
     window_start = datetime.fromtimestamp(
         int(now.timestamp() // LOGIN_WINDOW_SECONDS) * LOGIN_WINDOW_SECONDS, UTC
     )
-    bucket_hash = login_bucket_hash(settings, email)
+    bucket_hash = login_bucket_hash(settings, email, scope=scope)
     statement = (
         pg_insert(auth_rate_limits)
         .values(
@@ -94,9 +101,12 @@ async def _reserve_login_attempt(database: PostgresStore, email: str, settings) 
         raise AppError("offline", "The account service is unavailable.") from exc
     if attempts is None:
         raise AppError("offline", "The account service is unavailable.")
-    if attempts > LOGIN_ATTEMPT_LIMIT:
+    if attempts > attempt_limit:
         raise AppError(
-            "rate_limited", "Too many sign-in attempts. Try again in 15 minutes."
+            "rate_limited",
+            "Too many sign-in attempts. Try again in 15 minutes."
+            if scope == "login"
+            else "Too many password-change attempts. Try again in 15 minutes.",
         )
     return bucket_hash
 
@@ -137,6 +147,13 @@ class LoginRequest(BaseModel):
     @classmethod
     def normalize_email(cls, value: str) -> str:
         return value.strip().lower()
+
+
+class ChangePasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+
+    current_password: Annotated[str, Field(min_length=1, max_length=128, repr=False)]
+    new_password: Annotated[str, Field(min_length=12, max_length=128, repr=False)]
 
 
 def _database(request: Request) -> PostgresStore:
@@ -299,7 +316,8 @@ async def login(body: LoginRequest, request: Request, response: Response) -> dic
             )
         )
         .where(users.c.email == body.email, users.c.disabled_at.is_(None))
-        .order_by(farm_memberships.c.created_at)
+        # A pairing adds or refreshes the membership timestamp for its farm.
+        .order_by(farm_memberships.c.created_at.desc())
         .limit(1)
     )
     try:
@@ -317,6 +335,25 @@ async def login(body: LoginRequest, request: Request, response: Response) -> dic
 
     try:
         async with database.sessions.begin() as session:
+            # Serialize session creation with password changes. A login verified
+            # before a password change must not mint a session after revocation.
+            current = (
+                (
+                    await session.execute(
+                        select(users.c.password_hash, users.c.disabled_at)
+                        .where(users.c.id == row["user_id"])
+                        .with_for_update()
+                    )
+                )
+                .mappings()
+                .first()
+            )
+            if (
+                current is None
+                or current["disabled_at"] is not None
+                or current["password_hash"] != row["password_hash"]
+            ):
+                raise AppError("unauthorized", "Email or password is incorrect.")
             await session.execute(
                 delete(auth_rate_limits).where(
                     auth_rate_limits.c.bucket_hash == login_bucket
@@ -349,6 +386,85 @@ async def login(body: LoginRequest, request: Request, response: Response) -> dic
         csrf_token,
     )
     return ok_envelope(identity_payload(identity, csrf_token))
+
+
+@router.post("/change-password")
+async def change_password(
+    body: ChangePasswordRequest, request: Request, response: Response
+) -> dict:
+    require_allowed_origin(request)
+    database = _database(request)
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        identity = await resolve_session(
+            database, request.cookies.get(SESSION_COOKIE_NAME)
+        )
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "The account service is unavailable.") from exc
+    if identity is None:
+        raise AppError("unauthorized", "Sign in before changing your password.")
+    require_csrf(request, identity.context)
+    settings = request.app.state.settings
+    await _reserve_login_attempt(
+        database, identity.context.actor_id, settings, scope="password-change-account"
+    )
+    # Use the socket peer, not an arbitrary forwarded header, as the source.
+    # Behind a proxy this is deliberately a shared additional limit.
+    source = request.client.host if request.client else "unknown"
+    await _reserve_login_attempt(
+        database, source, settings, scope="password-change-source", attempt_limit=30
+    )
+    user_id = UUID(identity.context.actor_id)
+    try:
+        async with database.sessions.begin() as session:
+            row = (
+                (
+                    await session.execute(
+                        select(users.c.password_hash)
+                        .where(users.c.id == user_id, users.c.disabled_at.is_(None))
+                        .with_for_update()
+                    )
+                )
+                .mappings()
+                .first()
+            )
+            # Recheck the session after acquiring the same account lock used by
+            # login and other changes, including concurrent requests.
+            active = await session.scalar(
+                select(auth_sessions.c.session_hash).where(
+                    auth_sessions.c.session_hash == identity.context.session_hash,
+                    auth_sessions.c.user_id == user_id,
+                    auth_sessions.c.revoked_at.is_(None),
+                    auth_sessions.c.expires_at > datetime.now(UTC),
+                )
+            )
+            if row is None or active is None:
+                raise AppError("unauthorized", "Your session has ended. Sign in again.")
+            valid = await run_in_threadpool(
+                verify_password, row["password_hash"], body.current_password
+            )
+            if not valid:
+                raise AppError("rejected", "Current password is incorrect.")
+            if body.new_password == body.current_password:
+                raise AppError("validation_error", "Choose a different new password.")
+            password_hash = await run_in_threadpool(hash_password, body.new_password)
+            await session.execute(
+                update(users)
+                .where(users.c.id == user_id)
+                .values(password_hash=password_hash)
+            )
+            await session.execute(
+                update(auth_sessions)
+                .where(
+                    auth_sessions.c.user_id == user_id,
+                    auth_sessions.c.revoked_at.is_(None),
+                )
+                .values(revoked_at=datetime.now(UTC))
+            )
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "The account service is unavailable.") from exc
+    _clear_session_cookie(request, response)
+    return ok_envelope({"password_changed": True, "authenticated": False})
 
 
 @router.get("/session")

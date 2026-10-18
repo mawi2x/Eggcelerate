@@ -22,6 +22,47 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 
 metadata = MetaData()
+offline_assignments = Table(
+    "offline_assignments", metadata,
+    Column("generation", Uuid, primary_key=True),
+    Column("public_id", Text, nullable=False),
+    Column("farm_id", Uuid, nullable=False),
+    Column("device_id", Uuid, nullable=False),
+    Column("incubator_id", Uuid, nullable=False),
+    Column("registry_created_at", DateTime(timezone=True), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+offline_records = Table(
+    "offline_records", metadata,
+    Column("public_id", Text, primary_key=True),
+    Column("queue", Text, primary_key=True),
+    Column("sequence", Text, primary_key=True),
+    Column("farm_id", Uuid), Column("device_id", Uuid),
+    Column("observed_at", DateTime(timezone=True)),
+    Column("received_at", DateTime(timezone=True), nullable=False),
+    Column("digest", Text, nullable=False),
+    Column("record", JSONB, nullable=False),
+    Column("outcome", Text, nullable=False),
+)
+Index("ix_offline_assignment_device", offline_assignments.c.public_id, offline_assignments.c.created_at)
+Index("ix_offline_records_scope", offline_records.c.farm_id, offline_records.c.device_id, offline_records.c.observed_at)
+offline_conflicts = Table(
+    "offline_conflicts", metadata,
+    Column("public_id", Text, primary_key=True),
+    Column("queue", Text, primary_key=True),
+    Column("sequence", Text, primary_key=True),
+    Column("digest", Text, primary_key=True),
+    Column("received_at", DateTime(timezone=True), nullable=False),
+    Column("record", JSONB, nullable=False),
+)
+offline_device_status = Table(
+    "offline_device_status", metadata,
+    Column("farm_id", Uuid, primary_key=True),
+    Column("device_id", Uuid, primary_key=True),
+    Column("reported_at", DateTime(timezone=True)),
+    Column("report", JSONB),
+    Column("last_replay_at", DateTime(timezone=True)),
+)
 farms = Table(
     "farms",
     metadata,
@@ -632,8 +673,38 @@ alert_monitors = Table(
 
 
 # Separate from simulator tray commands. One current request per chamber.
+climate_report_history = Table(
+    "climate_report_history",
+    metadata,
+    Column("farm_id", Uuid, primary_key=True),
+    Column("device_id", Uuid, primary_key=True),
+    Column("boot_id", Text, primary_key=True),
+    Column("seq", Integer, primary_key=True),
+    Column("incubator_id", Text, nullable=False),
+    Column("booted_at", DateTime(timezone=True), nullable=False),
+    Column("observed_at", DateTime(timezone=True), nullable=False),
+    Column("received_at", DateTime(timezone=True), nullable=False),
+    Column("temperature_c", Double),
+    Column("humidity_pct", Double),
+    Column("report", JSONB, nullable=False),
+    ForeignKeyConstraint(
+        ["farm_id", "incubator_id"],
+        ["incubators.farm_id", "incubators.public_id"],
+        ondelete="CASCADE",
+        name="fk_climate_history_incubator",
+    ),
+    CheckConstraint("seq >= 0", name="ck_climate_history_seq"),
+)
+Index(
+    "ix_climate_history_chamber_received",
+    climate_report_history.c.farm_id,
+    climate_report_history.c.incubator_id,
+    climate_report_history.c.received_at,
+)
+
 climate_tests = Table(
-    "climate_tests", metadata,
+    "climate_tests",
+    metadata,
     Column("farm_id", Uuid, primary_key=True),
     Column("incubator_id", Text, primary_key=True),
     Column("request", JSONB),
@@ -648,6 +719,34 @@ climate_tests = Table(
     ForeignKeyConstraint(
         ["farm_id", "incubator_id"],
         ["incubators.farm_id", "incubators.public_id"],
-        ondelete="CASCADE", name="fk_climate_test_incubator",
+        ondelete="CASCADE",
+        name="fk_climate_test_incubator",
     ),
 )
+
+# Historical snapshots deliberately survive chamber renaming/removal. Device
+# ownership and run bounds are checked from the stored farm scope on every read.
+incubation_runs = Table(
+    "incubation_runs", metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("farm_id", Uuid, nullable=False),
+    Column("incubator_id", Text, nullable=False),
+    Column("chamber_name", Text, nullable=False),
+    Column("device_id", Uuid, nullable=False),
+    Column("mode", JSONB, nullable=False),
+    Column("cycle_id", Text),
+    Column("status", Text, nullable=False),
+    Column("started_at", DateTime(timezone=True), nullable=False),
+    Column("prepared_at", DateTime(timezone=True)),
+    Column("incubation_at", DateTime(timezone=True)),
+    Column("ended_at", DateTime(timezone=True)),
+    Column("total_eggs", Integer),
+    Column("approximate", Boolean, nullable=False, server_default="false"),
+    Column("end_reason", Text),
+    UniqueConstraint("farm_id", "cycle_id", name="uq_run_cycle"),
+    CheckConstraint("status IN ('preparing','incubating','completed','stopped','cancelled')", name="ck_run_status"),
+    CheckConstraint("ended_at IS NULL OR ended_at >= started_at", name="ck_run_dates"),
+    CheckConstraint("(status IN ('preparing','incubating') AND ended_at IS NULL) OR (status NOT IN ('preparing','incubating') AND ended_at IS NOT NULL)", name="ck_run_terminal"),
+)
+Index("ix_run_farm_started", incubation_runs.c.farm_id, incubation_runs.c.started_at)
+Index("uq_run_open_chamber", incubation_runs.c.farm_id, incubation_runs.c.incubator_id, unique=True, postgresql_where=incubation_runs.c.ended_at.is_(None))

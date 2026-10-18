@@ -45,7 +45,7 @@ void begin() {
 }
 
 void service(uint32_t now, bool setupOpen, bool online, bool commissioned,
-             const char *pairingCode) {
+             const char *pairingCode, uint32_t queued=0, bool recordingReady=false) {
   if (!available || now - refreshedAt < 1000) return;
   refreshedAt = now;
   char code[18];
@@ -55,7 +55,7 @@ void service(uint32_t now, bool setupOpen, bool online, bool commissioned,
     snprintf(code, sizeof(code), "%.5s-%.5s", pairingCode, pairingCode + 5);
   else snprintf(code, sizeof(code), "Not commissioned");
   char frame[100];
-  snprintf(frame, sizeof(frame), "%d:%d:%s", setupOpen, online, code);
+  snprintf(frame, sizeof(frame), "%d:%d:%s:%lu:%d", setupOpen, online, code, (unsigned long)queued, recordingReady);
   if (strcmp(frame, previousFrame) == 0) return;
   if (!responds(address)) {
     available = false;
@@ -64,6 +64,9 @@ void service(uint32_t now, bool setupOpen, bool online, bool commissioned,
   }
   display.clearDisplay();
   printLeftAlignedLabel(setupOpen ? "SETUP" : "EGGCELERATE", 0);
+  display.setCursor(86,0);
+  if(recordingReady)display.printf("Q:%lu",(unsigned long)queued);
+  else display.print("REC OFF");
   display.setTextSize(2);
   display.setCursor(0, 12);
   display.print(online ? "ONLINE" : "OFFLINE");

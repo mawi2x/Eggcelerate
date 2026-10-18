@@ -10,8 +10,12 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
+#include "OfflineStorage.h"
 #include <time.h>
-#if __has_include("LocalCloudConfig.h")
+#if defined(EGG_USE_LOCAL_RECORDER)
+#if !__has_include("LocalCloudConfig.h")
+#error "EGG_USE_LOCAL_RECORDER requires the private LocalCloudConfig.h"
+#endif
 #include "LocalCloudConfig.h"
 #elif __has_include("CloudConfig.h")
 #include "CloudConfig.h"
@@ -90,6 +94,7 @@ char cloudBootedAt[25] = {};
 uint32_t cloudSequence = 0;
 uint32_t cloudAttemptAt = 0;
 uint32_t cloudPublishedAt = 0;
+uint32_t cloudControlSent = 0;
 uint32_t cloudReceiptAt = 0;
 uint32_t cloudLastSent = 0;
 uint32_t cloudReportingMs = 15000;
@@ -114,7 +119,16 @@ bool cloudUtc(time_t epoch, char *output, size_t capacity) {
 }
 
 void receiveCloudReceipt(char *topic, byte *body, unsigned int length) {
-  if (strcmp(topic, receiptTopic) != 0 || !cloudLastSent) return;
+  if (strcmp(topic, receiptTopic) != 0) return;
+  if (egg_offline::receipt(body,length)) return;
+  if (!cloudLastSent) return;
+  char storagePrefix[110];
+  snprintf(storagePrefix,sizeof(storagePrefix),"storage|%s|%lu|",cloudBootId,(unsigned long)cloudLastSent);
+  const size_t storagePrefixLength=strlen(storagePrefix);
+  if(length==storagePrefixLength+32 && !memcmp(body,storagePrefix,storagePrefixLength)) {
+    char token[33];memcpy(token,body+storagePrefixLength,32);token[32]=0;
+    egg_offline::setAssignment(token);return;
+  }
   if (length > 5 && length < 256 && memcmp(body,"tray|",5)==0) {
     char packet[256]; memcpy(packet,body,length); packet[length]=0;
     char *save=nullptr; char *fields[8]={}; uint8_t count=0;
@@ -200,7 +214,7 @@ void initializeCloud() {
   cloudTls.setConnectionTimeout(3000);
   cloudTls.setHandshakeTimeout(3);
   cloudMqtt.setServer(EggCloudConfig::MQTT_HOST, EggCloudConfig::MQTT_PORT);
-  cloudMqtt.setBufferSize(1536);
+  cloudMqtt.setBufferSize(2816);
   cloudMqtt.setKeepAlive(30);
   cloudMqtt.setSocketTimeout(3);
   cloudMqtt.setCallback(receiveCloudReceipt);
@@ -219,7 +233,7 @@ void serviceCloud(uint32_t now) {
   const time_t epoch = time(nullptr);
   if (epoch < 1704067200) return; // Never bypass certificate or timestamp checks.
   if (!cloudBootId[0]) {
-    const time_t bootEpoch = epoch - millis() / 1000;
+    const time_t bootEpoch = epoch - esp_timer_get_time() / 1000000;
     if (!cloudUtc(bootEpoch, cloudBootedAt, sizeof(cloudBootedAt))) return;
     snprintf(cloudBootId, sizeof(cloudBootId), "%s-%llu-%08lX", kDeviceId,
       static_cast<unsigned long long>(bootEpoch), static_cast<unsigned long>(esp_random()));
@@ -238,36 +252,60 @@ void serviceCloud(uint32_t now) {
   }
   cloudMqtt.loop();
   now = millis();
-  if (cloudHasPublished && now - cloudPublishedAt < cloudReportingMs) return;
+  const auto climate = egg_climate::snapshot();
+  now = millis();
+  // Prioritize changed control state, bounded to one report/second. Regular
+  // sensor cadence remains configurable. Sequence gaps expose coalesced changes.
+  const bool controlChanged = climate.controlSequence != cloudControlSent;
+  const uint32_t interval = controlChanged ? 1000 : cloudReportingMs;
+  if (cloudHasPublished && now - cloudPublishedAt < interval) { egg_offline::publish(cloudMqtt,cloudTopic); return; }
   // Send only a fresh sample. No chamber/farm IDs, codes, or passwords in telemetry.
   if (cloudSequence >= 2147483647UL) { Serial.println("Cloud sequence exhausted; restart required."); return; }
   char observedAt[25];
-  if (!cloudUtc(time(nullptr), observedAt, sizeof(observedAt))) return;
-  char payload[1400];
-  const auto climate = egg_climate::snapshot();
+  const int64_t sampleUtc=egg_offline::utcForSample(climate.sampledAt);
+  const bool freshSensor = climate.valid && now - climate.sampledAt <= 5000 && sampleUtc;
+  if (freshSensor) {
+    char seconds[25];if(!cloudUtc(sampleUtc/1000,seconds,sizeof(seconds)))return;
+    snprintf(observedAt,sizeof(observedAt),"%.19s.%03uZ",seconds,unsigned(sampleUtc%1000));
+  } else if (!cloudUtc(time(nullptr), observedAt, sizeof(observedAt))) return;
+  char payload[2304];
+  char storageFields[512]; egg_offline::statusJson(storageFields,sizeof(storageFields));
   const auto tray = egg_climate::traySnapshot();
   char sampleFields[128];
-  const bool freshSensor = climate.valid && now - climate.sampledAt <= 5000;
   if (freshSensor) snprintf(sampleFields, sizeof(sampleFields), "\"temperature_c\":%.2f,\"humidity_pct\":%.2f,\"battery_pct\":100,\"power_source\":\"grid\",", climate.temperature, climate.humidity);
   else strlcpy(sampleFields, "\"climate_only\":true,", sizeof(sampleFields));
   const uint32_t sequence = ++cloudSequence;
   const int size = snprintf(payload, sizeof(payload),
     "{\"schema_v\":1,\"device_id\":\"%s\",\"boot_id\":\"%s\",\"booted_at\":\"%s\","
-    "\"seq\":%lu,\"observed_at\":\"%s\",%s"
+    "\"seq\":%lu,\"observed_at\":\"%s\",\"storage\":%s,%s"
     "\"climate_test\":{\"halted\":%s,\"resuming\":%s,\"lifecycle\":1,\"phase\":%u,\"stop_all\":true,\"sensor_valid\":%s,\"running\":%s,\"mode\":%u,\"heater\":%s,\"mist\":%s,\"upper\":%s,\"exhaust\":%s,"
     "\"fault\":%u,\"command_id\":\"%s\",\"accepted\":%s,"
+    "\"firmware\":\"%s\",\"control_seq\":%lu,\"uptime_ms\":%lu,\"sample_age_ms\":%lu,"
+    "\"temp_min\":%.2f,\"temp_max\":%.2f,\"humidity_min\":%.2f,\"humidity_max\":%.2f,"
+    "\"upper_duty\":%u,\"exhaust_requested_duty\":%u,\"exhaust_duty\":%u,\"exhaust_reason\":\"%s\","
+    "\"pwm_ready\":%s,\"pwm_hz\":%lu,\"pwm_bits\":%u,\"fan_min_duty\":%u,\"fan_boost_ms\":%lu,"
     "\"tray_capability\":true,\"tray_running\":%s,\"tray_position\":%u,\"tray_status\":%u,\"tray_id\":%lu,\"tray_highest\":%lu,\"tray_ack\":%lu,\"tray_accepted\":%s}}",
-    kDeviceId, cloudBootId, cloudBootedAt, static_cast<unsigned long>(sequence), observedAt, sampleFields, climate.halted ? "true" : "false", climate.resuming ? "true" : "false", climate.phase, freshSensor ? "true" : "false",
+    kDeviceId, cloudBootId, cloudBootedAt, static_cast<unsigned long>(sequence), observedAt, storageFields, sampleFields, climate.halted ? "true" : "false", climate.resuming ? "true" : "false", climate.phase, freshSensor ? "true" : "false",
     climate.running ? "true" : "false", climate.mode, climate.out.heater ? "true" : "false", climate.out.mist ? "true" : "false",
     climate.out.upper ? "true" : "false", climate.out.exhaust ? "true" : "false", static_cast<unsigned int>(climate.fault),
     climate.commandId, climate.accepted ? "true" : "false",
+    egg_climate::kClimateBuild, (unsigned long)climate.controlSequence, (unsigned long)now,
+    (unsigned long)(now - climate.sampledAt),
+    egg_climate::kModes[climate.mode].tempMin, egg_climate::kModes[climate.mode].tempMax,
+    egg_climate::kModes[climate.mode].humidityMin, egg_climate::kModes[climate.mode].humidityMax,
+    climate.out.upper ? 100U : 0U, climate.out.exhaustRequestedDuty, climate.out.exhaustDuty,
+    climate.exhaustReason, climate.pwmReady ? "true" : "false",
+    (unsigned long)egg_climate::kExhaustPwmHz, egg_climate::kExhaustPwmBits,
+    egg_climate::kExhaustMinDuty, (unsigned long)egg_climate::kExhaustBoostMs,
     tray.running?"true":"false",tray.position,unsigned(tray.status),(unsigned long)tray.id,(unsigned long)tray.highestId,(unsigned long)tray.ackId,tray.accepted?"true":"false");
   cloudPublishedAt = now;
   cloudHasPublished = true;
   if (size > 0 && static_cast<size_t>(size) < sizeof(payload) && cloudMqtt.publish(cloudTopic, payload, false)) {
     cloudLastSent = sequence;
+    cloudControlSent = climate.controlSequence;
     Serial.printf("Cloud reading %lu sent; database confirmation pending.\n", static_cast<unsigned long>(sequence));
   } else Serial.println("Cloud publish failed; next fresh sample will retry.");
+  egg_offline::publish(cloudMqtt,cloudTopic);
 }
 
 
@@ -510,7 +548,7 @@ void commission(const String &code = "", const String &apPassword = "") {
 
 void serialCommand(String command) {
   command.trim();
-  if (egg_climate::serialCommand(command)) return;
+  if (egg_climate::serialCommand(command) || egg_offline::serialCommand(command)) return;
   if (command == "status") {
     printIdentity();
     egg_climate::printState();
@@ -649,6 +687,7 @@ void setup() {
   eggcelerate_oled::begin();
   if (!egg_climate::begin()) Serial.println("Climate control task could not start; outputs remain off.");
   Serial.println("CLIMATE: website Prepare -> stable targets -> load eggs -> confirm incubation. Authorized operation resumes after fresh sensor checks; manual Stop remains stopped.");
+  if (!egg_offline::begin(kDeviceId)) Serial.println("Local recording task unavailable; climate control continues.");
   initializeCloud();
   sensorAt = millis();
   WiFi.persistent(false); // Only our validated NVS blob commits Wi-Fi settings.
@@ -732,6 +771,7 @@ void loop() {
     cloudMqtt.connected() && cloudHasReceipt && displayNow - cloudReceiptAt < 45000;
   eggcelerate_display::service(displayNow, sensorValid, sensorAt, temperatureC,
     humidityPct);
-  eggcelerate_oled::service(displayNow, apActive, serverOnline, identityReady, identity.code);
+  const auto recording=egg_offline::snapshot();
+  eggcelerate_oled::service(displayNow, apActive, serverOnline, identityReady, identity.code, recording.queued, !strcmp(recording.state,"ready"));
   delay(2);
 }

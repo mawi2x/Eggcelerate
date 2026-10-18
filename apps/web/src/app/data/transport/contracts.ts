@@ -111,6 +111,23 @@ export const IncubatorDTOSchema = z
         mist_on: z.boolean(),
         fan_on: z.boolean(),
         exhaust_on: z.boolean().optional(),
+        fan_duty_pct: z.number().int().min(0).max(100).nullable().optional(),
+        exhaust_duty_pct: z
+          .number()
+          .int()
+          .min(0)
+          .max(100)
+          .nullable()
+          .optional(),
+        exhaust_requested_duty_pct: z
+          .number()
+          .int()
+          .min(0)
+          .max(100)
+          .nullable()
+          .optional(),
+        exhaust_reason: z.string().nullable().optional(),
+        pwm_ready: z.boolean().nullable().optional(),
         received_at: UtcTimestampSchema,
       })
       .strict()
@@ -128,6 +145,7 @@ export const ReadingDTOSchema = z
     temperature_c: z.number().finite(),
     humidity_pct: z.number().min(0).max(100),
     water_ok: z.boolean(),
+    backfilled: z.boolean().optional(),
   })
   .strict();
 
@@ -140,6 +158,7 @@ export const ChartReadingDTOSchema = z
     temperature_max: z.number(),
     humidity_min: z.number(),
     humidity_max: z.number(),
+    backfilled_count: z.number().int().nonnegative().optional(),
     sample_count: z.number().int().positive(),
     bucket_seconds: z.number().int().positive(),
     water_not_ok_count: z.number().int().nonnegative(),
@@ -172,6 +191,7 @@ export function chartReadingFromDTO(input: unknown): Reading {
     humidityMin: p.humidity_min,
     humidityMax: p.humidity_max,
     sampleCount: p.sample_count,
+    backfilledCount: p.backfilled_count ?? 0,
     bucketSeconds: p.bucket_seconds,
   };
 }
@@ -353,6 +373,8 @@ export function readingFromDTO(input: unknown): Reading {
   const dto = ReadingDTOSchema.parse(input);
   return {
     ts: Date.parse(dto.observed_at),
+    receivedAt: dto.received_at,
+    backfilledCount: dto.backfilled ? 1 : 0,
     time: readingTimeLabel(dto.observed_at),
     temp: dto.temperature_c,
     humidity: dto.humidity_pct,
@@ -424,6 +446,12 @@ export function incubatorFromDTO(input: unknown): Incubator {
           mistOn: dto.output_states.mist_on,
           fanOn: dto.output_states.fan_on,
           exhaustOn: dto.output_states.exhaust_on,
+          fanDutyPct: dto.output_states.fan_duty_pct ?? undefined,
+          exhaustDutyPct: dto.output_states.exhaust_duty_pct ?? undefined,
+          exhaustRequestedDutyPct:
+            dto.output_states.exhaust_requested_duty_pct ?? undefined,
+          exhaustReason: dto.output_states.exhaust_reason ?? undefined,
+          pwmReady: dto.output_states.pwm_ready ?? undefined,
           receivedAt: dto.output_states.received_at,
         }
       : undefined,

@@ -12,6 +12,7 @@ from . import (
     platform_admin,
     preferences,
     readings_scale,
+    run_history,
     tray_control,
 )
 from .dependencies import require_api_csrf, require_api_session
@@ -33,5 +34,6 @@ farm_routes.include_router(readings_scale.router)
 farm_routes.include_router(modes.router)
 farm_routes.include_router(alerts.router)
 farm_routes.include_router(history.router)
+farm_routes.include_router(run_history.router)
 farm_routes.include_router(preferences.router)
 router.include_router(farm_routes)
