@@ -4,6 +4,7 @@
 #include <string.h>
 #include "FanConfig.h"
 #include "AdaptiveConfig.h"
+#include "BenchmarkControl.h"
 
 // Preparation and incubation climate regulator. Tray motion is not commissioned.
 namespace egg_climate {
@@ -30,7 +31,7 @@ constexpr uint32_t kFaultBlindVentMs = 60000; // Max age of ordinary last-known-
 constexpr uint32_t kHeaterLimitMs = 30UL * 60UL * 1000UL;
 constexpr float kOverheatC = 39.0f;
 enum class Fault : uint8_t { None, Sensor, Stale, Overheat, HeaterTimeout, Storage, ControllerReset, FanOutput };
-enum class Action : uint8_t { None, Start, Stop, Reset, SetMode, Prepare, Incubate, VentTest, Cancel };
+enum class Action : uint8_t { None, Start, Stop, Reset, SetMode, Prepare, Incubate, VentTest, Cancel, HTM, LTM, LHM };
 struct Command {
   Action action = Action::None; uint8_t mode = 0;
   char id[37] = {}; uint64_t order = 0; uint32_t expires = 0; uint8_t testDuty = 0;
@@ -101,6 +102,7 @@ inline const char *faultName(Fault fault) {
 class Controller {
 public:
   State state;
+  egg_benchmark::Controller benchmark;
   bool accepted = false;
   bool fanOutputAvailable = true;
   void fanOutputFailed() { fanOutputAvailable = false; trip(Fault::FanOutput); }
@@ -160,6 +162,15 @@ public:
   }
   void command(uint32_t now, Command cmd) {
     accepted = false;
+    if (cmd.action==Action::HTM || cmd.action==Action::LTM || cmd.action==Action::LHM) {
+      if (state.running || benchmark.state.active() || state.fault!=Fault::None || !ready(now) || !cmd.id[0]) return;
+      const auto kind=cmd.action==Action::HTM?egg_benchmark::HTM:cmd.action==Action::LTM?egg_benchmark::LTM:egg_benchmark::LHM;
+      if(kind==egg_benchmark::HTM&&state.temperature>=egg_benchmark::kCeilingC)return;
+      Command base; base.action=Action::Prepare; base.mode=0; command(now,base);
+      if(accepted){benchmark.start(now,kind,cmd.id);state.phase=0;state.message="Benchmark running; empty chamber only";}
+      return;
+    }
+    if (benchmark.state.active() && cmd.action!=Action::Stop && cmd.action!=Action::Cancel) return;
     if (cmd.action == Action::VentTest) {
       if (!cmd.testDuty) { testDuty = 0; accepted = true; ++state.controlSequence; return; }
       if ((cmd.testDuty != 60 && cmd.testDuty != 100) || !state.running || state.mode != 0 || state.phase != 1 ||
@@ -170,6 +181,7 @@ public:
       state.message = "Timed ventilation comparison active; temperature safety remains enabled"; return;
     }
     if (cmd.action == Action::Stop || cmd.action == Action::Cancel) {
+      benchmark.finish(now,egg_benchmark::Cancelled);
       testDuty = 0;
       state.sensor.recovering = false;
       outputsStopped = true; state.halted = true;
@@ -239,7 +251,7 @@ public:
   }
   void tick(uint32_t now) {
     const Mode &mode = kModes[state.mode];
-    if (testDuty && (!state.running || state.phase != 1 || state.mode != 0 || !ready(now) ||
+    if (testDuty && !benchmark.state.active() && (!state.running || state.phase != 1 || state.mode != 0 || !ready(now) ||
         state.temperature < mode.tempMin || now-testStartedAt >= kVentTestMs)) {
       testDuty = 0; ++state.controlSequence;
       state.message = "Vent comparison ended; normal regulation continues";
@@ -251,6 +263,19 @@ public:
     if (state.running && state.out.heater && now - heaterAt >= kHeaterLimitMs)
       trip(Fault::HeaterTimeout);
     if (state.cooldown && now - coolingUntilStarted >= kCooldownMs) state.cooldown = false;
+    const bool wasBenchmark=benchmark.state.active();
+    if(wasBenchmark){
+      const uint8_t duty=benchmark.duty();
+      const bool healthy=state.running&&ready(now)&&!state.sensor.recovering&&state.fault==Fault::None;
+      const bool qualified=healthy&&(benchmark.state.kind!=egg_benchmark::LHM ||
+        (state.temperature>=37.5f&&state.temperature<=37.8f&&state.out.exhaustDuty==duty&&state.out.exhaustRequestedDuty==duty&&strcmp(state.exhaustReason,"temperature")));
+      benchmark.tick(now,healthy,state.sampleNumber,state.temperature,state.humidity,qualified);
+      if(!benchmark.state.active()){
+        state.running=false;state.phase=0;state.halted=true;testDuty=0;++state.controlSequence;
+        // Fault cooling remains independent; ordinary completion cools if hot.
+        state.message="Benchmark ended; result retained";
+      }
+    }
     Outputs next;
     const char *reason = "stopped";
     bool immediateFan = false;
@@ -281,8 +306,20 @@ public:
       adaptiveSample = state.sampleNumber;
     } else {
       next.upper = true;
-      if (state.mode == 0) {
+      if (benchmark.state.active() && benchmark.state.kind!=egg_benchmark::LHM) {
+        reason="benchmark";
+        next.exhaustRequestedDuty=benchmark.duty();next.exhaust=next.exhaustRequestedDuty!=0;
+        immediateFan=true;
+        const float forecast=state.temperature+fmaxf(0.0f,temperatureRate)*25.0f/60.0f;
+        next.heater=benchmark.state.kind==egg_benchmark::HTM && now-startedAt>=kFanLeadMs &&
+          forecast<egg_benchmark::kCeilingC && state.temperature<egg_benchmark::kCeilingC &&
+          (state.out.heater||now-heaterAt>=kAdaptiveHeatMinOffMs);
+      } else if (state.mode == 0) {
+        const bool bench=benchmark.state.active();
+        if(bench){testDuty=benchmark.duty();testStartedAt=now;}
         adaptive(now, mode, next, reason);
+        if(bench){next.mist=false;if(state.temperature<mode.tempMin){next.exhaustRequestedDuty=0;next.exhaust=false;reason="heat_hold";}else if(testDuty&&!temperatureCooling)reason="benchmark";}
+
       } else {
         immediateFan = true;
         const float tempMid = (mode.tempMin + mode.tempMax) / 2.0f;
@@ -503,6 +540,7 @@ private:
         if (next.exhaustRequestedDuty > thermalCeiling) next.exhaustRequestedDuty = thermalCeiling;
       }
     }
+    if (benchmark.state.active() && benchmark.state.kind==egg_benchmark::LHM && !benchmark.state.stage) {next.exhaust=false;next.exhaustRequestedDuty=0;reason="bench_warm";}
     if (testDuty) {
       next.exhaust = true; next.exhaustRequestedDuty = temperatureCooling ? 100 : testDuty;
       reason = temperatureCooling ? "temperature" : "vent_test";

@@ -4,6 +4,8 @@
 to the VPS (2026-10-18).
 
 Custom incubation mode support is **planned, not implemented** (2026-10-19).
+HTM/LTM/LHM benchmark controls are **deployed to the VPS and flashed as v8**
+(2026-10-19); physical capacity runs remain pending.
 
 ## Request
 
@@ -230,3 +232,120 @@ and humidity investigation before attempting this feature.
 - [Server profile restrictions](../../apps/api/src/eggcelerate_api/database/climate_control.py)
 - [Firmware profiles and control decisions](../../apps/firmware/Eggcelerate/ClimateControl.h)
 - [Local sensor and actuator runtime](../../apps/firmware/Eggcelerate/ClimateRuntime.h)
+
+## Incubator benchmarking mode (2026-10-19)
+
+**Status:** implemented, deployed to the VPS, and flashed as
+`climate-benchmark-v8` (2026-10-19). The controller remains stopped. Full physical
+capacity runs have not been performed. The website offers exactly three benchmarks:
+
+Detailed implementation plan: [HTM, LTM, and LHM](./benchmark-modes-plan.md).
+The user subsequently authorized implementation. See the deployment record below.
+
+Use these names for the three website selections and matching firmware modes:
+
+| Full name | Acronym |
+| --- | --- |
+| Highest Temperature Mode | HTM |
+| Lowest Temperature Mode | LTM |
+| Lowest Humidity Mode | LHM |
+
+The requested initial interface is these three selectable modes through the
+existing website mode selection, rather than a separate benchmarking dashboard.
+Each selection must map to a supported ESP32 benchmark behavior; adding names
+alone does not make the current preset-only firmware able to run them.
+
+1. **Highest temperature:** the highest sustained indicated air temperature
+   reached within approved hardware and firmware safety limits.
+2. **Lowest temperature:** the lowest sustained indicated air temperature
+   reached using the existing heater-off, circulation, and exhaust capabilities.
+3. **Lowest humidity:** the lowest sustained indicated relative humidity reached
+   at a specified, stable chamber temperature, initially the Chicken target.
+
+Maximum humidity testing is excluded by user request. The user's reason is that
+high humidity is readily achieved in their Philippine installation; this is a
+scope decision, not a measured claim about every location or season.
+
+### Test conditions and interpretation
+
+- Run only with an empty chamber and no active incubation cycle. Keep the door
+  closed and record supply conditions, reservoir state, chamber configuration,
+  sensor location, and any openings or other disturbances.
+- Record intake/room temperature and humidity when a suitable measurement is
+  available. Otherwise mark them **unmeasured**; a stopped chamber reading is
+  not an independent measurement of intake air.
+- Use a defined starting condition, stabilization criterion, maximum duration,
+  and observation window for each benchmark. Record both transient extrema and
+  sustained plateau statistics so a single sample is not reported as capacity.
+- Temperature and humidity results depend on ambient conditions and actuator
+  configuration. Without refrigeration or another cooling mechanism, exhaust
+  alone cannot guarantee a temperature below intake temperature.
+- For minimum humidity, log chamber temperature and calculate a moisture metric
+  such as dew point alongside RH. Heating alone can lower RH without removing
+  moisture; do not present that effect as measured dehumidification capacity.
+- Results are DHT22-indicated values until checked against an independent
+  reference. Save the firmware version, applied settings, timestamps, raw
+  readings, validity/fault state, and commanded actuator outputs with each run.
+
+### Proposed controls and safety behavior
+
+- Provide a choice of the three benchmarks, clear progress, elapsed time,
+  current readings, and **Stop benchmark**. Show the proposed actuator settings
+  and limits before starting.
+- Execute timed benchmark stages and safety checks locally on the ESP32;
+  loss of the website or network must not leave an unbounded test running.
+- Preserve sensor validity, stale-reading protection, latched faults, and
+  approved thermal limits. Highest-temperature testing must not bypass the
+  existing overtemperature cutoff or search for a destructive physical limit.
+  If a limit is reached, report **safety-limited; physical maximum not established**.
+- Stop or timeout returns to a defined stopped state, with any existing
+  emergency cooling protection taking precedence. Do not automatically resume
+  incubation or move the tray as part of these benchmarks.
+- Keep benchmark runs separate from incubation cycles, while saving them per
+  chamber for later viewing and comparison in Trends. Retain cancelled,
+  interrupted, faulted, and time-limited runs with their outcome clearly shown.
+
+### Acceptance checks for future implementation
+
+- Only the three requested benchmarks are offered; no maximum-humidity test.
+- Starting a benchmark cannot overlap an active incubation cycle.
+- Device acknowledgement identifies the actual test, limits, and settings;
+  unsupported firmware cannot silently fall back to an incubation preset.
+- Stop, timeout, sensor failure, restart, and disconnection have defined,
+  verified outcomes. Restart does not silently resume a benchmark.
+- Saved results include conditions, extrema, sustained observations, duration,
+  and termination reason. Missing ambient readings and safety/time limits remain
+  visible when comparing results.
+- A repeat run under comparable conditions is used to assess repeatability.
+
+This is additional scope beyond the custom-mode estimate above; its effort
+must be estimated separately before implementation.
+
+
+### Benchmark implementation and deployment record
+
+- Firmware: `climate-benchmark-v8`; API/worker: `benchmark-v8-20261019`;
+  website: `benchmark-v8-r2-20261019`; database revision `0027`.
+- Select through **Prepare → Mode → Equipment benchmarks**, or the Device
+  Settings mode selector. Confirm the chamber is empty, then use **Start
+  benchmark**. An explicit start is required; installation does not begin a test.
+- Results, including interrupted runs, are under **Trends → Benchmarks**.
+- HTM uses a 38.5°C test ceiling and retains the independent 39.0°C fault.
+  LTM uses circulation and full exhaust with heater/mist off. LHM keeps mist
+  off and compares 60%/100% exhaust while qualifying readings at 37.5–37.8°C.
+- Runs have a local one-hour timeout, no tray turning, explicit Stop/retry,
+  persistent results, restart interruption, and capability/acknowledgement gates.
+- Checks: 43 targeted backend tests passed; firmware benchmark and existing
+  climate/sensor/fault checks passed; TypeScript and production builds passed;
+  disposable PostgreSQL migration/start/acknowledgement/overlap/Stop/history
+  checks passed. Browser start/stop/history previews used isolated fixtures.
+- Installation was hash-verified. Live VPS telemetry confirmed capability 1,
+  valid sensor readings, PWM ready, no fault, and every output off. These checks
+  do not establish the incubator's physical temperature or humidity limits.
+- Local evidence: `output/releases/benchmark-v8-20261019/`; private firmware:
+  `output/firmware/benchmark-v8-20261019/`.
+- VPS backup: `/opt/eggcelerate/rollback-benchmark-v8-k96e4d_3/`; the custom
+  database dump header and archive listing were checked, but restore was not
+  rehearsed. Schema-compatible rollback images preserve the additive history
+  table without requiring data deletion. Final web backup:
+  `/opt/eggcelerate/rollback-benchmark-v8-web-4fagufex/`.

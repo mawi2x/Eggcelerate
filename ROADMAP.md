@@ -1,6 +1,6 @@
 # EGGCELERATE roadmap and timeline
 
-Last updated: **2026-10-18**. Current work: integrated automatic preparation →
+Last updated: **2026-10-19**. Current work: integrated automatic preparation →
 confirmed incubation climate control and timed tray scheduling with local Docker recording. See the
 [preparation guide](docs/guide/incubator-preparation-guide.md).
 **Resume/next phases:** [October 15 capstone handoff](docs/guide/capstone-next-phases-2026-10-15.md).
@@ -14,6 +14,14 @@ VPS-targeted firmware is compiled but upload remains pending. Home computer no l
 incubator under this planned connection arrangement.
 The [October 12 checkpoint](docs/current-progress-2026-10-12.md) remains the
 historical sensor/deployment record and broader audit reminder.
+
+**Latest checkpoint (October 19):** HTM, LTM, and LHM website controls are deployed
+and `climate-benchmark-v8` is flashed. Live sensor/PWM/stopped-state checks pass;
+physical capacity benchmarks and joint Chicken temperature/humidity performance
+remain unverified. See [benchmark modes](docs/guide/benchmark-modes-plan.md) and
+the latest dated entry below. This checkpoint supersedes older deployment and
+no-edit planning notes retained in this roadmap.
+
 
 **Next review: frontend audit plus backend, firmware/hardware and deployment
 audit. Pending, not completed.** See the checkpoint checklist before resuming.
@@ -2995,3 +3003,32 @@ implementation guide.
   there by design; still requires healthy active incubation and observed reference.
 - Reopened the climate monitor before user begins Chicken preparation. The v7
   bounded exhaust comparison and joint-target outcome remain pending actual start.
+
+
+### 2026-10-19 — HTM/LTM/LHM benchmark modes deployed; physical runs pending
+
+- Added the three exact requested website selections: Highest Temperature Mode
+  (HTM), Lowest Temperature Mode (LTM), Lowest Humidity Mode (LHM). No maximum
+  humidity benchmark. Benchmarks use the mode selector but are separate from
+  species presets and do not create egg incubation cycles.
+- Implemented bounded ESP32 behavior, start/Stop acknowledgements, replay/expiry
+  checks, active-cycle exclusion, retained results, restart interruption, and
+  per-chamber **Trends → Benchmarks**, including incomplete runs and replayed
+  local environmental readings. Replayed readings do not invent actuator stages.
+- HTM stops heating at a 38.5°C test ceiling; 39.0°C overtemperature protection
+  remains. LTM runs circulation/full exhaust with heater/mist off. LHM compares
+  60%/100% exhaust with mist off and qualified Chicken-band observations. Every
+  test has a local one-hour limit and no tray movement.
+- API/worker `benchmark-v8-20261019`, web `benchmark-v8-r2-20261019`, schema 0027,
+  and firmware `climate-benchmark-v8` installed. Existing NVS/LittleFS preserved.
+- Targeted host/backend checks, production builds, isolated database integration,
+  and fixture-based browser start/stop/history checks passed. Actual VPS telemetry
+  confirms capability 1, valid sensor, PWM ready, no fault, regulation stopped,
+  and all outputs off. No physical benchmark has started.
+- Remaining: empty-chamber physical HTM/LTM/LHM runs, verify actual actuator
+  behavior, evaluate sustained results and repeatability, and use LHM evidence
+  to continue the revised Chicken humidity-control plan. No arbitrary sensor
+  offset, target relaxation, or trained control model was introduced.
+- Evidence: `output/releases/benchmark-v8-20261019/`; firmware artifacts:
+  `output/firmware/benchmark-v8-20261019/`; detailed specification:
+  [benchmark plan](docs/guide/benchmark-modes-plan.md).

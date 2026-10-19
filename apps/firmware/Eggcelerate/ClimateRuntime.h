@@ -13,6 +13,7 @@ constexpr uint8_t kHeaterPin = 27, kMistPin = 14, kTrayPin = 25;
 constexpr uint8_t kUpperPin = 18, kExhaustPin = 19;
 portMUX_TYPE stateMux = portMUX_INITIALIZER_UNLOCKED;
 State published;
+egg_benchmark::Snapshot benchmarkPublished;
 QueueHandle_t commands = nullptr;
 bool stopPending = false, runtimeReady = false;
 Command priorityStop;
@@ -27,6 +28,7 @@ QueueHandle_t trayCommands = nullptr;
 bool trayStopPending = false;
 bool trayStorageReady = false;
 bool fanPwmReady = false;
+bool benchmarkStorageReady = false;
 uint8_t lastExhaustDuty = 0;
 
 bool writeExhaust(uint8_t duty) {
@@ -78,6 +80,22 @@ State snapshot() {
   const State result = published;
   portEXIT_CRITICAL(&stateMux);
   return result;
+}
+egg_benchmark::Snapshot benchmarkSnapshot() {
+  portENTER_CRITICAL(&stateMux);const auto result=benchmarkPublished;portEXIT_CRITICAL(&stateMux);return result;
+}
+struct BenchmarkRecord {uint32_t magic=0x45474231;egg_benchmark::Snapshot state;uint32_t checksum=0;};
+uint32_t benchmarkChecksum(const egg_benchmark::Snapshot &s){const auto *p=reinterpret_cast<const uint8_t*>(&s);uint32_t h=2166136261U;for(size_t i=0;i<sizeof(s);++i)h=(h^p[i])*16777619U;return h;}
+bool saveBenchmark(const egg_benchmark::Snapshot &state){
+  BenchmarkRecord record;record.state=state;record.checksum=benchmarkChecksum(record.state);
+  Preferences p;if(!p.begin("egg-benchmark",false))return false;
+  bool ok=p.putBytes("state",&record,sizeof(record))==sizeof(record);BenchmarkRecord check;
+  ok=p.getBytes("state",&check,sizeof(check))==sizeof(check)&&ok&&!memcmp(&record,&check,sizeof(record));p.end();return ok;
+}
+bool loadBenchmark(egg_benchmark::Snapshot &state){
+  Preferences p;if(!p.begin("egg-benchmark",false))return false;size_t size=p.getBytesLength("state");BenchmarkRecord r;
+  bool ok=!size||(size==sizeof(r)&&p.getBytes("state",&r,sizeof(r))==sizeof(r)&&r.magic==0x45474231&&r.checksum==benchmarkChecksum(r.state)&&r.state.kind<=3&&r.state.outcome<=8&&r.state.stage<=2&&r.state.id[36]==0);
+  if(ok&&size)state=r.state;p.end();return ok;
 }
 bool request(Command cmd) {
   portENTER_CRITICAL(&stateMux);
@@ -166,6 +184,7 @@ bool loadRun(RunRecord &record, bool &exists) {
   prefs.end(); return ok;
 }
 void storageFault(Controller &controller) {
+  controller.benchmark.finish(millis(),egg_benchmark::Faulted);
   controller.command(millis(),Command{Action::Stop,0});
   controller.state.fault = Fault::Storage;
   controller.state.accepted = false;
@@ -188,7 +207,13 @@ void execute(Controller &controller, const Command &cmd) {
     xQueueReset(trayCommands);
     applyOutputs(Outputs{});
   }
+  if(cmd.action==Action::HTM||cmd.action==Action::LTM||cmd.action==Action::LHM){
+    if(tray.state.running||cancelReturn.active()||!trayStorageReady||!benchmarkStorageReady){controller.state.accepted=false;return;}
+  }
   controller.command(millis(),cmd);
+  if(controller.accepted && controller.benchmark.state.id[0] && !saveBenchmark(controller.benchmark.state)){
+    benchmarkStorageReady=false;storageFault(controller);applyOutputs(Outputs{});return;
+  }
   if (controller.accepted && cmd.action != Action::SetMode && !saveRun(controller.state)) {
     storageFault(controller); applyOutputs(Outputs{}); return;
   }
@@ -212,6 +237,12 @@ void task(void *) {
     vTaskDelete(nullptr);
     return;
   }
+  benchmarkStorageReady=loadBenchmark(controller.benchmark.state);
+  if(controller.benchmark.state.active()){
+    controller.benchmark.state.outcome=egg_benchmark::Restarted;
+    if(!saveBenchmark(controller.benchmark.state)){benchmarkStorageReady=false;storageFault(controller);}
+  }
+  uint32_t benchmarkSavedAt=millis();uint8_t benchmarkOutcome=controller.benchmark.state.outcome;
   RunRecord saved;
   bool savedExists = false;
   bool resume = loadRun(saved,savedExists) && savedExists && saved.phase>0 && !saved.fault;
@@ -227,6 +258,7 @@ void task(void *) {
       saveRun(controller.state);
     }
   }
+  if(!benchmarkStorageReady){storageFault(controller);resume=false;}
   if (!fanPwmReady) {
     resume = false; controller.fanOutputFailed();
     if (!saveRun(controller.state)) storageFault(controller);
@@ -323,10 +355,16 @@ void task(void *) {
       if (!saveRun(controller.state)) storageFault(controller);
       applyOutputs(controller.state.out);
     }
+    if(controller.benchmark.state.id[0] && (benchmarkOutcome!=controller.benchmark.state.outcome ||
+        (controller.benchmark.state.active()&&millis()-benchmarkSavedAt>=60000))){
+      benchmarkSavedAt=millis();benchmarkOutcome=controller.benchmark.state.outcome;
+      if(!saveBenchmark(controller.benchmark.state)){benchmarkStorageReady=false;storageFault(controller);applyOutputs(Outputs{});}
+    }
     controller.state.pwmReady = fanPwmReady;
     egg_diagnostics::capture(controller.state);
     portENTER_CRITICAL(&stateMux);
     published = controller.state;
+    benchmarkPublished=controller.benchmark.state;
     trayPublished = tray.state;
     portEXIT_CRITICAL(&stateMux);
     esp_task_wdt_reset();
@@ -338,7 +376,7 @@ bool begin() {
   commands = xQueueCreate(8, sizeof(Command));
   trayCommands = xQueueCreate(1, sizeof(TrayRequest));
   if (!commands || !trayCommands) return false;
-  return xTaskCreatePinnedToCore(task, "egg-climate", 4096, nullptr, 2, &controlTask, ARDUINO_RUNNING_CORE) == pdPASS;
+  return xTaskCreatePinnedToCore(task, "egg-climate", 7168, nullptr, 2, &controlTask, ARDUINO_RUNNING_CORE) == pdPASS;
 }
 void printState() {
   const State state = snapshot();

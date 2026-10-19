@@ -5,7 +5,7 @@ from uuid import uuid4, uuid5
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
-from .schema import alerts, climate_tests, incubators
+from .schema import alerts, benchmark_runs, climate_tests, incubators
 
 FAULTS = {
     1: "Sensor failure",
@@ -57,6 +57,19 @@ async def evaluate(session, farm_id, now):
             )
         )
     ) + 1
+    benchmark_rows = (
+        (
+            await session.execute(
+                select(benchmark_runs).where(
+                    benchmark_runs.c.farm_id == farm_id,
+                    benchmark_runs.c.ended_at.is_(None),
+                )
+            )
+        )
+        .mappings()
+        .all()
+    )
+    benchmarks = {row["incubator_id"]: row for row in benchmark_rows}
     seen = set()
     for row in rows:
         unit = row["incubator_id"]
@@ -94,10 +107,19 @@ async def evaluate(session, farm_id, now):
                     "Automatic regulation requires the current main firmware. Upload it before continuing preparation.",
                     signature=row["boot_id"],
                 )
+            benchmark = benchmarks.get(unit)
+            benchmark_report = report.get("benchmark") or {}
+            benchmark_authorized = bool(
+                benchmark
+                and benchmark["device_id"] == row["device_id"]
+                and benchmark_report.get("run_id") == str(benchmark["id"])
+                and benchmark_report.get("outcome") == 1
+            )
             req = row["request"] or {}
             if (
                 (row["intent"] or {}).get("phase", 0) == 0
                 and not fault
+                and not benchmark_authorized
                 and req.get("status") != "pending"
                 and any(report.get(k) for k in ("running", "heater", "mist"))
             ):

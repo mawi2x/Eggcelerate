@@ -38,8 +38,12 @@ class SensorDiagnostics(BaseModel):
     recovery_hold: StrictBool
     recoveries: int = Field(ge=0, le=4294967295)
     last_good_age_ms: int | None = Field(default=None, ge=0, le=4294967295)
-    last_good_temperature_c: float | None = Field(default=None, ge=0, le=60, allow_inf_nan=False)
-    last_good_humidity_pct: float | None = Field(default=None, ge=1, le=100, allow_inf_nan=False)
+    last_good_temperature_c: float | None = Field(
+        default=None, ge=0, le=60, allow_inf_nan=False
+    )
+    last_good_humidity_pct: float | None = Field(
+        default=None, ge=1, le=100, allow_inf_nan=False
+    )
     last_failure_ms: int = Field(ge=0, le=4294967295)
     last_recovery_ms: int = Field(ge=0, le=4294967295)
     fault_at_ms: int = Field(ge=0, le=4294967295)
@@ -103,8 +107,43 @@ class ControlDiagnostics(BaseModel):
     adaptive: AdaptiveDiagnostics | None = None
 
 
+class BenchmarkResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    windows: int = Field(ge=0, le=4294967295)
+    samples: int = Field(ge=0, le=128)
+    mean_t: float
+    mean_rh: float
+    min_t: float
+    max_t: float
+    min_rh: float
+    max_rh: float
+    dew_point: float
+
+
+class BenchmarkReport(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    version: Literal[1]
+    run_id: str = Field(max_length=36, pattern=r"^([0-9a-f-]{36})?$")
+    kind: int = Field(ge=0, le=3)
+    outcome: int = Field(ge=0, le=8)
+    stage: int = Field(ge=0, le=2)
+    elapsed_ms: int = Field(ge=0, le=4294967295)
+    stage_elapsed_ms: int = Field(ge=0, le=4294967295)
+    invalidated: int = Field(ge=0, le=4294967295)
+    samples: int = Field(ge=0, le=4294967295)
+    min_t: float
+    max_t: float
+    min_rh: float
+    max_rh: float
+    ceiling_c: float = Field(ge=38.5, le=38.5)
+    limit_ms: Literal[3600000]
+    results: list[BenchmarkResult] = Field(min_length=3, max_length=3)
+
+
 class ClimateReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    benchmark_capability: Literal[1] | None = None
+    benchmark: BenchmarkReport | None = None
     halted: StrictBool = True
     resuming: StrictBool = False
     lifecycle: int = Field(default=0, ge=0, le=1)
@@ -183,6 +222,16 @@ def pending(row, now):
 
 
 async def guard_changes(session, farm_id, unit_id=None):
+    from .benchmarks import guard
+    from .schema import benchmark_runs
+
+    active = select(benchmark_runs.c.incubator_id).where(
+        benchmark_runs.c.farm_id == farm_id, benchmark_runs.c.ended_at.is_(None)
+    )
+    if unit_id:
+        active = active.where(benchmark_runs.c.incubator_id == unit_id)
+    for active_id in await session.scalars(active):
+        await guard(session, farm_id, active_id)
     query = select(climate_tests).where(climate_tests.c.farm_id == farm_id)
     if unit_id:
         query = query.where(climate_tests.c.incubator_id == unit_id)
@@ -228,6 +277,10 @@ async def status(session, farm_id, unit_id):
 
 async def set_intent(session, farm_id, unit_id, action, *, started_at=None):
     """Called after lifecycle writes, inside their farm-locked transaction."""
+    if action in ("prepare", "incubate"):
+        from .benchmarks import guard
+
+        await guard(session, farm_id, unit_id)
     now = datetime.now(UTC)
     assignment = (
         (
@@ -370,6 +423,9 @@ def make_request(row, action, mode, now):
 
 async def reconcile(session, farm_id, now):
     """Repair boot/transport interruptions from committed intent, never invent a start."""
+    from .benchmarks import reconcile as reconcile_benchmarks
+
+    await reconcile_benchmarks(session, farm_id, now)
     rows = (
         (
             await session.execute(
@@ -484,18 +540,38 @@ async def record_report(
                 )
             )
             expected_phase = {"prepare": 1, "incubate": 2}.get(req["action"], 0)
-            confirmed = (
-                all_off
-                if req["action"] == "stop"
-                else (not any((report.running,report.heater,report.mist,report.upper,report.exhaust))
-                      if req["action"] == "cancel" else (
-                    report.running
-                    and report.phase == expected_phase
-                    and report.mode == req["mode"]
-                    if req["action"] in ("prepare", "incubate")
-                    else not report.running and not report.fault
-                ))
-            )
+            if req["action"] in ("htm", "ltm", "lhm"):
+                confirmed = bool(
+                    report.benchmark
+                    and report.benchmark.run_id == req["id"]
+                    and report.benchmark.kind
+                    == {"htm": 1, "ltm": 2, "lhm": 3}[req["action"]]
+                    and report.benchmark.outcome >= 1
+                )
+            else:
+                confirmed = (
+                    all_off
+                    if req["action"] == "stop"
+                    else (
+                        not any(
+                            (
+                                report.running,
+                                report.heater,
+                                report.mist,
+                                report.upper,
+                                report.exhaust,
+                            )
+                        )
+                        if req["action"] == "cancel"
+                        else (
+                            report.running
+                            and report.phase == expected_phase
+                            and report.mode == req["mode"]
+                            if req["action"] in ("prepare", "incubate")
+                            else not report.running and not report.fault
+                        )
+                    )
+                )
             req["status"] = "acked" if report.accepted and confirmed else "rejected"
             if req["status"] == "acked":
                 req["accepted_at"] = now.isoformat()
@@ -540,6 +616,11 @@ async def record_report(
                 k: v for k, v in values.items() if k not in ("farm_id", "incubator_id")
             },
         )
+    )
+    from .benchmarks import record as record_benchmark
+
+    await record_benchmark(
+        session, farm_id, unit_id, device_id, boot_id, report, now, booted_at=booted_at
     )
     return True
 

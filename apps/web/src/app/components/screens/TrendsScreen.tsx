@@ -1,3 +1,4 @@
+import { BenchmarkHistory } from "../trends/BenchmarkHistory";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import type { HatchRecord, Incubator, Mode } from "../../domain/types";
@@ -61,6 +62,7 @@ export function TrendsScreen({
   }[] = [
     { key: "environmental", label: "Environmental Trends", mobileLabel: "Environment" },
     { key: "runs", label: "Incubation History", mobileLabel: "Cycles" },
+    { key: "benchmarks", label: "Benchmarks", mobileLabel: "Tests" },
     { key: "hatch", label: "Hatch History", mobileLabel: "Hatches" },
   ];
   return (
@@ -179,7 +181,7 @@ export function TrendsScreen({
             action={<Button asChild className="rounded-xl"><a href="/incubators">Add your first incubator</a></Button>}
           />
         ) : <EnvironmentalTrends model={environmental} units={units} />
-      ) : trendView === "runs" ? (
+      ) : trendView === "benchmarks" ? (<BenchmarkHistory units={units} />) : trendView === "runs" ? (
         <IncubationRunHistory model={runHistory} units={units} modes={modes} onView={(run) => { environmental.selectRun(run); setTrendView("environmental"); }} />
       ) : (
         <HatchHistory

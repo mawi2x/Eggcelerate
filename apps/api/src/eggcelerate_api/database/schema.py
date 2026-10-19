@@ -750,3 +750,26 @@ incubation_runs = Table(
 )
 Index("ix_run_farm_started", incubation_runs.c.farm_id, incubation_runs.c.started_at)
 Index("uq_run_open_chamber", incubation_runs.c.farm_id, incubation_runs.c.incubator_id, unique=True, postgresql_where=incubation_runs.c.ended_at.is_(None))
+
+# Equipment tests deliberately have no incubation days or turning schedule.
+benchmark_runs = Table(
+    "benchmark_runs", metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("farm_id", Uuid, nullable=False),
+    Column("incubator_id", Text, nullable=False),
+    Column("device_id", Uuid, nullable=False),
+    Column("chamber_name", Text, nullable=False),
+    Column("kind", Text, nullable=False),
+    Column("status", Text, nullable=False),
+    Column("boot_id", Text, nullable=False),
+    Column("started_at", DateTime(timezone=True), nullable=False),
+    Column("ended_at", DateTime(timezone=True)),
+    Column("conditions", JSONB, nullable=False),
+    Column("settings", JSONB, nullable=False),
+    Column("result", JSONB),
+    Column("reason", Text),
+    CheckConstraint("kind IN ('htm','ltm','lhm')", name="ck_benchmark_kind"),
+    CheckConstraint("ended_at IS NULL OR ended_at >= started_at", name="ck_benchmark_dates"),
+)
+Index("ix_benchmark_farm_started", benchmark_runs.c.farm_id, benchmark_runs.c.started_at)
+Index("uq_benchmark_open_chamber", benchmark_runs.c.farm_id, benchmark_runs.c.incubator_id, unique=True, postgresql_where=benchmark_runs.c.ended_at.is_(None))

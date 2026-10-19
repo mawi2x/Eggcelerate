@@ -19,7 +19,8 @@ router = APIRouter(prefix="/incubators", tags=["climate-control"])
 
 @router.get("/{incubator_id}/offline-storage")
 async def read_offline_storage(
-    incubator_id: str, request: Request,
+    incubator_id: str,
+    request: Request,
     context: RequestContext = Depends(get_request_context),
 ):
     from ...mqtt.offline import status
@@ -118,3 +119,216 @@ async def read_control_history(
     except (SQLAlchemyError, OSError, TimeoutError) as exc:
         raise AppError("offline", "Control history is unavailable.") from exc
     return ok_envelope({"reports": rows, "order": "received_at_desc"})
+
+
+class BenchmarkStart(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["htm", "ltm", "lhm"]
+    empty_confirmed: Literal[True]
+    conditions: str = ""
+
+
+@router.get("/{incubator_id}/benchmarks")
+async def read_benchmarks(
+    incubator_id: str,
+    request: Request,
+    context: RequestContext = Depends(get_request_context),
+):
+    from ...database.schema import benchmark_runs, incubators
+
+    database = request.app.state.database
+    if not context.authenticated or database is None:
+        raise AppError("unauthorized", "Sign in to view benchmark history.")
+    farm_id = UUID(context.farm_id)
+    async with database.sessions.begin() as session:
+        exists = await session.scalar(
+            select(incubators.c.id).where(
+                incubators.c.farm_id == farm_id, incubators.c.public_id == incubator_id
+            )
+        )
+        if not exists:
+            raise AppError("not_found", "Incubator was not found.")
+        rows = (
+            (
+                await session.execute(
+                    select(benchmark_runs)
+                    .where(
+                        benchmark_runs.c.farm_id == farm_id,
+                        benchmark_runs.c.incubator_id == incubator_id,
+                    )
+                    .order_by(benchmark_runs.c.started_at.desc())
+                    .limit(100)
+                )
+            )
+            .mappings()
+            .all()
+        )
+        return ok_envelope({"runs": [dict(row) for row in rows]})
+
+
+@router.post("/{incubator_id}/benchmarks", status_code=201)
+async def start_benchmark(
+    incubator_id: str,
+    body: BenchmarkStart,
+    request: Request,
+    context: RequestContext = Depends(get_request_context),
+):
+    from ...database import benchmarks
+
+    database = request.app.state.database
+    if not context.authenticated or database is None:
+        raise AppError("unauthorized", "Sign in to start a benchmark.")
+    if not request.app.state.settings.climate_control_enabled:
+        raise AppError("rejected", "Equipment control is disabled.")
+    if len(body.conditions) > 1000:
+        raise AppError("validation_error", "Keep test notes under 1000 characters.")
+    farm_id = UUID(context.farm_id)
+    async with database.sessions.begin() as session:
+        await session.scalar(
+            select(farms.c.id).where(farms.c.id == farm_id).with_for_update()
+        )
+        run = await benchmarks.start(
+            session,
+            farm_id,
+            incubator_id,
+            body.kind,
+            {
+                "empty_confirmed": True,
+                "notes": body.conditions,
+                "intake_temperature_c": None,
+                "intake_humidity_pct": None,
+            },
+        )
+    return ok_envelope(run)
+
+
+@router.post("/{incubator_id}/benchmarks/stop")
+async def stop_benchmark(
+    incubator_id: str,
+    request: Request,
+    context: RequestContext = Depends(get_request_context),
+):
+    from ...database import benchmarks
+
+    database = request.app.state.database
+    if not context.authenticated or database is None:
+        raise AppError("unauthorized", "Sign in to stop a benchmark.")
+    farm_id = UUID(context.farm_id)
+    async with database.sessions.begin() as session:
+        await session.scalar(
+            select(farms.c.id).where(farms.c.id == farm_id).with_for_update()
+        )
+        result = await benchmarks.stop(session, farm_id, incubator_id)
+    return ok_envelope(result)
+
+
+@router.get("/{incubator_id}/benchmarks/{run_id}/readings")
+async def benchmark_readings(
+    incubator_id: str,
+    run_id: UUID,
+    request: Request,
+    before: AwareDatetime | None = None,
+    context: RequestContext = Depends(get_request_context),
+):
+    from ...database.schema import (
+        benchmark_runs,
+        climate_report_history,
+        offline_records,
+    )
+
+    database = request.app.state.database
+    if not context.authenticated or database is None:
+        raise AppError("unauthorized", "Sign in to view benchmark readings.")
+    async with database.sessions.begin() as session:
+        run = (
+            (
+                await session.execute(
+                    select(benchmark_runs).where(
+                        benchmark_runs.c.id == run_id,
+                        benchmark_runs.c.farm_id == UUID(context.farm_id),
+                        benchmark_runs.c.incubator_id == incubator_id,
+                    )
+                )
+            )
+            .mappings()
+            .first()
+        )
+        if not run:
+            raise AppError("not_found", "Benchmark was not found.")
+        query = select(climate_report_history).where(
+            climate_report_history.c.farm_id == UUID(context.farm_id),
+            climate_report_history.c.incubator_id == incubator_id,
+            climate_report_history.c.device_id == run["device_id"],
+            climate_report_history.c.report["benchmark"]["run_id"].astext
+            == str(run_id),
+        )
+        if run["ended_at"]:
+            query = query.where(climate_report_history.c.observed_at <= run["ended_at"])
+        if before:
+            query = query.where(climate_report_history.c.observed_at < before)
+        rows = (
+            (
+                await session.execute(
+                    query.order_by(climate_report_history.c.observed_at.desc()).limit(
+                        2000
+                    )
+                )
+            )
+            .mappings()
+            .all()
+        )
+        merged = {row["observed_at"]: dict(row, source="live") for row in rows}
+        device_start = (run["settings"] or {}).get("device_started_at")
+        if device_start:
+            from datetime import UTC, datetime
+
+            offline_query = select(offline_records).where(
+                offline_records.c.farm_id == UUID(context.farm_id),
+                offline_records.c.device_id == run["device_id"],
+                offline_records.c.observed_at >= datetime.fromisoformat(device_start),
+                offline_records.c.observed_at <= (run["ended_at"] or datetime.now(UTC)),
+                offline_records.c.outcome.in_(
+                    ("imported", "duplicate_sample", "sensor_invalid")
+                ),
+            )
+            if before:
+                offline_query = offline_query.where(
+                    offline_records.c.observed_at < before
+                )
+            saved = (
+                await session.execute(
+                    offline_query.order_by(offline_records.c.observed_at.desc()).limit(
+                        2000
+                    )
+                )
+            ).mappings()
+            for row in saved:
+                value = row["record"]
+                valid = (
+                    value.get("v") is True
+                    and value.get("a", 999999) <= 5000
+                    and value.get("c") is not None
+                    and value.get("h") is not None
+                )
+                merged.setdefault(
+                    row["observed_at"],
+                    dict(
+                        observed_at=row["observed_at"],
+                        received_at=row["received_at"],
+                        temperature_c=value["c"] / 100 if valid else None,
+                        humidity_pct=value["h"] / 100 if valid else None,
+                        report={"sensor_valid": valid},
+                        source="local_recording",
+                    ),
+                )
+        rows = sorted(
+            merged.values(), key=lambda row: row["observed_at"], reverse=True
+        )[:2000]
+    return ok_envelope(
+        {
+            "readings": [dict(row) for row in rows],
+            "next_before": rows[-1]["observed_at"].isoformat()
+            if len(rows) == 2000
+            else None,
+        }
+    )

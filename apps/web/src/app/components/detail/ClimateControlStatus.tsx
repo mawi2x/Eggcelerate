@@ -16,6 +16,7 @@ const schema = z.object({
     .object({
       lifecycle: z.number().default(0),
       running: z.boolean(),
+      benchmark: z.object({ outcome: z.number() }).nullable().optional(),
       phase: z.number().default(0),
       fault: z.number(),
     })
@@ -66,6 +67,7 @@ export function ClimateControlStatus({ unit }: { unit: Incubator }) {
   const data = query.data,
     report = data?.report;
   const fresh = !!data?.fresh && !query.isError;
+  const benchmarkActive = report?.benchmark?.outcome === 1;
   const pending = data?.request?.status === "pending";
   const authorized =
     !!unit.preparationStartedAt ||
@@ -81,7 +83,7 @@ export function ClimateControlStatus({ unit }: { unit: Incubator }) {
         data?.request?.status ?? "",
       )
     ) {
-      if (report.running && report.phase !== 1)
+      if (report.running && report.phase !== 1 && !benchmarkActive)
         message =
           "Automatically maintaining incubation temperature and humidity.";
       else if (!report.running)

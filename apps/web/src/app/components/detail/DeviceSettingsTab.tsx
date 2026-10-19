@@ -1,3 +1,4 @@
+import { benchmarkModes, type BenchmarkKind } from "../../features/benchmarks/use-benchmarks";
 import { Egg, WifiSlash } from "@phosphor-icons/react";
 import { RotateCw, Zap } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -23,6 +24,8 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
+  SelectLabel,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -45,6 +48,7 @@ interface DeviceSettingsTabProps {
   turnCommandStatus?: TurnCommandStatus;
   onUpdate: (intent: IncubatorUpdateIntent) => Promise<boolean>;
   onStopCycle: () => Promise<boolean>;
+  onBenchmark?: (kind: BenchmarkKind) => void;
   onDeleted: () => void;
   onTurnClick: () => Promise<boolean>;
 }
@@ -63,6 +67,7 @@ export function DeviceSettingsTab({
   onStopCycle,
   onDeleted,
   onTurnClick,
+  onBenchmark,
 }: DeviceSettingsTabProps) {
   const temperature = useTemperatureDisplay();
   const [settingTab, setSettingTab] = useState<"mode" | "turning" | "device">(
@@ -74,6 +79,7 @@ export function DeviceSettingsTab({
   const connection = getConnectionPresentation(unit);
 
   const changeMode = async (modeId: string) => {
+    if (benchmarkModes.some((m) => m.id === modeId)) { onBenchmark?.(modeId as BenchmarkKind); return; }
     const m = modes.find((x) => x.id === modeId);
     if (!m) return;
     if (
@@ -322,11 +328,10 @@ export function DeviceSettingsTab({
                         <SelectValue placeholder="Mode" />
                       </SelectTrigger>
                       <SelectContent>
-                        {currentModes(modes).map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </SelectItem>
-                        ))}
+                        <SelectGroup><SelectLabel>Incubation</SelectLabel>{currentModes(modes).map((m) => (
+                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                        ))}</SelectGroup>
+                        {onBenchmark && <SelectGroup><SelectLabel>Equipment benchmarks</SelectLabel>{benchmarkModes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectGroup>}
                       </SelectContent>
                     </Select>
                   )}

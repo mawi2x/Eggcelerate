@@ -167,6 +167,9 @@ void receiveCloudReceipt(char *topic, byte *body, unsigned int length) {
     else if (!strcmp(fields[4], "incubate")) cmd.action = egg_climate::Action::Incubate;
     else if (!strcmp(fields[4], "stop")) cmd.action = egg_climate::Action::Stop;
     else if (!strcmp(fields[4], "cancel")) cmd.action = egg_climate::Action::Cancel;
+    else if (!strcmp(fields[4], "htm")) cmd.action = egg_climate::Action::HTM;
+    else if (!strcmp(fields[4], "ltm")) cmd.action = egg_climate::Action::LTM;
+    else if (!strcmp(fields[4], "lhm")) cmd.action = egg_climate::Action::LHM;
     else if (!strcmp(fields[4], "reset")) cmd.action = egg_climate::Action::Reset;
     else return;
     const unsigned long mode = strtoul(fields[5], nullptr, 10);
@@ -215,7 +218,7 @@ void initializeCloud() {
   cloudTls.setConnectionTimeout(3000);
   cloudTls.setHandshakeTimeout(3);
   cloudMqtt.setServer(EggCloudConfig::MQTT_HOST, EggCloudConfig::MQTT_PORT);
-  cloudMqtt.setBufferSize(7168);
+  cloudMqtt.setBufferSize(8704);
   cloudMqtt.setKeepAlive(30);
   cloudMqtt.setSocketTimeout(3);
   cloudMqtt.setCallback(receiveCloudReceipt);
@@ -272,7 +275,9 @@ void serviceCloud(uint32_t now) {
   } else if (!cloudUtc(time(nullptr), observedAt, sizeof(observedAt))) return;
   // Main-loop-only buffers: TLS connection needs the loop task's stack.
   // Do not place the enlarged diagnostic payload on that stack.
-  static char payload[6656];
+  static char payload[8192];
+  static char benchmarkFields[1536];
+  if(!egg_benchmark::json(egg_climate::benchmarkSnapshot(),benchmarkFields,sizeof(benchmarkFields)))return;
   static char diagnostics[3328];
   if (!egg_diagnostics::reportJson(climate, diagnostics, sizeof(diagnostics))) return;
   char storageFields[512]; egg_offline::statusJson(storageFields,sizeof(storageFields));
@@ -290,7 +295,7 @@ void serviceCloud(uint32_t now) {
     "\"temp_min\":%.2f,\"temp_max\":%.2f,\"humidity_min\":%.2f,\"humidity_max\":%.2f,"
     "\"upper_duty\":%u,\"exhaust_requested_duty\":%u,\"exhaust_duty\":%u,\"exhaust_reason\":\"%s\","
     "\"pwm_ready\":%s,\"pwm_hz\":%lu,\"pwm_bits\":%u,\"fan_min_duty\":%u,\"fan_boost_ms\":%lu,"
-    "\"tray_capability\":true,\"tray_cancel_return_capability\":true,\"tray_cancel_return\":%s,\"tray_running\":%s,\"tray_position\":%u,\"tray_status\":%u,\"tray_id\":%lu,\"tray_highest\":%lu,\"tray_ack\":%lu,\"tray_accepted\":%s,\"diagnostics\":%s}}",
+    "\"benchmark_capability\":1,\"benchmark\":%s,\"tray_capability\":true,\"tray_cancel_return_capability\":true,\"tray_cancel_return\":%s,\"tray_running\":%s,\"tray_position\":%u,\"tray_status\":%u,\"tray_id\":%lu,\"tray_highest\":%lu,\"tray_ack\":%lu,\"tray_accepted\":%s,\"diagnostics\":%s}}",
     kDeviceId, cloudBootId, cloudBootedAt, static_cast<unsigned long>(sequence), observedAt, storageFields, sampleFields, climate.halted ? "true" : "false", climate.resuming ? "true" : "false", climate.phase, freshSensor ? "true" : "false",
     climate.running ? "true" : "false", climate.mode, climate.out.heater ? "true" : "false", climate.out.mist ? "true" : "false",
     climate.out.upper ? "true" : "false", climate.out.exhaust ? "true" : "false", static_cast<unsigned int>(climate.fault),
@@ -303,7 +308,7 @@ void serviceCloud(uint32_t now) {
     climate.exhaustReason, climate.pwmReady ? "true" : "false",
     (unsigned long)egg_climate::kExhaustPwmHz, egg_climate::kExhaustPwmBits,
     egg_climate::kExhaustMinDuty, (unsigned long)egg_climate::kExhaustBoostMs,
-    tray.cancelReturning?"true":"false",tray.running?"true":"false",tray.position,unsigned(tray.status),(unsigned long)tray.id,(unsigned long)tray.highestId,(unsigned long)tray.ackId,tray.accepted?"true":"false", diagnostics);
+    benchmarkFields, tray.cancelReturning?"true":"false",tray.running?"true":"false",tray.position,unsigned(tray.status),(unsigned long)tray.id,(unsigned long)tray.highestId,(unsigned long)tray.ackId,tray.accepted?"true":"false", diagnostics);
   cloudPublishedAt = now;
   cloudHasPublished = true;
   if (size > 0 && static_cast<size_t>(size) < sizeof(payload) && cloudMqtt.publish(cloudTopic, payload, false)) {
