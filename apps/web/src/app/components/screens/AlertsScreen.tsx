@@ -211,7 +211,7 @@ export function AlertsScreen({
               style={{
                 backgroundColor: RUST,
                 color: "var(--on-brand)",
-                fontSize: "var(--type-filter-label)",
+                fontSize: "var(--type-button-label)",
                 fontWeight: "var(--weight-bold)",
               }}
               onClick={() => void onMarkAllRead()}
@@ -234,7 +234,7 @@ export function AlertsScreen({
               className="h-[var(--control-height-mobile)] min-w-0 flex-1 rounded-xl md:h-[var(--control-height-default)] md:flex-none md:rounded-xl md:px-4"
               style={{
                 borderColor: BORDER,
-                fontSize: "var(--type-filter-label)",
+                fontSize: "var(--type-button-label)",
                 fontWeight: "var(--weight-bold)",
               }}
               onClick={() => void onClearRead()}

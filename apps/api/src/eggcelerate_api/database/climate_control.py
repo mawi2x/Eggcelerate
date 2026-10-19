@@ -1,6 +1,7 @@
 """Explicit, expiring hardware test requests. Caller locks the farm for writes."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
@@ -9,13 +10,97 @@ from sqlalchemy.dialects.postgresql import insert
 
 from ..errors import AppError
 from .schema import (
-    climate_tests,
     climate_report_history,
+    climate_tests,
     devices,
     incubator_runtime,
     incubators,
     modes,
 )
+
+
+class DiagnosticJournalStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    version: Literal[1, 2, 3]
+    available: StrictBool
+    written: int = Field(ge=0, le=4294967295)
+    dropped: int = Field(ge=0, le=4294967295)
+    write_failures: int = Field(ge=0, le=4294967295)
+    rotations: int = Field(ge=0, le=4294967295)
+
+
+class SensorDiagnostics(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    successes: int = Field(ge=0, le=4294967295)
+    failures: int = Field(ge=0, le=4294967295)
+    consecutive_failures: int = Field(ge=0, le=4294967295)
+    consecutive_good: int = Field(ge=0, le=2)
+    recovery_hold: StrictBool
+    recoveries: int = Field(ge=0, le=4294967295)
+    last_good_age_ms: int | None = Field(default=None, ge=0, le=4294967295)
+    last_good_temperature_c: float | None = Field(default=None, ge=0, le=60, allow_inf_nan=False)
+    last_good_humidity_pct: float | None = Field(default=None, ge=1, le=100, allow_inf_nan=False)
+    last_failure_ms: int = Field(ge=0, le=4294967295)
+    last_recovery_ms: int = Field(ge=0, le=4294967295)
+    fault_at_ms: int = Field(ge=0, le=4294967295)
+    reset_reason: int = Field(ge=0, le=255)
+
+
+class AdaptiveDiagnostics(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    equivalent_rh: float | None = Field(default=None, allow_inf_nan=False)
+    moisture_rate_pct_min: float | None = Field(default=None, allow_inf_nan=False)
+    humidity_forecast: float | None = Field(default=None, allow_inf_nan=False)
+    heat_forecast_c: float | None = Field(default=None, allow_inf_nan=False)
+    cooling_forecast_c: float | None = Field(default=None, allow_inf_nan=False)
+    power_forecast_c: float | None = Field(default=None, allow_inf_nan=False)
+    thermal_target_c: float | None = Field(default=None, allow_inf_nan=False)
+    heating_power: float | None = Field(default=None, allow_inf_nan=False)
+    heat_integral: float | None = Field(default=None, allow_inf_nan=False)
+    heat_feed_forward: float | None = Field(default=None, allow_inf_nan=False)
+    dry_effort: float | None = Field(default=None, allow_inf_nan=False)
+    dry_baseline: float | None = Field(default=None, allow_inf_nan=False)
+    review_delta: float | None = Field(default=None, allow_inf_nan=False)
+    duty_seconds: float | None = Field(default=None, allow_inf_nan=False)
+    last_review_baseline: float | None = Field(default=None, allow_inf_nan=False)
+    last_review_duty_seconds: float | None = Field(default=None, allow_inf_nan=False)
+    last_review_eligible_ms: int = Field(ge=0, le=4294967295)
+    last_review_exhaust_ms: int = Field(ge=0, le=4294967295)
+    stable_ms: int = Field(ge=0, le=4294967295)
+    review_elapsed_ms: int = Field(ge=0, le=4294967295)
+    eligible_ms: int = Field(ge=0, le=4294967295)
+    exhaust_ms: int = Field(ge=0, le=4294967295)
+    review_count: int = Field(ge=0, le=4294967295)
+    dry_held: StrictBool
+    may_dry: StrictBool
+    dry_limited: StrictBool
+    boost_active: StrictBool
+    thermal_ceiling: int = Field(ge=0, le=100)
+    review_result: int = Field(ge=0, le=3)
+    heat_window_second: int = Field(ge=0, le=20)
+    test_duty: int = Field(ge=0, le=100)
+
+
+class ControlDiagnostics(BaseModel):
+    """Observations only; never interpreted as commands or readiness samples."""
+
+    model_config = ConfigDict(extra="forbid")
+    version: Literal[1]
+    sample: int = Field(ge=0, le=4294967295)
+    evaluated_ms: int = Field(ge=0, le=4294967295)
+    temperature_rate_c_min: float | None = Field(default=None, allow_inf_nan=False)
+    humidity_rate_pct_min: float | None = Field(default=None, allow_inf_nan=False)
+    heat_demand: StrictBool
+    dry_demand: StrictBool
+    mist_demand: StrictBool
+    temperature_cooling: StrictBool
+    vent_on: StrictBool
+    heater_elapsed_ms: int = Field(ge=0, le=4294967295)
+    mist_elapsed_ms: int = Field(ge=0, le=4294967295)
+    vent_elapsed_ms: int = Field(ge=0, le=4294967295)
+    journal: DiagnosticJournalStatus
+    sensor: SensorDiagnostics | None = None
+    adaptive: AdaptiveDiagnostics | None = None
 
 
 class ClimateReport(BaseModel):
@@ -35,6 +120,7 @@ class ClimateReport(BaseModel):
     fault: int = Field(ge=0, le=7)
     command_id: str = Field(max_length=36, pattern=r"^([0-9a-f-]{36})?$")
     accepted: StrictBool
+    diagnostics: ControlDiagnostics | None = None
     # Optional for older firmware. Never infer measured rotation from these commands.
     firmware: str | None = Field(default=None, max_length=64)
     control_seq: int | None = Field(default=None, ge=0, le=4294967295)
@@ -54,6 +140,8 @@ class ClimateReport(BaseModel):
     fan_min_duty: int | None = Field(default=None, ge=1, le=100)
     fan_boost_ms: int | None = Field(default=None, ge=0, le=10000)
     tray_capability: StrictBool = False
+    tray_cancel_return_capability: StrictBool = False
+    tray_cancel_return: StrictBool = False
     tray_running: StrictBool = False
     tray_position: int = Field(default=0, ge=0, le=3)
     tray_status: int = Field(default=0, ge=0, le=5)
@@ -182,7 +270,7 @@ async def set_intent(session, farm_id, unit_id, action, *, started_at=None):
             "Connect the incubator and wait for its equipment status before continuing.",
         )
     report = row["report"]
-    if action != "stop" and report.get("lifecycle", 0) != 1:
+    if action not in {"stop", "cancel"} and report.get("lifecycle", 0) != 1:
         raise AppError(
             "rejected",
             "Upload the preparation/incubation firmware before beginning preparation.",
@@ -243,6 +331,7 @@ async def set_intent(session, farm_id, unit_id, action, *, started_at=None):
     )
     if action == "prepare":
         same = same and old.get("preparation_started_at") == prep_stamp
+    same = same and (row["request"] or {}).get("action") == action
     if same and (pending(row, now) or (row["request"] or {}).get("status") == "acked"):
         return view
     intent = {
@@ -398,13 +487,14 @@ async def record_report(
             confirmed = (
                 all_off
                 if req["action"] == "stop"
-                else (
+                else (not any((report.running,report.heater,report.mist,report.upper,report.exhaust))
+                      if req["action"] == "cancel" else (
                     report.running
                     and report.phase == expected_phase
                     and report.mode == req["mode"]
                     if req["action"] in ("prepare", "incubate")
                     else not report.running and not report.fault
-                )
+                ))
             )
             req["status"] = "acked" if report.accepted and confirmed else "rejected"
             if req["status"] == "acked":

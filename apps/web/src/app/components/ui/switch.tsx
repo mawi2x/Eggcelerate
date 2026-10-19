@@ -9,25 +9,22 @@ const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitive.Root>
 >(({ className, ...props }, ref) => (
-  <span
-    data-slot="switch-hit-area"
-    className="inline-flex h-[var(--control-height-mobile)] w-[var(--control-height-mobile)] shrink-0 items-center justify-center"
+  <SwitchPrimitive.Root
+    ref={ref}
+    data-slot="switch"
+    className={cn(
+      "group inline-flex size-[var(--control-hit-area-icon)] shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 outline-none focus-visible:ring-ring/50 focus-visible:ring-[length:var(--focus-ring-width)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
+      className,
+    )}
+    {...props}
   >
-    <SwitchPrimitive.Root
-      ref={ref}
-      data-slot="switch"
-      className={cn(
-        "peer data-[state=checked]:bg-primary data-[state=unchecked]:bg-switch-background focus-visible:border-ring focus-visible:ring-ring/50 dark:data-[state=unchecked]:bg-input/80 inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent transition-all outline-none focus-visible:ring-[length:var(--focus-ring-width)] cursor-pointer hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50",
-        className,
-      )}
-      {...props}
-    >
+    <span aria-hidden="true" className="pointer-events-none relative inline-flex h-[1.15rem] w-8 items-center rounded-full border border-transparent bg-switch-background transition-colors group-data-[state=checked]:bg-primary">
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
-        className="bg-card dark:data-[state=unchecked]:bg-card-foreground dark:data-[state=checked]:bg-primary-foreground pointer-events-none block size-4 rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0"
+        className="pointer-events-none block size-4 rounded-full bg-card shadow-sm transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0"
       />
-    </SwitchPrimitive.Root>
-  </span>
+    </span>
+  </SwitchPrimitive.Root>
 ));
 
 Switch.displayName = SwitchPrimitive.Root.displayName;

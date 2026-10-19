@@ -23,8 +23,8 @@ from .schema import (
 
 log = logging.getLogger(__name__)
 CONDITIONS = {
-    "temp": (60, "critical", "temperature-out-of-range", "Temperature out of range"),
-    "humidity": (60, "warning", "humidity-out-of-range", "Humidity out of range"),
+    "temp": (90, "critical", "temperature-out-of-range", "Temperature out of range"),
+    "humidity": (90, "warning", "humidity-out-of-range", "Humidity out of range"),
     "water": (0, "info", "water-check", "Check water reservoir"),
     "offline": (0, "critical", "device-offline", "Device offline"),
 }

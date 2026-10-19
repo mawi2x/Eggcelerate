@@ -2824,3 +2824,174 @@ implementation guide.
   are saved. ESP32 and MQTT worker remain unchanged. Production builds and static
   checks passed; functional/browser tests were not run.
 - See [incubation run history](docs/guide/incubation-run-history.md).
+
+### 2026-10-19 — Local climate diagnostic logging before adaptive control
+
+- User completed the firmware/configuration backup. Implemented the next logging
+  step locally; no VPS deployment, flashing, or actuator commands were performed.
+- Added raw sample slopes, demand latches and timing observations without changing
+  thresholds, relay decisions, PWM settings or safety behavior.
+- Control-loop events use a nonblocking queue and bounded CRC-protected LittleFS
+  journal written by the existing storage task. Added serial export and an offline
+  decoder; counters expose queue/write loss and journal rotation.
+- Added an optional backend diagnostic report schema using existing JSONB history.
+  Both API and telemetry worker must accept this schema before firmware installation.
+  Full journal replay to the VPS is not part of this step.
+- Closed reservoir confirmed by user; passive evaporation is an unconfirmed
+  hypothesis, not an established cause. Prior audit corrected accordingly.
+- Next: review diagnostic/device qualification, then implement anticipatory heating,
+  coordinated adaptive drying/misting, and fan boost/ramp tuning in Chicken mode.
+- See [control diagnostics](docs/guide/control-diagnostics.md). Device persistence,
+  control timing, queue/rotation fault cases and functional tests remain outstanding.
+
+### 2026-10-19 — Local coordinated adaptive Chicken control
+
+- Added bounded, smoothed trend forecasts for early heater cutoff and cooling
+  release; retained raw safety checks and existing relay-off/circulation timing.
+- Humidity exhaust speed and duration adapt to error, trend and bounded drying
+  effort, with thermal permission to pause drying before temperature falls low.
+- Mist pulses/rests adapt to predicted deficit within the existing maximum pulse
+  and minimum rest bounds. Upper circulation remains continuous during regulation.
+- Chicken targets unchanged; Duck/Quail decisions remain unchanged. Settings are
+  provisional, not physically qualified or automatically learned parameters.
+- Local compilation/static checks only; no tests, flashing or VPS deployment.
+  Next: empty-chamber response/physical qualification and monitored tuning.
+- See [adaptive climate control](docs/guide/adaptive-climate-control.md).
+
+### 2026-10-19 — Adaptive firmware installation and stopped-state verification
+
+- Local checks: 16 control scenarios, 6 backend tests, 4 decoder tests and offline
+  storage host harness passed. Seven database integration tests skipped.
+- Deployed optional diagnostic schema to VPS API and telemetry worker with module,
+  wrapper/image and database rollback backup; no schema migration required.
+- Fixed a loopTask/TLS stack overflow exposed during first installation by moving
+  network-only buffers to static storage. Corrected application upload hash verified
+  after a serial-transfer retry; settings and environmental recording preserved.
+- Cloud confirms new build and active local journal with no reported loss/errors.
+  All actuators stopped. DHT22 readings are currently invalid; reset fault remains
+  latched, so no preparation run was started. Normal power connection check pending.
+- Resolve readings/reset first; select Chicken for the adaptive empty-chamber trial.
+  Device is not yet qualified for sustained joint target compliance.
+
+### 2026-10-19 — Local temperature/humidity optimization candidate v2
+
+- Added predictive proportional/integral relay heat demand with anti-windup,
+  20-second windows, 5-second minimum normal ON/OFF, and one start per window.
+- Added temperature-compensated moisture decisions, sustained thermally derated
+  drying, ineffective-drying backoff, and bounded mist response learning.
+- Chicken targets unchanged; upper circulation and raw safety/fault gates retained.
+- 21 control checks and 4 decoder checks passed; ten paired synthetic chamber
+  scenarios show improved feasible-case target coverage, with remaining excursions
+  and an intentionally unreachable humid-intake case recorded explicitly.
+- Compile passed (93% flash, 20% static RAM). V2 remains local: no flashing, VPS
+  change or physical run. Higher relay switching is a material qualification item
+  before installation; tuning values are not measured chamber response parameters.
+- See [optimization v2](docs/guide/climate-optimization-v2.md).
+
+### 2026-10-19 — Sensor reliability phase 1 (local v3)
+
+- Implemented immediate heater/mist hold on an invalid sensor attempt, retaining
+  last-good values/time separately and requiring two consecutive valid readings
+  before automatic continuation within a fixed six-second recovery window.
+- Sustained failures and stale streams still latch; late arrivals cannot mask
+  expired deadlines. Explicit Stop and serious faults cannot auto-resume.
+- Added fault-injection coverage for all modes, deadlines, mist interruption,
+  serious faults and millisecond rollover; adaptive regression checks passed.
+- Local build only; no flashing or VPS changes. Full-exhaust latched-fault policy
+  remains phase 2. See [sensor recovery phase 1](docs/guide/sensor-recovery-phase1.md).
+
+### 2026-10-19 — Fault ventilation phase 2 (local v4)
+
+- Replaced unconditional full exhaust during faults with fresh-temperature
+  hysteresis and bounded last-known-hot cooling (60-second evidence age).
+- Confirmed >=39°C overheat retains emergency exhaust until two fresh readings
+  confirm cooling. PWM output failure no longer requests unavailable exhaust.
+- Heater/mist stay off, faults stay latched and explicit Stop remains all-off.
+- Added coverage for all modes, cold/hot/stale data, timeout boundaries, overheat
+  precedence, Stop and rollover. Includes phase 1 sensor recovery; no normal
+  humidity/temperature tuning changes, flashing or VPS deployment.
+- See [fault ventilation phase 2](docs/guide/fault-ventilation-phase2.md).
+
+### 2026-10-19 — Sensor-health diagnostics phase 3 (local v5)
+
+- Added acquisition/recovery counters, last-good values/age, recovery-hold flag,
+  fault/failure/recovery timestamps and ESP reset reason to local/cloud diagnostics.
+- Version 2 journal records retain actuator context; dump/decoder support v1/v2,
+  and version changes rotate safely before appending. Retention remains bounded.
+- Added backward-compatible optional backend sensor-health schema and journal-v2
+  acceptance. Deploy to both API and worker before installing v5; no DB migration.
+- Sensor/journal fault-injection checks, seven decoder tests, ten API schema tests,
+  phase 1/2 regressions and 21 adaptive scenarios pass; firmware compile succeeds.
+- Local artifacts only. No VPS deployment, flashing or physical trial. Next is the
+  compatible deployment and empty-chamber run needed to assess joint humidity /
+  temperature behavior. See [phase 3](docs/guide/sensor-health-diagnostics-phase3.md).
+
+### 2026-10-19 — V5 VPS rollout and application installation
+
+- Backed up VPS module/wrapper, service image references and PostgreSQL custom dump;
+  deployed the optional sensor-health schema to API and telemetry worker. Actual
+  new firmware JSON and old report compatibility checked in both derived images.
+- Confirmed old v2 uploads continued; HTTPS readiness healthy after service update.
+- Backed up the installed application privately. First 460800-baud read failed;
+  retry at 115200 succeeded. V5 application-only flash completed and hash verified,
+  preserving settings, NVS and LittleFS. No Wi-Fi reprovisioning or FS erasure.
+- Boot sensor valid, explicit Stop retained. Cleared the stored sensor fault only
+  after valid readings; fault 0, all actuators off. No firmware crash observed.
+- VPS stored six v5 reports by uptime 44s. Journal version 2 available with 21
+  records, zero drops/write failures and the expected version-change rotation.
+- Empty-chamber regulation trial remains pending. Initial stopped readings about
+  33.1°C / 77.7% RH do not establish target compliance. See phase 3 guide and
+  `output/releases/sensor-diagnostics-v5-20261019/installation.json`.
+
+### 2026-10-19 — Revised humidity plan, coordinated-drying v6 candidate
+
+- Saved extended mixed-mode v5 cloud baseline; isolated ~24.5 minutes of Chicken
+  preparation and exported 727 local journal records before changes.
+- Added internal heat/drying diagnostics, compatible journal v3/decoder/API model,
+  qualified post-warm-up drying reviews and retained review evidence.
+- Added bounded heater feed-forward during exhaust, shared prediction guards,
+  thermally limited 50–100% drying and empty-preparation-only timed 60/100% trials.
+- Software checks pass; synthetic outcomes are mixed, so physical improvement is
+  not claimed. Live comparison and joint target qualification remain required.
+- See [coordinated drying v6](docs/guide/coordinated-drying-v6.md) and release
+  evidence under `output/releases/coordinated-drying-v6-20261019/`.
+
+### 2026-10-19 — V6 installed; live qualification pending
+
+- API/worker adaptive schema deployed with module/wrapper/image/database rollback
+  backup; old and new reports accepted, HTTPS readiness healthy.
+- V6 application hash verified on flash; previous installed v5 artifact retained
+  privately for rollback. NVS/LittleFS preserved. Boot cloud check: fault 0, sensor
+  valid, all outputs off; journal v3 available, no drops/write failures.
+- Serial trial monitor opened before user start to avoid a mid-run USB reset.
+  User was asked to begin empty Chicken preparation; fixed-duty requests wait
+  for stability and retain safety overrides. This is not yet a completed trial.
+- Installation evidence: `output/releases/coordinated-drying-v6-20261019/installation.json`.
+
+### 2026-10-19 — Tray dispatch repair and bounded cancellation return
+
+- Confirmed VPS tray control disabled in both services; last manual turn timed out
+  with zero attempts and no controller ACK. Enabled API + worker dispatch with
+  backups; existing position/healthy-incubation gates remain mandatory.
+- Added v7 atomic cycle-cancel stop plus bounded return only from an established
+  stationary side. Ordinary Stop stays all-off; unknown/interrupted/rebooted or
+  unhealthy position cannot authorize motion. Owner confirmed current tray flat.
+- Added matched-cancel acknowledgment handling, paused old requests and independent
+  motion IDs. Timed completion remains estimated, never verified home.
+- Targeted backend/firmware tests and UI typecheck pass; original v6 climate changes
+  retained. Physical tray movement and the Chicken humidity comparison remain
+  pending owner interaction; do not mark joint control qualified.
+- See [tray turning guide](docs/guide/tray-turning-guide.md).
+
+### 2026-10-19 — V7 stopped-state verification; owner-flow test pending
+
+- V7 flash hash verified; NVS/LittleFS retained, source hashes match release.
+  Cloud confirms cancellation capability, sensor valid, fault 0, all actuators off.
+- API/worker tray flags and targeted module hashes verified; latest backend images
+  `tray-return-v7-r2-20261019`. Public readiness and cached-script delivery healthy.
+- Targeted status-message web image preserves the previously deployed frontend;
+  no unrelated working-tree UI changes were deployed.
+- Latest cycle state is Ready/prior cycle stopped. Tray physical test cannot run
+  there by design; still requires healthy active incubation and observed reference.
+- Reopened the climate monitor before user begins Chicken preparation. The v7
+  bounded exhaust comparison and joint-target outcome remain pending actual start.

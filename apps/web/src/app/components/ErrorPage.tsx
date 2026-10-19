@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { House, RotateCcw } from "lucide-react";
 import logoApp from "../../imports/logo-app.webp";
 import { Button } from "./ui/button";
@@ -16,11 +17,16 @@ export function ErrorPage({
   onHome,
 }: Props) {
   const missing = kind === "not-found";
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    container.current?.scrollIntoView({ block: "start", behavior: "instant" });
+  }, []);
   return (
+    <div ref={container} className="flex min-h-[calc(100dvh-var(--mobile-bottom-nav-clearance))] w-full items-center justify-center py-6 md:min-h-dvh">
     <section
       role={missing ? "status" : "alert"}
       aria-labelledby="error-page-title"
-      className="flex min-h-[calc(100dvh-4rem)] w-full flex-col items-center justify-center rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[var(--surface-card)] px-5 py-12 text-center text-[var(--text-primary)] md:min-h-[calc(100dvh-3rem)]"
+      className="flex w-full max-w-xl flex-col items-center justify-center rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[var(--surface-card)] px-5 py-10 text-center text-[var(--text-primary)] sm:px-8 sm:py-12"
     >
       <div
         aria-hidden="true"
@@ -100,5 +106,6 @@ export function ErrorPage({
         )}
       </div>
     </section>
+    </div>
   );
 }

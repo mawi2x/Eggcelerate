@@ -5,7 +5,7 @@ import type * as React from "react";
 import { cn } from "./utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[length:var(--focus-ring-width)] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-[family-name:var(--font-body)] text-(length:--type-button-label) font-bold leading-[var(--leading-button)] cursor-pointer transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[length:var(--focus-ring-width)] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
@@ -23,7 +23,7 @@ const buttonVariants = cva(
       size: {
         micro:
           "h-[var(--control-height-default)] rounded-lg gap-1 px-2.5 text-sm has-[>svg]:px-2 md:h-7 md:text-xs",
-        default: "h-[var(--control-height-default)] px-4 py-2 has-[>svg]:px-3",
+        default: "h-[var(--control-height-action)] px-4 py-0 has-[>svg]:px-3",
         sm: "h-[var(--control-height-default)] rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 md:h-[var(--control-height-compact)]",
         lg: "h-[var(--control-height-toolbar)] rounded-md px-6 has-[>svg]:px-4",
         toolbar:

@@ -1,5 +1,5 @@
 import { TrayControlStatus } from "./TrayControlStatus";
-import { Fan, Flame, Waves, WifiHigh, WifiSlash } from "@phosphor-icons/react";
+import { Fan, Flame, Waves, WifiSlash } from "@phosphor-icons/react";
 import {
   ArrowUpRight,
   ChevronDown,
@@ -642,23 +642,13 @@ export function LiveMonitorTab({
               )}
             </>
           )}
-          <SystemStatusTile
-            icon={
-              telemetryStatus === "fresh" ? (
-                <WifiHigh size={18} weight="fill" />
-              ) : (
-                <WifiSlash size={18} weight="fill" />
-              )
-            }
-            label="Telemetry"
-            value={
-              telemetryStatus === "fresh"
-                ? "Live"
-                : telemetryStatus === "stale"
-                  ? "Stale"
-                  : "Offline"
-            }
-          />
+          {(!unit.paired || telemetryStatus !== "fresh") && (
+            <SystemStatusTile
+              icon={<WifiSlash size={18} weight="fill" />}
+              label="Telemetry"
+              value={!unit.paired || telemetryStatus === "offline" ? "Offline" : "Stale"}
+            />
+          )}
         </div>
         {!outputStates && (
           <p

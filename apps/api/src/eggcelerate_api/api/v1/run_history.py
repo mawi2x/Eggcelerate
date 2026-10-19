@@ -89,3 +89,36 @@ async def list_runs(
             "next_cursor": cursor,
         }
     )
+
+
+@router.delete("/{run_id}")
+async def delete_run(
+    run_id: UUID,
+    request: Request,
+    context: RequestContext = Depends(get_request_context),
+):
+    """Remove an ended history entry; retain all sensor and cycle records."""
+    from sqlalchemy import delete
+
+    database = request.app.state.database
+    if database is None:
+        raise AppError("offline", "History deletion requires the connected server.")
+    try:
+        async with database.sessions.begin() as session:
+            row = (await session.execute(
+                select(incubation_runs).where(
+                    incubation_runs.c.id == run_id,
+                    incubation_runs.c.farm_id == UUID(context.farm_id),
+                ).with_for_update()
+            )).mappings().first()
+            if row is None:
+                raise AppError("not_found", "History entry was not found.")
+            if row["ended_at"] is None or row["status"] in {"preparing", "incubating"}:
+                raise AppError("conflict", "Only ended runs can be removed from history.")
+            await session.execute(delete(incubation_runs).where(
+                incubation_runs.c.id == run_id,
+                incubation_runs.c.farm_id == UUID(context.farm_id),
+            ))
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "History entry could not be deleted. Try again.") from exc
+    return ok_envelope({"id": str(run_id)})

@@ -174,3 +174,47 @@ for the partition backup, initialization command, timestamp/ownership rules,
 retention limits, verification evidence and installation status. This supersedes
 older descriptions of Serial-only environmental logging. Actuator-event
 persistence and physical qualification remain separate follow-up work.
+
+## Local diagnostic logging revision (19 October 2026)
+
+`climate-pwm-diagnostics-v1` adds a bounded local control journal, sample slopes,
+internal demand/timing fields and offline decoding. It does not change regulation
+logic and has not been flashed/deployed. See [control diagnostics](../../../docs/guide/control-diagnostics.md)
+for resource bounds, retrieval, limitations and the required API/telemetry-worker
+update before installing this firmware. Do not open Serial on the active incubator
+solely to retrieve logs; this board can reset when a serial connection is opened.
+
+## Local adaptive Chicken revision (19 October 2026)
+
+`climate-adaptive-chicken-v1` supersedes the diagnostics-only marker locally.
+It adds bounded trend prediction for heating/cooling, thermally gated adaptive
+humidity ventilation and deficit-based mist pulses/rests in Chicken mode.
+Duck/Quail and safety limits retain prior behavior. Settings are provisional;
+no firmware installation or chamber qualification has been performed.
+See [adaptive climate control](../../../docs/guide/adaptive-climate-control.md).
+
+## Local optimization candidate v2
+
+`climate-adaptive-chicken-v2` is compiled locally and not installed. It uses slow
+relay heat windows, compensated moisture control and bounded mist response learning.
+See [optimization v2](../../../docs/guide/climate-optimization-v2.md) for tests,
+synthetic-model limitations and the relay-switching tradeoff before deployment.
+
+Sensor recovery candidate `climate-sensor-recovery-v3` adds a bounded transient
+sensor hold before latching a fault. See [phase 1 behavior and verification](../../../docs/guide/sensor-recovery-phase1.md).
+
+Candidate `climate-fault-ventilation-v4` includes phase 1 and temperature-aware
+fault ventilation. See [phase 2 behavior and checks](../../../docs/guide/fault-ventilation-phase2.md).
+
+Candidate `climate-sensor-diagnostics-v5` includes phases 1/2 and sensor-health
+journal/cloud reporting. [Phase 3 release notes](../../../docs/guide/sensor-health-diagnostics-phase3.md)
+describe the required API/worker parser update before flashing.
+
+V5 was installed on 19 October 2026 after the compatible VPS API/worker update.
+Stopped-state boot and persistent cloud diagnostics verified; empty-chamber
+regulation trial remains pending. See phase 3 release notes for installation evidence.
+
+Firmware `climate-coordinated-drying-v6` was installed on 19 October 2026 after the
+compatible VPS update. [Revised humidity plan](../../../docs/guide/coordinated-drying-v6.md)
+describes its provisional tuning, diagnostics and bounded exhaust comparison.
+Joint target compliance remains subject to the live empty-chamber trial.

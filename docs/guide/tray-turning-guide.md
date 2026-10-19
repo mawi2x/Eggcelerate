@@ -96,3 +96,69 @@ recreated and API/web healthy; worker connected. New main firmware compiled at
 and targeted lint pass. No behavioral tests, new upload or motor operation were
 performed. The currently recorded device has no tray capability and no tray
 command has been queued. The VPS was not changed.
+
+## October 19 VPS repair and cancellation return (v7)
+
+The VPS API and telemetry worker had `TRAY_CONTROL_ENABLED=false`. A recorded
+manual request timed out with `attempts=0`, no execution or ACK; it was never
+sent to the motor controller. This configuration is now enabled for both services.
+The guide's normal starting-position confirmation is still required. A physical
+flat position does not automatically become a controller reference after reboot.
+The user observed the current tray as flat before the repair; no movement was
+commanded from that observation during installation.
+
+Firmware `climate-tray-cancel-return-v7` retains v6 climate control and adds a
+separate lifecycle **cancel** command. Cancelling a cycle switches climate outputs
+off immediately, cancels queued tray commands and pauses the schedule. From a
+stationary established +45°/−45° reference, it waits one second, reserves/verifies
+a new motion ID in NVS and makes one bounded five-second return toward level.
+It reports the result as estimated and still requires visual checking.
+
+Unknown position, an interrupted/moving tray, expired commissioning reference,
+sensor/fault/storage/PWM problems or a reboot cannot authorize this return. A
+subsequent ordinary climate Stop or tray Stop remains an immediate all-off stop;
+it never initiates a return. Sensor loss/fault during return interrupts motion and
+marks position unknown. Timed return is not restored across power loss. Already
+established level needs no motor movement. No new direction GPIO or timing is
+introduced; the existing single-relay motor assumptions remain unchanged.
+
+The firmware advertises `tray_cancel_return_capability` and reports
+`tray_cancel_return` while pending/moving. Backend cancellation uses that distinct
+command only for capable firmware, otherwise ordinary Stop. The worker pauses
+regular dispatch and does not interrupt the explicitly authorized bounded return.
+It waits for the matching cancel acknowledgment before interpreting a stopped
+report as completion; an older stopped report cannot complete the new request.
+No cycle count/date is fabricated and timed level is never marked user-confirmed.
+
+Software checks: original tray timing tests plus cancellation cases (both sides,
+level/unknown, moving, expired reference, unhealthy sensor, Stop, timeout and
+millis rollover); climate regression tests; 23 backend schema/cancellation tests;
+web typecheck. These do not prove that GPIO25 relay switching physically moves
+the tray. Physical movement/arrival confirmation remains required from the owner.
+
+For the empty mechanical check, use the normal owner flow while confirmed
+incubation is regulating: save the observed **Level** position in Live Monitor.
+With automatic turning enabled, the five-second initial tilt should run. Observe
+it before cancelling the test cycle; cancellation should then request the bounded
+return toward level. Keep normal tray turning disabled in preparation/idle.
+Do not repeatedly press Turn Now after a timeout or invent a side reference.
+
+VPS deploy and firmware evidence are under
+`output/releases/tray-repair-v7-20261019/`. The original unreadable-response banner
+could not be reproduced in current API checks: authenticated dashboard routes
+returned 200, the unauthenticated API returned JSON 401, and readiness was healthy.
+Refresh/retry the dashboard after deployment; do not assume an old cached banner
+means the motor command was sent.
+
+Post-install check: v7 cloud capability true, sensor valid, fault 0, all actuators
+including tray off. The current cycle was subsequently found Ready with its prior
+cycle stopped, so no owner-flow turn could be tested in that state. Physical
+movement remains unverified; no successful tilt or home arrival is claimed.
+The user's observation of flat was not fabricated into a sensor reading or motor
+reference. Save the observed position in the normal active-incubation flow.
+
+The deployed dashboard status fix is deliberately narrow: it derives from the
+currently installed web image, replaces the incorrect lockdown-only sentence with
+"Turning is paused. Check that the tray is level.", and cache-busts the JS graph.
+Other in-progress frontend changes were not bundled. More specific cancellation
+messages are prepared in the source component for the next normal frontend build.

@@ -18,12 +18,24 @@ export function SegmentedControl({
   children,
   flush = false,
   role = "group",
+  onKeyDown,
   style,
   ...props
 }: React.ComponentProps<"div"> & { flush?: boolean }) {
   return (
     <div
       role={role}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        if (event.defaultPrevented || role !== "tablist" || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("[role=tab]:not(:disabled)"));
+        const index = tabs.indexOf(document.activeElement as HTMLButtonElement);
+        if (index < 0 || !tabs.length) return;
+        event.preventDefault();
+        const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+        tabs[next].focus();
+        tabs[next].click();
+      }}
       className={cn(
         "inline-flex items-center rounded-full border border-[var(--border-subtle)]",
         flush
@@ -56,6 +68,7 @@ export function SegmentedControlItem({
   return (
     <button
       type={type}
+      tabIndex={props.role === "tab" ? (active ? 0 : -1) : undefined}
       className={cn(
         "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
         flush ? "h-full min-h-0 gap-1.5 px-3 py-0" : itemSizeClasses[size],

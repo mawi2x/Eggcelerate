@@ -22,7 +22,7 @@ export const SETTINGS_SEGMENT_LABEL_STYLE = {
 };
 
 export const inputClass =
-  "h-auto w-full rounded-xl px-3.5 py-2.5 transition-colors focus-visible:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/25";
+  "h-[var(--control-height-default)] w-full rounded-xl px-3.5 py-0 transition-colors focus-visible:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/25";
 export const inputStyle = {
   borderColor: "var(--input-border)",
   backgroundColor: SURFACE,

@@ -46,7 +46,7 @@ export function OfflineStorageStatus({ unit }: { unit: Incubator }) {
       {query.isPending ? <p>Loading recording status…</p> : query.isError ? (
         <div>
           <p role="status">Recording status is unavailable.</p>
-          <Button variant="outline" className="mt-2 min-h-11 rounded-full" onClick={() => void query.refetch()}>Retry</Button>
+          <Button variant="outline" className="mt-2 h-[var(--control-height-action)] rounded-full" onClick={() => void query.refetch()}>Retry</Button>
         </div>
       ) : !report ? <p>Waiting for a device recording report.</p> : (
         <>

@@ -68,13 +68,13 @@ export function ChangePasswordPanel({ onChangePassword }: {
           <FormInput id="current-password" name="current-password" label="Current password" type={visible ? "text" : "password"} autoComplete="current-password" required maxLength={128} value={current} onChange={(event) => setCurrent(event.target.value)} />
           <FormInput id="new-password" name="new-password" label="New password" type={visible ? "text" : "password"} autoComplete="new-password" required maxLength={128} value={next} onChange={(event) => setNext(event.target.value)} />
           <FormInput id="confirm-new-password" name="confirm-new-password" label="Confirm new password" type={visible ? "text" : "password"} autoComplete="new-password" required maxLength={128} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} />
-          <Button type="button" variant="ghost" className="min-h-11 rounded-xl" aria-pressed={visible} onClick={() => setVisible((value) => !value)}>
+          <Button type="button" variant="ghost" className="h-[var(--control-height-action)] rounded-xl" aria-pressed={visible} onClick={() => setVisible((value) => !value)}>
             {visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
             {visible ? "Hide passwords" : "Show passwords"}
           </Button>
         </fieldset>
-        {error && <p ref={errorSummary} role="alert" tabIndex={-1} className="rounded-xl p-3 text-sm" style={{ color: "var(--status-danger-fg)", backgroundColor: "var(--status-danger-bg)" }}>{error}</p>}
-        <Button type="submit" disabled={busy} className="min-h-11 rounded-xl" style={{ backgroundColor: RUST, color: "var(--on-brand)" }}>
+        {error && <p ref={errorSummary} role="alert" tabIndex={-1} className="rounded-xl p-3 text-(length:--type-body)" style={{ color: "var(--status-danger-fg)", backgroundColor: "var(--status-danger-bg)" }}>{error}</p>}
+        <Button type="submit" disabled={busy} className="h-[var(--control-height-action)] rounded-xl" style={{ backgroundColor: RUST, color: "var(--on-brand)" }}>
           {busy ? "Changing password…" : "Change password"}
         </Button>
       </form>

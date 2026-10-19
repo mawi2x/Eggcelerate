@@ -629,6 +629,10 @@ export class ApiRepository implements EggcelerateRepository {
     return latest;
   }
 
+  async deleteIncubationRun(id: string): Promise<Result<{ id: string }>> {
+    return this.request(`/api/v1/runs/${encodeURIComponent(id)}`, z.object({ id: z.string() }), { method: "DELETE" });
+  }
+
   async listIncubationRuns(query: RunHistoryQuery): Promise<Result<RunHistoryPage>> {
     const params = new URLSearchParams();
     if (query.before) params.set("before", query.before);

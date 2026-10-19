@@ -191,6 +191,7 @@ export interface EggcelerateRepository {
     options?: MutationOptions,
   ): Promise<Result<Incubator>>;
   listReadings(query: ReadingQuery): Promise<Result<Reading[]>>;
+  deleteIncubationRun?(id: string): Promise<Result<{ id: string }>>;
   listIncubationRuns?(query: RunHistoryQuery): Promise<Result<RunHistoryPage>>;
   previewRawReadings(
     query: RawReadingScope,

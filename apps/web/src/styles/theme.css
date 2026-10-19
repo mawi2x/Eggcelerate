@@ -11,7 +11,7 @@
   --type-heading-md: 1.125rem; /* 18px */
   --type-heading-sm: 1rem; /* 16px */
   --type-body: 0.875rem; /* 14px */
-  --type-control-value: 0.875rem; /* 14px desktop; 16px on phones (legibility + suppresses iOS focus auto-zoom) */
+  --type-control-value: 0.875rem; /* 14px desktop; 12px on phones (approved compact scale) */
   --type-filter-value: var(
     --type-control-value
   ); /* [EXPERIMENTAL] 14px desktop; 12px tablet; 11px mobile */
@@ -20,7 +20,8 @@
   ); /* [EXPERIMENTAL] 11px desktop/tablet; 10px mobile */
   --type-button-label: 0.875rem; /* 14px desktop action labels */
   --leading-button: var(--leading-snug);
-  --incubator-action-height: var(--control-height-default);
+  --control-height-action: var(--control-height-default);
+  --incubator-action-height: var(--control-height-action);
   --type-body-sm: 0.8125rem; /* 13px */
   --type-caption: 0.75rem; /* 12px */
   --type-label: 0.6875rem; /* 11px — system minimum, do not go below globally */
@@ -51,6 +52,7 @@
   --brand-primary: #ad3a1d;
   --brand-primary-hover: #8b3a1c;
   --brand-primary-soft: #fce4d6;
+  --brand-primary-soft-hover: #f2d4c5;
   --on-brand: #ffffff;
 
   --text-primary: #1a1a1a;
@@ -444,6 +446,7 @@
 /* [EXPERIMENTAL] Filter dropdown labels use the compact label tier on mobile. */
 @media (max-width: 47.9375rem) {
   :root {
+    --control-height-action: var(--control-height-mobile);
     --type-button-label: 0.75rem; /* 12px mobile action labels */
     --incubator-action-height: var(--control-height-mobile);
   }
@@ -577,7 +580,7 @@
    * Default typography styles for HTML elements (h1-h4, label, button, input).
    * Sizes route through the same `--type-*` roles as components, so there is
    * only one scale: unclassed elements match the system (page title 24→20,
-   * control values 14→16 on phones) and Tailwind utilities still override.
+   * control values 14→12 on phones) and Tailwind utilities still override.
    * Weights/line-heights below are intentionally untouched by the mobile
    * typography work — sizes only.
    */

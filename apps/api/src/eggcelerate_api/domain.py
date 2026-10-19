@@ -48,11 +48,14 @@ def condition_severity(
     next_turn: datetime,
     now: datetime,
     telemetry_status: str = "fresh",
+    monitor_targets: bool = True,
 ) -> str:
     temp_critical = temp < temp_min - 0.5 or temp > temp_max + 0.5
     humidity_critical = humidity < humidity_min - 5 or humidity > humidity_max + 5
     telemetry_critical = telemetry_status == "offline"
-    turning_overdue = next_turn < now
+    turning_overdue = monitor_targets and next_turn < now
+    temp_critical = monitor_targets and temp_critical
+    humidity_critical = monitor_targets and humidity_critical
     if (
         not paired
         or telemetry_critical
@@ -60,8 +63,8 @@ def condition_severity(
         or humidity_critical
     ):
         return "critical"
-    temp_warning = temp < temp_min or temp > temp_max
-    humidity_warning = humidity < humidity_min or humidity > humidity_max
+    temp_warning = monitor_targets and (temp < temp_min or temp > temp_max)
+    humidity_warning = monitor_targets and (humidity < humidity_min or humidity > humidity_max)
     telemetry_warning = telemetry_status == "stale"
     if (
         telemetry_warning
@@ -80,6 +83,7 @@ def severity_to_status(severity: str) -> str:
 def derive(unit: IncubatorDTO, mode: ModeDTO, now: datetime) -> IncubatorDTO:
     """Recompute read-only state. Call after every mutation that touches inputs."""
     severity = condition_severity(
+        monitor_targets=unit.day_of_incubation > 0 or unit.preparation_started_at is not None,
         paired=unit.paired,
         temp=unit.temperature_c,
         temp_min=mode.target_temp_c.min,

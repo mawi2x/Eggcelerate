@@ -146,7 +146,7 @@ export function DeviceSettingsTab({
           className="mb-4 w-full min-w-0 border-0 p-0"
           aria-label="Device settings"
         >
-          <SegmentedControl flush className="w-full">
+          <SegmentedControl role="tablist" aria-label="Device settings sections" flush className="w-full">
             {[
               {
                 id: "mode" as const,
@@ -173,7 +173,19 @@ export function DeviceSettingsTab({
                   key={id}
                   flush
                   active={isActive}
-                  aria-pressed={isActive}
+                  id={`device-settings-${id}-tab`}
+                  role="tab"
+                  aria-selected={isActive}
+                  tabIndex={isActive ? 0 : -1}
+                  onKeyDown={(event) => {
+                    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                    event.preventDefault();
+                    const ids = ["mode", "turning", "device"] as const;
+                    const index = ids.indexOf(id);
+                    const next = event.key === "Home" ? 0 : event.key === "End" ? 2 : (index + (event.key === "ArrowRight" ? 1 : -1) + 3) % 3;
+                    setSettingTab(ids[next]);
+                    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("[role=tab]")[next]?.focus();
+                  }}
                   aria-controls={`device-settings-${id}-panel`}
                   onClick={() => setSettingTab(id)}
                   className="min-w-0 flex-1"
@@ -195,7 +207,7 @@ export function DeviceSettingsTab({
           </SegmentedControl>
         </fieldset>
         {settingTab === "mode" && (
-          <div id="device-settings-mode-panel">
+          <div id="device-settings-mode-panel" role="tabpanel" aria-labelledby="device-settings-mode-tab">
             <div
               className="pb-5"
               style={{
@@ -408,7 +420,7 @@ export function DeviceSettingsTab({
         )}
 
         {settingTab === "turning" && (
-          <div id="device-settings-turning-panel">
+          <div id="device-settings-turning-panel" role="tabpanel" aria-labelledby="device-settings-turning-tab">
             <div
               className="pb-5"
               style={{
@@ -581,7 +593,7 @@ export function DeviceSettingsTab({
         )}
 
         {settingTab === "device" && (
-          <div id="device-settings-device-panel">
+          <div id="device-settings-device-panel" role="tabpanel" aria-labelledby="device-settings-device-tab">
             <div
               className="pb-5"
               style={{
@@ -767,8 +779,8 @@ function ChamberNameForm({ unit, isUpdating, onUpdate }: {
         Choose a name to identify this chamber. Everyone with farm access will see it.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Input ref={input} id="chamber-name" name="chamber-name" value={name} onChange={(event) => { setName(event.target.value); setError(null); }} maxLength={30} required disabled={saving || isUpdating} aria-invalid={!!error} aria-describedby={`chamber-name-help chamber-name-count${error ? " chamber-name-error" : ""}`} className="min-h-11 min-w-0 flex-1 rounded-xl" />
-        <Button type="submit" disabled={!changed || !trimmed || saving || isUpdating} className="min-h-11 shrink-0 rounded-xl">
+        <Input ref={input} id="chamber-name" name="chamber-name" value={name} onChange={(event) => { setName(event.target.value); setError(null); }} maxLength={30} required disabled={saving || isUpdating} aria-invalid={!!error} aria-describedby={`chamber-name-help chamber-name-count${error ? " chamber-name-error" : ""}`} className="min-w-0 flex-1 rounded-xl" />
+        <Button type="submit" disabled={!changed || !trimmed || saving || isUpdating} className="shrink-0 rounded-xl">
           {saving ? "Saving…" : "Save name"}
         </Button>
       </div>

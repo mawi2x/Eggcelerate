@@ -125,6 +125,7 @@ export function SettingsScreen({
       >
         <div className="mb-3">{header}</div>
         <FilterBar
+          navigation
           ariaLabel="Settings categories"
           variant="segmented"
           fitToScreenOnMobile

@@ -243,6 +243,7 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
       const created: Incubator = {
         ...clone(unit),
         ...deriveConditionState({
+          monitorTargets: unit.dayOfIncubation > 0 || !!unit.preparationStartedAt,
           paired: unit.paired,
           telemetryStatus: unit.telemetryStatus ?? "offline",
           temp: unit.temp,
@@ -279,7 +280,8 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     return ok({
       ...unit,
       ...deriveConditionState({
-        paired: unit.paired,
+        monitorTargets: unit.dayOfIncubation > 0 || !!unit.preparationStartedAt,
+          paired: unit.paired,
         telemetryStatus: unit.telemetryStatus ?? "offline",
         temp: unit.temp,
         targetTemp: mode.targetTemp,
@@ -854,7 +856,8 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
           : {
               ...unit,
               ...deriveConditionState({
-                paired: unit.paired,
+                monitorTargets: unit.dayOfIncubation > 0 || !!unit.preparationStartedAt,
+          paired: unit.paired,
                 telemetryStatus: unit.telemetryStatus ?? "offline",
                 temp: unit.temp,
                 targetTemp: updated.targetTemp,

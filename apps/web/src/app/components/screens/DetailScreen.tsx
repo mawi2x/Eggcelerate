@@ -85,6 +85,7 @@ function SubTabNav({
   return (
     <div className="flex max-w-full justify-start overflow-x-auto overflow-y-hidden pb-1">
       <FilterBar
+          navigation
         ariaLabel="Incubator detail sections"
         variant="segmented"
         fitToScreenOnMobile
@@ -333,8 +334,8 @@ export function DetailScreen({
                 {isPreparing && (
                   <Button
                     variant="outline"
-                    size="toolbar"
-                    className="min-h-11 w-full rounded-full text-(length:--type-button-label) sm:w-auto"
+                    size="default"
+                    className="h-[var(--control-height-mobile)] py-0 md:h-[var(--control-height-default)] w-full rounded-full text-(length:--type-button-label) font-bold leading-[var(--leading-button)] sm:w-auto"
                     disabled={isUpdating}
                     onClick={() => void onUpdate({ type: "configuration", input: { preparing: false } })}
                   >
@@ -342,15 +343,15 @@ export function DetailScreen({
                   </Button>
                 )}
                 {preparationReady && (
-                  <Button variant="outline" size="toolbar" className="min-h-11 w-full rounded-full text-(length:--type-button-label) sm:w-auto" disabled={isUpdating} onClick={() => setSetupOpen(true)}>
+                  <Button variant="outline" size="default" className="h-[var(--control-height-mobile)] py-0 md:h-[var(--control-height-default)] w-full rounded-full text-(length:--type-button-label) font-bold leading-[var(--leading-button)] sm:w-auto" disabled={isUpdating} onClick={() => setSetupOpen(true)}>
                     Change mode
                   </Button>
                 )}
                 <Button
-                  size="toolbar"
+                  size="default"
                   disabled={isUpdating}
                   onClick={() => setSetupOpen(true)}
-                  className="min-h-11 w-full rounded-full px-5 font-bold text-(length:--type-button-label) sm:w-auto"
+                  className="h-[var(--control-height-mobile)] py-0 md:h-[var(--control-height-default)] w-full rounded-full px-5 text-(length:--type-button-label) font-bold leading-[var(--leading-button)] sm:w-auto"
                   style={{ backgroundColor: "var(--brand-primary-hover)", color: "var(--on-brand)" }}
                 >
                   {isPreparing ? preparationReady ? "Load eggs" : "Change mode" : "Prepare"}

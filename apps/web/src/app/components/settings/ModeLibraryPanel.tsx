@@ -587,7 +587,7 @@ export function ModeLibraryPanel({
             <Button
               variant="outline"
               className="h-[var(--control-height-mobile)] rounded-xl px-3 md:h-[var(--control-height-default)]"
-              style={{ borderColor: BORDER, fontSize: 10 }}
+              style={{ borderColor: BORDER, fontSize: "var(--type-button-label)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-button)" }}
               onClick={() => fileRef.current?.click()}
             >
               <Upload size={15} /> <span>Import</span>
@@ -596,7 +596,7 @@ export function ModeLibraryPanel({
           <Button
             variant="outline"
             className="h-[var(--control-height-mobile)] rounded-xl px-3 md:h-[var(--control-height-default)]"
-            style={{ borderColor: BORDER, fontSize: 10 }}
+            style={{ borderColor: BORDER, fontSize: "var(--type-button-label)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-button)" }}
             onClick={handleExport}
           >
             <Download size={15} /> <span>Export All</span>
@@ -607,7 +607,7 @@ export function ModeLibraryPanel({
               style={{
                 backgroundColor: RUST,
                 color: "var(--on-brand)",
-                fontSize: 10,
+                fontSize: "var(--type-button-label)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-button)",
               }}
               onClick={openAdd}
             >

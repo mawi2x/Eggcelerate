@@ -1,7 +1,9 @@
-# Last-minute changes: Settings password change and shared incubator access
+# Last-minute changes
 
 **Status:** Settings password change and shared-incubator pairing are deployed
 to the VPS (2026-10-18).
+
+Custom incubation mode support is **planned, not implemented** (2026-10-19).
 
 ## Request
 
@@ -158,3 +160,73 @@ use operator-assisted recovery through the existing CLI.
 - Deployment evidence is saved beside the local and remote release artifacts.
 - No existing user's password was changed during deployment. Functional account
   acceptance checks remain unrun.
+
+## Custom incubation modes sent to the ESP32 (2026-10-19)
+
+**Status:** requested for planning only. No implementation, deployment, or firmware
+installation is authorized by this documentation update.
+
+### Current limitation
+
+- The ESP32 stores fixed Chicken, Duck, and Quail profiles in firmware.
+- The server rejects preparation or incubation for an unknown mode or changed
+  preset temperature/humidity limits. Creating a mode on the website does not
+  install a matching controller profile.
+- Live filtering, heater/mist decisions, fan control, and safety checks run on
+  the ESP32. The server stores telemetry and sends lifecycle requests.
+
+### Proposed scope
+
+1. Send a versioned profile from the server containing the selected mode's
+   temperature and humidity limits, profile identity, and revision.
+2. Validate limits and profile compatibility on both the server and ESP32.
+   Preserve firmware safety limits independently of user-selected targets.
+3. Require device acknowledgement of the exact profile revision before
+   preparation/start; display pending or rejected settings clearly.
+4. Save the accepted profile atomically on the ESP32 for offline regulation.
+   Validate stored settings after restart and retain existing fault and resume
+   protections. Do not silently substitute another mode when settings are invalid.
+5. Report the applied profile revision and targets in telemetry, and preserve
+   them with the incubation cycle so historical charts show the targets used.
+6. Keep existing preset behavior compatible during a staged API, worker, web,
+   and firmware rollout. Define how profile edits affect an active cycle;
+   do not silently apply edits to a running batch.
+
+Stage-dependent targets, custom turning schedules, and migration of existing
+cycles require separate scope and estimates. This feature does not itself fix
+the current humidity regulation limitation or improve sensor calibration.
+
+### Estimated effort and priority
+
+| Work | Preliminary estimate |
+| --- | --- |
+| Profile transport and temperature/humidity validation | 2–4 hours |
+| ESP32 acknowledgement, persistence, offline/restart handling | 2–3 hours |
+| Integration checks and empty-chamber trial | 2–4 hours |
+| Basic custom-mode support total | 6–11 hours |
+
+These are preliminary engineering estimates, not a delivery commitment. Additional
+stage/schedule requirements and findings during integration can increase them.
+For the October 20 presentation, prioritize the existing Chicken control trial
+and humidity investigation before attempting this feature.
+
+### Acceptance checks for future implementation
+
+- A newly created supported profile reaches the ESP32 with matching identity,
+  revision, and targets; preparation/start waits for its acknowledgement.
+- Invalid, unsupported, stale, or partially written profiles cannot enable
+  regulation; the dashboard explains the rejection.
+- Accepted settings remain available offline and survive restart without
+  bypassing sensor validity, latched faults, or lifecycle protections.
+- Mode edits during a running cycle follow an explicit application policy,
+  with applied targets retained in that cycle's history.
+- Existing Chicken, Duck, and Quail operation and older-device rejection remain
+  predictable throughout rollout.
+- An empty-chamber trial verifies actual local control against the received
+  targets. Transport success alone does not prove temperature/humidity compliance.
+
+### Implementation references
+
+- [Server profile restrictions](../../apps/api/src/eggcelerate_api/database/climate_control.py)
+- [Firmware profiles and control decisions](../../apps/firmware/Eggcelerate/ClimateControl.h)
+- [Local sensor and actuator runtime](../../apps/firmware/Eggcelerate/ClimateRuntime.h)

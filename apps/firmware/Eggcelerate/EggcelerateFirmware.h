@@ -166,6 +166,7 @@ void receiveCloudReceipt(char *topic, byte *body, unsigned int length) {
     if (!strcmp(fields[4], "prepare")) cmd.action = egg_climate::Action::Prepare;
     else if (!strcmp(fields[4], "incubate")) cmd.action = egg_climate::Action::Incubate;
     else if (!strcmp(fields[4], "stop")) cmd.action = egg_climate::Action::Stop;
+    else if (!strcmp(fields[4], "cancel")) cmd.action = egg_climate::Action::Cancel;
     else if (!strcmp(fields[4], "reset")) cmd.action = egg_climate::Action::Reset;
     else return;
     const unsigned long mode = strtoul(fields[5], nullptr, 10);
@@ -214,7 +215,7 @@ void initializeCloud() {
   cloudTls.setConnectionTimeout(3000);
   cloudTls.setHandshakeTimeout(3);
   cloudMqtt.setServer(EggCloudConfig::MQTT_HOST, EggCloudConfig::MQTT_PORT);
-  cloudMqtt.setBufferSize(2816);
+  cloudMqtt.setBufferSize(7168);
   cloudMqtt.setKeepAlive(30);
   cloudMqtt.setSocketTimeout(3);
   cloudMqtt.setCallback(receiveCloudReceipt);
@@ -257,7 +258,8 @@ void serviceCloud(uint32_t now) {
   // Prioritize changed control state, bounded to one report/second. Regular
   // sensor cadence remains configurable. Sequence gaps expose coalesced changes.
   const bool controlChanged = climate.controlSequence != cloudControlSent;
-  const uint32_t interval = controlChanged ? 1000 : cloudReportingMs;
+  const uint32_t interval = controlChanged ? 1000 :
+    (climate.running && climate.mode == 0 ? min(cloudReportingMs, uint32_t(5000)) : cloudReportingMs);
   if (cloudHasPublished && now - cloudPublishedAt < interval) { egg_offline::publish(cloudMqtt,cloudTopic); return; }
   // Send only a fresh sample. No chamber/farm IDs, codes, or passwords in telemetry.
   if (cloudSequence >= 2147483647UL) { Serial.println("Cloud sequence exhausted; restart required."); return; }
@@ -268,7 +270,11 @@ void serviceCloud(uint32_t now) {
     char seconds[25];if(!cloudUtc(sampleUtc/1000,seconds,sizeof(seconds)))return;
     snprintf(observedAt,sizeof(observedAt),"%.19s.%03uZ",seconds,unsigned(sampleUtc%1000));
   } else if (!cloudUtc(time(nullptr), observedAt, sizeof(observedAt))) return;
-  char payload[2304];
+  // Main-loop-only buffers: TLS connection needs the loop task's stack.
+  // Do not place the enlarged diagnostic payload on that stack.
+  static char payload[6656];
+  static char diagnostics[3328];
+  if (!egg_diagnostics::reportJson(climate, diagnostics, sizeof(diagnostics))) return;
   char storageFields[512]; egg_offline::statusJson(storageFields,sizeof(storageFields));
   const auto tray = egg_climate::traySnapshot();
   char sampleFields[128];
@@ -284,7 +290,7 @@ void serviceCloud(uint32_t now) {
     "\"temp_min\":%.2f,\"temp_max\":%.2f,\"humidity_min\":%.2f,\"humidity_max\":%.2f,"
     "\"upper_duty\":%u,\"exhaust_requested_duty\":%u,\"exhaust_duty\":%u,\"exhaust_reason\":\"%s\","
     "\"pwm_ready\":%s,\"pwm_hz\":%lu,\"pwm_bits\":%u,\"fan_min_duty\":%u,\"fan_boost_ms\":%lu,"
-    "\"tray_capability\":true,\"tray_running\":%s,\"tray_position\":%u,\"tray_status\":%u,\"tray_id\":%lu,\"tray_highest\":%lu,\"tray_ack\":%lu,\"tray_accepted\":%s}}",
+    "\"tray_capability\":true,\"tray_cancel_return_capability\":true,\"tray_cancel_return\":%s,\"tray_running\":%s,\"tray_position\":%u,\"tray_status\":%u,\"tray_id\":%lu,\"tray_highest\":%lu,\"tray_ack\":%lu,\"tray_accepted\":%s,\"diagnostics\":%s}}",
     kDeviceId, cloudBootId, cloudBootedAt, static_cast<unsigned long>(sequence), observedAt, storageFields, sampleFields, climate.halted ? "true" : "false", climate.resuming ? "true" : "false", climate.phase, freshSensor ? "true" : "false",
     climate.running ? "true" : "false", climate.mode, climate.out.heater ? "true" : "false", climate.out.mist ? "true" : "false",
     climate.out.upper ? "true" : "false", climate.out.exhaust ? "true" : "false", static_cast<unsigned int>(climate.fault),
@@ -297,7 +303,7 @@ void serviceCloud(uint32_t now) {
     climate.exhaustReason, climate.pwmReady ? "true" : "false",
     (unsigned long)egg_climate::kExhaustPwmHz, egg_climate::kExhaustPwmBits,
     egg_climate::kExhaustMinDuty, (unsigned long)egg_climate::kExhaustBoostMs,
-    tray.running?"true":"false",tray.position,unsigned(tray.status),(unsigned long)tray.id,(unsigned long)tray.highestId,(unsigned long)tray.ackId,tray.accepted?"true":"false");
+    tray.cancelReturning?"true":"false",tray.running?"true":"false",tray.position,unsigned(tray.status),(unsigned long)tray.id,(unsigned long)tray.highestId,(unsigned long)tray.ackId,tray.accepted?"true":"false", diagnostics);
   cloudPublishedAt = now;
   cloudHasPublished = true;
   if (size > 0 && static_cast<size_t>(size) < sizeof(payload) && cloudMqtt.publish(cloudTopic, payload, false)) {
@@ -548,7 +554,7 @@ void commission(const String &code = "", const String &apPassword = "") {
 
 void serialCommand(String command) {
   command.trim();
-  if (egg_climate::serialCommand(command) || egg_offline::serialCommand(command)) return;
+  if (egg_climate::serialCommand(command) || egg_offline::serialCommand(command) || egg_diagnostics::serialCommand(command)) return;
   if (command == "status") {
     printIdentity();
     egg_climate::printState();

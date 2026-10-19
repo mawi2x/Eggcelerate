@@ -19,7 +19,8 @@
 #include <openssl/sha.h>
 using byte=uint8_t;
 using std::min;
-inline size_t strlcpy(char *out,const char *in,size_t size) { size_t n=strlen(in);if(size){memcpy(out,in,min(n,size-1));out[min(n,size-1)]=0;}return n; }
+inline size_t host_strlcpy(char *out,const char *in,size_t size) { size_t n=strlen(in);if(size){memcpy(out,in,min(n,size-1));out[min(n,size-1)]=0;}return n; }
+#define strlcpy host_strlcpy
 class String : public std::string {
 public:
   using std::string::string;

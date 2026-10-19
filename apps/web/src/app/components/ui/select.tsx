@@ -79,7 +79,7 @@ function SelectTrigger({
         lineHeight: "var(--leading-normal)",
         ...style,
         ...(size === "filter" && {
-          fontSize: "var(--type-filter-label)",
+          fontSize: "var(--type-filter-value)",
           fontWeight: "var(--weight-bold)",
         }),
       }}
@@ -162,7 +162,7 @@ function SelectItem({
       style={{
         fontFamily: "var(--font-body)",
         fontSize: isFilter
-          ? "var(--type-filter-label)"
+          ? "var(--type-filter-value)"
           : "var(--type-control-value)",
         fontWeight: isFilter ? "var(--weight-bold)" : "var(--weight-regular)",
         lineHeight: isFilter ? "var(--leading-snug)" : "var(--leading-normal)",

@@ -14,6 +14,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "ClimateRuntime.h"
+#include "DiagnosticJournal.h"
 #endif
 
 namespace egg_offline {
@@ -388,6 +389,9 @@ void task(void *) {
       }
       if(now-statusAt>=1000) { statusAt=now;publishStatus(); }
     }
+#ifndef EGG_OFFLINE_HOST_TEST
+    egg_diagnostics::journalTick(ready, bootAnchor);
+#endif
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
@@ -404,7 +408,7 @@ int64_t utcForSample(uint32_t sampledAt) {
 void publish(PubSubClient &mqtt,const char *topic) {
   static uint32_t lastSent=0;
   if(!mqtt.connected() || millis()-lastSent<1000 || !outgoing)return;
-  Packet packet;
+  static Packet packet; // Only the network/main loop calls publish().
   if(xQueueReceive(outgoing,&packet,0)==pdTRUE) { lastSent=millis();mqtt.publish(topic,packet.payload,false); }
 }
 bool receipt(const byte *body,size_t length) {

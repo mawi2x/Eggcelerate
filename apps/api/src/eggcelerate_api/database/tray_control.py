@@ -258,6 +258,25 @@ async def queue(session, farm_id, unit_id, action, *, key=None, automatic=False)
     return state
 
 
+async def cancel_for_cycle(session, farm_id, unit_id):
+    """Suspend dispatch; firmware's distinct cancel command owns any safe return."""
+    now = datetime.now(UTC)
+    row = await context(session, farm_id, unit_id)
+    state = dict(row["tray"] or {})
+    report = row["report"] or {}
+    req = dict(state.get("request") or {})
+    if req.get("status") in ACTIVE:
+        req.update(status="interrupted", finished_at=now.isoformat())
+        await command_result(session, row, req, "rejected", now, "cycle_cancelled")
+        state["request"] = req
+    capable = bool(report.get("tray_cancel_return_capability"))
+    state.update(suspended=True, home_confirmed=False, cycle_id=row["cycle_id"],
+                 interval=row["turn_interval_min"],
+                 home_status="cancel_return_requested" if capable else "cancel_check_level")
+    await save(session, row, state)
+    return capable
+
+
 async def command_result(session, row, req, status, now, error=None):
     if req.get("action") != "turn":
         return
@@ -380,6 +399,17 @@ async def reconcile_one(session, farm_id, unit_id, now):
         await save(session, row, state)
     req = state.get("request") or {}
     running = report.get("tray_running") or req.get("status") in ACTIVE
+    if state.get("home_status") == "cancel_return_requested" and fresh(row,now):
+        if report.get("tray_cancel_return") and not report.get("fault"):
+            return  # Only firmware-authorized bounded cancellation return.
+        climate_request = row.get("request") or {}
+        cancel_acknowledged = climate_request.get("action")=="cancel" and report.get("command_id")==climate_request.get("id") and report.get("accepted")
+        if not report.get("running") and cancel_acknowledged:
+            state["home_status"] = "cancel_return_complete_check_level" if report.get("tray_position")==3 and report.get("tray_status")==3 else "cancel_check_level"
+            await save(session,row,state)
+        elif climate_request.get("status") in {"timed_out","rejected"}:
+            state["home_status"] = "cancel_check_level"
+            await save(session,row,state)
     if (row["intent"] or {}).get("phase") != 2 or (row["intent"] or {}).get(
         "suspended"
     ):

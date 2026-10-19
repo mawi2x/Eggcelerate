@@ -20,6 +20,7 @@ then follow its frontend/backend/firmware/operations checklist.
 - [Screen notes](./screen-note-guidelines.md) — bottom placement for standalone explanations and informational notices.
 - [Auth & Onboarding](./auth-onboarding-guide.md) — app-managed API sessions, farm ownership, local mock flow, and remaining release gates.
 - [Incubation run history](./incubation-run-history.md) — automatic preparation/cycle history, saved targets, and run-specific trends.
+- [Control diagnostics](./control-diagnostics.md) — local control-event journal, diagnostic fields, offline decoding, and rollout order before adaptive control.
 - [Custom trend dates](./custom-trends-date-range.md) — From/To environmental history filtering and matching raw exports.
 - [Last-minute changes](./last-minute-change.md) — signed-in Settings password-change plan and interim shared-incubator access behavior.
 - [System architecture preparation](./system-architecture-preparation-2026-10-18.md) — current system context, runtime components, device flows, deployment profiles, and open decisions.
@@ -36,3 +37,16 @@ then follow its frontend/backend/firmware/operations checklist.
 - [Backend dashboard-first](./backend-dashboard-first-guide.md) — B0B resume point; refine mock writes to service commands before HTTP.
 - [Database setup](./database-setup-guide.md) — contract-first FastAPI, PostgreSQL/TimescaleDB, migrations, adapter integration, verification, and operational handoff plan.
 - [Firmware safety contract](./firmware-safety-contract.md) — provisional 42 °C cutoff, hysteresis, watchdog; hardware verification required before actuator writes.
+
+- [Adaptive Chicken control](./adaptive-climate-control.md) — local coordinated regulation, provisional tuning and outstanding qualification.
+
+- [Climate optimization v2](./climate-optimization-v2.md) — local coordinated heater/moisture control, paired simulations and relay tradeoff.
+
+- [Sensor recovery phase 1](sensor-recovery-phase1.md): local v3 candidate with
+  bounded transient sensor holds, two-reading recovery and fault-injection checks.
+- [Fault ventilation phase 2](fault-ventilation-phase2.md): local v4 candidate with
+  temperature-aware latched-fault cooling and confirmed-overheat protection.
+- [Sensor-health diagnostics phase 3](sensor-health-diagnostics-phase3.md): local
+  v5 diagnostics, journal compatibility and required VPS parser deployment.
+- [Coordinated drying v6](coordinated-drying-v6.md): revised humidity plan,
+  instrumented drying review and bounded empty-chamber exhaust comparison.

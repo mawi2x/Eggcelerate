@@ -85,7 +85,7 @@ Do not replace families — the Baloo 2 / Nunito pairing is brand-locked ([histo
 | `--type-heading-md` | `1.125rem` | 18 | Dialog titles, chart titles (`HarvestModal.tsx`, `TrendsScreen.tsx`) |
 | `--type-heading-sm` | `1rem` | 16 | Card `h3` (`detail/primitives.tsx` `SectionCard`), `16` mode names |
 | `--type-body` | `0.875rem` | 14 | Body copy and form labels (`ui/label.tsx`); editable values use `--type-control-value` below, never this token |
-| `--type-control-value` | `0.875rem` → `1rem` on phones | 14 → 16 | Editable form values (`Input`, `SelectTrigger`); decoupled from body so phones get 16px legibility + iOS focus-zoom stability while body stays 14px |
+| `--type-control-value` | `0.875rem` → `0.75rem` on phones | 14 → 12 | Editable form values (`Input`, `SelectTrigger`); approved compact phone scale. See typography-experimental.md; the historical 16px phone policy is superseded. |
 
 `11px` is for compact labels/table headers/metadata — do not create `8px/9px` tokens. The former `8px`/`9px` calendar/photo labels were migrated to `11px` label (`IncubationCalendar.tsx`, `CandlingJournalTab.tsx`).
 

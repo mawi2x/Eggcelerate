@@ -20,6 +20,7 @@ const schema = z.object({
     .object({
       tray_capability: z.boolean().optional(),
       tray_running: z.boolean().optional(),
+      tray_cancel_return: z.boolean().optional(),
       tray_position: z.number().optional(),
       tray_status: z.number().optional(),
     })
@@ -95,6 +96,8 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
   if (report && !report.tray_capability) message = "";
   else if (query.isError || !fresh) message = "";
   else if (!report?.tray_capability) message = "";
+  else if (report.tray_cancel_return)
+    message = "The cycle is cancelled. The tray is making a timed return toward level. Check its position when it stops.";
   else if (report.tray_running)
     message =
       "Timed movement running. The device will switch the motor off automatically.";
@@ -102,7 +105,11 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
     message = "Waiting for the device to acknowledge the tray command.";
   else if (state?.home_confirmed)
     message = "Level position confirmed by you. Turning is stopped.";
-  else if (state?.home_status) message = "Turning is paused for lockdown.";
+  else if (state?.home_status?.startsWith("cancel_"))
+    message = state.home_status === "cancel_return_complete_check_level"
+      ? "The timed return has finished. Check that the tray is level."
+      : "The cycle is cancelled and turning is paused. Check the tray position; an unknown position cannot be returned automatically.";
+  else if (state?.home_status) message = "Turning is paused. Check that the tray is level.";
   else if (state?.suspended ?? true)
     message =
       "Turning is paused. Save the tray’s current side after visually checking it to resume.";
@@ -118,7 +125,7 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
       {message && <p role="status">{message}</p>}
       {report?.tray_capability && (
         <>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          <p className="text-(length:--type-body)" style={{ color: "var(--text-secondary)" }}>
             Last reported position:{" "}
             {positions[report.tray_position ?? 0] ?? "Unknown"}
             {report.tray_position
@@ -130,7 +137,7 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
             !["rejected", "interrupted", "timed_out"].includes(
               state.request.status,
             ) && (
-              <p className="text-sm">
+              <p className="text-(length:--type-body)">
                 Latest command: {state.request.action.replace(/_/g, " ")} —{" "}
                 {state.request.status === "completed"
                   ? "timed command completed"
@@ -147,7 +154,7 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
               }
               onClick={() => mutation.mutate("home")}
             >
-              Return toward level · 5s
+              Return toward level (5 seconds)
             </Button>
             <Button
               variant="outline"
@@ -161,12 +168,12 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
           <div className="space-y-2">
             <label
               htmlFor={`tray-position-${unit.id}`}
-              className="block text-sm font-medium"
+              className="block text-(length:--type-body) font-medium"
             >
               Current position, checked by you
             </label>
             {data?.allow_turn && (
-              <p className="text-sm">
+              <p className="text-(length:--type-body)">
                 When automatic turning is enabled, saving a position resumes the
                 schedule. From level, it starts with a 5-second tilt.
               </p>
@@ -174,7 +181,7 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
             <div className="flex flex-wrap gap-2">
               <select
                 id={`tray-position-${unit.id}`}
-                className="min-h-11 rounded-lg border bg-transparent px-3"
+                className="h-[var(--control-height-action)] rounded-lg border bg-transparent px-3"
                 value={position}
                 disabled={!fresh || busy}
                 onChange={(event) => setPosition(event.target.value)}
@@ -198,7 +205,7 @@ export function TrayControlStatus({ unit }: { unit: Incubator }) {
               </Button>
             </div>
           </div>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          <p className="text-(length:--type-body)" style={{ color: "var(--text-secondary)" }}>
             Side-to-side runs use 10 seconds; return toward level uses 5
             seconds. Motor timing estimates position and does not measure the
             angle.

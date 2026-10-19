@@ -40,6 +40,7 @@ export function unitStatusFromConditionSeverity(
 }
 
 export type ConditionInputs = {
+  monitorTargets?: boolean;
   paired: boolean;
   telemetryStatus: "fresh" | "stale" | "offline";
   temp: number;
@@ -55,14 +56,15 @@ export type ConditionInputs = {
 export function deriveConditionSeverity(
   params: ConditionInputs,
 ): ConditionSeverity {
-  const temperatureCritical =
+  const monitorTargets = params.monitorTargets ?? true;
+  const temperatureCritical = monitorTargets && (
     params.temp < params.targetTemp.min - 0.5 ||
-    params.temp > params.targetTemp.max + 0.5;
-  const humidityCritical =
+    params.temp > params.targetTemp.max + 0.5);
+  const humidityCritical = monitorTargets && (
     params.humidity < params.targetHumidity.min - 5 ||
-    params.humidity > params.targetHumidity.max + 5;
+    params.humidity > params.targetHumidity.max + 5);
   const telemetryCritical = params.telemetryStatus === "offline";
-  const turningOverdue = new Date(params.nextTurn).getTime() < Date.now();
+  const turningOverdue = monitorTargets && new Date(params.nextTurn).getTime() < Date.now();
 
   if (
     !params.paired ||
@@ -73,11 +75,11 @@ export function deriveConditionSeverity(
     return "critical";
   }
 
-  const temperatureWarning =
-    params.temp < params.targetTemp.min || params.temp > params.targetTemp.max;
-  const humidityWarning =
+  const temperatureWarning = monitorTargets && (
+    params.temp < params.targetTemp.min || params.temp > params.targetTemp.max);
+  const humidityWarning = monitorTargets && (
     params.humidity < params.targetHumidity.min ||
-    params.humidity > params.targetHumidity.max;
+    params.humidity > params.targetHumidity.max);
   const telemetryWarning = params.telemetryStatus === "stale";
 
   if (

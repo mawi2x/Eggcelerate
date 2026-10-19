@@ -5,6 +5,7 @@
 #include <esp_system.h>
 #include <esp_task_wdt.h>
 #include "ClimateControl.h"
+#include "ControlDiagnostics.h"
 #include "TrayMotion.h"
 
 namespace egg_climate {
@@ -18,6 +19,7 @@ Command priorityStop;
 TaskHandle_t controlTask = nullptr;
 DHT controlDht(4, DHT22);
 egg_tray::Controller tray;
+egg_tray::CancelReturn cancelReturn;
 egg_tray::State trayPublished;
 enum class TrayAction : uint8_t { Opposite=0, Level=1, ConfirmPlus=2, ConfirmMinus=3, ConfirmLevel=4, Stop=5, Tilt=6 };
 struct TrayRequest { TrayAction action; uint32_t id; uint32_t expires=0; uint8_t from=0; bool remote=false; };
@@ -81,13 +83,13 @@ bool request(Command cmd) {
   portENTER_CRITICAL(&stateMux);
   const bool active = runtimeReady;
   const bool ready = active && !stopPending;
-  if (runtimeReady && cmd.action == Action::Stop) {
+  if (runtimeReady && (cmd.action == Action::Stop || cmd.action == Action::Cancel)) {
     // Never let an older network stop overwrite a newer stop request.
     if (!stopPending || !cmd.order || cmd.order >= priorityStop.order) priorityStop = cmd;
     stopPending = true;
   }
   portEXIT_CRITICAL(&stateMux);
-  if (cmd.action == Action::Stop) return active;
+  if ((cmd.action == Action::Stop || cmd.action == Action::Cancel)) return active;
   return ready && commands && xQueueSend(commands, &cmd, 0) == pdTRUE;
 }
 
@@ -105,6 +107,13 @@ bool requestTray(TrayRequest req) {
   if (req.action == TrayAction::Stop) return xQueueOverwrite(trayCommands, &req) == pdTRUE;
   return xQueueSend(trayCommands, &req, 0) == pdTRUE;
 }
+bool persistTrayId(uint32_t id) {
+  Preferences prefs;
+  bool stored=prefs.begin("egg-tray",false);
+  if(stored){stored=prefs.putUInt("last-id",id)==sizeof(uint32_t)&&prefs.getUInt("last-id",0)==id;prefs.end();}
+  if(!stored){trayStorageReady=false;cancelReturn.abort(tray,millis());}
+  return stored;
+}
 void executeTray(const TrayRequest& req, bool allowed) {
   if (req.id && req.id <= tray.state.highestId) return;
   if (req.remote) { tray.state.ackId=req.id; tray.state.accepted=false; }
@@ -112,17 +121,11 @@ void executeTray(const TrayRequest& req, bool allowed) {
   const bool confirmation = req.action==TrayAction::ConfirmPlus || req.action==TrayAction::ConfirmMinus || req.action==TrayAction::ConfirmLevel;
   if (req.action==TrayAction::ConfirmPlus && !req.remote) { if (allowed) tray.confirmPlus(millis()); return; }
   if (!trayStorageReady) return;
-  Preferences prefs;
-  bool stored=prefs.begin("egg-tray", false);
-  if (stored) {
-    stored=prefs.putUInt("last-id", req.id)==sizeof(uint32_t) && prefs.getUInt("last-id",0)==req.id;
-    prefs.end();
-  }
-  if (!stored) { trayStorageReady=false; tray.stop(millis()); return; }
+  if (!persistTrayId(req.id)) return;
   // Consume rejected IDs as well, so a later lifecycle change cannot revive one.
   const uint32_t previous=tray.state.highestId;
   if (req.action==TrayAction::Stop) {
-    tray.stop(millis()); tray.state.accepted=true;
+    cancelReturn.abort(tray,millis()); tray.state.accepted=true;
   } else if (allowed && confirmation && !tray.state.running) {
     tray.confirmPlus(millis());
     tray.state.position=req.action==TrayAction::ConfirmPlus?1:req.action==TrayAction::ConfirmMinus?2:3;
@@ -177,8 +180,11 @@ void execute(Controller &controller, const Command &cmd) {
     controller.state.accepted = false;
     if (time(nullptr)>=cmd.expires || time(nullptr)<1704067200) return;
   }
-  if (cmd.action == Action::Stop) {
-    tray.stop(millis());
+  if (cmd.action == Action::Stop || cmd.action == Action::Cancel) {
+    const bool healthy=trayStorageReady&&controller.state.fault==Fault::None&&controller.state.valid&&
+      controller.state.consecutiveGood>=2&&millis()-controller.state.sampledAt<=kStaleMs;
+    if(cmd.action==Action::Cancel)cancelReturn.request(tray,millis(),healthy);
+    else cancelReturn.abort(tray,millis());
     xQueueReset(trayCommands);
     applyOutputs(Outputs{});
   }
@@ -191,6 +197,7 @@ void execute(Controller &controller, const Command &cmd) {
 
 void task(void *) {
   Controller controller;
+  controller.state.sensor.resetReason = uint8_t(esp_reset_reason());
   // Register only this task; networking/display stalls cannot stall regulation.
   esp_task_wdt_config_t config = {};
   config.timeout_ms = 6000;
@@ -238,6 +245,7 @@ void task(void *) {
   portENTER_CRITICAL(&stateMux); runtimeReady = true; portEXIT_CRITICAL(&stateMux);
   for (;;) {
     const uint32_t now = millis();
+    const auto trayBefore=tray.state;
     if (now - sampledAt >= kSampleMs) {
       sampledAt = now;
       const float humidity = controlDht.readHumidity();
@@ -283,15 +291,29 @@ void task(void *) {
     const bool stopTray = trayStopPending;
     trayStopPending = false;
     portEXIT_CRITICAL(&stateMux);
-    if (stop || stopTray || !trayAllowed) {
-      if (tray.state.running || tray.state.status == egg_tray::Status::PlusConfirmed || stop || stopTray)
+    const bool returnHealthy=trayStorageReady&&!controller.state.running&&controller.state.fault==Fault::None&&
+      controller.state.valid&&controller.state.consecutiveGood>=2&&millis()-controller.state.sampledAt<=kStaleMs;
+    cancelReturn.check(tray,millis(),returnHealthy);
+    const bool hardStop=stop&&stopCmd.action!=Action::Cancel;
+    if(hardStop||stopTray)cancelReturn.abort(tray,millis());
+    if (hardStop || stopTray || (!trayAllowed&&!cancelReturn.active())) {
+      if (tray.state.running || tray.state.status == egg_tray::Status::PlusConfirmed || hardStop || stopTray)
         tray.stop(millis());
       if (stop || stopTray) xQueueReset(trayCommands);
     }
     TrayRequest req;
     if (!stop && !stopTray && xQueueReceive(trayCommands, &req, 0)==pdTRUE)
       executeTray(req, trayAllowed);
+    if(cancelReturn.due(millis())) {
+      const uint32_t nextId=tray.state.highestId+1;
+      if(!nextId||!persistTrayId(nextId)||!cancelReturn.start(tray,millis(),nextId))cancelReturn.abort(tray,millis());
+    }
     tray.tick(millis());
+    cancelReturn.check(tray,millis(),returnHealthy);
+    tray.state.cancelReturning=cancelReturn.active();
+    if(trayBefore.running!=tray.state.running || trayBefore.position!=tray.state.position ||
+       trayBefore.status!=tray.state.status || trayBefore.ackId!=tray.state.ackId ||
+       trayBefore.cancelReturning!=tray.state.cancelReturning)++controller.state.controlSequence;
     if (!trayStorageReady) tray.state.status = egg_tray::Status::StorageFault;
     if (!applyOutputs(controller.state.out, tray.state.running)) {
       tray.stop(millis());
@@ -302,19 +324,7 @@ void task(void *) {
       applyOutputs(controller.state.out);
     }
     controller.state.pwmReady = fanPwmReady;
-    // Local event log is independent of MQTT cadence. Not a persistent queue.
-    static uint32_t loggedSample = 0, loggedControl = 0;
-    static Fault loggedFault = Fault::None;
-    if (controller.state.sampleNumber != loggedSample ||
-        controller.state.controlSequence != loggedControl || controller.state.fault != loggedFault) {
-      const auto &s = controller.state;
-      Serial.printf("CONTROL ms=%lu sample=%lu change=%lu mode=%u phase=%u T=%.2f RH=%.2f valid=%u running=%u heater=%u mist=%u upper=%u exhaust_request=%u exhaust_duty=%u reason=%s fault=%u pwm=%u\n",
-        (unsigned long)millis(), (unsigned long)s.sampleNumber, (unsigned long)s.controlSequence,
-        s.mode, s.phase, s.temperature, s.humidity, s.valid, s.running, s.out.heater,
-        s.out.mist, s.out.upper, s.out.exhaustRequestedDuty, s.out.exhaustDuty,
-        s.exhaustReason, unsigned(s.fault), fanPwmReady);
-      loggedSample = s.sampleNumber; loggedControl = s.controlSequence; loggedFault = s.fault;
-    }
+    egg_diagnostics::capture(controller.state);
     portENTER_CRITICAL(&stateMux);
     published = controller.state;
     trayPublished = tray.state;
@@ -324,6 +334,7 @@ void task(void *) {
   }
 }
 bool begin() {
+  egg_diagnostics::begin();
   commands = xQueueCreate(8, sizeof(Command));
   trayCommands = xQueueCreate(1, sizeof(TrayRequest));
   if (!commands || !trayCommands) return false;
@@ -339,6 +350,12 @@ void printState() {
     state.out.heater ? "ON" : "OFF", state.out.mist ? "ON" : "OFF", state.out.upper ? "ON" : "OFF",
     state.out.exhaustDuty, state.out.exhaustRequestedDuty, state.exhaustReason,
     state.pwmReady ? "ready" : "unavailable", state.message);
+  Serial.printf("Sensor: valid=%u recovery_hold=%u good=%u consecutive_failures=%lu total_failures=%lu recoveries=%lu last_good_age_ms=%lu reset_reason=%u last_fault_ms=%lu\n",
+    unsigned(state.valid), unsigned(state.sensor.recovering), state.consecutiveGood,
+    (unsigned long)state.sensor.consecutiveFailures, (unsigned long)state.failures,
+    (unsigned long)state.sensor.recoveries,
+    (unsigned long)(state.successes ? millis()-state.lastGoodAt : UINT32_MAX),
+    state.sensor.resetReason, (unsigned long)state.sensor.faultAt);
 }
 bool serialCommand(String command) {
   if (command.startsWith("tray")) {
@@ -383,6 +400,10 @@ bool serialCommand(String command) {
   if (command == "climate start") { Serial.println("Use Begin Preparation and Start Incubation on the website."); return true; }
   else if (command == "climate stop") cmd.action = Action::Stop;
   else if (command == "climate reset") cmd.action = Action::Reset;
+  else if (command == "climate vent 60" || command == "climate vent 100" || command == "climate vent off") {
+    cmd.action = Action::VentTest;
+    cmd.testDuty = command.endsWith("100") ? 100 : command.endsWith("60") ? 60 : 0;
+  }
   else if (command.startsWith("climate mode ")) {
     const String name = command.substring(13);
     cmd.action = Action::SetMode;

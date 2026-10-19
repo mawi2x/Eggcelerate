@@ -101,13 +101,15 @@ export function EnvironmentalTrends({
   return (
     <>
       {model.selectedRun && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--brand-primary-soft)] bg-[var(--brand-primary-soft)] p-4">
-          <div className="min-w-0">
-            <p className="text-pretty text-(length:--type-body-sm) font-semibold text-[var(--brand-primary-hover)]">Showing this run only: {model.selectedRun.chamberName}, {model.selectedRun.mode.name}</p>
-            <p className="text-pretty text-(length:--type-caption) text-[var(--text-secondary)]">{new Date(model.selectedRun.startedAt).toLocaleString()} to {model.selectedRun.endedAt ? new Date(model.selectedRun.endedAt).toLocaleString() : "now"}. Targets are saved with this run.</p>
-            {model.selectedRun.approximate && <p className="text-(length:--type-caption) text-[var(--text-secondary)]">Earlier record. Times or saved targets may be approximate.</p>}
+        <div className="flex gap-4 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-subtle)] p-4 shadow-sm">
+          <span aria-hidden="true" className="w-1.5 shrink-0 self-stretch rounded-full bg-[var(--brand-primary)]" />
+          <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="text-pretty text-[var(--brand-primary-hover)]" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)" }}>Readings for {model.selectedRun.chamberName} · {model.selectedRun.mode.name}</p>
+              <p className="text-pretty text-[var(--text-secondary)]" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", marginTop: 2 }}>{new Date(model.selectedRun.startedAt).toLocaleString()} to {model.selectedRun.endedAt ? new Date(model.selectedRun.endedAt).toLocaleString() : "now"}.</p>
+            </div>
+            <Button variant="outline" className="h-[var(--control-height-mobile)] w-full rounded-full py-0 text-(length:--type-button-label) font-bold leading-[var(--leading-button)] sm:w-auto md:h-[var(--control-height-default)]" onClick={model.clearRun}><span>Show all recent readings</span></Button>
           </div>
-          <Button size="sm" variant="outline" onClick={model.clearRun}>Show all recent readings</Button>
         </div>
       )}
       {/* Unified 2-row toolbar: chamber + metric controls, then time horizon. */}

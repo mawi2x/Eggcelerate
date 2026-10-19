@@ -34,8 +34,7 @@ function Input({
       )}
       style={{
         fontFamily: "var(--font-body)",
-        // Control-value role: 14px desktop, 16px on phones (legibility +
-        // suppresses iOS focus auto-zoom). Deliberately not --type-body so
+        // Control-value role: 14px desktop, 12px on phones (approved compact scale). Deliberately not --type-body so
         // body copy stays 14px. (The old Tailwind size classes claimed the
         // opposite behavior while this inline token style won; removed.)
         fontSize: "var(--type-control-value)",

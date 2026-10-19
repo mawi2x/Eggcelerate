@@ -127,6 +127,7 @@ export function TrendsScreen({
         <div className="flex flex-wrap items-center justify-start gap-4">
           <SegmentedControl
             flush
+            role="tablist"
             aria-label="Trend view"
             className="w-full md:w-auto"
           >
@@ -138,7 +139,17 @@ export function TrendsScreen({
                   flush
                   active={active}
                   className="min-w-0 flex-1 px-3 md:flex-none md:px-4"
-                  aria-pressed={active}
+                  role="tab"
+                  aria-selected={active}
+                  tabIndex={active ? 0 : -1}
+                  onKeyDown={(event) => {
+                    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                    event.preventDefault();
+                    const index = viewOptions.findIndex((option) => option.key === key);
+                    const next = event.key === "Home" ? 0 : event.key === "End" ? viewOptions.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + viewOptions.length) % viewOptions.length;
+                    setTrendView(viewOptions[next].key);
+                    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("[role=tab]")[next]?.focus();
+                  }}
                   aria-label={label}
                   onClick={() => setTrendView(key)}
                   style={{

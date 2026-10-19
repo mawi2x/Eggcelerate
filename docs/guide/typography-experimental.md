@@ -9,13 +9,13 @@ Blanket decrease: every phone token steps below desktop (`<39.9375rem`), plus th
 
 | Token | Desktop default | Tablet `48–63.9375rem` (768–1023px) | Mobile `<47.9375rem` (767px) | Consumer |
 |---|---|---|---:|---|
-| `--type-filter-value` | `var(--type-control-value)` 14 | `0.75rem` 12 | `var(--type-label)` 11 | `Select size="filter"` value (`select.tsx:64-66`) |
-| `--type-filter-label` | `var(--type-label)` 11 | 11 hold | `var(--type-label-compact)` 10 | `FilterBar` pills (`filter-bar.tsx:158-162`) |
+| `--type-filter-value` | `var(--type-control-value)` 14 | `0.75rem` 12 | `0.625rem` 10 | `Select size="filter"` value (`select.tsx:64-66`) |
+| `--type-filter-label` | `var(--type-label)` 11 | 11 hold | `0.625rem` 10 | `FilterBar` pills (`filter-bar.tsx:158-162`) |
 
 Definitions (`theme.css:14-16`):
 
 ```css
---type-filter-value: var(--type-control-value); /* 14px desktop; 12px tablet; 11px mobile */
+--type-filter-value: var(--type-control-value); /* 14px desktop; 12px tablet; 10px mobile */
 --type-filter-label: var(--type-label);         /* 11px desktop/tablet; 10px mobile */
 ```
 
@@ -29,8 +29,8 @@ Overrides (`theme.css:366-379`):
 /* mobile — filter values + pill labels */
 @media (max-width: 47.9375rem) {
   :root {
-    --type-filter-value: var(--type-label);         /* 11px */
-    --type-filter-label: var(--type-label-compact); /* 10px */
+    --type-filter-value: 0.625rem; /* 10px */
+    --type-filter-label: 0.625rem; /* 10px */
   }
 }
 ```
@@ -53,7 +53,7 @@ Overrides (`theme.css:366-379`):
 | `--type-label-compact` | `0.625rem` 10 | `0.5rem` 8 — new micro floor by request | $-2$ |
 | `--type-label-micro` | `0.5625rem` 9 | `0.5rem` 8 — merged with compact by request | $-1$ |
 | `--type-filter-value` | `var(--type-control-value)` 14 | `var(--type-label)` 11 (`<47.9375rem`) | $-3$ |
-| `--type-filter-label` | `var(--type-label)` 11 | `var(--type-label-compact)` 10 (`<47.9375rem`) | $-1$ |
+| `--type-filter-label` | `var(--type-label)` 11 | `0.625rem` 10 (`<47.9375rem`) | $-1$ |
 
 Control geometry holds on all tiers (32/36/40 visual; 44px via explicit wrappers only). No `--control-*` inside any type `@media`.
 ## Breakpoint map (all `rem`, zoom-relative)

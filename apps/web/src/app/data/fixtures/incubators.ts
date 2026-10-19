@@ -461,6 +461,7 @@ export function createIncubatorFixtures(
     });
     const condition = mode
       ? deriveConditionState({
+          monitorTargets: unit.dayOfIncubation > 0 || !!unit.preparationStartedAt,
           paired: unit.paired,
           telemetryStatus: unit.telemetryStatus ?? "offline",
           temp: unit.temp,

@@ -14,6 +14,7 @@ export interface FilterBarOption {
 }
 
 interface FilterBarProps {
+  navigation?: boolean;
   options: FilterBarOption[];
   value: string;
   onChange: (key: string) => void;
@@ -82,6 +83,7 @@ function FilterOptionContent({
 }
 
 export function FilterBar({
+  navigation = false,
   options,
   value,
   onChange,
@@ -153,7 +155,20 @@ export function FilterBar({
           flush
           size="default"
           active={active}
-          aria-pressed={active}
+          role={navigation ? "tab" : undefined}
+          aria-selected={navigation ? active : undefined}
+          aria-pressed={navigation ? undefined : active}
+          tabIndex={navigation ? (active ? 0 : -1) : undefined}
+          onKeyDown={navigation ? (event) => {
+            const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+            if (!keys.includes(event.key)) return;
+            event.preventDefault();
+            const index = options.findIndex((item) => item.key === option.key);
+            const next = event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + options.length) % options.length;
+            onChange(options[next].key);
+            const tabs = scrollRef.current?.querySelectorAll<HTMLButtonElement>("[role=tab]");
+            tabs?.[next]?.focus();
+          } : undefined}
           aria-label={accessibleLabel}
           onClick={() => onChange(option.key)}
           className={cn(equalTrackClass, fitsMobile && "px-2 md:px-4")}
@@ -238,6 +253,7 @@ export function FilterBar({
 
       <fieldset
         ref={scrollRef}
+        role={navigation ? "tablist" : undefined}
         onScroll={checkScroll}
         aria-label={ariaLabel}
         className={cn(

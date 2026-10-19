@@ -1,7 +1,7 @@
 # UI Control-Size Guidelines
 
 **Status:** Implemented  
-**Last reviewed:** 2026-09-01  
+**Last reviewed:** 2026-10-19
 **Source plan:** [`control-size-standardization-plan.md`](../refine/archive/control-size-standardization-plan.md)
 **Source audit:** The original audit was local-only; the archived plan and current implementation are the versioned references.
 
@@ -10,6 +10,28 @@
 Use one role-based geometry system for dashboard controls. The goal is aligned toolbars without forcing every control, chip, icon, or navigation item to have the same physical size.
 
 This guide applies to the dashboard control families reviewed in Trends, Candling Logs, Incubators, Alerts, and Incubator Detail. It does not replace the separate status/emblem badge or pagination standards.
+
+## Current responsive contract (2026-10-19)
+
+This section supersedes older screen-specific 40px toolbar examples below where the same role is listed here. Role differences are intentional; do not force all controls to one height.
+
+| Role | Desktop (768px+) | Mobile (<768px) |
+|---|---|---|
+| Default text action (`--control-height-action`) | 36px; Nunito 14px/700/1.25 | 34px; Nunito 12px/700/1.25 |
+| Ordinary field (`Input`, default Select) | 36px; control-value 14px | 36px; control-value 12px below 640px |
+| Incubators/Candling/Alerts compact toolbar controls | 36px | 34px |
+| Trends primary chamber toolbar | 40px | 34px |
+| Compact button/field role | 32px | 36px |
+| Micro button/Select role | 28px | 36px |
+| Section tabs / segmented FilterBar | 36px outer group | 34px outer group |
+| ViewToggle icon | 36px | 36px (where displayed) |
+| Switch clickable root | 44px | 44px; visual track remains 32px |
+| Settings fields | 36px | 36px |
+| Settings sticky save bar | 40px toolbar role | 40px toolbar role |
+
+Dropdown values use `--type-filter-value` (14px desktop, 12px tablet, 10px mobile). Segmented labels use `--type-filter-label` (11px desktop, 10px mobile). These are distinct from action labels. The Incubators mobile Add/search experimental filter typography remains an explicit exception. Detail and Settings section selectors follow the compact tab treatment, not the historical 40px detail-tab row.
+
+Calendar, pagination, onboarding/auth layouts and non-interactive status badges retain their documented role-specific geometry. Do not shrink their hit areas merely to match action heights. Section navigation uses tablist/tab/aria-selected and arrow/Home/End navigation; filtering choices use aria-pressed.
 
 ## Standard scale
 

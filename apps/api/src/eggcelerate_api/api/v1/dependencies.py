@@ -274,6 +274,7 @@ async def get_store(
             return
         from ...database.climate_control import set_intent
 
+        cancel_return = False
         if request.app.state.settings.tray_control_enabled:
             from ...database import tray_control
 
@@ -286,9 +287,12 @@ async def get_store(
 
                 current = await row_for(session, database.farm_id, unit_id)
                 if current and (current["report"] or {}).get("tray_capability"):
-                    await tray_control.queue(session, database.farm_id, unit_id, "stop")
+                    if route_path.endswith("/stop"):
+                        cancel_return = await tray_control.cancel_for_cycle(session,database.farm_id,unit_id)
+                    else:
+                        await tray_control.queue(session, database.farm_id, unit_id, "stop")
         if cycle_end:
-            await set_intent(session, database.farm_id, unit_id, "stop")
+            await set_intent(session, database.farm_id, unit_id, "cancel" if cancel_return else "stop")
         elif cycle_start:
             await set_intent(session, database.farm_id, unit_id, "incubate")
         elif prep_change:
