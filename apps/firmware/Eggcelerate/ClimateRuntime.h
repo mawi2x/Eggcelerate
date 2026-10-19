@@ -30,6 +30,14 @@ bool trayStorageReady = false;
 bool fanPwmReady = false;
 bool benchmarkStorageReady = false;
 uint8_t lastExhaustDuty = 0;
+// A single watchdog restart may restore a saved active run. The retry budget
+// lives in the same checksummed NVS record as the run phase, so a reboot loop
+// cannot reset the allowance.
+uint8_t watchdogRecoveryCount = 0;
+bool watchdogRecoveryPending = false;
+bool automaticRunRestoreInProgress = false;
+uint32_t watchdogRecoveryStartedAt = 0;
+constexpr uint32_t kWatchdogRecoverySensorTimeoutMs = 30000;
 
 bool writeExhaust(uint8_t duty) {
   if (!fanPwmReady) {
@@ -157,16 +165,19 @@ void executeTray(const TrayRequest& req, bool allowed) {
 
 struct RunRecord {
   uint32_t magic = 0x45475232;
-  uint8_t phase = 0, mode = 0, fault = 0, reserved = 0;
+  // `reserved` was zero in previous firmware and is reused without changing
+  // the NVS record size. Old records therefore keep the same checksum.
+  uint8_t phase = 0, mode = 0, fault = 0, watchdogRecoveryCount = 0;
   uint32_t checksum = 0;
 };
 uint32_t runChecksum(const RunRecord &record) {
-  return record.magic ^ (uint32_t(record.phase)<<24) ^ (uint32_t(record.mode)<<16) ^ (uint32_t(record.fault)<<8) ^ 0x73C4A19B;
+  return record.magic ^ (uint32_t(record.phase)<<24) ^ (uint32_t(record.mode)<<16) ^
+    (uint32_t(record.fault)<<8) ^ uint32_t(record.watchdogRecoveryCount) ^ 0x73C4A19B;
 }
-bool saveRun(const State &state) {
+bool saveRunRecord(uint8_t phase, uint8_t mode, uint8_t fault, uint8_t recoveryCount) {
   RunRecord record;
-  record.phase = state.running ? state.phase : 0;
-  record.mode = state.mode; record.fault = uint8_t(state.fault);
+  record.phase = phase; record.mode = mode; record.fault = fault;
+  record.watchdogRecoveryCount = recoveryCount;
   record.checksum = runChecksum(record);
   Preferences prefs;
   if (!prefs.begin("egg-run",false)) return false;
@@ -175,12 +186,17 @@ bool saveRun(const State &state) {
   ok = prefs.getBytes("state",&check,sizeof(check))==sizeof(check) && ok && !memcmp(&record,&check,sizeof(record));
   prefs.end(); return ok;
 }
+bool saveRun(const State &state) {
+  return saveRunRecord(state.running ? state.phase : 0, state.mode,
+    uint8_t(state.fault), watchdogRecoveryCount);
+}
 bool loadRun(RunRecord &record, bool &exists) {
   Preferences prefs;
   if (!prefs.begin("egg-run",false)) return false;
   const size_t size = prefs.getBytesLength("state"); exists = size != 0;
   bool ok = !exists || (size==sizeof(record) && prefs.getBytes("state",&record,sizeof(record))==sizeof(record)
-    && record.magic==0x45475232 && record.phase<=2 && record.mode<3 && record.fault<=7 && record.checksum==runChecksum(record));
+    && record.magic==0x45475232 && record.phase<=2 && record.mode<3 && record.fault<=7 &&
+    record.watchdogRecoveryCount<=1 && record.checksum==runChecksum(record));
   prefs.end(); return ok;
 }
 void storageFault(Controller &controller) {
@@ -191,6 +207,7 @@ void storageFault(Controller &controller) {
   controller.state.message = "Run-state storage failed; all equipment off";
 }
 void execute(Controller &controller, const Command &cmd) {
+  const bool wasRunning = controller.state.running;
   const bool remote = cmd.id[0];
   if (remote && cmd.order <= controller.state.commandOrder) return;
   if (remote) {
@@ -211,10 +228,17 @@ void execute(Controller &controller, const Command &cmd) {
     if(tray.state.running||cancelReturn.active()||!trayStorageReady||!benchmarkStorageReady){controller.state.accepted=false;return;}
   }
   controller.command(millis(),cmd);
+  // A new operator-authorized cycle gets one future watchdog recovery. Keep
+  // the count intact when restoring the phase already saved before a reboot.
+  const bool startAction = cmd.action==Action::Prepare || cmd.action==Action::Incubate ||
+    cmd.action==Action::HTM || cmd.action==Action::LTM || cmd.action==Action::LHM;
+  if (controller.accepted && cmd.action==Action::Reset) watchdogRecoveryCount=0;
+  else if (controller.accepted && startAction && !wasRunning && controller.state.running &&
+      !automaticRunRestoreInProgress) watchdogRecoveryCount=0;
   if(controller.accepted && controller.benchmark.state.id[0] && !saveBenchmark(controller.benchmark.state)){
     benchmarkStorageReady=false;storageFault(controller);applyOutputs(Outputs{});return;
   }
-  if (controller.accepted && cmd.action != Action::SetMode && !saveRun(controller.state)) {
+  if (controller.accepted && !saveRun(controller.state)) {
     storageFault(controller); applyOutputs(Outputs{}); return;
   }
   if (remote) controller.state.accepted = controller.accepted;
@@ -245,22 +269,43 @@ void task(void *) {
   uint32_t benchmarkSavedAt=millis();uint8_t benchmarkOutcome=controller.benchmark.state.outcome;
   RunRecord saved;
   bool savedExists = false;
-  bool resume = loadRun(saved,savedExists) && savedExists && saved.phase>0 && !saved.fault;
-  if (!savedExists) { if (!saveRun(controller.state)) storageFault(controller); }
-  else if (saved.magic!=0x45475232 || saved.checksum!=runChecksum(saved) || saved.mode>=3 || saved.phase>2 || saved.fault>7) {
+  const bool savedValid = loadRun(saved,savedExists);
+  watchdogRecoveryCount = savedValid && savedExists ? saved.watchdogRecoveryCount : 0;
+  bool resume = savedValid && savedExists && saved.phase>0 && !saved.fault;
+  if (!savedValid) {
     storageFault(controller); resume = false;
+  } else if (!savedExists) {
+    if (!saveRun(controller.state)) storageFault(controller);
   } else {
     controller.state.mode = saved.mode;
     controller.state.fault = Fault(saved.fault);
     const auto reason = esp_reset_reason();
-    if (reason==ESP_RST_PANIC || reason==ESP_RST_INT_WDT || reason==ESP_RST_TASK_WDT || reason==ESP_RST_WDT) {
+    const bool watchdogReset = reason==ESP_RST_INT_WDT || reason==ESP_RST_TASK_WDT || reason==ESP_RST_WDT;
+    if (reason==ESP_RST_PANIC) {
       controller.state.fault = Fault::ControllerReset; resume = false;
-      saveRun(controller.state);
+      if (!saveRun(controller.state)) storageFault(controller);
+    } else if (watchdogReset && saved.phase>0 && !saved.fault && saved.watchdogRecoveryCount==0) {
+      // Commit the one-shot retry allowance before any actuator can be enabled.
+      watchdogRecoveryCount = 1;
+      if (saveRunRecord(saved.phase,saved.mode,0,watchdogRecoveryCount)) {
+        resume = true;
+        watchdogRecoveryPending = true;
+        watchdogRecoveryStartedAt = millis();
+        controller.state.message = "Restarted after a control interruption; checking the sensor before resuming";
+      } else {
+        resume = false;
+        storageFault(controller);
+      }
+    } else if (watchdogReset) {
+      // A second watchdog reset (or a watchdog reset while idle/faulted) stays
+      // latched; do not let repeated automatic restarts form a loop.
+      controller.state.fault = Fault::ControllerReset; resume = false;
+      if (!saveRun(controller.state)) storageFault(controller);
     }
   }
-  if(!benchmarkStorageReady){storageFault(controller);resume=false;}
+  if(!benchmarkStorageReady){storageFault(controller);resume=false;watchdogRecoveryPending=false;}
   if (!fanPwmReady) {
-    resume = false; controller.fanOutputFailed();
+    resume = false; watchdogRecoveryPending=false; controller.fanOutputFailed();
     if (!saveRun(controller.state)) storageFault(controller);
   }
   controlDht.begin();
@@ -284,11 +329,6 @@ void task(void *) {
       const float temperature = controlDht.readTemperature();
       controller.sample(millis(), temperature, humidity);
     }
-    if (resume && controller.state.fault != Fault::None) resume = false;
-    if (resume && controller.state.valid && controller.state.consecutiveGood>=2 && millis()-controller.state.sampledAt<=kStaleMs) {
-      resume = false;
-      execute(controller,Command{saved.phase==1 ? Action::Prepare : Action::Incubate,saved.mode});
-    }
     portENTER_CRITICAL(&stateMux);
     const bool stop = stopPending;
     const Command stopCmd = priorityStop;
@@ -296,14 +336,37 @@ void task(void *) {
     portEXIT_CRITICAL(&stateMux);
     if (stop) {
       xQueueReset(commands);
-      resume = false;
+      resume = false; watchdogRecoveryPending=false;
       execute(controller, stopCmd);
     } else {
       Command cmd;
       for (uint8_t n = 0; n < 8 && xQueueReceive(commands, &cmd, 0) == pdTRUE; ++n) {
-        if (cmd.action==Action::Prepare || cmd.action==Action::Incubate || cmd.action==Action::Reset) resume=false;
+        if (cmd.action==Action::Prepare || cmd.action==Action::Incubate || cmd.action==Action::Reset ||
+            cmd.action==Action::SetMode || cmd.action==Action::HTM || cmd.action==Action::LTM || cmd.action==Action::LHM) {
+          resume=false; watchdogRecoveryPending=false;
+        }
         execute(controller, cmd);
       }
+    }
+    if (resume && controller.state.fault != Fault::None) {
+      resume = false; watchdogRecoveryPending=false;
+    }
+    if (resume && controller.state.valid && controller.state.consecutiveGood>=2 &&
+        millis()-controller.state.sampledAt<=kStaleMs) {
+      resume = false;
+      const bool watchdogRecovered = watchdogRecoveryPending;
+      watchdogRecoveryPending = false;
+      automaticRunRestoreInProgress = true;
+      execute(controller,Command{saved.phase==1 ? Action::Prepare : Action::Incubate,saved.mode});
+      automaticRunRestoreInProgress = false;
+      if (watchdogRecovered && controller.accepted)
+        controller.state.message = "Regulation resumed after a control interruption";
+    } else if (resume && watchdogRecoveryPending &&
+        millis()-watchdogRecoveryStartedAt>=kWatchdogRecoverySensorTimeoutMs) {
+      // No heat or mist has been restored yet; leave the run faulted if the
+      // sensor cannot provide two fresh readings within the bounded wait.
+      resume = false; watchdogRecoveryPending = false;
+      controller.sensorRecoveryFailed();
     }
     controller.state.resuming = resume;
     const Fault previousFault = controller.state.fault;

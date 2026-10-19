@@ -30,6 +30,7 @@ constexpr uint32_t kCooldownMs = 60000;
 constexpr uint32_t kFaultBlindVentMs = 60000; // Max age of ordinary last-known-hot cooling evidence.
 constexpr uint32_t kHeaterLimitMs = 30UL * 60UL * 1000UL;
 constexpr float kOverheatC = 39.0f;
+constexpr float kHtmOverheatC = egg_benchmark::kHtmOvertempC;
 enum class Fault : uint8_t { None, Sensor, Stale, Overheat, HeaterTimeout, Storage, ControllerReset, FanOutput };
 enum class Action : uint8_t { None, Start, Stop, Reset, SetMode, Prepare, Incubate, VentTest, Cancel, HTM, LTM, LHM };
 struct Command {
@@ -91,7 +92,7 @@ inline const char *faultName(Fault fault) {
   switch (fault) {
     case Fault::Sensor: return "Sensor failure";
     case Fault::Stale: return "Stale sensor";
-    case Fault::Overheat: return "Overheat >=39.0 C";
+    case Fault::Overheat: return "Overtemperature limit reached";
     case Fault::HeaterTimeout: return "Heater on for 30 minutes";
     case Fault::Storage: return "Run-state storage failure";
     case Fault::ControllerReset: return "Controller reset after a crash";
@@ -106,9 +107,10 @@ public:
   bool accepted = false;
   bool fanOutputAvailable = true;
   void fanOutputFailed() { fanOutputAvailable = false; trip(Fault::FanOutput); }
+  void sensorRecoveryFailed() { trip(Fault::Sensor); }
   void sample(uint32_t now, float temperature, float humidity) {
     // Check deadlines BEFORE a late sample can make the stream look fresh.
-    if (state.running) {
+    if (state.running || htmCooldown) {
       if (state.sensor.recovering && now - sensorHoldAt >= kSensorRecoveryMs) trip(Fault::Sensor);
       else if (!state.sensor.recovering && now - state.sampledAt > kStaleMs) trip(Fault::Stale);
     }
@@ -144,7 +146,12 @@ public:
         sensorRecoveryPending = false;
         ++state.sensor.recoveries; state.sensor.lastRecoveryAt = now;
       }
-      if (temperature >= kOverheatC) trip(Fault::Overheat);
+      const bool htmProtection = (benchmark.state.active() && benchmark.state.kind==egg_benchmark::HTM) || htmCooldown;
+      if (temperature >= (htmProtection ? kHtmOverheatC : kOverheatC)) trip(Fault::Overheat);
+      if (htmCooldown && temperature <= kModes[0].tempMax && state.consecutiveGood >= 2) {
+        htmCooldown = false;
+        confirmedOverheat = false;
+      }
       if (state.sensor.recovering && state.consecutiveGood >= 2 && state.fault == Fault::None) {
         state.sensor.recovering = false;
         state.message = "Sensor recovered; regulation continues";
@@ -154,7 +161,7 @@ public:
       ++state.sensor.consecutiveFailures; state.sensor.lastFailureAt = now;
       sensorRecoveryPending = true;
       state.consecutiveGood = 0;
-      if (state.running && !state.sensor.recovering) {
+      if ((state.running || htmCooldown) && !state.sensor.recovering) {
         state.sensor.recovering = true; sensorHoldAt = now;
         state.message = "Checking sensor; heater and mist paused";
       }
@@ -183,6 +190,7 @@ public:
     if (cmd.action == Action::Stop || cmd.action == Action::Cancel) {
       benchmark.finish(now,egg_benchmark::Cancelled);
       testDuty = 0;
+      htmCooldown = false;
       state.sensor.recovering = false;
       outputsStopped = true; state.halted = true;
       state.running = false; state.phase = 0;
@@ -234,6 +242,7 @@ public:
     state.halted = false;
     state.sensor.recovering = false;
     ventilatingFault = Fault::None; faultCooling = confirmedOverheat = false;
+    htmCooldown = false;
     outputsStopped = false;
     testDuty = 0;
     state.running = true; state.cooldown = false;
@@ -256,7 +265,7 @@ public:
       testDuty = 0; ++state.controlSequence;
       state.message = "Vent comparison ended; normal regulation continues";
     }
-    if (state.running) {
+    if (state.running || htmCooldown) {
       if (state.sensor.recovering && now - sensorHoldAt >= kSensorRecoveryMs) trip(Fault::Sensor);
       else if (now - state.sampledAt > kStaleMs) trip(Fault::Stale);
     }
@@ -269,8 +278,14 @@ public:
       const bool healthy=state.running&&ready(now)&&!state.sensor.recovering&&state.fault==Fault::None;
       const bool qualified=healthy&&(benchmark.state.kind!=egg_benchmark::LHM ||
         (state.temperature>=37.5f&&state.temperature<=37.8f&&state.out.exhaustDuty==duty&&state.out.exhaustRequestedDuty==duty&&strcmp(state.exhaustReason,"temperature")));
-      benchmark.tick(now,healthy,state.sampleNumber,state.temperature,state.humidity,qualified);
+      if(healthy || !state.running || state.fault!=Fault::None)
+        benchmark.tick(now,healthy,state.sampleNumber,state.temperature,state.humidity,qualified);
+      else benchmark.pause(now); // Outputs below enforce sensor_wait until recovery or a latched fault.
       if(!benchmark.state.active()){
+        if(benchmark.state.kind==egg_benchmark::HTM&&benchmark.state.outcome==egg_benchmark::Ceiling){
+          htmCooldown=true;
+          confirmedOverheat=true;
+        }
         state.running=false;state.phase=0;state.halted=true;testDuty=0;++state.controlSequence;
         // Fault cooling remains independent; ordinary completion cools if hot.
         state.message="Benchmark ended; result retained";
@@ -287,9 +302,9 @@ public:
       immediateFan = true;
     } else if (!state.running) {
       const bool stillHot = ready(now) && state.temperature > mode.tempMax;
-      next.upper = state.cooldown || stillHot;
+      next.upper = state.cooldown || htmCooldown || stillHot;
       next.exhaust = next.upper;
-      reason = next.exhaust ? "cooldown" : "idle";
+      reason = htmCooldown ? "benchmark_cooldown" : next.exhaust ? "cooldown" : "idle";
       immediateFan = true;
     } else if (state.sensor.recovering || !ready(now)) {
       // No heating/misting on invalid, stale or only one recovered sample.
@@ -381,7 +396,7 @@ public:
   }
 private:
   uint32_t startedAt = 0, heaterAt = 0, mistAt = 0, ventAt = 0, coolingUntilStarted = 0;
-  bool outputsStopped = true;
+  bool outputsStopped = true, htmCooldown = false;
   uint8_t testDuty = 0; uint32_t testStartedAt = 0;
   Fault ventilatingFault = Fault::None;
   bool faultCooling = false, confirmedOverheat = false;
@@ -631,7 +646,7 @@ private:
       const bool recentHot = isfinite(state.lastGoodTemperature) &&
         now - state.lastGoodAt <= kFaultBlindVentMs &&
         (state.lastGoodTemperature >= mode.tempMax || faultCooling);
-      // A confirmed >=39 C event is different: require fresh cooling evidence
+      // A confirmed over-temperature event is different: require fresh cooling evidence
       // before releasing emergency exhaust, even if the original fault differs.
       if (recentHot) faultCooling = true;
       next.exhaust = confirmedOverheat || recentHot;
@@ -644,6 +659,7 @@ private:
   }
   void trip(Fault fault) {
     testDuty = 0;
+    htmCooldown = false;
     state.sensor.recovering = false;
     if (fault == Fault::Overheat) confirmedOverheat = true;
     if (state.fault == Fault::None) { state.fault = fault; ++state.controlSequence; }

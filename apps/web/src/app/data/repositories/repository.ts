@@ -27,6 +27,7 @@ export type RepositoryOperation =
   | "updateCandlingEntry"
   | "deleteCandlingEntry"
   | "listReadings"
+  | "pageRawReadings"
   | "listModes"
   | "addMode"
   | "updateMode"
@@ -115,6 +116,13 @@ export type RawReadingScope = {
   start?: string;
   runId?: string;
 };
+export type RawReadingOrder = "newest" | "oldest";
+export type RawReadingPageQuery = {
+  scopeToken: string;
+  offset: number;
+  limit: number;
+  order: RawReadingOrder;
+};
 
 export type RunHistoryQuery = { before?: string; incubatorId?: string; modeId?: string; status?: string; runId?: string };
 export type RunHistoryPage = { runs: IncubationRun[]; hasMore: boolean; nextCursor: string | null };
@@ -195,6 +203,9 @@ export interface EggcelerateRepository {
   listIncubationRuns?(query: RunHistoryQuery): Promise<Result<RunHistoryPage>>;
   previewRawReadings(
     query: RawReadingScope,
+  ): Promise<Result<RawReadingPreview>>;
+  pageRawReadings(
+    query: RawReadingPageQuery,
   ): Promise<Result<RawReadingPreview>>;
   exportRawReadings(scopeToken: string): Promise<Result<Blob>>;
   listModes(): Promise<Result<Mode[]>>;

@@ -30,8 +30,9 @@ OUTCOMES = {
     8: "temperature_limited",
 }
 SETTINGS = {
-    "version": 1,
-    "ceiling_c": 38.5,
+    "version": 2,
+    "ceiling_c": 40.0,
+    "htm_overtemp_c": 40.5,
     "limit_ms": 3600000,
     "temperature_c": [37.5, 37.8],
     "lhm_duties": [60, 100],
@@ -122,9 +123,15 @@ async def start(session, farm_id, unit_id, kind, conditions):
     report = (row or {}).get("report") or {}
     if not view["fresh"] or not row or row["device_id"] != unit["device_id"]:
         raise AppError("offline", "Wait for fresh controller readings.")
-    if report.get("benchmark_capability") != 1:
+    capability = report.get("benchmark_capability") or 0
+    if capability < 1:
         raise AppError(
             "rejected", "Install benchmark firmware before selecting this mode."
+        )
+    if kind == "htm" and capability < 2:
+        raise AppError(
+            "rejected",
+            "Install the updated firmware before selecting the 40°C Highest Temperature Mode.",
         )
     if (
         report.get("running")
@@ -154,7 +161,11 @@ async def start(session, farm_id, unit_id, kind, conditions):
             boot_id=row["boot_id"],
             started_at=now,
             conditions=conditions,
-            settings=SETTINGS,
+            settings=(
+                dict(SETTINGS)
+                if kind == "htm"
+                else {key: value for key, value in SETTINGS.items() if key not in {"ceiling_c", "htm_overtemp_c"}}
+            ),
         )
     )
     # Never reconcile/restart a benchmark as an incubation intent.
@@ -220,6 +231,14 @@ async def record(
     if b and b.run_id == str(run["id"]):
         if b.kind != {"htm": 1, "ltm": 2, "lhm": 3}[run["kind"]]:
             return
+        run_settings = run.get("settings") or {}
+        if run["kind"] == "htm" and run_settings:
+            expected_ceiling = run_settings.get("ceiling_c")
+            expected_overtemp = run_settings.get("htm_overtemp_c")
+            if expected_ceiling is not None and b.ceiling_c != expected_ceiling:
+                return
+            if expected_overtemp is not None and b.htm_overtemp_c != expected_overtemp:
+                return
         values = {"result": b.model_dump()}
         settings = dict(run.get("settings") or SETTINGS)
         if (

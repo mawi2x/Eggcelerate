@@ -121,13 +121,6 @@ async def read_control_history(
     return ok_envelope({"reports": rows, "order": "received_at_desc"})
 
 
-class BenchmarkStart(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    kind: Literal["htm", "ltm", "lhm"]
-    empty_confirmed: Literal[True]
-    conditions: str = ""
-
-
 @router.get("/{incubator_id}/benchmarks")
 async def read_benchmarks(
     incubator_id: str,
@@ -166,40 +159,17 @@ async def read_benchmarks(
         return ok_envelope({"runs": [dict(row) for row in rows]})
 
 
-@router.post("/{incubator_id}/benchmarks", status_code=201)
+@router.post("/{incubator_id}/benchmarks")
 async def start_benchmark(
     incubator_id: str,
-    body: BenchmarkStart,
-    request: Request,
     context: RequestContext = Depends(get_request_context),
 ):
-    from ...database import benchmarks
-
-    database = request.app.state.database
-    if not context.authenticated or database is None:
-        raise AppError("unauthorized", "Sign in to start a benchmark.")
-    if not request.app.state.settings.climate_control_enabled:
-        raise AppError("rejected", "Equipment control is disabled.")
-    if len(body.conditions) > 1000:
-        raise AppError("validation_error", "Keep test notes under 1000 characters.")
-    farm_id = UUID(context.farm_id)
-    async with database.sessions.begin() as session:
-        await session.scalar(
-            select(farms.c.id).where(farms.c.id == farm_id).with_for_update()
-        )
-        run = await benchmarks.start(
-            session,
-            farm_id,
-            incubator_id,
-            body.kind,
-            {
-                "empty_confirmed": True,
-                "notes": body.conditions,
-                "intake_temperature_c": None,
-                "intake_humidity_pct": None,
-            },
-        )
-    return ok_envelope(run)
+    if not context.authenticated:
+        raise AppError("unauthorized", "Sign in to manage benchmark history.")
+    raise AppError(
+        "rejected",
+        "Benchmark modes are retired. Saved records and readings remain available in Trends → Incubation History.",
+    )
 
 
 @router.post("/{incubator_id}/benchmarks/stop")

@@ -29,6 +29,7 @@ import { FormInput } from "../auth/FormInput";
 import { SignInScreen } from "../auth/SignInScreen";
 import { SuspenseFallback } from "../SuspenseFallback";
 import { Button } from "../ui/button";
+import { PaginationBar } from "../ui/pagination-bar";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,15 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 import { Typography } from "../ui/typography";
 
 function message(error: unknown) {
@@ -325,7 +335,21 @@ function UserManagement({
         queryKey: ["platform-admin-users"],
       });
     } catch (cause) {
-      setDeleteError(message(cause));
+      const errorMessage = message(cause);
+      if (errorMessage === "This user no longer exists.") {
+        setDeleteTarget(null);
+        setDeleteError("");
+        if (list.data?.users.length === 1 && offset > 0)
+          setOffset(Math.max(0, offset - 20));
+        await queryClient.invalidateQueries({
+          queryKey: ["platform-admin-users"],
+        });
+        setSuccess(
+          "That account was already removed. The user list is refreshed.",
+        );
+      } else {
+        setDeleteError(errorMessage);
+      }
     } finally {
       setDeleting(false);
     }
@@ -344,7 +368,7 @@ function UserManagement({
         aria-labelledby="user-list-heading"
         className="min-w-0 rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[var(--surface-card)]"
       >
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] p-6">
+        <div className="flex flex-col gap-4 border-b border-[var(--border-subtle)] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <Typography as="h2" id="user-list-heading" variant="headingMedium">
               All users
@@ -355,14 +379,19 @@ function UserManagement({
                 : "Registered accounts and their farms"}
             </p>
           </div>
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button className="rounded-xl" onClick={() => openForm()}>
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+            <Button
+              size="toolbar"
+              className="w-full rounded-xl sm:w-auto"
+              onClick={() => openForm()}
+            >
               <UserPlus size={18} aria-hidden="true" />
               Create user
             </Button>
             <Button
+              size="toolbar"
               variant="outline"
-              className="rounded-xl text-(length:--type-button-label) font-semibold"
+              className="w-full rounded-xl sm:w-auto"
               disabled={list.isFetching}
               onClick={() => void list.refetch()}
             >
@@ -370,6 +399,16 @@ function UserManagement({
             </Button>
           </div>
         </div>
+        {list.data && list.data.total > 20 && (
+          <PaginationBar
+            className="border-b border-t-0 px-4 py-3 sm:px-6"
+            page={Math.floor(offset / 20) + 1}
+            pageSize={20}
+            totalItems={list.data.total}
+            itemLabel="accounts"
+            onPageChange={(page) => setOffset((page - 1) * 20)}
+          />
+        )}
         {list.isPending && (
           <p role="status" className="p-6 text-[var(--text-secondary)]">
             Loading users…
@@ -386,112 +425,82 @@ function UserManagement({
           </p>
         )}
         {list.data && list.data.users.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-(length:--type-body)">
-              <caption className="sr-only">
-                Registered Eggcelerate users
-              </caption>
-              <thead className="bg-[var(--surface-subtle)] text-[var(--text-secondary)]">
-                <tr>
-                  <th scope="col" className="px-6 py-4 font-semibold">
-                    User
-                  </th>
-                  <th scope="col" className="px-4 py-4 font-semibold">
-                    Farm
-                  </th>
-                  <th scope="col" className="px-4 py-4 font-semibold">
-                    Access
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-4 py-4 font-semibold text-right"
-                  >
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.data.users.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="border-t border-[var(--border-subtle)]"
-                  >
-                    <td className="px-6 py-5">
-                      <p className="font-semibold">{user.display_name}</p>
-                      <p className="mt-1 break-all text-[var(--text-secondary)]">
-                        {user.email}
-                      </p>
-                    </td>
-                    <td className="break-words px-4 py-5">{user.farm_name}</td>
-                    <td className="px-4 py-5">
-                      <span className="inline-flex rounded-full bg-[var(--surface-subtle)] px-3 py-1 text-xs font-semibold">
-                        {user.disabled
-                          ? "Disabled"
-                          : user.administrator
-                            ? "Administrator"
-                            : "Farm owner"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-5">
-                      {!user.administrator && (
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            className="rounded-xl"
-                            onClick={() => openForm(user)}
-                            aria-label={`Edit ${user.display_name}`}
-                          >
-                            <Pencil size={16} aria-hidden="true" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="rounded-xl text-[var(--status-danger-fg)]"
-                            onClick={() => {
-                              setDeleteError("");
-                              setDeleteTarget(user);
-                            }}
-                            aria-label={`Delete ${user.display_name}`}
-                          >
-                            <Trash2 size={16} aria-hidden="true" />
-                            Delete
-                          </Button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {list.data && list.data.total > 20 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] p-5">
-            <p className="text-(length:--type-body) text-[var(--text-secondary)]">
-              {offset + 1} to {Math.min(offset + 20, list.data.total)} of{" "}
-              {list.data.total}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-xl text-(length:--type-button-label) font-semibold"
-                disabled={offset === 0 || list.isFetching}
-                onClick={() => setOffset((value) => Math.max(0, value - 20))}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-xl text-(length:--type-button-label) font-semibold"
-                disabled={offset + 20 >= list.data.total || list.isFetching}
-                onClick={() => setOffset((value) => value + 20)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          <Table className="min-w-[52rem] text-left text-(length:--type-body)">
+            <TableCaption className="sr-only">
+              Registered Eggcelerate users
+            </TableCaption>
+            <TableHeader className="bg-[var(--surface-subtle)] text-[var(--text-muted)]">
+              <TableRow className="hover:bg-transparent">
+                <TableHead scope="col" className="px-6">
+                  User
+                </TableHead>
+                <TableHead scope="col" className="px-4">
+                  Farm
+                </TableHead>
+                <TableHead scope="col" className="px-4">
+                  Access
+                </TableHead>
+                <TableHead scope="col" className="px-4 text-right">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {list.data.users.map((user) => (
+                <TableRow
+                  key={user.id}
+                  className="border-[var(--border-subtle)] hover:bg-[var(--surface-subtle)]"
+                >
+                  <TableCell className="whitespace-normal px-6 py-4">
+                    <p className="font-semibold">{user.display_name}</p>
+                    <p className="mt-1 break-all text-[var(--text-secondary)]">
+                      {user.email}
+                    </p>
+                  </TableCell>
+                  <TableCell className="whitespace-normal break-words px-4 py-4">
+                    {user.farm_name}
+                  </TableCell>
+                  <TableCell className="px-4 py-4">
+                    <span className="inline-flex rounded-full bg-[var(--surface-subtle)] px-3 py-1 text-xs font-semibold">
+                      {user.disabled
+                        ? "Disabled"
+                        : user.administrator
+                          ? "Administrator"
+                          : "Farm owner"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-4 py-4">
+                    {!user.administrator && (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          className="rounded-xl"
+                          onClick={() => openForm(user)}
+                          aria-label={`Edit ${user.display_name}`}
+                        >
+                          <Pencil size={16} aria-hidden="true" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="rounded-xl text-[var(--status-danger-fg)]"
+                          onClick={() => {
+                            setDeleteError("");
+                            setSuccess("");
+                            setDeleteTarget(user);
+                          }}
+                          aria-label={`Delete ${user.display_name}`}
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                          Delete
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </section>
       <Dialog

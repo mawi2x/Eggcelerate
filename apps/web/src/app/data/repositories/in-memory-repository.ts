@@ -32,6 +32,7 @@ import type {
   EggcelerateRepository,
   HarvestInput,
   RawReadingPreview,
+  RawReadingPageQuery,
   RawReadingScope,
   ReadingQuery,
   RepositoryFailureMode,
@@ -75,6 +76,10 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
   private incubators: Incubator[];
   private modes: Mode[];
   private rawExports = new Map<string, string>();
+  private rawPreviewScopes = new Map<
+    string,
+    { rows: ScopedRawReading[]; end: string }
+  >();
   private exportSequence = 0;
   private alerts: AlertEntry[];
   private waterReminderDay = "";
@@ -797,13 +802,46 @@ export class InMemoryEggcelerateRepository implements EggcelerateRepository {
     );
     const scopeToken = `memory-export-${++this.exportSequence}`;
     this.rawExports.set(scopeToken, rawReadingsCsv(rows));
-    if (this.rawExports.size > 5)
-      this.rawExports.delete(this.rawExports.keys().next().value ?? "");
+    this.rawPreviewScopes.set(scopeToken, { rows, end: query.end });
+    if (this.rawExports.size > 5) {
+      const expiredToken = this.rawExports.keys().next().value ?? "";
+      this.rawExports.delete(expiredToken);
+      this.rawPreviewScopes.delete(expiredToken);
+    }
     return ok({
-      rows: rows.slice(0, 200),
+      rows: rows.slice(-200).reverse(),
       total: rows.length,
       end: query.end,
       scopeToken,
+    });
+  }
+
+  async pageRawReadings(
+    query: RawReadingPageQuery,
+  ): Promise<Result<RawReadingPreview>> {
+    return this.execute("pageRawReadings", () => {
+      if (
+        !Number.isInteger(query.offset) ||
+        query.offset < 0 ||
+        !Number.isInteger(query.limit) ||
+        query.limit < 1 ||
+        query.limit > 200
+      )
+        return error("validation_error", "Choose a valid readings page.");
+      const scope = this.rawPreviewScopes.get(query.scopeToken);
+      if (!scope)
+        return error(
+          "validation_error",
+          "Preview scope expired; reopen the readings dialog.",
+        );
+      const rows =
+        query.order === "newest" ? [...scope.rows].reverse() : scope.rows;
+      return ok({
+        rows: rows.slice(query.offset, query.offset + query.limit),
+        total: scope.rows.length,
+        end: scope.end,
+        scopeToken: query.scopeToken,
+      });
     });
   }
 

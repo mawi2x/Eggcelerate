@@ -1,35 +1,51 @@
 # EGGCELERATE roadmap and timeline
 
-Last updated: **2026-10-19**. Current work: integrated automatic preparation →
-confirmed incubation climate control and timed tray scheduling with local Docker recording. See the
-[preparation guide](docs/guide/incubator-preparation-guide.md).
+Last updated: **2026-10-20**. HTM/LTM/LHM are retired from chamber controls and
+new starts are disabled on the VPS. Existing runs and readings remain in
+**Trends → Incubation History**. Continue Chicken climate qualification.
+See the [preparation guide](docs/guide/incubator-preparation-guide.md).
 **Resume/next phases:** [October 15 capstone handoff](docs/guide/capstone-next-phases-2026-10-15.md).
 The October 14 handoff remains historical.
 **Start locally:** [local startup guide](docs/guide/local-startup-guide.md) covers
 the existing Docker dashboard, hardware connection and optional mock UI.
 **Preferred moving-incubator workflow:** [VPS-connected local development](docs/guide/vps-connected-local-development.md).
 Edit the frontend with `pnpm dev:vps` at **https://127.0.0.1:5174** using VPS
-accounts/data. VPS API/worker/dashboard rollout and schema 0024 are installed;
-VPS-targeted firmware is compiled but upload remains pending. Home computer no longer needs to travel with the
-incubator under this planned connection arrangement.
+accounts/data. VPS API/worker/dashboard rollout and schema 0027 remain installed;
+`climate-benchmark-v10` remains flashed. Web/API release
+`benchmarks-retired-20261020` is live; new benchmark starts are disabled while
+their saved history remains available.
+The home computer no longer needs to travel with the incubator for the VPS
+connection.
 The [October 12 checkpoint](docs/current-progress-2026-10-12.md) remains the
 historical sensor/deployment record and broader audit reminder.
 
-**Latest checkpoint (October 19):** HTM, LTM, and LHM website controls are deployed
-and `climate-benchmark-v8` is flashed. Live sensor/PWM/stopped-state checks pass;
-physical capacity benchmarks and joint Chicken temperature/humidity performance
-remain unverified. See [benchmark modes](docs/guide/benchmark-modes-plan.md) and
-the latest dated entry below. This checkpoint supersedes older deployment and
-no-edit planning notes retained in this roadmap.
+**Latest checkpoint before benchmark retirement (October 20):** release `htm40-v10-20261020` is deployed to
+the VPS and `climate-benchmark-v10` is flashed. The API, telemetry worker and
+website are healthy. Fresh ESP32 telemetry reports capability 2, valid DHT22
+readings (32.4°C / 73.8% RH), fault clear, regulation stopped and all actuators
+off. No benchmark was started automatically. HTM now has a 40.0°C measurement
+ceiling and a 40.5°C DHT22 software cutoff; there is no independent thermal fuse.
+The empty-chamber capacity trial, LTM/LHM runs, and joint Chicken temperature /
+humidity qualification remained pending at this checkpoint. See [benchmark modes](docs/guide/benchmark-modes-plan.md)
+and the dated entry below. This checkpoint supersedes older deployment
+and no-edit planning notes retained in this roadmap.
+
+**Current checkpoint (October 20):** web/API release
+`benchmarks-retired-20261020` is deployed and healthy. HTM/LTM/LHM no longer
+appear in chamber preparation or device settings, and the API rejects new
+benchmark starts. The database still contains all 6 benchmark run records
+(zero active runs); the history and readings routes remain available in
+**Trends → Incubation History**. The telemetry worker, database schema, and
+ESP32 firmware were unchanged. See the latest dated entry below.
 
 
 **Next review: frontend audit plus backend, firmware/hardware and deployment
 audit. Pending, not completed.** See the checkpoint checklist before resuming.
 
-**October 17 incubation-control audit completed (read-only):** production fans
-use ON/OFF GPIO commands; variable PWM is absent from the main control path and
-disabled in the standalone bench. Hardware speed-control qualification and fixes
-remain pending. See the October 17 findings at the end of this roadmap. The wider
+**October 17 incubation-control audit completed (read-only):** at that checkpoint, production fans
+used ON/OFF GPIO commands and variable PWM was absent from the main control path.
+Subsequent PWM implementation is recorded in the later dated entries; physical
+fan qualification remains limited. See the October 17 findings at the end of this roadmap. The wider
 project audit above remains open.
 
 **October 18 improvement plan:** [Incubation-control plan](docs/guide/incubation-control-improvement-plan-2026-10-18.md).
@@ -37,9 +53,10 @@ Sequence: durable control evidence → hardware/sensor/airflow qualification →
 production PWM and fault policy → coordinated climate tuning → stage profiles
 and dashboard/history → integrated acceptance. Initial local source implementation
 has begun; see the October 18 PWM implementation entry and guide below.
-Latest instruction supersedes physical validation gates in that sequence:
-complete planning without validation or code edits. Use the confirmed arrangement;
-prior proposed qualification/soak runs are deferred, not completed.
+The October 18 planning-only instruction deferred physical qualification/soak
+runs; later user authorization allowed implementation and empty-chamber trials.
+Use the user-confirmed wiring arrangement. Deferred qualification is not a
+completed calibration or airflow measurement.
 User confirms the installed wiring is already verified and pin allocation is
 unchanged. Accept the current pins; remaining fan qualification concerns speed,
 startup and airflow rather than repeating wiring verification.
@@ -101,9 +118,12 @@ allocation. Sensor/display/cloud services remain in the separate main firmware.
 
 Former GPIO2 and GPIO12 assignments are superseded. Neither is a qualified
 spare output; confirm any old wire is removed before reusing a pin. Relay
-controls use LOW-on/HIGH-off; fan MOSFET controls use HIGH-on/LOW-off. Supply
-PWM remains disabled. Current relay channel order is heater (IN1), tray (IN2),
-mist (IN3), with IN4 vacant. GPIO26 is unassigned; the LED output was removed.
+controls use LOW-on/HIGH-off; fan MOSFET controls use HIGH-on/LOW-off. GPIO18
+upper circulation is on/off; GPIO19 lower exhaust uses 1 kHz, 8-bit PWM with a
+50% minimum and 1-second startup boost (initial engineering settings, not a
+measured fan qualification). Current relay channel order is heater (IN1), tray
+(IN2), mist (IN3), with IN4 vacant. GPIO26 is unassigned; the LED output was
+removed.
 The revised mist-maker channel assignment is included in the user's successful
 combined bench confirmation. The unused two-channel relay board is spare.
 
@@ -118,13 +138,11 @@ Permanent details: [hardware pin map](apps/firmware/hardware-pin-map.md),
 [relay reference](apps/firmware/hardware/relay-reference.md).
 
 **Current pilot:** real DHT22 readings reach the VPS dashboard; Charles Farm has
-EGG-001 paired with short code EGG01. Automatic preparation/incubation climate
-control is implemented locally; LCD/OLED and main firmware were compiled at the
-recorded checkpoint. Manual relay/MOSFET bench control is user-confirmed. Updated
-main-firmware upload and integrated physical acceptance remain unconfirmed. Latest
-local API/worker/web rebuild includes one-minute readiness; VPS climate rollout
-remains pending. Recent UI cleanup was deployed as staging images, not a new
-published Git release.
+EGG-001 paired with short code EGG01. The October 20 release updates the VPS API,
+telemetry worker and website for the 40°C HTM limit, and installs firmware v10.
+Normal preparation remains an explicit website action. Physical HTM/LTM/LHM
+capacity results and joint Chicken temperature/humidity performance are not yet
+qualified.
 
 **Historical October 6 baseline:** the dashboard and backend foundation are implemented. Release
 readiness remains open. The October 6 preparation review found frontend regression and asset-budget
@@ -3032,3 +3050,103 @@ implementation guide.
 - Evidence: `output/releases/benchmark-v8-20261019/`; firmware artifacts:
   `output/firmware/benchmark-v8-20261019/`; detailed specification:
   [benchmark plan](docs/guide/benchmark-modes-plan.md).
+
+
+### 2026-10-20 — Mode histories combined in Incubation History
+
+- Removed the separate Benchmarks tab. HTM/LTM/LHM cards share the existing
+  history list, Chamber/Mode/Status filters, date ordering, and View readings.
+- Website-only release `unified-history-20261020`; API, database and firmware
+  unchanged. Existing histories are preserved.
+- TypeScript and production build passed; combined cards, HTM mode filtering
+  and saved reading charts checked in a read-only browser preview.
+- First HTM trial ended as faulted without a sustained plateau. Interruption
+  cause and full HTM/LTM/LHM capacity trials remain pending, as does joint
+  Chicken temperature/humidity performance.
+- Evidence: `output/releases/unified-history-20261020/` and
+  `output/audits/benchmark-v8-20261019/`.
+
+
+### 2026-10-20 — Benchmark sensor recovery fix flashed as v9
+
+- A physical HTM start was being marked faulted after 223 ms even though the
+  controller fault was clear. Cause: benchmark code treated the controller's
+  short DHT22 recovery hold as terminal.
+- `climate-benchmark-v9` now pauses benchmark timing and clears the measurement
+  window during sensor recovery. Heater and mist stay paused under the existing
+  sensor safety handling. Only a latched controller fault or the one-hour test
+  timeout ends the run.
+- Compiled for NodeMCU-32S, flashed application at 0x10000, and verified the
+  flash hash. The v8 partition layout and NVS/LittleFS remain unchanged.
+- Boot/telemetry check: v9 reported valid DHT22 readings (32.7°C, 73.4% RH),
+  fault clear, stopped state, heater/mist/fans off, and PWM ready. No benchmark
+  starts on flash. Physical retry and sustained HTM/LTM/LHM capacity results
+  remain pending.
+- Evidence: `output/firmware/benchmark-v9-20261020/`.
+
+
+### 2026-10-20 — HTM 40°C test ceiling prepared locally
+
+- Revised Highest Temperature Mode (HTM) to reach a 40.0°C measurement ceiling.
+  HTM then uses a 40.5°C DHT22-based software cutoff through cooldown; normal
+  incubation modes retain their 39.0°C software cutoff.
+- Firmware capability 2 and matching API validation prevent the VPS from
+  offering the 40°C test to the currently flashed capability-1 v9 firmware.
+  Run history records and displays the limits used for each HTM trial.
+- No thermal fuse is installed. The 40.5°C cutoff is not independent of the
+  DHT22 and cannot protect against sensor, relay, or firmware failure. HTM
+  remains empty-chamber only and must be supervised.
+- Local NodeMCU-32S compile passed with ESP32 core 3.3.11 (1,237,436 bytes
+  program storage, 83,556 bytes static RAM). Package:
+  `output/firmware/benchmark-v10-20261020/`.
+- This local-build note was superseded by the v10 deployment and flash recorded
+  in `docs/guide/last-minute-change.md`. The physical HTM trial was not run, so
+  it established no capacity result; benchmark starts have since been retired.
+
+
+### 2026-10-20 — Benchmark modes retired; history retained
+
+- Removed HTM/LTM/LHM from chamber preparation and device-settings selectors.
+  The API refuses new benchmark starts, including requests from stale pages.
+- Kept benchmark run rows, the per-chamber history query, and recorded-reading
+  endpoint intact. Existing cards and charts remain in Trends → Incubation History.
+- No database deletion or firmware flash is part of this change. Firmware may
+  still report prior benchmark telemetry, but the VPS cannot start a new run.
+- Deployed web/API release `benchmarks-retired-20261020`; both services are
+  healthy. The database still has 6 records and zero active runs. No migration,
+  database deletion, worker update, or firmware flash was needed.
+- Local release bundle: `output/releases/benchmarks-retired-20261020/`;
+  VPS rollback copy: `/opt/eggcelerate/rollback-benchmarks-retired-20261020/`.
+- Web typecheck and production image build passed; API image build and readiness
+  passed. No test suite was run.
+
+
+### 2026-10-20 — Guarded ESP32 watchdog recovery flashed as v11
+
+- Added one persisted watchdog-recovery allowance per operator-authorized run.
+  After a watchdog reset in a saved active phase, the ESP32 waits for two fresh
+  DHT22 readings (maximum 30 seconds), confirms PWM initialization, then restores
+  the saved preparation/incubation phase. Stop/Cancel and queued explicit
+  lifecycle commands take precedence over restoration.
+- A second watchdog reset, panic reset, failed sensor recovery, failed PWM or
+  failed NVS write leaves regulation stopped and faulted. The retry allowance is
+  saved before heat/mist can be restored and is refreshed only by a new
+  operator-authorized cycle or accepted manual reset.
+- This bounds automatic restart loops but does not identify or fix the watchdog
+  trigger. The already interrupted v10 cycle has fault 6 and no persisted active
+  phase, so this update will not revive it; it still needs the website fault
+  reset and explicit resume flow.
+- Source build ID: `climate-watchdog-recovery-v11`. NodeMCU-32S / ESP32 core
+  3.3.11 compile succeeded: 1,237,940 bytes program storage (94%) and 83,556
+  bytes static RAM (25%). Application artifact:
+  `output/firmware/watchdog-recovery-v11-20261020/Eggcelerate.ino.bin`.
+- Flashed only the application region at `0x10000` over `/dev/ttyUSB0`; no
+  erase-all, partition write or NVS/LittleFS erase. `verify-flash` digest matched.
+- Fresh VPS telemetry at `2026-10-19T23:41:57Z` reports v11, valid sensor,
+  PWM ready, fault 6 latched, regulation stopped, and heater, mist, both fans
+  off. This preserves the interrupted run as stopped; it does not auto-resume it.
+- No deliberate watchdog crash was induced. The guarded recovery path still
+  needs a supervised active-cycle trial; this build limits recovery to one
+  restart and does not identify the root watchdog trigger. Build metadata and
+  SHA-256 hashes are in
+  `output/firmware/watchdog-recovery-v11-20261020/build-manifest.json`.

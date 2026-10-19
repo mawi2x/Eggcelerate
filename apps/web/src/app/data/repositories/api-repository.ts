@@ -43,6 +43,7 @@ import type {
   EggcelerateRepository,
   MutationOptions,
   RawReadingPreview,
+  RawReadingPageQuery,
   RunHistoryPage,
   RunHistoryQuery,
   RawReadingScope,
@@ -81,6 +82,29 @@ function toWireChecks(
   checks: DevelopmentCheck[],
 ): ("veining" | "air_cell" | "movement")[] {
   return checks.map((check) => (check === "airCell" ? "air_cell" : check));
+}
+
+function rawReadingPreviewFromDTO(
+  input: z.infer<typeof RawReadingPreviewDTOSchema>,
+): RawReadingPreview {
+  return {
+    rows: input.rows.map((p) => ({
+      incubatorId: p.incubator_id,
+      chamber: p.chamber,
+      reading: readingFromDTO({
+        observed_at: p.observed_at,
+        received_at: p.received_at,
+        temperature_c: p.temperature_c,
+        humidity_pct: p.humidity_pct,
+        water_ok: p.water_ok,
+      }),
+      receivedAt: p.received_at,
+      waterOk: p.water_ok,
+    })),
+    total: input.total,
+    end: input.end,
+    scopeToken: input.scope_token,
+  };
 }
 
 export function normalizeBaseUrl(baseUrl: string): string {
@@ -699,27 +723,29 @@ export class ApiRepository implements EggcelerateRepository {
       RawReadingPreviewDTOSchema,
     );
     if (!result.ok) return result;
-    return {
-      ok: true,
-      data: {
-        rows: result.data.rows.map((p) => ({
-          incubatorId: p.incubator_id,
-          chamber: p.chamber,
-          reading: readingFromDTO({
-            observed_at: p.observed_at,
-            received_at: p.received_at,
-            temperature_c: p.temperature_c,
-            humidity_pct: p.humidity_pct,
-            water_ok: p.water_ok,
-          }),
-          receivedAt: p.received_at,
-          waterOk: p.water_ok,
-        })),
-        total: result.data.total,
-        end: result.data.end,
-        scopeToken: result.data.scope_token,
+    return { ok: true, data: rawReadingPreviewFromDTO(result.data) };
+  }
+
+  async pageRawReadings(
+    query: RawReadingPageQuery,
+  ): Promise<Result<RawReadingPreview>> {
+    const result = await this.request<
+      z.infer<typeof RawReadingPreviewDTOSchema>
+    >(
+      "/api/v1/incubators/readings/raw-preview/page",
+      RawReadingPreviewDTOSchema,
+      {
+        method: "POST",
+        body: {
+          scope_token: query.scopeToken,
+          offset: query.offset,
+          limit: query.limit,
+          order: query.order,
+        },
       },
-    };
+    );
+    if (!result.ok) return result;
+    return { ok: true, data: rawReadingPreviewFromDTO(result.data) };
   }
 
   async exportRawReadings(scopeToken: string): Promise<Result<Blob>> {

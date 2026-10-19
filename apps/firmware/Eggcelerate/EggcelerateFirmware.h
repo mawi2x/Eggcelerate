@@ -295,7 +295,7 @@ void serviceCloud(uint32_t now) {
     "\"temp_min\":%.2f,\"temp_max\":%.2f,\"humidity_min\":%.2f,\"humidity_max\":%.2f,"
     "\"upper_duty\":%u,\"exhaust_requested_duty\":%u,\"exhaust_duty\":%u,\"exhaust_reason\":\"%s\","
     "\"pwm_ready\":%s,\"pwm_hz\":%lu,\"pwm_bits\":%u,\"fan_min_duty\":%u,\"fan_boost_ms\":%lu,"
-    "\"benchmark_capability\":1,\"benchmark\":%s,\"tray_capability\":true,\"tray_cancel_return_capability\":true,\"tray_cancel_return\":%s,\"tray_running\":%s,\"tray_position\":%u,\"tray_status\":%u,\"tray_id\":%lu,\"tray_highest\":%lu,\"tray_ack\":%lu,\"tray_accepted\":%s,\"diagnostics\":%s}}",
+    "\"benchmark_capability\":2,\"benchmark\":%s,\"tray_capability\":true,\"tray_cancel_return_capability\":true,\"tray_cancel_return\":%s,\"tray_running\":%s,\"tray_position\":%u,\"tray_status\":%u,\"tray_id\":%lu,\"tray_highest\":%lu,\"tray_ack\":%lu,\"tray_accepted\":%s,\"diagnostics\":%s}}",
     kDeviceId, cloudBootId, cloudBootedAt, static_cast<unsigned long>(sequence), observedAt, storageFields, sampleFields, climate.halted ? "true" : "false", climate.resuming ? "true" : "false", climate.phase, freshSensor ? "true" : "false",
     climate.running ? "true" : "false", climate.mode, climate.out.heater ? "true" : "false", climate.out.mist ? "true" : "false",
     climate.out.upper ? "true" : "false", climate.out.exhaust ? "true" : "false", static_cast<unsigned int>(climate.fault),

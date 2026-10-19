@@ -52,11 +52,19 @@ preparation/resume. Sensors, LCD/OLED, Wi-Fi and recording keep operating.
 
 Authorization/phase/mode are saved in a separate checksummed NVS record. Normal
 power recovery waits for two fresh valid sensor readings and fan lead before
-resuming. Manual Stop, saved faults, corrupt storage and crash/watchdog recovery
-prevent automatic heat/mist restart. Fault reset stays stopped; use the website
-recovery action after resolving the cause. Thirty minutes continuous commanded heat,
-sensor invalid/stale readings and >=39°C latch faults. No physical feedback can
-detect a welded relay, blocked fan or empty mist reservoir.
+resuming. The guarded watchdog-recovery candidate allows one automatic restore
+of a saved active phase after a watchdog reset, after two fresh readings and
+with PWM ready. Its one-retry allowance is saved in the checksummed NVS record
+before outputs can restart. A second watchdog reset, panic, invalid saved state,
+fan-output failure, or failure to get two good readings within 30 seconds stays
+faulted/stopped. Manual Stop, saved faults and corrupt storage never auto-restart.
+Fault reset stays stopped; use the website recovery action after resolving the
+cause. Thirty minutes continuous commanded heat and sensor invalid/stale readings
+latch faults. Normal climate modes latch an overtemperature fault at 39°C. HTM
+has a 40°C measurement ceiling and a 40.5°C software cutoff; both use the same
+DHT22, and the incubator has no independent thermal fuse. These software checks
+cannot stop a welded relay or protect against a failed or misreading sensor. No
+physical feedback detects a blocked fan or empty reservoir.
 
 Serial 115200/Newline: `status`, `setup`, `climate status`, `climate stop`,
 `climate reset`. Start regulation through the existing website preparation flow.
@@ -218,3 +226,37 @@ Firmware `climate-coordinated-drying-v6` was installed on 19 October 2026 after 
 compatible VPS update. [Revised humidity plan](../../../docs/guide/coordinated-drying-v6.md)
 describes its provisional tuning, diagnostics and bounded exhaust comparison.
 Joint target compliance remains subject to the live empty-chamber trial.
+
+
+## Current installed build — 2026-10-20
+
+`climate-benchmark-v10` is installed on the ESP32. It keeps v9's recoverable
+DHT22 hold behavior and adds the 40.0°C HTM measurement ceiling plus 40.5°C
+DHT22-based software cutoff. The API rejects the 40°C HTM start from older
+capability-1 firmware. Firmware capability 2, valid sensor data, no fault,
+stopped regulation, all outputs off and PWM readiness were confirmed in fresh
+VPS telemetry. Only the application region at 0x10000 was flashed; the existing
+partition layout, NVS/Wi-Fi and LittleFS were preserved. No benchmark started
+on boot. The empty-chamber HTM trial remains pending. Package and evidence:
+`output/firmware/benchmark-v10-20261020/` and
+`output/releases/htm40-v10-20261020/`.
+
+## Guarded watchdog recovery v11 — installed 2026-10-20
+
+`climate-watchdog-recovery-v11` adds one bounded automatic restore after an
+ESP32 watchdog reset during a saved active preparation/incubation phase. It
+waits up to 30 seconds for two fresh DHT22 readings and requires exhaust PWM to
+initialize successfully. The retry allowance is persisted before regulation can
+resume; a second watchdog reset latches the existing controller-reset fault.
+Panic resets, manual stops, saved faults and invalid storage remain stopped.
+This does not fix the underlying watchdog trigger. The already interrupted run
+cannot be restored by v11 because v10 saved its crash fault with no active
+phase; it needs the normal manual fault-reset/start flow. Firmware compiled for
+NodeMCU-32S with ESP32 core 3.3.11: 1,237,940 bytes
+program storage (94%) and 83,556 bytes static RAM (25%). The application image is
+`output/firmware/watchdog-recovery-v11-20261020/Eggcelerate.ino.bin`; it was
+flashed to the empty, stopped ESP32 at application offset `0x10000`. The image
+digest was verified, and fresh VPS telemetry confirmed v11 booted with fault 6
+still latched, regulation stopped, valid sensor data, PWM ready and all outputs
+off. The actual one-retry recovery behavior has not been deliberately triggered
+or physically validated; supervise any later active-cycle trial.

@@ -9,11 +9,12 @@ source, Docker image, or environment defaults.
 
 ## Scope
 
-The page consumes the dashboard's shared `Button`, `Typography`, and `FormInput`
-components and semantic tokens: 36px default form actions, 40px navigation rows,
-standard card radius, app canvas, and the dashboard content width. Desktop
-scrolling stays in the main content area while the administrator sidebar remains
-in place.
+The page uses the dashboard's shared `Button`, `Typography`, `FormInput`,
+`Table`, and `PaginationBar` components and semantic tokens: 40px list-toolbar
+actions, 36px row/form actions (34px on mobile), 40px navigation rows, standard
+card radius, app canvas, and dashboard content width. Narrow tables scroll inside
+their own container; desktop scrolling stays in the main content area while the
+administrator sidebar remains in place.
 
 - Create a farm owner with name, farm name, email, and password.
 - Each new account gets an empty farm and standard species presets.

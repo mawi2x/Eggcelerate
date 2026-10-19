@@ -11,7 +11,7 @@ constexpr uint8_t kExhaustMinDuty = 50;
 constexpr uint32_t kExhaustBoostMs = 1000;
 constexpr uint32_t kExhaustRampMs = 500;
 constexpr uint8_t kExhaustRampStep = 5;
-constexpr const char *kClimateBuild = "climate-benchmark-v8";
+constexpr const char *kClimateBuild = "climate-watchdog-recovery-v11";
 static_assert(kExhaustPwmHz > 0 && kExhaustPwmHz <= 20000, "MOSFET frequency range");
 static_assert(kExhaustMinDuty > 0 && kExhaustMinDuty <= 100, "Nonzero fan floor");
 static_assert(kExhaustPwmBits == 8, "Duty conversion uses 8-bit output");

@@ -1,11 +1,18 @@
 # HTM, LTM, and LHM implementation plan
 
-**Date:** 2026-10-19  
-**Status:** implementation subsequently authorized and deployed on 2026-10-19.
-The VPS runs schema 0027 and benchmark controls; `climate-benchmark-v8` is flashed.
-The controller is stopped. Physical capacity trials and repeatability checks
-remain pending. The sections below retain the implementation specification;
-see the [deployment record](./last-minute-change.md#benchmark-implementation-and-deployment-record).
+**Date:** 2026-10-20
+**Status:** retired on 2026-10-20. HTM/LTM/LHM are no longer available in the
+chamber preparation or device-settings selectors, and the API refuses new
+starts. Benchmark run rows and readings remain available in
+**Trends → Incubation History**. No database deletion is part of retirement.
+The preceding release record states that `htm40-v10-20261020` was deployed to the VPS and
+`climate-benchmark-v10` is flashed on the ESP32. The 40.0°C HTM measurement
+ceiling and 40.5°C DHT22 software cutoff are live; the device booted with valid
+sensor data, no fault, regulation stopped and all actuators off. The empty-chamber
+HTM trial has not started, so no physical capacity result is established. LTM/LHM
+trials and repeatability checks also remain pending. Results appear in
+**Trends → Incubation History**. The sections below retain the implementation
+specification; see the [deployment record](./last-minute-change.md#benchmark-implementation-and-deployment-record).
 
 ## Requested outcome
 
@@ -22,8 +29,9 @@ load eggs, or automatic tray turning. No maximum-humidity benchmark is included.
 
 ## Existing constraints that implementation must address
 
-- Firmware `ClimateControl.h` defines three profiles, accepts only mode IDs
-  0–2, and applies an independent 39.0°C overtemperature fault.
+- Firmware `ClimateControl.h` defines three incubation profiles. Normal climate
+  modes use a 39.0°C software overtemperature cutoff based on the same DHT22;
+  this is not an independent hardware cutoff.
 - Server `database/climate_control.py` accepts reports with mode IDs 0–2 and
   starts only unchanged Chicken/Duck/Quail presets.
 - `ModeDTO` requires incubation days and a turning interval. Adding benchmark
@@ -47,9 +55,15 @@ performance claims or permission to raise the existing safety cutoff.
 
 ### HTM
 
-- Proposed normal test ceiling: **38.5°C**, below the existing 39.0°C fault.
-  Cut heating early using the existing forecast and relay protections; never
-  increase or disable the independent overtemperature guard.
+- Revised test ceiling: **40.0°C**. HTM ends at that measurement ceiling and
+  uses a **40.5°C firmware overtemperature cutoff** while HTM runs and while the
+  chamber cools afterward. This cutoff uses the same DHT22, not a second sensor
+  or thermal fuse; the incubator has no thermal fuse. Normal modes retain their
+  39.0°C software cutoff.
+- Preserve the 30-minute continuous-heater limit, one-hour benchmark timeout,
+  stale/invalid sensor handling, PWM failure behavior, and fault latching. These
+  software checks cannot protect against a failed sensor, welded relay, or
+  firmware failure, and do not establish an absolute physical maximum.
 - If the ceiling is reached, end heating and label the result **ceiling reached;
   physical maximum not established**. Residual temperature rise remains logged.
 - If temperature stabilizes below the ceiling, report the observed plateau and
@@ -208,3 +222,15 @@ conditions and limitations described above. No maximum-humidity test is added.
 
 Software installation and stopped-state checks are complete. Physical benchmark
 trajectories, sustained limits, and repeatability are not yet established.
+
+
+## Sensor recovery correction (2026-10-20)
+
+Firmware v9 pauses an active benchmark while the controller handles its normal
+short DHT22 recovery window. Measurements and stage time do not accumulate
+through that hold; heater and mist remain paused. The existing controller fault
+deadline and one-hour benchmark timeout remain active. V9 booted with valid
+sensor data, the controller stopped and all actuators off. A fresh physical
+benchmark retry is still needed to confirm this correction under a run.
+
+Artifact: `output/firmware/benchmark-v9-20261020/`.

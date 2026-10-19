@@ -142,6 +142,7 @@ def raw_statement(
     scope: list[dict[str, Any]],
     end: datetime,
     receipt_cutoff: datetime | None = None,
+    order: str = "oldest",
 ):
     # Receipt cutoff freezes membership across preview/export requests, including
     # late samples. Raw rows are immutable and receipt time is server-assigned.
@@ -163,6 +164,10 @@ def raw_statement(
         if scope
         else literal("")
     )
+    observed_at_order = (
+        samples.c.observed_at.desc() if order == "newest" else samples.c.observed_at
+    )
+    chamber_order = chamber_id.desc() if order == "newest" else chamber_id
     return (
         select(
             chamber_id.label("incubator_id"),
@@ -179,7 +184,7 @@ def raw_statement(
             samples.c.received_at <= (receipt_cutoff or end),
             or_(*bounds) if bounds else false(),
         )
-        .order_by(samples.c.observed_at, chamber_id)
+        .order_by(observed_at_order, chamber_order)
     )
 
 
@@ -189,14 +194,20 @@ async def preview(
     scope: list[dict[str, Any]],
     end: datetime,
     receipt_cutoff: datetime | None = None,
+    *,
+    offset: int = 0,
+    limit: int = PREVIEW_ROWS,
+    order: str = "newest",
 ) -> dict[str, Any]:
-    statement = raw_statement(farm, scope, end, receipt_cutoff)
+    statement = raw_statement(farm, scope, end, receipt_cutoff, order)
     total = await session.scalar(
         select(func.count()).select_from(statement.order_by(None).subquery())
     )
     rows = [
         dict(r)
-        for r in (await session.execute(statement.limit(PREVIEW_ROWS))).mappings()
+        for r in (
+            await session.execute(statement.offset(offset).limit(limit))
+        ).mappings()
     ]
     return {"rows": rows, "total": total, "end": end}
 

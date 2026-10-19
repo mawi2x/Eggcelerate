@@ -135,14 +135,15 @@ class BenchmarkReport(BaseModel):
     max_t: float
     min_rh: float
     max_rh: float
-    ceiling_c: float = Field(ge=38.5, le=38.5)
+    ceiling_c: Literal[38.5, 40.0]
+    htm_overtemp_c: Literal[40.5] | None = None
     limit_ms: Literal[3600000]
     results: list[BenchmarkResult] = Field(min_length=3, max_length=3)
 
 
 class ClimateReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    benchmark_capability: Literal[1] | None = None
+    benchmark_capability: Literal[1, 2] | None = None
     benchmark: BenchmarkReport | None = None
     halted: StrictBool = True
     resuming: StrictBool = False

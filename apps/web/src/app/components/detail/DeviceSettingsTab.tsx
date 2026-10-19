@@ -1,4 +1,3 @@
-import { benchmarkModes, type BenchmarkKind } from "../../features/benchmarks/use-benchmarks";
 import { Egg, WifiSlash } from "@phosphor-icons/react";
 import { RotateCw, Zap } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -31,9 +30,10 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Switch } from "../ui/switch";
-import { KeyValue, StatusCallout } from "./primitives";
+import { ClimateControlStatus } from "./ClimateControlStatus";
 import { DeleteIncubator } from "./DeleteIncubator";
 import { StopCycleModal } from "./StopCycleModal";
+import { KeyValue, StatusCallout } from "./primitives";
 import { relTime } from "./types";
 
 interface DeviceSettingsTabProps {
@@ -48,7 +48,6 @@ interface DeviceSettingsTabProps {
   turnCommandStatus?: TurnCommandStatus;
   onUpdate: (intent: IncubatorUpdateIntent) => Promise<boolean>;
   onStopCycle: () => Promise<boolean>;
-  onBenchmark?: (kind: BenchmarkKind) => void;
   onDeleted: () => void;
   onTurnClick: () => Promise<boolean>;
 }
@@ -67,7 +66,6 @@ export function DeviceSettingsTab({
   onStopCycle,
   onDeleted,
   onTurnClick,
-  onBenchmark,
 }: DeviceSettingsTabProps) {
   const temperature = useTemperatureDisplay();
   const [settingTab, setSettingTab] = useState<"mode" | "turning" | "device">(
@@ -79,7 +77,6 @@ export function DeviceSettingsTab({
   const connection = getConnectionPresentation(unit);
 
   const changeMode = async (modeId: string) => {
-    if (benchmarkModes.some((m) => m.id === modeId)) { onBenchmark?.(modeId as BenchmarkKind); return; }
     const m = modes.find((x) => x.id === modeId);
     if (!m) return;
     if (
@@ -331,7 +328,6 @@ export function DeviceSettingsTab({
                         <SelectGroup><SelectLabel>Incubation</SelectLabel>{currentModes(modes).map((m) => (
                           <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                         ))}</SelectGroup>
-                        {onBenchmark && <SelectGroup><SelectLabel>Equipment benchmarks</SelectLabel>{benchmarkModes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectGroup>}
                       </SelectContent>
                     </Select>
                   )}
@@ -666,6 +662,43 @@ export function DeviceSettingsTab({
                   </span>
                 }
               />
+              <section
+                aria-labelledby="device-settings-controller-title"
+                className="space-y-3 rounded-xl p-4"
+                style={{
+                  backgroundColor: "var(--surface-porcelain)",
+                  border:
+                    "var(--border-width-hairline) solid var(--border-default)",
+                }}
+              >
+                <div className="space-y-1">
+                  <h3
+                    id="device-settings-controller-title"
+                    style={{
+                      color: "var(--text-primary)",
+                      fontFamily: "var(--font-display)",
+                      fontSize: "var(--type-body-sm)",
+                      fontWeight: "var(--weight-bold)",
+                      lineHeight: "var(--leading-snug)",
+                    }}
+                  >
+                    Controller recovery
+                  </h3>
+                  <p
+                    style={{
+                      color: "var(--text-secondary)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--type-caption)",
+                      lineHeight: "var(--leading-normal)",
+                    }}
+                  >
+                    Resolve the cause first. Reset requires stopped equipment
+                    and fresh, valid sensor readings; regulation stays stopped
+                    after reset.
+                  </p>
+                </div>
+                <ClimateControlStatus unit={unit} />
+              </section>
               <div
                 className="rounded-xl px-4 py-3"
                 style={{

@@ -1,4 +1,4 @@
-import { benchmarkModes, useBenchmarks, type BenchmarkKind } from "../../features/benchmarks/use-benchmarks";
+import { useBenchmarks } from "../../features/benchmarks/use-benchmarks";
 import { BenchmarkStatus } from "../detail/BenchmarkStatus";
 import { currentModes } from "../../domain/mode-catalog";
 import { useTemperatureDisplay } from "../../providers/temperature-context";
@@ -145,8 +145,6 @@ export function DetailScreen({
   onTabChange?: (tab: DetailTab) => void;
 }) {
   const benchmark = useBenchmarks(unit.id);
-  const [emptyConfirmed, setEmptyConfirmed] = useState(false);
-  const [benchmarkNotes, setBenchmarkNotes] = useState("");
   const temperature = useTemperatureDisplay();
   const { completeCycle, stopCycle: archiveStoppedCycle } =
     useCycleHistoryActions();
@@ -196,7 +194,6 @@ export function DetailScreen({
     unit.cyclePhase === "awaiting_finish";
   const effectiveCandled = unit.candled ?? {};
 
-  const setupBenchmark = benchmarkModes.find((m) => m.id === setupModeId);
   const setupMode = modes.find((m) => m.id === setupModeId);
   const setupEggsCount = Number(setupEggs) || 0;
   const setupEggsValid =
@@ -352,14 +349,14 @@ export function DetailScreen({
                   </Button>
                 )}
                 {preparationReady && (
-                  <Button variant="outline" size="default" className="h-[var(--control-height-mobile)] py-0 md:h-[var(--control-height-default)] w-full rounded-full text-(length:--type-button-label) font-bold leading-[var(--leading-button)] sm:w-auto" disabled={isUpdating} onClick={() => { setEmptyConfirmed(false); setSetupOpen(true); }}>
+                  <Button variant="outline" size="default" className="h-[var(--control-height-mobile)] py-0 md:h-[var(--control-height-default)] w-full rounded-full text-(length:--type-button-label) font-bold leading-[var(--leading-button)] sm:w-auto" disabled={isUpdating} onClick={() => setSetupOpen(true)}>
                     Change mode
                   </Button>
                 )}
                 <Button
                   size="default"
                   disabled={isUpdating}
-                  onClick={() => { setEmptyConfirmed(false); setSetupOpen(true); }}
+                  onClick={() => setSetupOpen(true)}
                   className="h-[var(--control-height-mobile)] py-0 md:h-[var(--control-height-default)] w-full rounded-full px-5 text-(length:--type-button-label) font-bold leading-[var(--leading-button)] sm:w-auto"
                   style={{ backgroundColor: "var(--brand-primary-hover)", color: "var(--on-brand)" }}
                 >
@@ -404,11 +401,6 @@ export function DetailScreen({
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              if (setupBenchmark) {
-                if (!emptyConfirmed || benchmark.start.isPending) return;
-                benchmark.start.mutate({ kind: setupBenchmark.id as BenchmarkKind, conditions: benchmarkNotes }, { onSuccess: () => { setSetupOpen(false); setEmptyConfirmed(false); } });
-                return;
-              }
               if (!setupMode || isUpdating) return;
               if (canLoadEggs && setupEggsValid) setSetupConfirmOpen(true);
               else if (!canLoadEggs) void prepareIncubator();
@@ -426,7 +418,7 @@ export function DetailScreen({
               >
                 {canLoadEggs
                   ? "Load eggs and start incubation"
-                  : setupBenchmark ? "Start equipment benchmark" : "Prepare incubator"}
+                  : "Prepare incubator"}
               </DialogTitle>
               <DialogDescription
                 className="space-y-0.5"
@@ -444,7 +436,7 @@ export function DetailScreen({
                 <span className="block">
                   {canLoadEggs
                     ? "Day 1 begins only when you confirm Start cycle."
-                    : setupBenchmark ? "Use only an empty chamber. The device runs a timed equipment test." : "Preparation monitors conditions without starting the incubation timer."}
+                    : "Preparation monitors conditions without starting the incubation timer."}
                 </span>
               </DialogDescription>
             </DialogHeader>
@@ -467,11 +459,11 @@ export function DetailScreen({
                     fontSize: "var(--type-caption)",
                   }}
                 >
-                  Choose a species profile or an empty-chamber benchmark.
+                  Select a species profile for this batch.
                 </p>
                 <Select
                   value={setupModeId}
-                  onValueChange={(id) => { setSetupModeId(id); setEmptyConfirmed(false); }}
+                  onValueChange={setSetupModeId}
                   disabled={isUpdating}
                 >
                   <SelectTrigger
@@ -490,7 +482,6 @@ export function DetailScreen({
                         <SelectItem key={m.id} value={m.id}>{m.name} ({m.incubationDays} days)</SelectItem>
                       ))}
                     </SelectGroup>
-                    {!canLoadEggs && benchmark.available && <SelectGroup><SelectLabel>Equipment benchmarks</SelectLabel>{benchmarkModes.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectGroup>}
                   </SelectContent>
                 </Select>
               </div>
@@ -548,18 +539,7 @@ export function DetailScreen({
                 </div>
               )}
 
-              {setupBenchmark ? (
-                <div className="space-y-3" style={{ fontSize: "var(--type-body-sm)" }}>
-                  <h3 className="font-bold">{setupBenchmark.name}</h3>
-                  <p>{setupBenchmark.description}</p>
-                  <p>One-hour limit. Mist and tray turning stay off. Results are saved in Trends under Benchmarks. Intake conditions are unmeasured unless recorded in your notes.</p>
-                  <label className="flex min-h-11 items-center gap-3"><input className="h-4 w-4 shrink-0" type="checkbox" checked={emptyConfirmed} onChange={(e) => setEmptyConfirmed(e.target.checked)} />The chamber is empty and the door is closed.</label>
-                  <Label htmlFor="benchmark-notes">Test conditions (optional)</Label>
-                  <Input id="benchmark-notes" maxLength={1000} value={benchmarkNotes} onChange={(e) => setBenchmarkNotes(e.target.value)} placeholder="Reservoir, room conditions, power supply" />
-                  <p>Cancel any preparation first and stop regulation before starting.</p>
-                  {benchmark.start.isError && <p role="alert">{benchmark.start.error.message}</p>}
-                </div>
-              ) : setupMode ? (
+              {setupMode ? (
                 <div
                   className="rounded-[var(--radius-dialog)] p-4"
                   style={{
@@ -676,23 +656,20 @@ export function DetailScreen({
                   variant="ghost"
                   className="rounded-full"
                   disabled={isUpdating}
-                  onClick={() => { setSetupOpen(false); setEmptyConfirmed(false); }}
+                  onClick={() => setSetupOpen(false)}
                 >
                   <span>Cancel</span>
                 </Button>
                 <Button
                   type="submit"
-                  disabled={
-                    setupBenchmark ? !emptyConfirmed || benchmark.start.isPending || !!benchmark.active : !setupMode || (canLoadEggs && !setupEggsValid) || isUpdating
-                  }
+                  disabled={!setupMode || (canLoadEggs && !setupEggsValid) || isUpdating}
                   aria-busy={isUpdating}
                   className="rounded-full px-5"
                   style={{
                     backgroundColor: "var(--brand-primary)",
                     color: "var(--on-brand)",
                     opacity:
-                      (!setupMode && !setupBenchmark) ||
-                      (!!setupBenchmark && (!emptyConfirmed || benchmark.start.isPending || !!benchmark.active)) ||
+                      !setupMode ||
                       (canLoadEggs && !setupEggsValid) ||
                       isUpdating
                         ? 0.5
@@ -700,7 +677,7 @@ export function DetailScreen({
                   }}
                 >
                   <span>
-                    {benchmark.start.isPending ? "Requesting benchmark…" : setupBenchmark ? "Start benchmark" : isUpdating
+                    {isUpdating
                       ? "Saving…"
                       : canLoadEggs
                         ? "Start Incubation Cycle"
@@ -963,7 +940,6 @@ export function DetailScreen({
           isUpdating={isUpdating}
           isRequestingTurn={isRequestingTurn}
           turnCommandStatus={turnCommand?.status ?? unit.turnCommandStatus}
-          onBenchmark={benchmark.available ? (kind) => { setEmptyConfirmed(false); setSetupModeId(kind); setSetupOpen(true); } : undefined}
           onUpdate={onUpdate}
           onDeleted={onDeleted}
           onStopCycle={stopCycle}

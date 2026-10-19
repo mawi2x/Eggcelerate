@@ -318,8 +318,8 @@ scope decision, not a measured claim about every location or season.
   visible when comparing results.
 - A repeat run under comparable conditions is used to assess repeatability.
 
-This is additional scope beyond the custom-mode estimate above; its effort
-must be estimated separately before implementation.
+This was additional scope beyond arbitrary custom-mode support; its separate
+implementation estimate is recorded in the linked benchmark plan.
 
 
 ### Benchmark implementation and deployment record
@@ -329,8 +329,10 @@ must be estimated separately before implementation.
 - Select through **Prepare → Mode → Equipment benchmarks**, or the Device
   Settings mode selector. Confirm the chamber is empty, then use **Start
   benchmark**. An explicit start is required; installation does not begin a test.
-- Results, including interrupted runs, are under **Trends → Benchmarks**.
-- HTM uses a 38.5°C test ceiling and retains the independent 39.0°C fault.
+- Results, including interrupted runs, are now under **Trends → Incubation History**
+  (website simplified on 2026-10-20).
+- At this release HTM used a 38.5°C test ceiling; its 39.0°C overtemperature
+  cutoff was firmware logic using the same DHT22, not an independent thermal fuse.
   LTM uses circulation and full exhaust with heater/mist off. LHM keeps mist
   off and compares 60%/100% exhaust while qualifying readings at 37.5–37.8°C.
 - Runs have a local one-hour timeout, no tray turning, explicit Stop/retry,
@@ -349,3 +351,154 @@ must be estimated separately before implementation.
   rehearsed. Schema-compatible rollback images preserve the additive history
   table without requiring data deletion. Final web backup:
   `/opt/eggcelerate/rollback-benchmark-v8-web-4fagufex/`.
+
+
+### 2026-10-20 — HTM 40°C source update (not deployed)
+
+- Highest Temperature Mode (HTM) now has a 40.0°C measurement ceiling and a
+  40.5°C software overtemperature cutoff during HTM and cooldown. Normal climate
+  modes retain the 39.0°C software cutoff.
+- Both thresholds use the existing DHT22. The incubator has no independent
+  thermal fuse; software limits cannot cover sensor, relay, or firmware failure.
+  HTM remains an empty-chamber supervised benchmark with its existing 30-minute
+  heater-on guard and one-hour total timeout.
+- Firmware capability 2 marks support for the new HTM limit. The VPS rejects
+  HTM starts from older capability-1 firmware and stores each run's limits for
+  history display. LTM/LHM remain compatible with capability 1.
+- Compiled locally for NodeMCU-32S with ESP32 core 3.3.11. The app uses 1,237,436
+  bytes of program storage and 83,556 bytes of static RAM. Artifact:
+  `output/firmware/benchmark-v10-20261020/`.
+- It has not been flashed or deployed; current device/VPS state remains the
+  previously installed v9 / 38.5°C configuration. No tests were run as part of
+  this local change.
+
+
+### Unified mode history (2026-10-20)
+
+- Removed the separate Benchmarks tab at the user's request. HTM/LTM/LHM runs
+  appear alongside normal cycle cards under **Trends → Incubation History**,
+  ordered newest first. Chamber, Mode, and Status filters cover both kinds.
+- **View readings** opens the saved benchmark temperature and humidity charts.
+  The benchmark records remain separate internally; no data migration or
+  firmware change is needed for this website update.
+- The first HTM trial ended as faulted, without establishing a sustained
+  plateau. Its interrupted history remains visible. The exact interruption
+  cause still needs review; LTM/LHM capacity trials remain pending.
+- Website release: `unified-history-20261020`. TypeScript and production build
+  passed. Browser preview used read-only VPS history with intercepted API
+  responses; verified combined cards, mode filtering and reading charts.
+- VPS publication verified: web healthy, public index matches the release,
+  and all 11 entry assets return successfully. Backup:
+  `/opt/eggcelerate/rollback-unified-history-377pfcag/`.
+
+
+### Benchmark sensor recovery correction (2026-10-20)
+
+- v8 ended the first HTM attempt after 223 ms as benchmark `Faulted`, while the
+  controller fault was clear. The firmware treated its temporary DHT22 recovery
+  hold as a terminal benchmark fault.
+- v9 pauses the benchmark and discards the partial measurement window during
+  recovery. The existing sensor safety logic keeps heater and mist paused and
+  still latches a real sensor fault if recovery times out.
+- Built for NodeMCU-32S; flash hash verified at application offset `0x10000`.
+  Partition layout unchanged; Wi-Fi and local storage were preserved.
+- Boot and VPS telemetry verified v9, valid sensor, fault clear, regulation
+  stopped and all outputs off. No benchmark was started automatically.
+- A new empty-chamber physical run is still needed to confirm the fix; do not
+  treat the earlier interrupted HTM run as a temperature-capacity result.
+- Artifact: `output/firmware/benchmark-v9-20261020/`.
+
+
+### 2026-10-20 — HTM 40°C release deployed and v10 flashed
+
+- Deployed API, telemetry worker and website images as `htm40-v10-20261020`;
+  current VPS health/readiness checks passed. No database migration was needed.
+  The API now requires firmware capability 2 before offering HTM at 40°C.
+- Saved the previous Compose wrapper and a compressed database dump before the
+  deployment. Rollback directory: `/opt/eggcelerate/rollback-htm40-v10-20261020-MYVBuI/`.
+- Flashed only the v10 application at `0x10000` using the Arduino ESP32 toolchain.
+  The write hash verified; partition table, NVS/Wi-Fi, and LittleFS were untouched.
+- Fresh VPS telemetry: `climate-benchmark-v10`, capability 2, valid DHT22
+  (32.4°C / 73.8% RH), fault 0, regulation stopped, heater/mist/both fans off,
+  PWM ready. No benchmark was started automatically.
+- The 40°C HTM trial remains an empty-chamber supervised test; it has not begun.
+  No thermal fuse is installed, and the 40.5°C cutoff uses the same DHT22.
+  LTM/LHM capacity trials and Chicken target qualification remain pending.
+- Release evidence: `output/releases/htm40-v10-20261020/`; firmware package:
+  `output/firmware/benchmark-v10-20261020/`. No test suite was run for deployment.
+
+
+### 2026-10-20 — Benchmark start controls retired; records preserved
+
+- Removed HTM/LTM/LHM from chamber preparation and device-settings selectors.
+- The authenticated benchmark-start API now rejects new runs. The stop route
+  remains for a legacy run that may need to be stopped.
+- Kept the per-chamber run listing and readings API, benchmark history cards,
+  filters, and charts. No benchmark rows or sensor reports were deleted.
+- No firmware reflash or database migration is required. Firmware capability
+  remains on the ESP32, while the VPS no longer issues benchmark start commands.
+- Deployed web/API release `benchmarks-retired-20261020`; both services report
+  healthy. The VPS database still has 6 benchmark records and 0 active runs.
+- Readiness and the web health endpoint passed; the OpenAPI document still lists
+  the benchmark history and readings GET routes. No test suite was run.
+- Release bundle: `output/releases/benchmarks-retired-20261020/`;
+  rollback copy: `/opt/eggcelerate/rollback-benchmarks-retired-20261020/`.
+
+
+### 2026-10-20 — Admin and raw-reading pagination deployed
+
+- Deployed the admin user-list UI improvements and paginated raw chamber
+  readings as release `admin-readings-20261020`.
+- Raw readings open newest first, offer oldest-first sorting and 50/100/200
+  rows per page. Page requests use the same signed scope as complete CSV export.
+- Built and activated the API and web images only. The database, telemetry
+  worker, hardware broker and firmware were left running; no migration or
+  admin-account change was made by this release.
+- API and web containers are healthy; `/readyz` returned ready, the public
+  homepage returned HTTP 200, and the paginated raw-readings route is present.
+- TypeScript typecheck and production build passed. No test suite was run.
+- Rollback directory: `/opt/eggcelerate/rollback-admin-readings-20261020/`;
+  local source and wrapper backups are in
+  `output/backups/vps-admin-readings-20261020/`.
+- Release artifact: `output/releases/admin-readings-20261020/`.
+
+
+### Guarded ESP32 watchdog recovery (2026-10-20)
+
+- Firmware permits one automatic restore for a watchdog reset only when the
+  checksummed saved record contains an active preparation/incubation phase with
+  no prior fault.
+- It persists the one-retry allowance before enabling regulation, waits for two
+  fresh DHT22 readings (up to 30 seconds), and requires exhaust PWM to initialize.
+  Stop/Cancel and explicit lifecycle commands take precedence over restoration.
+- A repeated watchdog reset, panic reset, sensor timeout, fan-output fault,
+  invalid record or failed NVS write stays stopped/faulted. New operator cycles
+  and an accepted manual fault reset refresh the one-retry allowance.
+- This contains a restart; it does not fix the watchdog's underlying cause. The
+  interrupted run stored by v10 already has fault 6 and no active phase, so the
+  new firmware does not revive it. It still needs the website fault-reset and
+  explicit resume flow.
+- Firmware source ID: `climate-watchdog-recovery-v11`. Flashed only the app at
+  `0x10000`; no chip erase or partition/NVS write. `verify-flash` digest matched.
+  Fresh VPS telemetry confirmed v11 booted with a valid sensor, PWM ready, fault
+  6 latched, regulation stopped and all outputs off. No watchdog crash was
+  deliberately induced, so the recovery behavior still needs a supervised
+  active-cycle trial. Package and verification state are in `ROADMAP.md` and
+  `output/firmware/watchdog-recovery-v11-20261020/`.
+
+
+### 2026-10-20 — Controller fault recovery in device settings
+
+- Added a **Controller recovery** panel to the incubator's **Device & Connection**
+  settings. It reports fault causes and enables reset only with a fresh valid
+  sensor report and stopped controller. Reset leaves regulation stopped; resume
+  remains a separate action. Fan-output fault 7 directs the operator to inspect
+  the fan and restart the controller.
+- Built and deployed web image `eggcelerate-web:controller-reset-20261020`.
+  Only the web container was recreated; API, database, telemetry, broker, and
+  HTTPS proxy container IDs stayed unchanged. No API, database, or firmware
+  update was needed, and no equipment command was sent during deployment.
+- VPS web health and public homepage checks returned HTTP 200. The live web
+  assets contain the recovery panel and reset action. Rollback image:
+  `eggcelerate-web:admin-readings-20261020`; deployment artifacts and container
+  snapshots are in `output/releases/controller-reset-settings-20261020/`.

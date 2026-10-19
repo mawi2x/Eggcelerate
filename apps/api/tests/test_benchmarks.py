@@ -96,7 +96,7 @@ def test_old_reports_still_accepted():
         ("stage", 3),
         ("elapsed_ms", -1),
         ("max_t", float("nan")),
-        ("ceiling_c", 40),
+        ("ceiling_c", 39),
         ("limit_ms", 0),
         ("results", []),
     ],

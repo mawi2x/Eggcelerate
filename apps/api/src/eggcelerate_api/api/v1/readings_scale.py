@@ -6,7 +6,7 @@ import hmac
 import json
 import math
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -108,6 +108,22 @@ def demo_rows(
     return sorted(rows, key=lambda r: (r["observed_at"], r["incubator_id"]))
 
 
+def ordered_preview_rows(
+    rows: list[dict[str, Any]], order: Literal["newest", "oldest"]
+) -> list[dict[str, Any]]:
+    def sort_key(row: dict[str, Any]) -> tuple[datetime, str]:
+        observed_at = row["observed_at"]
+        if isinstance(observed_at, str):
+            observed_at = datetime.fromisoformat(observed_at)
+        return observed_at, row["incubator_id"]
+
+    return sorted(
+        rows,
+        key=sort_key,
+        reverse=order == "newest",
+    )
+
+
 def aggregate_demo(
     rows: list[dict[str, Any]],
     window: str,
@@ -191,6 +207,7 @@ async def raw_preview(
     end: AwareDatetime | None = None,
     start: AwareDatetime | None = None,
     run_id: UUID | None = None,
+    order: Literal["newest", "oldest"] = "newest",
     context: RequestContext = Depends(get_request_context),
 ) -> dict:
     end = checked_bounds(start, end)
@@ -233,19 +250,77 @@ async def raw_preview(
                     for s in scope
                 ]
                 data = await storage.preview(
-                    session, database.farm_id, scope, end, receipt_cutoff
+                    session,
+                    database.farm_id,
+                    scope,
+                    end,
+                    receipt_cutoff,
+                    order=order,
                 )
         else:
             rows = demo_rows(request, ids, window, end, start)
             payload["demo_rows"] = rows
             data = {
-                "rows": rows[: storage.PREVIEW_ROWS],
+                "rows": ordered_preview_rows(rows, order)[
+                    : storage.PREVIEW_ROWS
+                ],
                 "total": len(rows),
                 "end": end,
             }
         data["scope_token"] = sign_scope(
             payload, request.app.state.settings.auth_rate_limit_key
         )
+        return ok_envelope(data)
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise AppError("offline", "Reading storage is unavailable.") from exc
+
+
+class PreviewPageRequest(BaseModel):
+    scope_token: str = Field(max_length=4_000_000)
+    offset: int = Field(ge=0)
+    limit: int = Field(
+        default=storage.PREVIEW_ROWS,
+        ge=1,
+        le=storage.PREVIEW_ROWS,
+    )
+    order: Literal["newest", "oldest"] = "newest"
+
+
+@router.post("/readings/raw-preview/page")
+async def raw_preview_page(
+    body: PreviewPageRequest,
+    request: Request,
+    context: RequestContext = Depends(get_request_context),
+) -> dict:
+    payload = read_scope(
+        body.scope_token,
+        context.farm_id,
+        request.app.state.settings.auth_rate_limit_key,
+    )
+    end = payload["end"]
+    database = request.app.state.database
+    try:
+        if database is not None:
+            database = database.for_farm(context.farm_id)
+            async with database.sessions() as session, session.begin():
+                data = await storage.preview(
+                    session,
+                    database.farm_id,
+                    payload["scope"],
+                    end,
+                    payload.get("receipt_cutoff"),
+                    offset=body.offset,
+                    limit=body.limit,
+                    order=body.order,
+                )
+        else:
+            rows = ordered_preview_rows(payload["demo_rows"], body.order)
+            data = {
+                "rows": rows[body.offset : body.offset + body.limit],
+                "total": len(rows),
+                "end": end,
+            }
+        data["scope_token"] = body.scope_token
         return ok_envelope(data)
     except (SQLAlchemyError, OSError, TimeoutError) as exc:
         raise AppError("offline", "Reading storage is unavailable.") from exc
