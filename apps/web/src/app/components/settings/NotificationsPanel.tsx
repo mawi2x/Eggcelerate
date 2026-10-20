@@ -45,13 +45,13 @@ const triggerGroups: TriggerGroup[] = [
       {
         id: "temp",
         label: "Temperature out of range",
-        hint: "Opens after 60 seconds outside the mode target during an active cycle.",
+        hint: "When enabled, an alert is created if temperature stays outside this incubator's selected mode range for 90 seconds during an active cycle.",
         toastLabel: "Temperature alerts",
       },
       {
         id: "humidity",
         label: "Humidity out of range",
-        hint: "Opens after 60 seconds outside the mode humidity target during an active cycle.",
+        hint: "When enabled, an alert is created if humidity stays outside this incubator's selected mode range for 90 seconds during an active cycle.",
         toastLabel: "Humidity alerts",
       },
     ],
@@ -396,8 +396,9 @@ export function NotificationsPanel({
             className="pt-4"
             style={{ color: MUTED, fontSize: "var(--type-caption)" }}
           >
-            Critical environment alerts always push to the in-app bell,
-            regardless of the delivery methods you choose.
+            Qualifying alerts are saved to the in-app feed. While you’re signed
+            in, the dashboard checks for updates about every 15 seconds when the
+            page is visible.
           </p>
         </div>
       )}

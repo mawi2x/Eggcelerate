@@ -109,10 +109,16 @@ async def evaluate(session, farm_id, now):
                 )
             benchmark = benchmarks.get(unit)
             benchmark_report = report.get("benchmark") or {}
+            benchmark_kind = (
+                {"htm": 1, "ltm": 2, "lhm": 3}.get(benchmark["kind"])
+                if benchmark
+                else None
+            )
             benchmark_authorized = bool(
                 benchmark
                 and benchmark["device_id"] == row["device_id"]
                 and benchmark_report.get("run_id") == str(benchmark["id"])
+                and benchmark_report.get("kind") == benchmark_kind
                 and benchmark_report.get("outcome") == 1
             )
             req = row["request"] or {}

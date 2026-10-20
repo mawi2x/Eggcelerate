@@ -171,8 +171,8 @@ export function IncubationRunHistory({ model, units, modes, onView }: {
         })}
       </ul>
       <Dialog open={!!selectedBenchmark} onOpenChange={(open) => { if (!open) setSelectedBenchmark(null); }}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-4xl">
-          <DialogHeader><DialogTitle>{selectedBenchmark ? benchmarkModes.find((m) => m.id === selectedBenchmark.kind)?.name : "Mode readings"}</DialogTitle><DialogDescription>{selectedBenchmark ? `${selectedBenchmark.chamber_name} — ${benchmarkStatus(selectedBenchmark.status)}` : ""}</DialogDescription></DialogHeader>
+        <DialogContent size="large" className="max-h-[90dvh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{selectedBenchmark ? benchmarkModes.find((m) => m.id === selectedBenchmark.kind)?.name : "Mode readings"}</DialogTitle><DialogDescription>{selectedBenchmark?.chamber_name}</DialogDescription></DialogHeader>
           {selectedBenchmark && <BenchmarkRunReadings run={benchmarkRuns.find((run) => run.id === selectedBenchmark.id) ?? selectedBenchmark} />}
         </DialogContent>
       </Dialog>

@@ -3,7 +3,10 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsScreen } from "../app/components/screens/SettingsScreen";
 import { HardwarePanel } from "../app/components/settings/HardwarePanel";
-import { validateNotificationPreferences } from "../app/components/settings/NotificationsPanel";
+import {
+  NotificationsPanel,
+  validateNotificationPreferences,
+} from "../app/components/settings/NotificationsPanel";
 import { createIncubatorFixtures } from "../app/data/fixtures/incubators";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
 import { initialSettings } from "../app/data/settings";
@@ -105,6 +108,33 @@ describe("settings contracts", () => {
         emailAddress: "farmer@example.com",
       }),
     ).toBeNull();
+  });
+
+  it("describes the 90-second environmental alert and polled in-app feed", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () =>
+      root.render(
+        <NotificationsPanel
+          value={structuredClone(initialSettings.notifications)}
+          onChange={() => {}}
+          view="rules"
+          onViewChange={() => {}}
+        />,
+      ),
+    );
+
+    expect(container.textContent).toContain(
+      "temperature stays outside this incubator's selected mode range for 90 seconds",
+    );
+    expect(container.textContent).toContain(
+      "humidity stays outside this incubator's selected mode range for 90 seconds",
+    );
+    expect(container.textContent).not.toContain("60 seconds outside");
+    expect(container.textContent).toContain("saved to the in-app feed");
+    expect(container.textContent).toContain("about every 15 seconds");
+
+    await act(async () => root.unmount());
   });
 
   it("opens the matching incubator when a paired device row is selected", async () => {

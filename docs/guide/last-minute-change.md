@@ -502,3 +502,64 @@ implementation estimate is recorded in the linked benchmark plan.
   assets contain the recovery panel and reset action. Rollback image:
   `eggcelerate-web:admin-readings-20261020`; deployment artifacts and container
   snapshots are in `output/releases/controller-reset-settings-20261020/`.
+
+
+### 2026-10-20 — Benchmark history details simplified
+
+- Replaced the narrative above benchmark charts with labeled facts: status,
+  start time, duration, sample count, observed temperature and humidity ranges,
+  qualified-window count, intake-reading availability, and actuator-stage
+  record count. Existing history records and charts were preserved.
+- TypeScript and the API-mode production image build passed. Deployed
+  `eggcelerate-web:benchmark-history-info-20261020`; only the web container was
+  recreated. The existing controller fault Stop condition is now used by its
+  button, including when a fault is present.
+- VPS health, homepage, and public trends asset returned HTTP 200. The new
+  summary labels are present, the removed narrative text is absent, and
+  API/database/worker/broker/HTTPS proxy container IDs are unchanged. Rollback
+  image: `eggcelerate-web:controller-reset-20261020`. Release artifacts and
+  snapshots are in `output/releases/benchmark-history-info-20261020/`.
+
+
+### 2026-10-20 — Wider benchmark history details
+
+- The shared benchmark readings dialog now uses the large desktop dialog size,
+  giving the informational summary and temperature/humidity charts more room for
+  every benchmark mode. Its mobile margins and 90dvh scroll limit remain in place.
+- TypeScript check and API-mode production web image build passed. Deployed
+  `eggcelerate-web:benchmark-history-wide-20261020`; only the web container was
+  recreated.
+- VPS web health, readiness, homepage, trends module, and large-dialog CSS checks
+  returned HTTP 200 / passed. API, database, telemetry, broker, and HTTPS proxy
+  container IDs are unchanged. Rollback image:
+  `eggcelerate-web:benchmark-history-info-20261020`. Release artifacts and
+  container snapshots are in `output/releases/benchmark-history-wide-20261020/`.
+
+
+### 2026-10-20 — Benchmark presentation cards simplified
+
+- Removed the five selected cards (valid samples, qualified windows, intake
+  readings, actuator stage records, and separate thermal fuse) from benchmark
+  readings across modes. Status, run timing, temperature/humidity ranges, HTM
+  ceiling/cutoff, and charts remain. Stored run data was not changed.
+- TypeScript check and API-mode production web image build passed. Deployed
+  `eggcelerate-web:benchmark-history-presentation-20261020`; only the web
+  container was recreated.
+- VPS health/readiness/homepage and public trends asset returned HTTP 200. The
+  removed labels are absent from the served asset; remaining status/range/chart
+  labels are present. API, database, telemetry, broker, and HTTPS proxy IDs are
+  unchanged. Rollback image: `eggcelerate-web:benchmark-history-wide-20261020`.
+  Release artifacts and container snapshots are in
+  `output/releases/benchmark-history-presentation-20261020/`.
+
+
+### 2026-10-20 — Full chamber and mode in trends heading
+
+- Updated the selected-run banner to display `Readings for [chamber], [mode]
+  Mode`. Long chamber and mode names wrap instead of truncating.
+- TypeScript check and API-mode production web image build passed. Deployed
+  `eggcelerate-web:trend-heading-20261020`; only the web container was recreated.
+- VPS health/readiness/homepage and trends asset returned HTTP 200. API, database,
+  telemetry, broker, and HTTPS proxy container IDs are unchanged. Rollback image:
+  `eggcelerate-web:benchmark-history-presentation-20261020`. Release artifacts
+  and container snapshots are in `output/releases/trend-heading-20261020/`.

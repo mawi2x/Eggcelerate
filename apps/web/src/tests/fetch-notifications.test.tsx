@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { act } from "react";
 import { toast } from "sonner";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../app/App";
 import { InMemoryEggcelerateRepository } from "../app/data/repositories/in-memory-repository";
 import { RepositoryQueryError } from "../app/features/farm/repository-query";
@@ -22,6 +22,11 @@ vi.mock("sonner", () => ({
   },
   Toaster: () => null,
 }));
+beforeEach(() => {
+  // MockAuthProvider persists sign-out in sessionStorage; each test needs a
+  // fresh authenticated session unless it explicitly signs out itself.
+  sessionStorage.removeItem("eggcelerate.demo.session.v1");
+});
 afterEach(() => vi.restoreAllMocks());
 
 async function setup() {

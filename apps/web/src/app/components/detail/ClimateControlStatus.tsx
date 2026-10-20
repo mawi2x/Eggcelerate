@@ -308,13 +308,7 @@ export function ClimateControlStatus({ unit }: { unit: Incubator }) {
           {actionError}
         </p>
       )}
-      {report &&
-        !authorized &&
-        (report.running ||
-          unit.outputStates?.heaterOn ||
-          unit.outputStates?.mistOn ||
-          unit.outputStates?.fanOn ||
-          unit.outputStates?.exhaustOn) && (
+      {unexpectedOutput && (
           <Button
             variant="outline"
             size="default"

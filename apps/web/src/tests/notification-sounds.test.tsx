@@ -46,6 +46,33 @@ describe("notification sounds", () => {
     await view.unmount();
   });
 
+  it("does not replay an episode after recovery or reconnect, and sounds a new recurrence once", async () => {
+    const episode = alert("episode-1");
+    const recovered = { ...episode, conditionState: "resolved" as const };
+    const view = await render(<Probe ready={false} />);
+
+    await view.rerender(<Probe farm={[episode]} ready={true} />);
+    expect(audio.play).not.toHaveBeenCalled();
+
+    await view.rerender(<Probe farm={[recovered]} ready={true} />);
+    await view.rerender(<Probe farm={[recovered]} ready={false} />);
+    await view.rerender(<Probe farm={[recovered]} ready={true} />);
+    expect(audio.play).not.toHaveBeenCalled();
+
+    const recurrence = {
+      ...alert("episode-2"),
+      conditionState: "active" as const,
+    };
+    await view.rerender(
+      <Probe farm={[recovered, recurrence, recurrence]} ready={true} />,
+    );
+    expect(audio.play).toHaveBeenCalledTimes(1);
+
+    await view.rerender(<Probe farm={[recovered, recurrence]} ready={true} />);
+    expect(audio.play).toHaveBeenCalledTimes(1);
+    await view.unmount();
+  });
+
   it("resets history and disposes audio on account changes and sign-out", async () => {
     const view = await render(<Probe farm={[alert("a")]} />);
     await view.rerender(<Probe owner="other" farm={[alert("b")]} />);

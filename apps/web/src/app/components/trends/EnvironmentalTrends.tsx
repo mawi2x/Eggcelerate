@@ -51,6 +51,11 @@ import {
 } from "./presentation";
 import type { useEnvironmentalTrends } from "./useEnvironmentalTrends";
 
+function formatModeLabel(name: string) {
+  const trimmed = name.trim();
+  return /\bmode$/i.test(trimmed) ? trimmed : `${trimmed} Mode`;
+}
+
 export function EnvironmentalTrends({
   model,
   units,
@@ -105,7 +110,7 @@ export function EnvironmentalTrends({
           <span aria-hidden="true" className="w-1.5 shrink-0 self-stretch rounded-full bg-[var(--brand-primary)]" />
           <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
-              <p className="text-pretty text-[var(--brand-primary-hover)]" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)" }}>Readings for {model.selectedRun.chamberName} · {model.selectedRun.mode.name}</p>
+              <p className="min-w-0 break-words text-pretty text-[var(--brand-primary-hover)]" style={{ fontFamily: "var(--font-display)", fontSize: "var(--type-heading-sm)", fontWeight: "var(--weight-bold)", lineHeight: "var(--leading-snug)" }}>Readings for {model.selectedRun.chamberName}, {formatModeLabel(model.selectedRun.mode.name)}</p>
               <p className="text-pretty text-[var(--text-secondary)]" style={{ fontFamily: "var(--font-body)", fontSize: "var(--type-caption)", fontWeight: "var(--weight-regular)", lineHeight: "var(--leading-normal)", marginTop: 2 }}>{new Date(model.selectedRun.startedAt).toLocaleString()} to {model.selectedRun.endedAt ? new Date(model.selectedRun.endedAt).toLocaleString() : "now"}.</p>
             </div>
             <Button variant="outline" className="h-[var(--control-height-mobile)] w-full rounded-full py-0 text-(length:--type-button-label) font-bold leading-[var(--leading-button)] sm:w-auto md:h-[var(--control-height-default)]" onClick={model.clearRun}><span>Show all recent readings</span></Button>
